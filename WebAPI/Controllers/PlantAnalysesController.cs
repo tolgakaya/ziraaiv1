@@ -1,11 +1,13 @@
 using Business.Handlers.PlantAnalyses.Commands;
 using Business.Handlers.PlantAnalyses.Queries;
+using Business.Services.PlantAnalysis;
 using Core.Utilities.Results;
 using Entities.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,10 +21,12 @@ namespace WebAPI.Controllers
     public class PlantAnalysesController : BaseApiController
     {
         private readonly IMediator _mediator;
+        private readonly IPlantAnalysisAsyncService _asyncAnalysisService;
 
-        public PlantAnalysesController(IMediator mediator)
+        public PlantAnalysesController(IMediator mediator, IPlantAnalysisAsyncService asyncAnalysisService)
         {
             _mediator = mediator;
+            _asyncAnalysisService = asyncAnalysisService;
         }
 
         /// <summary>
@@ -85,6 +89,68 @@ namespace WebAPI.Controllers
                 return Ok(result);
             
             return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Queue a new plant analysis for async processing
+        /// </summary>
+        /// <param name="request">Plant analysis request with image base64</param>
+        /// <returns>Analysis ID for tracking</returns>
+        [HttpPost("analyze-async")]
+        [ProducesResponseType(typeof(object), StatusCodes.Status202Accepted)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        public async Task<IActionResult> AnalyzeAsync([FromBody] PlantAnalysisRequestDto request)
+        {
+            try
+            {
+                // Validate model
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    
+                    return BadRequest(new { 
+                        success = false, 
+                        message = "Validation failed", 
+                        errors = errors 
+                    });
+                }
+
+                // Check if queue is healthy
+                var isQueueHealthy = await _asyncAnalysisService.IsQueueHealthyAsync();
+                if (!isQueueHealthy)
+                {
+                    return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                    {
+                        success = false,
+                        message = "Message queue service is currently unavailable. Please try again later."
+                    });
+                }
+
+                // Queue the analysis
+                var analysisId = await _asyncAnalysisService.QueuePlantAnalysisAsync(request);
+
+                return Accepted(new
+                {
+                    success = true,
+                    message = "Plant analysis has been queued for processing",
+                    analysis_id = analysisId,
+                    estimated_processing_time = "2-5 minutes",
+                    status_check_endpoint = $"/api/plantanalyses/status/{analysisId}",
+                    notification_info = "You will receive a notification when analysis is complete"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = $"Failed to queue plant analysis: {ex.Message}"
+                });
+            }
         }
 
         /// <summary>

@@ -53,6 +53,9 @@ namespace WebAPI
         public override void ConfigureServices(IServiceCollection services)
         {
             // Business katmanında olan dependency tanımlarının bir metot üzerinden buraya implemente edilmesi.
+            
+            // Configuration Options
+            services.Configure<Core.Configuration.RabbitMQOptions>(Configuration.GetSection(Core.Configuration.RabbitMQOptions.SectionName));
 
             services.AddControllers()
                 .AddJsonOptions(options =>
@@ -104,6 +107,9 @@ namespace WebAPI
             services.AddScoped<IpControlAttribute>();
             
             services.AddHttpClient();
+
+            // Add Background Services
+            // PlantAnalysisResultWorker moved to separate PlantAnalysisWorkerService project
 
             base.ConfigureServices(services);
         }

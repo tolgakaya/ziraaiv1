@@ -21,7 +21,21 @@ namespace Entities.Constants
         public static class Application
         {
             public const string N8NWebhookUrl = "N8N_WEBHOOK_URL";
+            public const string N8NAsyncWebhookUrl = "N8N_ASYNC_WEBHOOK_URL";
             public const string N8NTimeout = "N8N_TIMEOUT_SECONDS";
+        }
+        
+        // RabbitMQ Configuration Keys
+        public static class RabbitMQ
+        {
+            public const string ConnectionString = "RABBITMQ_CONNECTION_STRING";
+            public const string PlantAnalysisRequestQueue = "RABBITMQ_PLANT_ANALYSIS_REQUEST_QUEUE";
+            public const string PlantAnalysisResultQueue = "RABBITMQ_PLANT_ANALYSIS_RESULT_QUEUE";
+            public const string NotificationQueue = "RABBITMQ_NOTIFICATION_QUEUE";
+            public const string Username = "RABBITMQ_USERNAME";
+            public const string Password = "RABBITMQ_PASSWORD";
+            public const string VirtualHost = "RABBITMQ_VIRTUAL_HOST";
+            public const string Port = "RABBITMQ_PORT";
         }
     }
 }

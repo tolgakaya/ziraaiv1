@@ -144,6 +144,63 @@ namespace Business.Seeds
                     ValueType = "int",
                     IsActive = true,
                     CreatedDate = DateTime.UtcNow
+                },
+                new Configuration
+                {
+                    Id = 13,
+                    Key = "N8N_ASYNC_WEBHOOK_URL",
+                    Value = "https://your-n8n-instance.com/webhook/plant-analysis-async",
+                    Description = "N8N async webhook endpoint for plant analysis",
+                    Category = "Application",
+                    ValueType = "string",
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                },
+                
+                // RabbitMQ Settings
+                new Configuration
+                {
+                    Id = 14,
+                    Key = "RABBITMQ_CONNECTION_STRING",
+                    Value = "amqp://guest:guest@localhost:5672/",
+                    Description = "RabbitMQ connection string",
+                    Category = "RabbitMQ",
+                    ValueType = "string",
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                },
+                new Configuration
+                {
+                    Id = 15,
+                    Key = "RABBITMQ_PLANT_ANALYSIS_REQUEST_QUEUE",
+                    Value = "plant-analysis-requests",
+                    Description = "Queue name for plant analysis requests",
+                    Category = "RabbitMQ",
+                    ValueType = "string",
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                },
+                new Configuration
+                {
+                    Id = 16,
+                    Key = "RABBITMQ_PLANT_ANALYSIS_RESULT_QUEUE",
+                    Value = "plant-analysis-results",
+                    Description = "Queue name for plant analysis results",
+                    Category = "RabbitMQ",
+                    ValueType = "string",
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                },
+                new Configuration
+                {
+                    Id = 17,
+                    Key = "RABBITMQ_NOTIFICATION_QUEUE",
+                    Value = "notifications",
+                    Description = "Queue name for notifications",
+                    Category = "RabbitMQ",
+                    ValueType = "string",
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
                 }
             };
         }

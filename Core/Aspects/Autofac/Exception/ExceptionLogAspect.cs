@@ -17,8 +17,9 @@ namespace Core.Aspects.Autofac.Exception
     /// </summary>
     public class ExceptionLogAspect : MethodInterception
     {
-        private readonly LoggerServiceBase _loggerServiceBase;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly Type _loggerServiceType;
+        private LoggerServiceBase _loggerServiceBase;
+        private IHttpContextAccessor _httpContextAccessor;
 
         public ExceptionLogAspect(Type loggerService)
         {
@@ -27,12 +28,29 @@ namespace Core.Aspects.Autofac.Exception
                 throw new ArgumentException(AspectMessages.WrongLoggerType);
             }
 
-            _loggerServiceBase = (LoggerServiceBase)ServiceTool.ServiceProvider.GetService(loggerService);
-            _httpContextAccessor = ServiceTool.ServiceProvider.GetService<IHttpContextAccessor>();
+            _loggerServiceType = loggerService;
+        }
+
+        private void EnsureServicesInitialized()
+        {
+            if (_loggerServiceBase == null && ServiceTool.ServiceProvider != null)
+            {
+                _loggerServiceBase = (LoggerServiceBase)ServiceTool.ServiceProvider.GetService(_loggerServiceType);
+                _httpContextAccessor = ServiceTool.ServiceProvider.GetService<IHttpContextAccessor>();
+            }
         }
 
         protected override void OnException(IInvocation invocation, System.Exception e)
         {
+            EnsureServicesInitialized();
+            
+            if (_loggerServiceBase == null)
+            {
+                // Fallback to console if ServiceTool is not available
+                Console.WriteLine($"[ExceptionLogAspect] Exception in {invocation.Method.DeclaringType.Name}.{invocation.Method.Name}: {e.Message}");
+                return;
+            }
+
             var logDetailWithException = GetLogDetail(invocation);
 
             logDetailWithException.ExceptionMessage = e is AggregateException
@@ -54,7 +72,7 @@ namespace Core.Aspects.Autofac.Exception
             {
                 MethodName = invocation.Method.Name,
                 Parameters = logParameters,
-                User = (_httpContextAccessor.HttpContext == null ||
+                User = (_httpContextAccessor?.HttpContext == null ||
                         _httpContextAccessor.HttpContext.User.Identity.Name == null)
                     ? "?"
                     : _httpContextAccessor.HttpContext.User.Identity.Name

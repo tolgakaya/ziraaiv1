@@ -4,6 +4,7 @@ using Autofac.Extras.DynamicProxy;
 using Business.Services.PlantAnalysis;
 using Business.Services.Configuration;
 using Business.Services.ImageProcessing;
+using Business.Services.MessageQueue;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
 using DataAccess.Abstract;
@@ -57,6 +58,15 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<ImageProcessingService>().As<IImageProcessingService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<PlantAnalysisAsyncService>().As<IPlantAnalysisAsyncService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SimpleRabbitMQService>().As<IMessageQueueService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<RabbitMQConsumerService>().As<IRabbitMQConsumerService>()
                 .InstancePerLifetimeScope();
 
             switch (_configuration.Mode)
