@@ -60,9 +60,9 @@ namespace Core.DependencyResolvers
                 c.OperationFilter<AddAuthHeaderOperationFilter>();
                 c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
                 {
-                    Description = "`Token only!!!` - without `Bearer_` prefix",
-                    Type = SecuritySchemeType.Http,
-                    BearerFormat = "JWT",
+                    Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\"",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey,
                     In = ParameterLocation.Header,
                     Scheme = "bearer"
                 });

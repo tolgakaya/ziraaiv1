@@ -27,7 +27,8 @@
     <PackageReference Include="System.ServiceModel.Duplex" Version="6.0.0" />
     <PackageReference Include="System.ServiceModel.Http" Version="8.1.0" />
     <PackageReference Include="System.ServiceModel.NetTcp" Version="8.1.0" />
-    <PackageReference Include="System.ServiceModel.Security" Version="6.0.0" />    
+    <PackageReference Include="System.ServiceModel.Security" Version="6.0.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.7" />    
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DataAccess\DataAccess.csproj" />

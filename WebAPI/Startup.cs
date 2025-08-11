@@ -102,6 +102,8 @@ namespace WebAPI
             services.AddTransient<PostgreSqlLogger>();
             services.AddTransient<MsSqlLogger>();
             services.AddScoped<IpControlAttribute>();
+            
+            services.AddHttpClient();
 
             base.ConfigureServices(services);
         }

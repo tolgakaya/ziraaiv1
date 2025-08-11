@@ -1,8 +1,13 @@
 ﻿using System.Reflection;
 using Autofac;
 using Autofac.Extras.DynamicProxy;
+using Business.Services.PlantAnalysis;
+using Business.Services.Configuration;
+using Business.Services.ImageProcessing;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
+using DataAccess.Abstract;
+using DataAccess.Concrete.EntityFramework;
 using FluentValidation;
 using MediatR;
 using Module = Autofac.Module;
@@ -38,6 +43,21 @@ namespace Business.DependencyResolvers
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
                 .AsClosedTypesOf(typeof(IValidator<>));
+
+            builder.RegisterType<PlantAnalysisRepository>().As<IPlantAnalysisRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<ConfigurationRepository>().As<IConfigurationRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<PlantAnalysisService>().As<IPlantAnalysisService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<ConfigurationService>().As<IConfigurationService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<ImageProcessingService>().As<IImageProcessingService>()
+                .InstancePerLifetimeScope();
 
             switch (_configuration.Mode)
             {
