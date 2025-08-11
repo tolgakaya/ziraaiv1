@@ -312,3 +312,114 @@ docker run -p 80:80 -p 443:443 ziraai
 ## API Documentation
 - Swagger UI: `https://localhost:{port}/swagger`
 - API versioning via header: `x-dev-arch-version`
+
+## Asynchronous Plant Analysis Microservice Architecture
+
+### Overview
+Complete microservice implementation for asynchronous plant analysis processing with RabbitMQ messaging and Hangfire job processing. This architecture provides scalable, reliable, and production-ready async processing capabilities.
+
+### Architecture Components
+
+#### 1. WebAPI Service (Publisher)
+- **Role**: API Gateway + RabbitMQ Publisher
+- **Endpoints**: 
+  - `POST /api/plantanalyses/analyze-async` - Queue analysis request
+  - `GET /api/test/rabbitmq-health` - Health check
+  - `POST /api/test/mock-n8n-response` - Testing endpoint
+- **Features**: Image processing, validation, message publishing
+
+#### 2. PlantAnalysisWorkerService (Consumer + Jobs)
+- **Role**: Background message processing with Hangfire jobs
+- **Components**:
+  - RabbitMQ Consumer (persistent connection)
+  - Hangfire job processing
+  - Database operations
+  - Notification system
+- **Dashboard**: `/hangfire-worker` with authentication
+
+### Message Flow
+```
+Client Request → WebAPI → RabbitMQ Queue → Worker Service → Hangfire Jobs → Database + Notifications
+```
+
+### RabbitMQ Configuration (appsettings.json)
+```json
+{
+  "RabbitMQ": {
+    "ConnectionString": "amqp://guest:guest@localhost:5672/",
+    "Queues": {
+      "PlantAnalysisRequest": "plant-analysis-requests",
+      "PlantAnalysisResult": "plant-analysis-results",
+      "Notification": "notifications"
+    },
+    "RetrySettings": {
+      "MaxRetryAttempts": 3,
+      "RetryDelayMilliseconds": 1000
+    },
+    "ConnectionSettings": {
+      "RequestedHeartbeat": 60,
+      "NetworkRecoveryInterval": 10
+    }
+  }
+}
+```
+
+### Hangfire Job Services
+```csharp
+// Main processing job with retry
+[AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
+public async Task ProcessPlantAnalysisResultAsync(
+    PlantAnalysisAsyncResponseDto result, string correlationId)
+
+// Notification job  
+[AutomaticRetry(Attempts = 2, DelaysInSeconds = new[] { 10, 30 })]
+public async Task SendNotificationAsync(PlantAnalysisAsyncResponseDto result)
+```
+
+### Key Features
+
+#### 🏗️ Microservice Benefits
+- **Independent Scaling**: Scale worker and API separately
+- **Fault Tolerance**: API failure doesn't affect processing
+- **Resource Optimization**: Dedicated resources per service
+- **Deployment Flexibility**: Independent deployment cycles
+
+#### 🔧 Technical Excellence
+- **ServiceTool Issue Resolved**: Lazy initialization for aspects
+- **Message Durability**: Persistent queues with acknowledgment
+- **Error Handling**: Comprehensive retry mechanisms
+- **Monitoring**: Hangfire dashboard with job tracking
+
+#### 📊 Production Features
+- **Health Checks**: RabbitMQ connection monitoring
+- **Environment Config**: Development/Staging/Production settings
+- **Testing Infrastructure**: Mock services and comprehensive test guides
+- **Logging**: Detailed logging throughout the pipeline
+
+### Deployment
+
+#### Development Setup
+```bash
+# Start RabbitMQ (Docker)
+docker run -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management
+
+# Start WebAPI
+cd WebAPI && dotnet run
+
+# Start Worker Service  
+cd PlantAnalysisWorkerService && dotnet run
+```
+
+#### Production Considerations
+- Use dedicated RabbitMQ cluster with credentials
+- Configure Hangfire with connection pooling
+- Set up monitoring for queue lengths and job failures
+- Implement circuit breakers for external dependencies
+
+### Testing
+- **Test Setup Guide**: `TEST_SETUP.md`
+- **Test Results**: `TEST_RESULTS.md` 
+- **PowerShell Scripts**: `test_async_api.ps1`
+- **Mock Services**: TestController with N8N response simulation
+
+This microservice architecture provides enterprise-grade asynchronous processing with proper separation of concerns, reliability, and monitoring capabilities.
