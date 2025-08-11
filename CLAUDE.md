@@ -96,6 +96,41 @@ dotnet test ./Tests/Tests.csproj
   - `Business/Startup.cs`: Business layer configuration
   - `WebAPI/Startup.cs`: API configuration
 
+## Recent Major Features (2025)
+
+### Dynamic Configuration System ✅
+- **Implementation Date**: January 2025
+- **Purpose**: Database-driven configuration management with real-time updates
+- **Key Components**:
+  - Configuration entity with CQRS handlers
+  - Memory caching (15-min TTL)
+  - Type-safe value getters (decimal, int, bool, string)
+  - Seed data with default values
+- **Benefits**: Runtime configuration changes without deployment
+
+### Intelligent Image Processing ✅
+- **Implementation Date**: January 2025
+- **Purpose**: AI-optimized image processing with guaranteed file size targets
+- **Key Features**:
+  - Target file size guarantee (default: 0.25MB)
+  - Iterative optimization with up to 10 attempts
+  - Automatic PNG→JPEG conversion
+  - Progressive quality reduction (85→70→50→30)
+  - Dimension scaling (progressive 80% reduction)
+  - Mobile photo optimization (5-10MB → 0.25MB)
+- **AI Integration**: Prevents token limit issues in N8N workflow
+- **Error Handling**: User-friendly messages for processing failures
+
+### Plant Analysis with File Storage ✅
+- **Implementation Date**: January 2025
+- **Purpose**: Complete plant analysis workflow with image management
+- **Features**:
+  - Multi-format image support (JPEG, PNG, GIF, WebP, BMP, SVG, TIFF)
+  - Physical file storage with database path references
+  - N8N webhook integration for AI processing
+  - Comprehensive metadata capture (GPS, weather, crop info)
+  - Image retrieval API with correct MIME types
+
 ## Adding New Features
 
 ### Creating a New Entity Flow
@@ -139,15 +174,86 @@ public class Get{Entity}Query : IRequest<IDataResult<{Entity}>>
 - Key setting: `ASPNETCORE_ENVIRONMENT`
 
 ## Important Services
-- **PlantAnalysisService**: `Business/Services/PlantAnalysis/` - Handles AI plant analysis and image file storage
+- **PlantAnalysisService**: `Business/Services/PlantAnalysis/` - Handles AI plant analysis and image file storage with intelligent processing
+- **ConfigurationService**: `Business/Services/Configuration/` - Dynamic database-driven configuration with memory caching (15-min TTL)
+- **ImageProcessingService**: `Business/Services/ImageProcessing/` - Intelligent image optimization with target file size guarantee
 - **AuthenticationService**: JWT token generation and validation
 - **CacheService**: Redis and in-memory caching
 
-## Image Storage
-- Plant images are stored as physical files in `wwwroot/uploads/plant-images/`
-- Database only stores the relative file path for performance
-- Images can be accessed via API endpoint: `GET /api/plantanalyses/{id}/image`
-- File naming: `plant_analysis_{id}_{timestamp}.{ext}` (extension auto-detected)
+## Dynamic Configuration System
+
+### Configuration Entity
+- Database-driven configuration with real-time updates
+- Memory caching with 15-minute TTL for performance
+- Type-safe getters: decimal, int, bool, string values
+- CQRS handlers for full configuration management
+
+### Key Configuration Categories
+- **ImageProcessing**: Image size limits, auto-resize settings, quality parameters
+- **Application**: N8N webhook settings, timeout configurations
+
+### Configuration Keys (Constants)
+```csharp
+// Image Processing
+IMAGE_MAX_SIZE_MB = "IMAGE_MAX_SIZE_MB" // Default: 0.25MB (AI optimized)
+IMAGE_ENABLE_AUTO_RESIZE = "IMAGE_ENABLE_AUTO_RESIZE" // Default: true
+IMAGE_MAX_WIDTH = "IMAGE_MAX_WIDTH" // Default: 1920px
+IMAGE_MAX_HEIGHT = "IMAGE_MAX_HEIGHT" // Default: 1080px
+IMAGE_RESIZE_QUALITY = "IMAGE_RESIZE_QUALITY" // Default: 85
+```
+
+### Usage Example
+```csharp
+// Service injection
+var maxSize = await _configurationService.GetDecimalValueAsync(
+    ConfigurationKeys.ImageProcessing.MaxImageSizeMB, 0.25m);
+    
+// CQRS pattern
+var result = await _mediator.Send(new GetConfigurationQuery { Key = "IMAGE_MAX_SIZE_MB" });
+```
+
+## Intelligent Image Processing
+
+### Smart File Size Management
+- **Target Size Guarantee**: Ensures images meet exact file size requirements
+- **Iterative Optimization**: Up to 10 attempts with progressive quality/dimension reduction
+- **Format Conversion**: Automatic PNG→JPEG for better compression
+- **Mobile-Ready**: Optimizes large mobile photos (5-10MB → 0.25MB)
+
+### Optimization Strategy
+1. **Quality Reduction**: 85 → 70 → 50 → 30
+2. **Dimension Scaling**: Progressive 80% reduction
+3. **Format Conversion**: PNG to JPEG when beneficial
+4. **Fallback**: Returns best attempt if target unreachable
+
+### Image Processing Flow
+```
+Mobile Photo (8MB) →
+Attempt 1: PNG→JPEG, Q85 → 3MB
+Attempt 2: Q75 → 1.5MB  
+Attempt 3: Q65 → 0.8MB
+Attempt 4: Q55 → 0.4MB ✅ (target: 0.25MB)
+```
+
+### AI Agent Token Optimization
+- **Maximum Size**: 0.25MB (base64: ~0.33MB) to prevent token limit issues
+- **Quality Balance**: Maintains acceptable quality while ensuring AI compatibility
+- **Error Prevention**: Eliminates "context length exceeded" errors in AI processing
+
+## Image Storage & Processing
+
+### File Storage
+- Physical files: `wwwroot/uploads/plant-images/`
+- Database: Relative file path only (performance optimization)
+- API access: `GET /api/plantanalyses/{id}/image`
+- Naming: `plant_analysis_{id}_{timestamp}.{ext}`
+
+### Processing Pipeline
+1. **Validation**: ValidImageAttribute with 500MB limit (extreme cases)
+2. **Intelligent Processing**: Service-layer size management
+3. **Target Optimization**: Resize to configured limit (default: 0.25MB)
+4. **File Storage**: Save optimized image to wwwroot
+5. **AI Integration**: Send processed image to N8N webhook
 
 ### Supported Image Formats
 - **JPEG/JPG**: `data:image/jpeg;base64,` → `.jpg`
@@ -160,15 +266,38 @@ public class Get{Entity}Query : IRequest<IDataResult<{Entity}>>
 
 ### Image API Usage
 ```bash
-# Upload with auto-format detection
+# Upload with intelligent processing
 POST /api/plantanalyses/analyze
 {
   "image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+  # Large images automatically resized to 0.25MB
+  # PNG converted to JPEG if beneficial
+  # Quality optimized for AI processing
 }
 
-# Get image with correct MIME type
+# Get processed image
 GET /api/plantanalyses/123/image
-Content-Type: image/png
+Content-Type: image/jpeg # May differ from original
+
+# Error responses for oversized images
+{
+  "success": false,
+  "message": "Image too large even after auto-resize. Original: 0.93MB, Resized: 0.93MB, Maximum: 0.25MB"
+}
+```
+
+### Configuration API
+```bash
+# Get configuration value
+GET /api/configurations?key=IMAGE_MAX_SIZE_MB
+
+# Update configuration  
+PUT /api/configurations/1
+{
+  "key": "IMAGE_MAX_SIZE_MB",
+  "value": "0.25",
+  "description": "Maximum image size for AI processing"
+}
 ```
 
 ## Docker Deployment
