@@ -15,8 +15,8 @@ namespace Business.Seeds
                 {
                     Id = 1,
                     Key = "IMAGE_MAX_SIZE_MB",
-                    Value = "50.0",
-                    Description = "Maximum image file size in MB (supports decimal values like 0.5)",
+                    Value = "0.25",
+                    Description = "Maximum image file size in MB for AI processing (optimized for token limits)",
                     Category = "ImageProcessing",
                     ValueType = "decimal",
                     IsActive = true,

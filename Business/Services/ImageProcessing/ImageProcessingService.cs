@@ -5,6 +5,7 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -70,22 +71,17 @@ namespace Business.Services.ImageProcessing
             if (!enableAutoResize)
                 return imageBytes;
 
+            var maxSizeMB = await _configurationService.GetDecimalValueAsync(
+                ConfigurationKeys.ImageProcessing.MaxImageSizeMB, 50.0m);
+                
             var maxWidth = await _configurationService.GetIntValueAsync(
                 ConfigurationKeys.ImageProcessing.MaxImageWidth, 1920);
                 
             var maxHeight = await _configurationService.GetIntValueAsync(
                 ConfigurationKeys.ImageProcessing.MaxImageHeight, 1080);
-                
-            var quality = await _configurationService.GetIntValueAsync(
-                ConfigurationKeys.ImageProcessing.ResizeQuality, 85);
 
-            var (currentWidth, currentHeight) = await GetImageDimensionsAsync(imageBytes);
-            
-            // Check if resize is needed
-            if (currentWidth <= maxWidth && currentHeight <= maxHeight)
-                return imageBytes;
-
-            return await ResizeImageAsync(imageBytes, maxWidth, maxHeight, quality);
+            // Use the new target size method for better file size control
+            return await ResizeToTargetSizeAsync(imageBytes, (double)maxSizeMB, maxWidth, maxHeight);
         }
 
         public async Task<(int width, int height)> GetImageDimensionsAsync(byte[] imageBytes)
@@ -132,6 +128,103 @@ namespace Business.Services.ImageProcessing
             catch
             {
                 return "Unknown";
+            }
+        }
+
+        public async Task<byte[]> ResizeToTargetSizeAsync(byte[] imageBytes, double targetSizeMB, int maxWidth = 1920, int maxHeight = 1080)
+        {
+            try
+            {
+                var targetSizeBytes = (long)(targetSizeMB * 1024 * 1024);
+                
+                // If already under target size, return as is
+                if (imageBytes.Length <= targetSizeBytes)
+                    return imageBytes;
+
+                using var image = Image.Load(imageBytes);
+                var originalFormat = image.Metadata.DecodedImageFormat;
+                
+                // Convert PNG to JPEG for better compression
+                var useJpeg = originalFormat == PngFormat.Instance || originalFormat.Name == "PNG";
+                
+                // Start with reasonable quality and dimensions
+                var currentQuality = 85;
+                var currentWidth = Math.Min(image.Width, maxWidth);
+                var currentHeight = Math.Min(image.Height, maxHeight);
+                
+                byte[] result = null;
+                var attempts = 0;
+                var maxAttempts = 10;
+                
+                while (attempts < maxAttempts)
+                {
+                    attempts++;
+                    
+                    // Calculate resize dimensions maintaining aspect ratio
+                    var (newWidth, newHeight) = CalculateResizeDimensions(
+                        image.Width, image.Height, currentWidth, currentHeight);
+                    
+                    // Create resized image
+                    using var resizedImage = image.CloneAs<Rgba32>();
+                    if (image.Width > newWidth || image.Height > newHeight)
+                    {
+                        resizedImage.Mutate(x => x.Resize(newWidth, newHeight));
+                    }
+                    
+                    using var output = new MemoryStream();
+                    
+                    // Choose encoder based on format and quality
+                    IImageEncoder encoder;
+                    if (useJpeg)
+                    {
+                        encoder = new JpegEncoder { Quality = currentQuality };
+                    }
+                    else
+                    {
+                        encoder = new PngEncoder();
+                    }
+                    
+                    await resizedImage.SaveAsync(output, encoder);
+                    result = output.ToArray();
+                    
+                    // Check if we've reached target size
+                    if (result.Length <= targetSizeBytes)
+                    {
+                        return result;
+                    }
+                    
+                    // Adjust parameters for next attempt
+                    if (currentQuality > 50)
+                    {
+                        currentQuality -= 10; // Reduce quality
+                    }
+                    else if (currentWidth > 800 || currentHeight > 600)
+                    {
+                        currentWidth = (int)(currentWidth * 0.8); // Reduce dimensions
+                        currentHeight = (int)(currentHeight * 0.8);
+                        currentQuality = 70; // Reset quality
+                    }
+                    else
+                    {
+                        // Force JPEG if not already
+                        if (!useJpeg)
+                        {
+                            useJpeg = true;
+                            currentQuality = 60;
+                        }
+                        else
+                        {
+                            currentQuality = Math.Max(30, currentQuality - 5);
+                        }
+                    }
+                }
+                
+                // If we couldn't reach target size, return the best attempt
+                return result ?? imageBytes;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to resize image to target size: {ex.Message}", ex);
             }
         }
 
