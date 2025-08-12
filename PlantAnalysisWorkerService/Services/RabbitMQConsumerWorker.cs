@@ -95,7 +95,8 @@ namespace PlantAnalysisWorkerService.Services
                 var message = Encoding.UTF8.GetString(body);
                 var correlationId = ea.BasicProperties?.CorrelationId ?? "unknown";
 
-                _logger.LogInformation($"Received message with correlation ID: {correlationId}");
+                _logger.LogInformation($"🔴 RAW MESSAGE RECEIVED - Size: {body.Length} bytes, CorrelationId: {correlationId}");
+                _logger.LogInformation($"🔴 MESSAGE CONTENT: {message.Substring(0, Math.Min(500, message.Length))}...");
 
                 try
                 {

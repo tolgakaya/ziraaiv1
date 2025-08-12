@@ -2,10 +2,16 @@ using Business.Services.Configuration;
 using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Core.Configuration;
+using DataAccess.Abstract;
+using Entities.Concrete;
 using Entities.Constants;
 using Entities.Dtos;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace Business.Services.PlantAnalysis
@@ -15,17 +21,26 @@ namespace Business.Services.PlantAnalysis
         private readonly IMessageQueueService _messageQueueService;
         private readonly IImageProcessingService _imageProcessingService;
         private readonly IConfigurationService _configurationService;
+        private readonly IPlantAnalysisRepository _plantAnalysisRepository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IConfiguration _configuration;
         private readonly RabbitMQOptions _rabbitMQOptions;
 
         public PlantAnalysisAsyncService(
             IMessageQueueService messageQueueService,
             IImageProcessingService imageProcessingService,
             IConfigurationService configurationService,
+            IPlantAnalysisRepository plantAnalysisRepository,
+            IHttpContextAccessor httpContextAccessor,
+            IConfiguration configuration,
             IOptions<RabbitMQOptions> rabbitMQOptions)
         {
             _messageQueueService = messageQueueService;
             _imageProcessingService = imageProcessingService;
             _configurationService = configurationService;
+            _plantAnalysisRepository = plantAnalysisRepository;
+            _httpContextAccessor = httpContextAccessor;
+            _configuration = configuration;
             _rabbitMQOptions = rabbitMQOptions.Value;
         }
 
@@ -37,16 +52,79 @@ namespace Business.Services.PlantAnalysis
                 var correlationId = Guid.NewGuid().ToString("N");
                 var analysisId = $"async_analysis_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{correlationId[..8]}";
 
-                // Process image intelligently (resize, optimize, etc.)
-                var processedImageDataUri = await ProcessImageIntelligentlyAsync(request.Image);
+                // Process image for AI (aggressive optimization for token reduction)
+                var processedImageDataUri = await ProcessImageForAIAsync(request.Image);
+                
+                // Save processed image to file system
+                var imagePath = await SaveImageToFileSystemAsync(processedImageDataUri, analysisId);
+                
+                // Generate accessible URL for the image
+                var imageUrl = GenerateImageUrl(imagePath);
+
+                // Create initial PlantAnalysis entity with all request data
+                var plantAnalysis = new Entities.Concrete.PlantAnalysis
+                {
+                    // Basic Info
+                    AnalysisId = analysisId,
+                    UserId = request.UserId,
+                    FarmerId = request.FarmerId,
+                    SponsorId = request.SponsorId,
+                    FieldId = request.FieldId,
+                    CropType = request.CropType,
+                    Location = request.Location,
+                    UrgencyLevel = request.UrgencyLevel,
+                    Notes = request.Notes,
+                    
+                    // GPS and Environment
+                    Latitude = request.GpsCoordinates?.Lat,
+                    Longitude = request.GpsCoordinates?.Lng,
+                    Altitude = request.Altitude,
+                    Temperature = request.Temperature,
+                    Humidity = request.Humidity,
+                    WeatherConditions = request.WeatherConditions,
+                    SoilType = request.SoilType,
+                    
+                    // Dates
+                    PlantingDate = request.PlantingDate,
+                    ExpectedHarvestDate = request.ExpectedHarvestDate,
+                    LastFertilization = request.LastFertilization,
+                    LastIrrigation = request.LastIrrigation,
+                    
+                    // Previous treatments
+                    PreviousTreatments = request.PreviousTreatments != null ? 
+                        JsonConvert.SerializeObject(request.PreviousTreatments) : null,
+                    
+                    // Contact Info
+                    ContactPhone = request.ContactInfo?.Phone,
+                    ContactEmail = request.ContactInfo?.Email,
+                    
+                    // Additional Info
+                    AdditionalInfo = JsonConvert.SerializeObject(request.AdditionalInfo),
+                    
+                    // Image info
+                    ImagePath = imagePath,
+                    ImageSizeKb = (decimal?)(Convert.FromBase64String(processedImageDataUri.Split(',')[1]).Length / 1024.0),
+                    
+                    // Status
+                    AnalysisStatus = "Processing",
+                    Status = true,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                // Save to database first
+                _plantAnalysisRepository.Add(plantAnalysis);
+                await _plantAnalysisRepository.SaveChangesAsync();
 
                 // Get queue name from appsettings
                 var queueName = _rabbitMQOptions.Queues.PlantAnalysisRequest;
 
-                // Create async request payload
+                // Create async request payload for RabbitMQ
                 var asyncRequest = new PlantAnalysisAsyncRequestDto
                 {
-                    Image = processedImageDataUri,
+                    // Send URL instead of base64 to avoid token limits
+                    ImageUrl = imageUrl,
+                    Image = null, // Don't send base64 anymore
+                    UserId = request.UserId,
                     FarmerId = request.FarmerId,
                     SponsorId = request.SponsorId,
                     Location = request.Location,
@@ -79,6 +157,11 @@ namespace Business.Services.PlantAnalysis
 
                 if (!publishResult)
                 {
+                    // If publish fails, update the status in database
+                    plantAnalysis.AnalysisStatus = "QueueFailed";
+                    _plantAnalysisRepository.Update(plantAnalysis);
+                    await _plantAnalysisRepository.SaveChangesAsync();
+                    
                     throw new InvalidOperationException("Failed to publish message to queue");
                 }
 
@@ -87,6 +170,52 @@ namespace Business.Services.PlantAnalysis
             catch (Exception ex)
             {
                 throw new InvalidOperationException($"Failed to queue plant analysis: {ex.Message}", ex);
+            }
+        }
+        
+        private async Task<string> SaveImageToFileSystemAsync(string dataUri, string analysisId)
+        {
+            try
+            {
+                // Extract base64 data and file extension
+                var parts = dataUri.Split(',');
+                var base64Data = parts[1];
+                var imageBytes = Convert.FromBase64String(base64Data);
+                
+                // Determine file extension from data URI
+                var mimeType = parts[0].Split(':')[1].Split(';')[0];
+                var extension = mimeType switch
+                {
+                    "image/jpeg" => ".jpg",
+                    "image/png" => ".png",
+                    "image/gif" => ".gif",
+                    "image/webp" => ".webp",
+                    "image/bmp" => ".bmp",
+                    "image/svg+xml" => ".svg",
+                    "image/tiff" => ".tiff",
+                    _ => ".jpg"
+                };
+                
+                // Create file name and path
+                var fileName = $"plant_analysis_{analysisId}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{extension}";
+                var relativePath = Path.Combine("uploads", "plant-images", fileName);
+                var fullPath = Path.Combine("wwwroot", relativePath);
+                
+                // Ensure directory exists
+                var directory = Path.GetDirectoryName(fullPath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                
+                // Save file
+                await File.WriteAllBytesAsync(fullPath, imageBytes);
+                
+                return relativePath;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to save image: {ex.Message}", ex);
             }
         }
 
@@ -99,6 +228,62 @@ namespace Business.Services.PlantAnalysis
             catch
             {
                 return false;
+            }
+        }
+
+        private string GenerateImageUrl(string imagePath)
+        {
+            // Try to get from HttpContext
+            var request = _httpContextAccessor?.HttpContext?.Request;
+            if (request != null)
+            {
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                return $"{baseUrl}/{imagePath.Replace('\\', '/')}";
+            }
+            
+            // Fallback to configuration
+            var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "https://localhost:5001";
+            return $"{apiBaseUrl}/{imagePath.Replace('\\', '/')}";
+        }
+        
+        private async Task<string> ProcessImageForAIAsync(string originalDataUri)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(originalDataUri))
+                    throw new ArgumentException("Image data URI is required");
+
+                // Extract image bytes from data URI
+                var base64Data = originalDataUri.Split(',')[1];
+                var imageBytes = Convert.FromBase64String(base64Data);
+
+                // Get AI-optimized configuration (much smaller for token reduction)
+                var maxSizeMB = await _configurationService.GetDecimalValueAsync(
+                    "AI_IMAGE_MAX_SIZE_MB", 0.1m); // 100KB default for AI
+
+                var enableAIOptimization = await _configurationService.GetBoolValueAsync(
+                    "AI_IMAGE_OPTIMIZATION", true);
+
+                if (!enableAIOptimization)
+                {
+                    return originalDataUri;
+                }
+
+                // Aggressive optimization for AI processing
+                var optimizedBytes = await _imageProcessingService.ResizeToTargetSizeAsync(
+                    imageBytes, 
+                    (double)maxSizeMB,
+                    maxWidth: 800,  // Lower resolution for AI
+                    maxHeight: 600
+                );
+
+                // Always return as JPEG for consistency and smaller size
+                var base64Optimized = Convert.ToBase64String(optimizedBytes);
+                return $"data:image/jpeg;base64,{base64Optimized}";
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Image processing for AI failed: {ex.Message}", ex);
             }
         }
 

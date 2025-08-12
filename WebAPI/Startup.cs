@@ -57,6 +57,9 @@ namespace WebAPI
             // Configuration Options
             services.Configure<Core.Configuration.RabbitMQOptions>(Configuration.GetSection(Core.Configuration.RabbitMQOptions.SectionName));
 
+            // Add HttpContextAccessor for URL generation
+            services.AddHttpContextAccessor();
+            
             services.AddControllers()
                 .AddJsonOptions(options =>
                 {

@@ -4,6 +4,7 @@ using Business.Services.ImageProcessing;
 using Core.Utilities.Results;
 using Entities.Constants;
 using Entities.Dtos;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
@@ -22,21 +23,26 @@ namespace Business.Services.PlantAnalysis
         private readonly IConfiguration _configuration;
         private readonly IImageProcessingService _imageProcessingService;
         private readonly IConfigurationService _configurationService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly string _n8nWebhookUrl;
         private readonly string _imageStoragePath;
+        private readonly bool _useImageUrl;
 
         public PlantAnalysisService(
             HttpClient httpClient, 
             IConfiguration configuration,
             IImageProcessingService imageProcessingService,
-            IConfigurationService configurationService)
+            IConfigurationService configurationService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClient;
             _configuration = configuration;
             _imageProcessingService = imageProcessingService;
             _configurationService = configurationService;
+            _httpContextAccessor = httpContextAccessor;
             _n8nWebhookUrl = _configuration["N8N:WebhookUrl"];
             _imageStoragePath = _configuration["ImageStorage:Path"] ?? "wwwroot/uploads/plant-images";
+            _useImageUrl = _configuration.GetValue<bool>("N8N:UseImageUrl", true); // Default to URL method
             
             // Create directory if it doesn't exist
             if (!Directory.Exists(_imageStoragePath))
@@ -58,13 +64,32 @@ namespace Business.Services.PlantAnalysis
                 // Validate that the uploaded file is actually an image
                 ValidateImageFile(request.Image);
 
-                // Intelligent Image Processing
-                var processedImage = await ProcessImageIntelligentlyAsync(request.Image);
+                // Process image for AI (aggressive optimization)
+                var processedImage = await ProcessImageForAIAsync(request.Image);
+                
+                // Determine whether to use URL or base64
+                object imagePayload;
+                string imageUrl = null;
+                
+                if (_useImageUrl)
+                {
+                    // Save image and generate URL
+                    var imagePath = await SaveProcessedImageAsync(processedImage);
+                    imageUrl = GenerateImageUrl(imagePath);
+                    imagePayload = new { imageUrl = imageUrl };
+                }
+                else
+                {
+                    // Fallback to base64 (not recommended for AI)
+                    imagePayload = new { image = processedImage };
+                }
 
                 // Prepare N8N webhook payload
                 var n8nPayload = new
                 {
-                    image = processedImage, // Processed and optimized image
+                    // Use either imageUrl or image based on configuration
+                    imageUrl = _useImageUrl ? imageUrl : null,
+                    image = _useImageUrl ? null : processedImage,
                     farmer_id = request.FarmerId,
                     sponsor_id = request.SponsorId,
                     field_id = request.FieldId,
@@ -847,6 +872,86 @@ namespace Business.Services.PlantAnalysis
         /// 4. Validate final size
         /// 5. Return optimized base64 data URI
         /// </summary>
+        private async Task<string> ProcessImageForAIAsync(string originalDataUri)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(originalDataUri))
+                    throw new ArgumentException("Image data URI is required");
+
+                // Extract image bytes from data URI
+                var base64Data = originalDataUri.Split(',')[1];
+                var imageBytes = Convert.FromBase64String(base64Data);
+
+                // Get AI-optimized configuration (much smaller for token reduction)
+                var maxSizeMB = await _configurationService.GetDecimalValueAsync(
+                    "AI_IMAGE_MAX_SIZE_MB", 0.1m); // 100KB default for AI
+
+                var enableAIOptimization = await _configurationService.GetBoolValueAsync(
+                    "AI_IMAGE_OPTIMIZATION", true);
+
+                if (!enableAIOptimization)
+                {
+                    return originalDataUri;
+                }
+
+                // Aggressive optimization for AI processing
+                var optimizedBytes = await _imageProcessingService.ResizeToTargetSizeAsync(
+                    imageBytes, 
+                    (double)maxSizeMB,
+                    maxWidth: 800,  // Lower resolution for AI
+                    maxHeight: 600
+                );
+
+                // Always return as JPEG for consistency and smaller size
+                var base64Optimized = Convert.ToBase64String(optimizedBytes);
+                return $"data:image/jpeg;base64,{base64Optimized}";
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Image processing for AI failed: {ex.Message}", ex);
+            }
+        }
+        
+        private async Task<string> SaveProcessedImageAsync(string dataUri)
+        {
+            try
+            {
+                // Generate unique filename
+                var fileName = $"plant_analysis_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.jpg";
+                var filePath = Path.Combine(_imageStoragePath, fileName);
+                
+                // Extract base64 data
+                var base64Data = dataUri.Split(',')[1];
+                var imageBytes = Convert.FromBase64String(base64Data);
+                
+                // Save to file system
+                await File.WriteAllBytesAsync(filePath, imageBytes);
+                
+                // Return relative path
+                return Path.Combine("uploads", "plant-images", fileName).Replace('\\', '/');
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to save image: {ex.Message}", ex);
+            }
+        }
+        
+        private string GenerateImageUrl(string relativePath)
+        {
+            // Try to get from HttpContext
+            var request = _httpContextAccessor?.HttpContext?.Request;
+            if (request != null)
+            {
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                return $"{baseUrl}/{relativePath}";
+            }
+            
+            // Fallback to configuration
+            var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "https://localhost:5001";
+            return $"{apiBaseUrl}/{relativePath}";
+        }
+
         private async Task<string> ProcessImageIntelligentlyAsync(string originalDataUri)
         {
             try

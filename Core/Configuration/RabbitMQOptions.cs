@@ -7,7 +7,7 @@ namespace Core.Configuration
         public const string SectionName = "RabbitMQ";
         
         [Required]
-        public string ConnectionString { get; set; } = "amqp://guest:guest@localhost:5672/";
+        public string ConnectionString { get; set; } = "amqp://dev:devpass@localhost:5672/";
         
         [Required]
         public QueueOptions Queues { get; set; } = new();

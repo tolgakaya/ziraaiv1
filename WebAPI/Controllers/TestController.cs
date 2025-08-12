@@ -44,6 +44,7 @@ namespace WebAPI.Controllers
                 {
                     AnalysisId = request.AnalysisId ?? $"test_analysis_{DateTime.Now:yyyyMMdd_HHmmss}",
                     Timestamp = DateTime.UtcNow,
+                    UserId = request.UserId, // UserId'yi request'den response'a kopyala
                     FarmerId = request.FarmerId ?? "farmer_test_001",
                     SponsorId = request.SponsorId ?? "sponsor_test_xyz",
                     Location = request.Location ?? "Antalya, Turkey",
@@ -294,6 +295,7 @@ namespace WebAPI.Controllers
     public class MockN8NRequestDto
     {
         public string AnalysisId { get; set; }
+        public int? UserId { get; set; } // Mock test için UserId alanı
         public string FarmerId { get; set; }
         public string SponsorId { get; set; }
         public string Location { get; set; }

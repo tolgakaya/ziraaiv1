@@ -2,11 +2,12 @@ using System;
 
 namespace Entities.Dtos
 {
-    public class PlantAnalysisAsyncRequestDto
+    public class MockN8NRequestDto
     {
-        public string Image { get; set; }
-        public string ImageUrl { get; set; } // New: URL option to avoid token limits
-        public int? UserId { get; set; } // Asenkron işlemde UserId korunması için
+        public string AnalysisId { get; set; }
+        public string ImageUrl { get; set; } // New: URL support
+        public string Image { get; set; } // Legacy: base64 support
+        public int? UserId { get; set; }
         public string FarmerId { get; set; }
         public string SponsorId { get; set; }
         public string Location { get; set; }
@@ -15,11 +16,8 @@ namespace Entities.Dtos
         public string FieldId { get; set; }
         public string UrgencyLevel { get; set; }
         public string Notes { get; set; }
-        public string ResponseQueue { get; set; } = "plant-analysis-results";
-        public string CorrelationId { get; set; }
-        public string AnalysisId { get; set; }
         
-        // Additional optional fields
+        // Additional fields
         public int? Altitude { get; set; }
         public DateTime? PlantingDate { get; set; }
         public DateTime? ExpectedHarvestDate { get; set; }

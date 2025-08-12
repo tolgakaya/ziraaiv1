@@ -23,11 +23,20 @@ builder.Services.AddHangfire(configuration => configuration
 
 builder.Services.AddHangfireServer();
 
+// Add AutoMapper
+builder.Services.AddAutoMapper(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly);
+
+// Add Memory Cache
+builder.Services.AddMemoryCache();
+
+// Add DbContext
+builder.Services.AddDbContext<DataAccess.Concrete.EntityFramework.Contexts.ProjectDbContext>();
+
 // Manual dependency injection for Worker Service
 // Add necessary services manually instead of full business module
-builder.Services.AddSingleton<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
+builder.Services.AddScoped<DataAccess.Abstract.IConfigurationRepository, DataAccess.Concrete.EntityFramework.ConfigurationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IPlantAnalysisRepository, DataAccess.Concrete.EntityFramework.PlantAnalysisRepository>();
-builder.Services.AddDbContext<DataAccess.Concrete.EntityFramework.Contexts.ProjectDbContext>();
+builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
 
 // Add worker services
 builder.Services.AddHostedService<RabbitMQConsumerWorker>();

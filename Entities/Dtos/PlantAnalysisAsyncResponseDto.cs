@@ -17,6 +17,7 @@ namespace Entities.Dtos
         // Metadata
         public string AnalysisId { get; set; }
         public DateTime Timestamp { get; set; }
+        public int? UserId { get; set; } // Worker'da entity'ye atamak için
         public string FarmerId { get; set; }
         public string SponsorId { get; set; }
         public string Location { get; set; }

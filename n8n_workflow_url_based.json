@@ -1,0 +1,215 @@
+{
+  "name": "Plant Analysis with URL (Token Optimized)",
+  "nodes": [
+    {
+      "parameters": {
+        "queue": "plant-analysis-requests",
+        "options": {
+          "arguments": {
+            "values": {}
+          },
+          "exchange": {
+            "mode": "exchange",
+            "value": ""
+          },
+          "routingKey": {
+            "mode": "queue"
+          }
+        }
+      },
+      "id": "rabbitmq-trigger",
+      "name": "RabbitMQ Trigger",
+      "type": "n8n-nodes-base.rabbitmqTrigger",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract data from RabbitMQ message\nconst messageData = $json;\n\n// Check if we have URL or base64 image\nconst hasImageUrl = messageData.imageUrl && messageData.imageUrl.length > 0;\nconst hasBase64 = messageData.image && messageData.image.length > 0;\n\nif (hasImageUrl) {\n  // Preferred: Use URL (minimal tokens)\n  console.log('Using image URL for AI processing');\n  return {\n    json: {\n      ...messageData,\n      imageSource: 'URL',\n      imageToProcess: messageData.imageUrl,\n      estimatedTokens: 10  // URL uses minimal tokens\n    }\n  };\n} else if (hasBase64) {\n  // Fallback: Optimize base64 if needed\n  console.log('WARNING: Using base64 (high token usage)');\n  \n  // Extract base64 without data URI prefix\n  const base64Clean = messageData.image.split(',')[1] || messageData.image;\n  \n  return {\n    json: {\n      ...messageData,\n      imageSource: 'BASE64',\n      imageToProcess: `data:image/jpeg;base64,${base64Clean}`,\n      estimatedTokens: 400000,  // Base64 uses many tokens\n      warning: 'Consider using URL method to avoid token limits'\n    }\n  };\n} else {\n  throw new Error('No image data provided (neither URL nor base64)');\n}"
+      },
+      "id": "process-image",
+      "name": "Process Image Data",
+      "type": "n8n-nodes-base.code",
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "resource": "chat",
+        "model": "gpt-4-vision-preview",
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "={{$json.imageSource === 'URL' ? \n  `Analyze this plant image and provide detailed agricultural assessment: ${$json.imageToProcess}` : \n  'Analyze this plant image (base64) and provide detailed agricultural assessment'}}",
+              "images": {
+                "values": [
+                  {
+                    "type": "={{$json.imageSource === 'URL' ? 'url' : 'base64'}}",
+                    "imageUrl": "={{$json.imageSource === 'URL' ? $json.imageToProcess : undefined}}",
+                    "imageDataUri": "={{$json.imageSource === 'BASE64' ? $json.imageToProcess : undefined}}",
+                    "detail": "low"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "maxTokens": 4096,
+          "temperature": 0.3,
+          "responseFormat": "json_object"
+        }
+      },
+      "id": "openai-vision",
+      "name": "OpenAI Vision Analysis",
+      "type": "n8n-nodes-base.openAi",
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse OpenAI response and format for our system\nconst aiResponse = $json.choices[0].message.content;\nconst analysisResult = JSON.parse(aiResponse);\n\n// Get original message data\nconst originalData = $items[0].json;\n\n// Create response for worker service\nconst response = {\n  analysisId: originalData.analysisId,\n  userId: originalData.userId,\n  farmerId: originalData.farmerId,\n  sponsorId: originalData.sponsorId,\n  location: originalData.location,\n  gpsCoordinates: originalData.gpsCoordinates,\n  cropType: originalData.cropType,\n  fieldId: originalData.fieldId,\n  urgencyLevel: originalData.urgencyLevel,\n  notes: originalData.notes,\n  timestamp: new Date().toISOString(),\n  \n  // AI Analysis Results\n  plantIdentification: {\n    species: analysisResult.species || 'Unknown',\n    variety: analysisResult.variety || 'Unknown',\n    growthStage: analysisResult.growthStage || 'Unknown',\n    confidence: analysisResult.confidence || 0\n  },\n  \n  healthAssessment: {\n    vigorScore: analysisResult.healthScore || 5,\n    severity: analysisResult.severity || 'medium',\n    symptoms: analysisResult.symptoms || []\n  },\n  \n  nutrientStatus: {\n    primaryDeficiency: analysisResult.nutrientDeficiency || 'none',\n    recommendations: analysisResult.nutrientRecommendations || []\n  },\n  \n  summary: {\n    overallHealthScore: analysisResult.overallScore || 5,\n    primaryConcern: analysisResult.mainIssue || 'None detected',\n    prognosis: analysisResult.prognosis || 'Unknown',\n    estimatedYieldImpact: analysisResult.yieldImpact || 'Unknown',\n    confidenceLevel: analysisResult.confidence || 0.5\n  },\n  \n  recommendations: analysisResult.recommendations || [],\n  \n  processingMetadata: {\n    aiModel: 'GPT-4-Vision',\n    processingTime: $workflow.duration,\n    imageSource: originalData.imageSource,\n    tokenUsage: $json.usage.total_tokens,\n    promptTokens: $json.usage.prompt_tokens,\n    completionTokens: $json.usage.completion_tokens\n  }\n};\n\nreturn {\n  json: response\n};"
+      },
+      "id": "format-response",
+      "name": "Format AI Response",
+      "type": "n8n-nodes-base.code",
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "mode": "publish",
+        "queue": "plant-analysis-results",
+        "options": {
+          "arguments": {
+            "values": {}
+          },
+          "exchange": {
+            "mode": "exchange",
+            "value": ""
+          },
+          "routingKey": {
+            "mode": "queue"
+          }
+        }
+      },
+      "id": "rabbitmq-publish",
+      "name": "Publish to Results Queue",
+      "type": "n8n-nodes-base.rabbitmq",
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "content": "## Token Usage Monitoring",
+        "height": 200,
+        "width": 400
+      },
+      "id": "monitoring-note",
+      "name": "Token Monitoring",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [650, 500],
+      "content": "Monitor token usage:\n\nURL Method:\n- Prompt: ~500 tokens\n- Image: ~10 tokens\n- Response: ~1000 tokens\n- Total: ~1500 tokens\n\nBase64 Method:\n- Prompt: ~500 tokens\n- Image: ~400,000 tokens (!)\n- Response: ~1000 tokens\n- Total: ~401,500 tokens\n\nCost difference: 267x cheaper with URLs!"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.tokenUsage}}",
+              "operation": "largerThan",
+              "value2": 100000
+            }
+          ]
+        }
+      },
+      "id": "token-check",
+      "name": "Check Token Limit",
+      "type": "n8n-nodes-base.if",
+      "position": [950, 400]
+    },
+    {
+      "parameters": {
+        "message": "⚠️ High token usage detected!\nTokens used: {{$json.tokenUsage}}\nConsider using URL method instead of base64",
+        "additionalFields": {
+          "priority": "high"
+        }
+      },
+      "id": "alert-high-tokens",
+      "name": "Alert: High Token Usage",
+      "type": "n8n-nodes-base.slack",
+      "position": [1150, 500]
+    }
+  ],
+  "connections": {
+    "RabbitMQ Trigger": {
+      "main": [
+        [
+          {
+            "node": "Process Image Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Image Data": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Vision Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Vision Analysis": {
+      "main": [
+        [
+          {
+            "node": "Format AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format AI Response": {
+      "main": [
+        [
+          {
+            "node": "Publish to Results Queue",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Token Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Token Limit": {
+      "main": [
+        [
+          {
+            "node": "Alert: High Token Usage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "error-handler-workflow"
+  },
+  "staticData": null,
+  "pinData": {},
+  "versionId": "url-optimized-v1",
+  "triggerCount": 1
+}
