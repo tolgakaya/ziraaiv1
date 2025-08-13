@@ -21,6 +21,7 @@ namespace Business.Handlers.Authorizations.Commands
         public string Email { get; set; }
         public string Password { get; set; }
         public string FullName { get; set; }
+        public string UserRole { get; set; } = "Farmer"; // Default to Farmer, but allow override
 
 
         public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, IResult>
@@ -79,17 +80,39 @@ namespace Business.Handlers.Authorizations.Commands
                 await _userRepository.SaveChangesAsync();
                 Console.WriteLine($"[RegisterUser] ✅ User saved to database with ID: {user.UserId}");
 
-                // Automatically assign Farmer role to new users
-                var farmerGroup = await _groupRepository.GetAsync(g => g.GroupName == "Farmer");
-                if (farmerGroup != null)
+                // Assign user role based on registration request (Farmer, Sponsor, etc.)
+                Console.WriteLine($"[RegisterUser] Assigning role: {request.UserRole} to user {user.Email}");
+                
+                var requestedRole = request.UserRole ?? "Farmer"; // Default to Farmer if not specified
+                var userRoleGroup = await _groupRepository.GetAsync(g => g.GroupName == requestedRole);
+                
+                if (userRoleGroup != null)
                 {
                     var userGroup = new UserGroup
                     {
                         UserId = user.UserId,
-                        GroupId = farmerGroup.Id
+                        GroupId = userRoleGroup.Id
                     };
                     _userGroupRepository.Add(userGroup);
                     await _userGroupRepository.SaveChangesAsync();
+                    Console.WriteLine($"[RegisterUser] ✅ Role '{requestedRole}' assigned successfully");
+                }
+                else
+                {
+                    Console.WriteLine($"[RegisterUser] ❌ Role '{requestedRole}' not found, trying Farmer as fallback");
+                    // Fallback to Farmer if requested role doesn't exist
+                    var farmerGroup = await _groupRepository.GetAsync(g => g.GroupName == "Farmer");
+                    if (farmerGroup != null)
+                    {
+                        var userGroup = new UserGroup
+                        {
+                            UserId = user.UserId,
+                            GroupId = farmerGroup.Id
+                        };
+                        _userGroupRepository.Add(userGroup);
+                        await _userGroupRepository.SaveChangesAsync();
+                        Console.WriteLine($"[RegisterUser] ✅ Fallback to Farmer role assigned");
+                    }
                 }
 
                 // Create trial subscription for new users
