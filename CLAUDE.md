@@ -938,7 +938,38 @@ subscription.CreatedDate = DateTime.Now;
 
 **Impact**: Eliminated all database save exceptions related to DateTime timezone mismatches.
 
-##### 4. Staging Database Deployment
+##### 4. SubscriptionUsageLogs Table Structure Fix (August 2025)
+**Issue**: Database save errors in `ValidateAndLogUsageAsync` due to missing columns and type mismatches.
+
+**Root Cause**: 
+- Missing `CreatedDate` column in `SubscriptionUsageLogs` table
+- `ResponseStatus` column type mismatch (integer vs varchar)
+- Table structure didn't match entity definition
+
+**Diagnosis Process**:
+```bash
+# Database analysis script
+dotnet script check_usage_logs_table.csx
+❌ Column "CreatedDate" of relation "SubscriptionUsageLogs" does not exist
+```
+
+**Solution**: Database schema repair using direct SQL commands:
+```sql
+-- Add missing CreatedDate column
+ALTER TABLE "SubscriptionUsageLogs" 
+ADD COLUMN IF NOT EXISTS "CreatedDate" timestamp without time zone DEFAULT CURRENT_TIMESTAMP;
+
+-- Fix ResponseStatus column type  
+ALTER TABLE "SubscriptionUsageLogs" 
+ALTER COLUMN "ResponseStatus" TYPE character varying(50);
+```
+
+**Impact**: 
+- Resolved all usage logging database save exceptions
+- Enabled complete subscription validation and audit trail functionality
+- Fixed foreign key constraint issues in usage tracking
+
+##### 5. Staging Database Deployment
 **Challenge**: Entity Framework migrations were failing due to existing tables and DateTime.UtcNow in seed data.
 
 **Solution**: Created direct database insertion script using `dotnet-script`:
