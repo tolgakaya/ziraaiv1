@@ -120,7 +120,24 @@ namespace Business.Services.Subscription
             {
                 try
                 {
-                    Console.WriteLine($"[CheckSubscriptionStatusAsync] Updating subscription and saving changes...");
+                    Console.WriteLine($"[CheckSubscriptionStatusAsync] Updating subscription counters and saving changes...");
+                    
+                    // CRITICAL FIX: Manually set all DateTime fields to prevent PostgreSQL timezone issues
+                    var now = DateTime.Now;
+                    subscription.UpdatedDate = now;
+                    
+                    // Ensure all DateTime fields use DateTime.Now (not UtcNow)
+                    if (subscription.LastUsageResetDate?.Date < now.Date)
+                    {
+                        subscription.LastUsageResetDate = now;
+                    }
+                    
+                    var currentMonthStart = new DateTime(now.Year, now.Month, 1);
+                    if (subscription.MonthlyUsageResetDate == null || subscription.MonthlyUsageResetDate < currentMonthStart)
+                    {
+                        subscription.MonthlyUsageResetDate = currentMonthStart;
+                    }
+                    
                     _userSubscriptionRepository.Update(subscription);
                     await _userSubscriptionRepository.SaveChangesAsync();
                     Console.WriteLine($"[CheckSubscriptionStatusAsync] ✅ Subscription updated successfully");
@@ -140,7 +157,9 @@ namespace Business.Services.Subscription
                         innerEx = innerEx.InnerException;
                         level++;
                     }
-                    throw;
+                    
+                    // Don't throw - let the request continue without counter update
+                    Console.WriteLine($"[CheckSubscriptionStatusAsync] ⚠️ Continuing without counter update to avoid blocking user");
                 }
             }
 
