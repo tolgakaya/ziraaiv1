@@ -52,8 +52,12 @@ namespace DataAccess.Concrete.EntityFramework
 
         public async Task<SubscriptionUsageLog> LogUsageAsync(SubscriptionUsageLog usageLog)
         {
-            usageLog.CreatedDate = DateTime.UtcNow;
-            usageLog.UsageDate = DateTime.UtcNow;
+            // Use DateTime.Now instead of DateTime.UtcNow to avoid timezone issues with PostgreSQL
+            // Only set if not already provided by the caller
+            if (usageLog.CreatedDate == default)
+                usageLog.CreatedDate = DateTime.Now;
+            if (usageLog.UsageDate == default)
+                usageLog.UsageDate = DateTime.Now;
             
             Context.SubscriptionUsageLogs.Add(usageLog);
             await Context.SaveChangesAsync();
