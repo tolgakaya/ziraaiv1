@@ -42,9 +42,10 @@ namespace Business.Handlers.Authorizations.Queries
 
 
 				var claims = _userRepository.GetClaims(userToCheck.UserId);
+				var userGroups = _userRepository.GetUserGroups(userToCheck.UserId);
 				_cacheManager.Remove($"{CacheKeys.UserIdForClaim}={userToCheck.UserId}");
 				_cacheManager.Add($"{CacheKeys.UserIdForClaim}={userToCheck.UserId}", claims.Select(x => x.Name));
-				var accessToken = _tokenHelper.CreateToken<AccessToken>(userToCheck);
+				var accessToken = _tokenHelper.CreateToken<AccessToken>(userToCheck, userGroups);
 				userToCheck.RefreshToken = accessToken.RefreshToken;
 				_userRepository.Update(userToCheck);
 				await _userRepository.SaveChangesAsync();

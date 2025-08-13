@@ -1,0 +1,163 @@
+{
+  "PlantIdentification": {
+    "Species": "Solanum lycopersicum",
+    "Variety": "unknown",
+    "GrowthStage": "vegetative",
+    "Confidence": 95,
+    "IdentifyingFeatures": ["compound leaves", "green stems"],
+    "VisibleParts": ["leaves", "stems"]
+  },
+  "HealthAssessment": {
+    "VigorScore": 4,
+    "LeafColor": "yellowing on leaves",
+    "LeafTexture": "some leaves appear dry",
+    "GrowthPattern": "abnormal - uneven leaf coloration",
+    "StructuralIntegrity": "moderate",
+    "StressIndicators": ["leaf yellowing", "leaf curling"],
+    "DiseaseSymptoms": ["no clear lesions"],
+    "Severity": "high"
+  },
+  "NutrientStatus": {
+    "Nitrogen": "deficient",
+    "Phosphorus": "normal",
+    "Potassium": "normal",
+    "Calcium": "normal",
+    "Magnesium": "normal",
+    "Iron": "normal",
+    "PrimaryDeficiency": "nitrogen",
+    "SecondaryDeficiencies": [],
+    "Severity": "medium"
+  },
+  "PestDisease": {
+    "PestsDetected": [],
+    "DiseasesDetected": [],
+    "DamagePattern": "no visible pest damage",
+    "AffectedAreaPercentage": 0,
+    "SpreadRisk": "none",
+    "PrimaryIssue": "none"
+  },
+  "EnvironmentalStress": {
+    "WaterStatus": "optimal",
+    "TemperatureStress": "none",
+    "LightStress": "none",
+    "PhysicalDamage": "none",
+    "ChemicalDamage": "none",
+    "SoilIndicators": "not visible",
+    "PrimaryStressor": "none"
+  },
+  "CrossFactorInsights": [
+    {
+      "Insight": "Nitrogen deficiency is primary issue",
+      "Confidence": 0.85,
+      "AffectedAspects": ["growth", "color"],
+      "ImpactLevel": "high"
+    }
+  ],
+  "Recommendations": {
+    "Immediate": [
+      {
+        "Action": "Apply nitrogen fertilizer",
+        "Details": "Use balanced NPK fertilizer",
+        "Timeline": "within 1 week",
+        "Priority": "high"
+      }
+    ],
+    "ShortTerm": [
+      {
+        "Action": "Monitor growth progress",
+        "Details": "Check weekly for improvement",
+        "Timeline": "2-4 weeks",
+        "Priority": "medium"
+      }
+    ],
+    "Preventive": [
+      {
+        "Action": "Regular soil testing",
+        "Details": "Test nutrient levels monthly",
+        "Timeline": "ongoing",
+        "Priority": "medium"
+      }
+    ],
+    "Monitoring": [
+      {
+        "Parameter": "leaf color",
+        "Frequency": "weekly",
+        "Threshold": "green recovery"
+      }
+    ]
+  },
+  "Summary": {
+    "OverallHealthScore": 4,
+    "PrimaryConcern": "Nitrogen deficiency",
+    "SecondaryConcerns": ["leaf yellowing"],
+    "CriticalIssuesCount": 1,
+    "ConfidenceLevel": 85,
+    "Prognosis": "Good with treatment",
+    "EstimatedYieldImpact": "20% reduction if untreated"
+  },
+  "AnalysisId": "test_analysis_20250812_234567",
+  "Timestamp": "2025-08-12T09:36:00Z",
+  "UserId": 2,
+  "FarmerId": "farmer_test_002",
+  "SponsorId": "sponsor_test_xyz",
+  "Location": "Test Location, Turkey",
+  "GpsCoordinates": {
+    "Lat": 36.8969,
+    "Lng": 30.7133
+  },
+  "CropType": "tomato",
+  "FieldId": "field_test_01",
+  "UrgencyLevel": "high",
+  "Notes": "Test mesajı - mock analysis sonucu",
+  "PlantingDate": "2025-06-01T00:00:00Z",
+  "ExpectedHarvestDate": "2025-09-15T00:00:00Z",
+  "LastFertilization": "2025-07-15T00:00:00Z",
+  "LastIrrigation": "2025-08-10T00:00:00Z",
+  "PreviousTreatments": ["organic compost", "calcium supplement"],
+  "WeatherConditions": "sunny, warm",
+  "Temperature": 28.5,
+  "Humidity": 65.0,
+  "SoilType": "clay loam",
+  "ContactInfo": {
+    "Phone": "+90555123456",
+    "Email": "farmer@test.com"
+  },
+  "AdditionalInfo": {
+    "IrrigationMethod": "drip irrigation",
+    "Greenhouse": false,
+    "OrganicCertified": true
+  },
+  "ImageMetadata": {
+    "Format": "jpeg",
+    "SizeBytes": 256000,
+    "SizeKb": 250.0,
+    "SizeMb": 0.25,
+    "Base64Length": 350000,
+    "UploadTimestamp": "2025-08-12T09:35:00Z"
+  },
+  "RabbitMQMetadata": {
+    "CorrelationId": "test_corr_123",
+    "ResponseQueue": "plant-analysis-results",
+    "CallbackUrl": "",
+    "Priority": "high",
+    "RetryCount": 0,
+    "ReceivedAt": "2025-08-12T09:35:00Z",
+    "MessageId": "msg_test_123",
+    "RoutingKey": "plant.analysis.result"
+  },
+  "ProcessingMetadata": {
+    "ParseSuccess": true,
+    "ProcessingTimestamp": "2025-08-12T09:36:00Z",
+    "AiModel": "gpt-4-vision",
+    "WorkflowVersion": "1.0",
+    "ReceivedAt": "2025-08-12T09:35:00Z",
+    "ProcessingTimeMs": 60000,
+    "RetryCount": 0,
+    "Priority": "high"
+  },
+  "Success": true,
+  "Message": "Analysis completed successfully",
+  "Error": false,
+  "ErrorMessage": null,
+  "ErrorType": null
+}

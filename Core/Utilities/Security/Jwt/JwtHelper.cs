@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using Core.Entities.Concrete;
@@ -36,13 +37,13 @@ namespace Core.Utilities.Security.Jwt
             return handler.ReadJwtToken(input).ToString();
         }
 
-        public TAccessToken CreateToken<TAccessToken>(User user)
+        public TAccessToken CreateToken<TAccessToken>(User user, List<string> userGroups = null)
             where TAccessToken : IAccessToken, new()
         {
             _accessTokenExpiration = DateTime.Now.AddMinutes(_tokenOptions.AccessTokenExpiration);
             var securityKey = SecurityKeyHelper.CreateSecurityKey(_tokenOptions.SecurityKey);
             var signingCredentials = SigningCredentialsHelper.CreateSigningCredentials(securityKey);
-            var jwt = CreateJwtSecurityToken(_tokenOptions, user, signingCredentials);
+            var jwt = CreateJwtSecurityToken(_tokenOptions, user, signingCredentials, null, userGroups);
             var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
             var token = jwtSecurityTokenHandler.WriteToken(jwt);
 
@@ -57,14 +58,16 @@ namespace Core.Utilities.Security.Jwt
         public JwtSecurityToken CreateJwtSecurityToken(
             TokenOptions tokenOptions,
             User user,
-            SigningCredentials signingCredentials)
+            SigningCredentials signingCredentials,
+            IEnumerable<OperationClaim> operationClaims = null,
+            List<string> userGroups = null)
         {
             var jwt = new JwtSecurityToken(
                 tokenOptions.Issuer,
                 tokenOptions.Audience,
                 expires: _accessTokenExpiration,
                 notBefore: DateTime.Now,
-                claims: SetClaims(user),
+                claims: SetClaims(user, operationClaims, userGroups),
                 signingCredentials: signingCredentials);
             return jwt;
         }
@@ -77,7 +80,7 @@ namespace Core.Utilities.Security.Jwt
 
             return Convert.ToBase64String(randomNumber);
         }
-        private static IEnumerable<Claim> SetClaims(User user)
+        private static IEnumerable<Claim> SetClaims(User user, IEnumerable<OperationClaim> operationClaims = null, List<string> userGroups = null)
         {
             var claims = new List<Claim>();
             claims.AddNameIdentifier(user.UserId.ToString());
@@ -91,8 +94,28 @@ namespace Core.Utilities.Security.Jwt
                 claims.AddName($"{user.FullName}");
             }
 
-            claims.Add(new Claim(ClaimTypes.Role, user.AuthenticationProviderType));
+            // Add user groups as roles
+            if (userGroups != null && userGroups.Any())
+            {
+                foreach (var group in userGroups)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, group));
+                }
+            }
+            else if (!string.IsNullOrEmpty(user.AuthenticationProviderType))
+            {
+                // Fallback to AuthenticationProviderType if no groups
+                claims.Add(new Claim(ClaimTypes.Role, user.AuthenticationProviderType));
+            }
 
+            // Add operation claims if provided
+            if (operationClaims != null)
+            {
+                foreach (var claim in operationClaims)
+                {
+                    claims.Add(new Claim("permissions", claim.Name));
+                }
+            }
 
             return claims;
         }

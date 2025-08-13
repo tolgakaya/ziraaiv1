@@ -1,6 +1,7 @@
 using Business.Handlers.PlantAnalyses.Commands;
 using Business.Handlers.PlantAnalyses.Queries;
 using Business.Services.PlantAnalysis;
+using Business.Services.Subscription;
 using Core.Utilities.Results;
 using Entities.Dtos;
 using MediatR;
@@ -16,17 +17,22 @@ using System.Threading.Tasks;
 
 namespace WebAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     public class PlantAnalysesController : BaseApiController
     {
         private readonly IMediator _mediator;
         private readonly IPlantAnalysisAsyncService _asyncAnalysisService;
+        private readonly ISubscriptionValidationService _subscriptionValidationService;
 
-        public PlantAnalysesController(IMediator mediator, IPlantAnalysisAsyncService asyncAnalysisService)
+        public PlantAnalysesController(
+            IMediator mediator, 
+            IPlantAnalysisAsyncService asyncAnalysisService,
+            ISubscriptionValidationService subscriptionValidationService)
         {
             _mediator = mediator;
             _asyncAnalysisService = asyncAnalysisService;
+            _subscriptionValidationService = subscriptionValidationService;
         }
 
         /// <summary>
@@ -35,8 +41,11 @@ namespace WebAPI.Controllers
         /// <param name="request">Plant analysis request with image base64</param>
         /// <returns>Plant analysis result</returns>
         [HttpPost("analyze")]
+        [Authorize(Roles = "Farmer,Admin")] // Require authentication + role
         [ProducesResponseType(typeof(IDataResult<PlantAnalysisResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> Analyze([FromBody] PlantAnalysisRequestDto request)
         {
             // Validate model
@@ -55,12 +64,36 @@ namespace WebAPI.Controllers
             }
 
             var userId = GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+
+            // Check subscription and quota limits
+            var quotaValidation = await _subscriptionValidationService.ValidateAndLogUsageAsync(
+                userId.Value, 
+                HttpContext.Request.Path.Value ?? "/api/plantanalyses/analyze", 
+                HttpContext.Request.Method);
+                
+            if (!quotaValidation.Success)
+            {
+                // Get detailed status for better error message
+                var statusResult = await _subscriptionValidationService.CheckSubscriptionStatusAsync(userId.Value);
+                
+                return StatusCode(403, new
+                {
+                    success = false,
+                    message = quotaValidation.Message,
+                    subscriptionStatus = statusResult.Data,
+                    upgradeMessage = statusResult.Data?.TierName == "Trial" 
+                        ? "Upgrade to Small plan for 5 daily analyses at ₺99.99/month!"
+                        : "Please upgrade your subscription plan."
+                });
+            }
             
             // Map request to command
             var command = new CreatePlantAnalysisCommand
             {
                 Image = request.Image,
-                UserId = request.UserId ?? userId,
+                UserId = userId, // Always use authenticated user's ID
                 FarmerId = request.FarmerId,
                 SponsorId = request.SponsorId,
                 FieldId = request.FieldId,
@@ -86,7 +119,11 @@ namespace WebAPI.Controllers
             var result = await _mediator.Send(command);
             
             if (result.Success)
+            {
+                // Increment usage counter after successful analysis
+                await _subscriptionValidationService.IncrementUsageAsync(userId.Value, result.Data?.Id);
                 return Ok(result);
+            }
             
             return BadRequest(result);
         }
@@ -97,8 +134,11 @@ namespace WebAPI.Controllers
         /// <param name="request">Plant analysis request with image base64</param>
         /// <returns>Analysis ID for tracking</returns>
         [HttpPost("analyze-async")]
+        [Authorize(Roles = "Farmer,Admin")] // Require authentication + role
         [ProducesResponseType(typeof(object), StatusCodes.Status202Accepted)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<IActionResult> AnalyzeAsync([FromBody] PlantAnalysisRequestDto request)
         {
@@ -130,8 +170,39 @@ namespace WebAPI.Controllers
                     });
                 }
 
+                // Get authenticated user ID and add to request
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                // Check subscription and quota limits
+                var quotaValidation = await _subscriptionValidationService.ValidateAndLogUsageAsync(
+                    userId.Value, 
+                    HttpContext.Request.Path.Value ?? "/api/plantanalyses/analyze-async", 
+                    HttpContext.Request.Method);
+                    
+                if (!quotaValidation.Success)
+                {
+                    // Get detailed status for better error message
+                    var statusResult = await _subscriptionValidationService.CheckSubscriptionStatusAsync(userId.Value);
+                    
+                    return StatusCode(403, new
+                    {
+                        success = false,
+                        message = quotaValidation.Message,
+                        subscriptionStatus = statusResult.Data,
+                        upgradeMessage = statusResult.Data?.TierName == "Trial" 
+                            ? "Upgrade to Small plan for 5 daily analyses at ₺99.99/month!"
+                            : "Please upgrade your subscription plan."
+                    });
+                }
+                request.UserId = userId; // Set authenticated user's ID
+
                 // Queue the analysis
                 var analysisId = await _asyncAnalysisService.QueuePlantAnalysisAsync(request);
+
+                // Increment usage counter after successful queueing
+                await _subscriptionValidationService.IncrementUsageAsync(userId.Value);
 
                 return Accepted(new
                 {
@@ -159,21 +230,41 @@ namespace WebAPI.Controllers
         /// <param name="id">Analysis ID</param>
         /// <returns>Plant analysis details</returns>
         [HttpGet("{id}")]
+        [Authorize] // Require authentication
         [ProducesResponseType(typeof(IDataResult<PlantAnalysisResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetById(int id)
         {
             var query = new GetPlantAnalysisQuery { Id = id };
             var result = await _mediator.Send(query);
             
-            if (result.Success)
+            if (!result.Success)
+                return NotFound(result);
+
+            // Check authorization: Users can only see their own analyses, unless they're admin
+            var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
+            var isSponsor = User.IsInRole("Sponsor");
+            
+            // Admins can see all analyses
+            if (isAdmin)
                 return Ok(result);
             
-            return NotFound(result);
+            // Sponsors can see analyses they sponsor
+            if (isSponsor && result.Data.SponsorId == User.FindFirst("SponsorId")?.Value)
+                return Ok(result);
+            
+            // Farmers can only see their own analyses
+            if (result.Data.UserId == userId)
+                return Ok(result);
+            
+            return Forbid("You don't have permission to view this analysis");
         }
 
         /// <summary>
-        /// Get all plant analyses for current user
+        /// Get all plant analyses for current user (Farmers)
         /// </summary>
         /// <returns>List of plant analyses</returns>
         [HttpGet("my-analyses")]
@@ -184,6 +275,24 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             
             var query = new GetPlantAnalysesQuery { UserId = userId };
+            var result = await _mediator.Send(query);
+            
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Get all plant analyses sponsored by current sponsor
+        /// </summary>
+        /// <returns>List of sponsored plant analyses</returns>
+        [HttpGet("sponsored-analyses")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(IDataResult<List<PlantAnalysisResponseDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetSponsoredAnalyses()
+        {
+            // Get sponsor ID from claims or user profile
+            var sponsorId = User.FindFirst("SponsorId")?.Value ?? User.Identity?.Name;
+            
+            var query = new GetPlantAnalysesQuery { SponsorId = sponsorId };
             var result = await _mediator.Send(query);
             
             return Ok(result);

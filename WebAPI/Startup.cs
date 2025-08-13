@@ -23,6 +23,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.SwaggerUI;
+using WebAPI.Filters;
 using ConfigurationManager = Business.ConfigurationManager;
 
 namespace WebAPI
@@ -102,6 +103,16 @@ namespace WebAPI
             services.AddSwaggerGen(c =>
             {
                 c.IncludeXmlComments(Path.ChangeExtension(typeof(Startup).Assembly.Location, ".xml"));
+                
+                // Ignore concrete entities to prevent circular reference issues
+                c.IgnoreObsoleteActions();
+                c.IgnoreObsoleteProperties();
+                
+                // Configure JSON options for Swagger
+                c.CustomSchemaIds(type => type.FullName);
+                
+                // Ignore complex DTOs that might cause circular references
+                c.SchemaFilter<ExcludeComplexTypesSchemaFilter>();
             });
 
             services.AddTransient<FileLogger>();

@@ -2,6 +2,9 @@ using System;
 using System.Reflection;
 using Core.Entities.Concrete;
 using Entities.Concrete;
+using SubscriptionTier = Entities.Concrete.SubscriptionTier;
+using UserSubscription = Entities.Concrete.UserSubscription;
+using SubscriptionUsageLog = Entities.Concrete.SubscriptionUsageLog;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -52,6 +55,11 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<Translate> Translates { get; set; }
         public DbSet<PlantAnalysis> PlantAnalyses { get; set; }
         public DbSet<Configuration> Configurations { get; set; }
+        
+        // Subscription System
+        public DbSet<SubscriptionTier> SubscriptionTiers { get; set; }
+        public DbSet<UserSubscription> UserSubscriptions { get; set; }
+        public DbSet<SubscriptionUsageLog> SubscriptionUsageLogs { get; set; }
 
         protected IConfiguration Configuration { get; }
 
@@ -66,7 +74,11 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
             if (!optionsBuilder.IsConfigured)
             {
                 base.OnConfiguring(optionsBuilder.UseNpgsql(Configuration.GetConnectionString("DArchPgContext"))
-                    .EnableSensitiveDataLogging());
+                    .EnableSensitiveDataLogging()
+                    .ConfigureWarnings(warnings => 
+                    {
+                        warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning);
+                    }));
             }
         }
     }

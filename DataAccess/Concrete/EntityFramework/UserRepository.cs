@@ -39,6 +39,17 @@ namespace DataAccess.Concrete.EntityFramework
                 .ToList();
         }
 
+        public List<string> GetUserGroups(int userId)
+        {
+            var result = from user in Context.Users
+                         join userGroup in Context.UserGroups on user.UserId equals userGroup.UserId
+                         join grp in Context.Groups on userGroup.GroupId equals grp.Id
+                         where user.UserId == userId
+                         select grp.GroupName;
+
+            return result.Distinct().ToList();
+        }
+
         public async Task<User> GetByRefreshToken(string refreshToken)
         {
             return await Context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken && u.Status);

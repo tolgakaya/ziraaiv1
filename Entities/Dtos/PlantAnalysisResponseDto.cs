@@ -1,6 +1,7 @@
 using Core.Entities;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Entities.Dtos
 {
@@ -10,12 +11,14 @@ namespace Entities.Dtos
         public string ImagePath { get; set; }
         public DateTime AnalysisDate { get; set; }
         public string Status { get; set; }
+        public int? UserId { get; set; }
         
         // Core Analysis Fields
         public string AnalysisId { get; set; }
         public string FarmerId { get; set; }
         public string SponsorId { get; set; }
         public string Location { get; set; }
+        [JsonIgnore]
         public GpsCoordinates GpsCoordinates { get; set; }
         public int? Altitude { get; set; }
         public string FieldId { get; set; }
@@ -26,34 +29,45 @@ namespace Entities.Dtos
         public string Notes { get; set; }
         
         // Plant Identification
+        [JsonIgnore]
         public PlantIdentificationDto PlantIdentification { get; set; }
         
         // Health Assessment
+        [JsonIgnore]
         public HealthAssessmentDto HealthAssessment { get; set; }
         
         // Nutrient Status
+        [JsonIgnore]
         public NutrientStatusDto NutrientStatus { get; set; }
         
         // Pest & Disease
+        [JsonIgnore]
         public PestDiseaseDto PestDisease { get; set; }
         
         // Environmental Stress
+        [JsonIgnore]
         public EnvironmentalStressDto EnvironmentalStress { get; set; }
         
         // Recommendations
+        [JsonIgnore]
         public RecommendationsDto Recommendations { get; set; }
         
         // Cross Factor Insights
+        [JsonIgnore]
         public List<CrossFactorInsightDto> CrossFactorInsights { get; set; }
         
         // Summary
+        [JsonIgnore]
         public SummaryDto Summary { get; set; }
         
         // Metadata
+        [JsonIgnore]
         public ProcessingMetadataDto ProcessingMetadata { get; set; }
+        [JsonIgnore]
         public TokenUsageDto TokenUsage { get; set; }
         
         // Detailed Analysis Data (full JSON for reference)
+        [JsonIgnore]
         public DetailedPlantAnalysisDto DetailedAnalysis { get; set; }
         
         // Legacy fields for backward compatibility

@@ -1,4 +1,5 @@
 using Business.Services.Configuration;
+using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Core.Configuration;
@@ -22,6 +23,7 @@ namespace Business.Services.PlantAnalysis
         private readonly IImageProcessingService _imageProcessingService;
         private readonly IConfigurationService _configurationService;
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
+        private readonly IFileStorageService _fileStorageService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
         private readonly RabbitMQOptions _rabbitMQOptions;
@@ -31,6 +33,7 @@ namespace Business.Services.PlantAnalysis
             IImageProcessingService imageProcessingService,
             IConfigurationService configurationService,
             IPlantAnalysisRepository plantAnalysisRepository,
+            IFileStorageService fileStorageService,
             IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             IOptions<RabbitMQOptions> rabbitMQOptions)
@@ -39,6 +42,7 @@ namespace Business.Services.PlantAnalysis
             _imageProcessingService = imageProcessingService;
             _configurationService = configurationService;
             _plantAnalysisRepository = plantAnalysisRepository;
+            _fileStorageService = fileStorageService;
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _rabbitMQOptions = rabbitMQOptions.Value;
@@ -55,11 +59,14 @@ namespace Business.Services.PlantAnalysis
                 // Process image for AI (aggressive optimization for token reduction)
                 var processedImageDataUri = await ProcessImageForAIAsync(request.Image);
                 
-                // Save processed image to file system
-                var imagePath = await SaveImageToFileSystemAsync(processedImageDataUri, analysisId);
+                // Save processed image using file storage service
+                var imageUrl = await _fileStorageService.UploadImageFromDataUriAsync(
+                    processedImageDataUri, 
+                    analysisId, 
+                    "plant-images");
                 
-                // Generate accessible URL for the image
-                var imageUrl = GenerateImageUrl(imagePath);
+                // Extract relative path for database storage (for backward compatibility)
+                var imagePath = ExtractRelativePathFromUrl(imageUrl);
 
                 // Create initial PlantAnalysis entity with all request data
                 var plantAnalysis = new Entities.Concrete.PlantAnalysis
@@ -173,51 +180,6 @@ namespace Business.Services.PlantAnalysis
             }
         }
         
-        private async Task<string> SaveImageToFileSystemAsync(string dataUri, string analysisId)
-        {
-            try
-            {
-                // Extract base64 data and file extension
-                var parts = dataUri.Split(',');
-                var base64Data = parts[1];
-                var imageBytes = Convert.FromBase64String(base64Data);
-                
-                // Determine file extension from data URI
-                var mimeType = parts[0].Split(':')[1].Split(';')[0];
-                var extension = mimeType switch
-                {
-                    "image/jpeg" => ".jpg",
-                    "image/png" => ".png",
-                    "image/gif" => ".gif",
-                    "image/webp" => ".webp",
-                    "image/bmp" => ".bmp",
-                    "image/svg+xml" => ".svg",
-                    "image/tiff" => ".tiff",
-                    _ => ".jpg"
-                };
-                
-                // Create file name and path
-                var fileName = $"plant_analysis_{analysisId}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{extension}";
-                var relativePath = Path.Combine("uploads", "plant-images", fileName);
-                var fullPath = Path.Combine("wwwroot", relativePath);
-                
-                // Ensure directory exists
-                var directory = Path.GetDirectoryName(fullPath);
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-                
-                // Save file
-                await File.WriteAllBytesAsync(fullPath, imageBytes);
-                
-                return relativePath;
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Failed to save image: {ex.Message}", ex);
-            }
-        }
 
         public async Task<bool> IsQueueHealthyAsync()
         {
@@ -231,19 +193,28 @@ namespace Business.Services.PlantAnalysis
             }
         }
 
-        private string GenerateImageUrl(string imagePath)
+        private string ExtractRelativePathFromUrl(string imageUrl)
         {
-            // Try to get from HttpContext
-            var request = _httpContextAccessor?.HttpContext?.Request;
-            if (request != null)
+            try
             {
-                var baseUrl = $"{request.Scheme}://{request.Host}";
-                return $"{baseUrl}/{imagePath.Replace('\\', '/')}";
+                // If using local storage, extract relative path from URL
+                if (_fileStorageService.ProviderType == "Local")
+                {
+                    var uri = new Uri(imageUrl);
+                    var path = uri.AbsolutePath;
+                    if (path.StartsWith("/"))
+                        path = path.Substring(1);
+                    return path;
+                }
+                
+                // For external storage providers, store the full URL
+                return imageUrl;
             }
-            
-            // Fallback to configuration
-            var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "https://localhost:5001";
-            return $"{apiBaseUrl}/{imagePath.Replace('\\', '/')}";
+            catch
+            {
+                // Fallback: return the URL as is
+                return imageUrl;
+            }
         }
         
         private async Task<string> ProcessImageForAIAsync(string originalDataUri)

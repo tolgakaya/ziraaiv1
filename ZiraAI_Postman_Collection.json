@@ -1,0 +1,914 @@
+{
+  "info": {
+    "name": "ZiraAI Plant Analysis API",
+    "description": "Complete API collection for ZiraAI Plant Analysis system with authentication, authorization, and subscription management",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lastAnalysisId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "farmerId",
+      "value": "FARMER001",
+      "type": "string"
+    },
+    {
+      "key": "sponsorId",
+      "value": "SPONSOR001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Login successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.collectionVariables.set(\"accessToken\", response.data.token);",
+                  "        pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "        ",
+                  "        if (response.data.user) {",
+                  "            pm.collectionVariables.set(\"userId\", response.data.user.userId);",
+                  "        }",
+                  "        ",
+                  "        const expiry = new Date();",
+                  "        expiry.setHours(expiry.getHours() + 1);",
+                  "        pm.collectionVariables.set(\"tokenExpiry\", expiry.getTime());",
+                  "        ",
+                  "        console.log(\"Login successful. Token stored.\");",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains required fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data).to.have.property('token');",
+                  "    pm.expect(response.data).to.have.property('refreshToken');",
+                  "    pm.expect(response.data).to.have.property('expiration');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-dev-arch-version",
+                "value": "1.0"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ziraai.com\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Login endpoint to get JWT access token and refresh token"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh-token"]
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Farmer\",\n  \"email\": \"farmer@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"citizenId\": 12345678901,\n  \"mobilePhones\": \"+90 555 123 4567\",\n  \"address\": \"Antalya, Turkey\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"OldPassword123!\",\n  \"newPassword\": \"NewSecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/user-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "user-password"]
+            }
+          }
+        },
+        {
+          "name": "JWT Token Test",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "test"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🌿 Plant Analysis",
+      "item": [
+        {
+          "name": "Synchronous Analysis",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get(\"accessToken\");",
+                  "if (!token) {",
+                  "    throw new Error(\"Please login first to get access token\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Plant analysis successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data.analysisId).to.not.be.undefined;",
+                  "        pm.collectionVariables.set(\"lastAnalysisId\", response.data.id);",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Analysis contains health score\", function () {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.summary) {",
+                  "        pm.expect(response.data.summary.overallHealthScore).to.be.a('number');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n  \"farmerId\": \"{{farmerId}}\",\n  \"sponsorId\": \"{{sponsorId}}\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Antalya Greenhouse\",\n  \"gpsCoordinates\": {\n    \"latitude\": 36.8969,\n    \"longitude\": 30.7133\n  },\n  \"fieldId\": \"FIELD001\",\n  \"plantSpecies\": \"Solanum lycopersicum\",\n  \"growthStage\": \"flowering\",\n  \"environmentalData\": {\n    \"temperature\": 24.5,\n    \"humidity\": 65.0,\n    \"soilMoisture\": 45.2,\n    \"lightIntensity\": 850.0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/plantanalyses/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plantanalyses", "analyze"]
+            },
+            "description": "Synchronous plant analysis with immediate response. Requires active subscription."
+          }
+        },
+        {
+          "name": "Asynchronous Analysis",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const token = pm.collectionVariables.get(\"accessToken\");",
+                  "if (!token) {",
+                  "    throw new Error(\"Please login first to get access token\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Async analysis queued successfully\", function () {",
+                  "    pm.response.to.have.status(202);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.a('string');",
+                  "    ",
+                  "    console.log(\"Analysis ID:\", response.data);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n  \"farmerId\": \"{{farmerId}}\",\n  \"sponsorId\": \"{{sponsorId}}\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Antalya Greenhouse\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/plantanalyses/analyze-async",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plantanalyses", "analyze-async"]
+            },
+            "description": "Asynchronous plant analysis processed in background. Returns analysis ID for tracking."
+          }
+        },
+        {
+          "name": "Get Analysis by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plantanalyses/{{lastAnalysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plantanalyses", "{{lastAnalysisId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Analysis Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plantanalyses/{{lastAnalysisId}}/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plantanalyses", "{{lastAnalysisId}}", "image"]
+            }
+          }
+        },
+        {
+          "name": "Get All Analyses (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plantanalyses?page=1&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plantanalyses"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Admin only - Get all plant analyses with pagination"
+          }
+        },
+        {
+          "name": "Get Sponsored Analyses (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plantanalyses/sponsored-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plantanalyses", "sponsored-analyses"]
+            },
+            "description": "Admin only - Get all sponsored plant analyses"
+          }
+        }
+      ]
+    },
+    {
+      "name": "💳 Subscription Management",
+      "item": [
+        {
+          "name": "Get Subscription Tiers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Subscription tiers loaded\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "    ",
+                  "    if (response.data.length > 0) {",
+                  "        const tier = response.data[0];",
+                  "        pm.expect(tier).to.have.property('tierName');",
+                  "        pm.expect(tier).to.have.property('dailyRequestLimit');",
+                  "        pm.expect(tier).to.have.property('monthlyPrice');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/tiers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptions", "tiers"]
+            },
+            "description": "Public endpoint - Get all available subscription tiers"
+          }
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/my-subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptions", "my-subscription"]
+            },
+            "description": "Farmer role - Get current user's subscription details"
+          }
+        },
+        {
+          "name": "Get Usage Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Usage status retrieved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('dailyUsed');",
+                  "        pm.expect(response.data).to.have.property('dailyLimit');",
+                  "        pm.expect(response.data).to.have.property('canMakeRequest');",
+                  "        ",
+                  "        console.log(\"Daily Usage:\", response.data.dailyUsed + \"/\" + response.data.dailyLimit);",
+                  "        console.log(\"Monthly Usage:\", response.data.monthlyUsed + \"/\" + response.data.monthlyLimit);",
+                  "        console.log(\"Can Make Request:\", response.data.canMakeRequest);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/usage-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptions", "usage-status"]
+            },
+            "description": "Farmer role - Get current usage status and remaining quotas"
+          }
+        },
+        {
+          "name": "Subscribe to Plan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"durationMonths\": 1,\n  \"autoRenew\": true,\n  \"paymentMethod\": \"CreditCard\",\n  \"paymentReference\": \"txn_123456789\",\n  \"isTrialSubscription\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/subscribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptions", "subscribe"]
+            },
+            "description": "Farmer role - Subscribe to a plan"
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userSubscriptionId\": 456,\n  \"cancellationReason\": \"Too expensive for my needs\",\n  \"immediateCancellation\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptions", "cancel"]
+            },
+            "description": "Farmer role - Cancel existing subscription"
+          }
+        },
+        {
+          "name": "Get Subscription History",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptions", "history"]
+            },
+            "description": "Farmer/Admin role - Get subscription history"
+          }
+        },
+        {
+          "name": "Get Usage Logs (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/subscriptions/usage-logs?startDate=2025-08-01&endDate=2025-08-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "subscriptions", "usage-logs"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-08-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-08-31"
+                }
+              ]
+            },
+            "description": "Admin only - Get usage logs for analytics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 User Management",
+      "item": [
+        {
+          "name": "Get Users (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users?page=1&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Admin only - Get all users with pagination"
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            },
+            "description": "Get user details by ID (own user or admin)"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Updated Farmer\",\n  \"email\": \"john.updated@example.com\",\n  \"mobilePhones\": \"+90 555 987 6543\",\n  \"address\": \"Updated Address, Antalya, Turkey\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}"]
+            },
+            "description": "Update user profile (own profile or admin)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧪 Test & Health",
+      "item": [
+        {
+          "name": "RabbitMQ Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"RabbitMQ health check\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    console.log(\"RabbitMQ Status:\", response.message);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/test/rabbitmq-health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "rabbitmq-health"]
+            },
+            "description": "Test RabbitMQ connection health"
+          }
+        },
+        {
+          "name": "Mock N8N Response",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"analysisId\": \"test_analysis_123\",\n  \"farmerId\": \"{{farmerId}}\",\n  \"sponsorId\": \"{{sponsorId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/test/mock-n8n-response",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "test", "mock-n8n-response"]
+            },
+            "description": "Test N8N webhook integration with mock response"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "const token = pm.collectionVariables.get('accessToken');",
+          "const tokenExpiry = pm.collectionVariables.get('tokenExpiry');",
+          "const now = new Date().getTime();",
+          "",
+          "// Check if we need to skip authentication for public endpoints",
+          "const publicEndpoints = [",
+          "    '/api/v1/auth/login',",
+          "    '/api/v1/auth/register',",
+          "    '/api/v1/auth/refresh-token',",
+          "    '/api/subscriptions/tiers'",
+          "];",
+          "",
+          "const currentUrl = pm.request.url.toString();",
+          "const isPublicEndpoint = publicEndpoints.some(endpoint => currentUrl.includes(endpoint));",
+          "",
+          "if (!isPublicEndpoint && (!token || (tokenExpiry && now > tokenExpiry))) {",
+          "    console.log('Token is missing or expired. Please login first.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response has success field', function () {",
+          "    const response = pm.response.json();",
+          "    if (response) {",
+          "        pm.expect(response).to.have.property('success');",
+          "    }",
+          "});",
+          "",
+          "// Log response for debugging",
+          "if (pm.response.code >= 400) {",
+          "    console.log('Error Response:', pm.response.text());",
+          "}"
+        ]
+      }
+    }
+  ]
+}

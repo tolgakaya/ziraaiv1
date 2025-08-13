@@ -1,5 +1,6 @@
 using Business.Constants;
 using Business.Services.Configuration;
+using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
 using Core.Utilities.Results;
 using Entities.Constants;
@@ -23,9 +24,9 @@ namespace Business.Services.PlantAnalysis
         private readonly IConfiguration _configuration;
         private readonly IImageProcessingService _imageProcessingService;
         private readonly IConfigurationService _configurationService;
+        private readonly IFileStorageService _fileStorageService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly string _n8nWebhookUrl;
-        private readonly string _imageStoragePath;
         private readonly bool _useImageUrl;
 
         public PlantAnalysisService(
@@ -33,22 +34,19 @@ namespace Business.Services.PlantAnalysis
             IConfiguration configuration,
             IImageProcessingService imageProcessingService,
             IConfigurationService configurationService,
+            IFileStorageService fileStorageService,
             IHttpContextAccessor httpContextAccessor)
         {
             _httpClient = httpClient;
             _configuration = configuration;
             _imageProcessingService = imageProcessingService;
             _configurationService = configurationService;
+            _fileStorageService = fileStorageService;
             _httpContextAccessor = httpContextAccessor;
             _n8nWebhookUrl = _configuration["N8N:WebhookUrl"];
-            _imageStoragePath = _configuration["ImageStorage:Path"] ?? "wwwroot/uploads/plant-images";
             _useImageUrl = _configuration.GetValue<bool>("N8N:UseImageUrl", true); // Default to URL method
             
-            // Create directory if it doesn't exist
-            if (!Directory.Exists(_imageStoragePath))
-            {
-                Directory.CreateDirectory(_imageStoragePath);
-            }
+            // Debug logging to track which file storage service is injected (removed for performance)
         }
 
         public async Task<PlantAnalysisResponseDto> SendToN8nWebhookAsync(PlantAnalysisRequestDto request)
@@ -73,9 +71,15 @@ namespace Business.Services.PlantAnalysis
                 
                 if (_useImageUrl)
                 {
-                    // Save image and generate URL
-                    var imagePath = await SaveProcessedImageAsync(processedImage);
-                    imageUrl = GenerateImageUrl(imagePath);
+                    // Generate unique analysis ID
+                    var analysisId = $"sync_analysis_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid().ToString("N")[..8]}";
+                    
+                    // Save image using file storage service and get URL
+                    imageUrl = await _fileStorageService.UploadImageFromDataUriAsync(
+                        processedImage, 
+                        analysisId, 
+                        "plant-images");
+                    
                     imagePayload = new { imageUrl = imageUrl };
                 }
                 else
@@ -687,15 +691,9 @@ namespace Business.Services.PlantAnalysis
                     imageInfo = detectedFormat;
                 }
 
-                // Generate unique filename with correct extension
-                var fileName = $"plant_analysis_{analysisId}_{DateTime.Now:yyyyMMdd_HHmmss}{imageInfo.Extension}";
-                var filePath = Path.Combine(_imageStoragePath, fileName);
-
-                // Save file to disk
-                await File.WriteAllBytesAsync(filePath, imageBytes);
-
-                // Return relative path for database storage
-                return $"uploads/plant-images/{fileName}";
+                // Use file storage service instead of direct file system access
+                var uniqueAnalysisId = $"legacy_{analysisId}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                return await _fileStorageService.UploadImageFromDataUriAsync(imageBase64, uniqueAnalysisId, "plant-images");
             }
             catch (Exception ex)
             {
@@ -913,44 +911,6 @@ namespace Business.Services.PlantAnalysis
             }
         }
         
-        private async Task<string> SaveProcessedImageAsync(string dataUri)
-        {
-            try
-            {
-                // Generate unique filename
-                var fileName = $"plant_analysis_{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.jpg";
-                var filePath = Path.Combine(_imageStoragePath, fileName);
-                
-                // Extract base64 data
-                var base64Data = dataUri.Split(',')[1];
-                var imageBytes = Convert.FromBase64String(base64Data);
-                
-                // Save to file system
-                await File.WriteAllBytesAsync(filePath, imageBytes);
-                
-                // Return relative path
-                return Path.Combine("uploads", "plant-images", fileName).Replace('\\', '/');
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"Failed to save image: {ex.Message}", ex);
-            }
-        }
-        
-        private string GenerateImageUrl(string relativePath)
-        {
-            // Try to get from HttpContext
-            var request = _httpContextAccessor?.HttpContext?.Request;
-            if (request != null)
-            {
-                var baseUrl = $"{request.Scheme}://{request.Host}";
-                return $"{baseUrl}/{relativePath}";
-            }
-            
-            // Fallback to configuration
-            var apiBaseUrl = _configuration["ApiBaseUrl"] ?? "https://localhost:5001";
-            return $"{apiBaseUrl}/{relativePath}";
-        }
 
         private async Task<string> ProcessImageIntelligentlyAsync(string originalDataUri)
         {

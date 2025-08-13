@@ -47,8 +47,11 @@ namespace Tests.Business.Services.Authentication
 
             _userRepository.Setup(x => x.GetClaims(It.IsAny<int>()))
                 .Returns(new List<OperationClaim>() { new () { Id = 1, Name = "test" } });
+            
+            _userRepository.Setup(x => x.GetUserGroups(It.IsAny<int>()))
+                .Returns(new List<string>() { "Farmer" });
 
-            _tokenHelper.Setup(x => x.CreateToken<DArchToken>(It.IsAny<User>())).Returns(() => new DArchToken()
+            _tokenHelper.Setup(x => x.CreateToken<DArchToken>(It.IsAny<User>(), It.IsAny<List<string>>())).Returns(() => new DArchToken()
             {
                 Expiration = DateTime.Now.AddMinutes(10),
                 ExternalUserId = "1111111",
@@ -86,8 +89,11 @@ namespace Tests.Business.Services.Authentication
 
             _userRepository.Setup(x => x.GetClaims(It.IsAny<int>()))
                 .Returns(new List<OperationClaim>() { new () { Id = 1, Name = "test" } });
+            
+            _userRepository.Setup(x => x.GetUserGroups(It.IsAny<int>()))
+                .Returns(new List<string>() { "Farmer" });
 
-            _tokenHelper.Setup(x => x.CreateToken<DArchToken>(It.IsAny<User>())).Returns(() => new DArchToken()
+            _tokenHelper.Setup(x => x.CreateToken<DArchToken>(It.IsAny<User>(), It.IsAny<List<string>>())).Returns(() => new DArchToken()
             {
                 Expiration = DateTime.Now.AddMinutes(10),
                 ExternalUserId = "1111111",

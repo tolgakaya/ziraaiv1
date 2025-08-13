@@ -12,6 +12,7 @@ using Core.Entities.Concrete;
 using Core.Utilities.Security.Hashing;
 using Core.Utilities.Security.Jwt;
 using DataAccess.Abstract;
+using Entities.Concrete;
 using FluentAssertions;
 using MediatR;
 using Moq;
@@ -30,6 +31,10 @@ namespace Tests.Business.Handlers
     public class AuthorizationsTests
     {
         private Mock<IUserRepository> _userRepository;
+        private Mock<IGroupRepository> _groupRepository;
+        private Mock<IUserGroupRepository> _userGroupRepository;
+        private Mock<ISubscriptionTierRepository> _subscriptionTierRepository;
+        private Mock<IUserSubscriptionRepository> _userSubscriptionRepository;
         private Mock<ITokenHelper> _tokenHelper;
         private Mock<IMediator> _mediator;
         private Mock<ICacheManager> _cacheManager;
@@ -45,12 +50,16 @@ namespace Tests.Business.Handlers
         public void Setup()
         {
             _userRepository = new Mock<IUserRepository>();
+            _groupRepository = new Mock<IGroupRepository>();
+            _userGroupRepository = new Mock<IUserGroupRepository>();
+            _subscriptionTierRepository = new Mock<ISubscriptionTierRepository>();
+            _userSubscriptionRepository = new Mock<IUserSubscriptionRepository>();
             _tokenHelper = new Mock<ITokenHelper>();
             _mediator = new Mock<IMediator>();
             _cacheManager = new Mock<ICacheManager>();
 
             _loginUserQueryHandler = new LoginUserQueryHandler(_userRepository.Object, _tokenHelper.Object, _mediator.Object, _cacheManager.Object);
-            _registerUserCommandHandler = new RegisterUserCommandHandler(_userRepository.Object);
+            _registerUserCommandHandler = new RegisterUserCommandHandler(_userRepository.Object, _groupRepository.Object, _userGroupRepository.Object, _subscriptionTierRepository.Object, _userSubscriptionRepository.Object);
             _forgotPasswordCommandHandler = new ForgotPasswordCommandHandler(_userRepository.Object);
         }
 
@@ -65,7 +74,7 @@ namespace Tests.Business.Handlers
                 .Returns(() => Task.FromResult(user));
 
 
-            _tokenHelper.Setup(x => x.CreateToken<DArchToken>(It.IsAny<User>())).Returns(new DArchToken()
+            _tokenHelper.Setup(x => x.CreateToken<DArchToken>(It.IsAny<User>(), It.IsAny<List<string>>())).Returns(new DArchToken()
             {
                 Token = "TestToken",
                 Claims = new List<string>(),
@@ -74,6 +83,8 @@ namespace Tests.Business.Handlers
 
             _userRepository.Setup(x => x.GetClaims(It.IsAny<int>()))
                 .Returns(new List<OperationClaim>() { new OperationClaim() { Id = 1, Name = "test" } });
+            _userRepository.Setup(x => x.GetUserGroups(It.IsAny<int>()))
+                .Returns(new List<string>() { "Farmer" });
             _loginUserQuery = new LoginUserQuery
             {
                 Email = user.Email,
@@ -97,8 +108,10 @@ namespace Tests.Business.Handlers
                 .ReturnsAsync(DataHelper.GetUser("test"));
             _userRepository.Setup(x => x.GetClaims(It.IsAny<int>()))
                 .Returns(new List<OperationClaim> { new OperationClaim { } });
+            _userRepository.Setup(x => x.GetUserGroups(It.IsAny<int>()))
+                .Returns(new List<string>() { "Farmer" });
             _userRepository.Setup(x => x.Update(It.IsAny<User>())).Returns(new User());
-            _tokenHelper.Setup(x => x.CreateToken<AccessToken>(It.IsAny<User>())).Returns(new AccessToken());
+            _tokenHelper.Setup(x => x.CreateToken<AccessToken>(It.IsAny<User>(), It.IsAny<List<string>>())).Returns(new AccessToken());
 
             var handler =
                 new LoginWithRefreshTokenQueryHandler(_userRepository.Object, _tokenHelper.Object, _cacheManager.Object);
@@ -108,7 +121,7 @@ namespace Tests.Business.Handlers
             _userRepository.Verify(x => x.GetClaims(It.IsAny<int>()), Times.Once);
             _userRepository.Verify(x => x.Update(It.IsAny<User>()), Times.Once);
             _userRepository.Verify(x => x.SaveChangesAsync(), Times.Once);
-            _tokenHelper.Verify(x => x.CreateToken<AccessToken>(It.IsAny<User>()), Times.Once);
+            _tokenHelper.Verify(x => x.CreateToken<AccessToken>(It.IsAny<User>(), It.IsAny<List<string>>()), Times.Once);
             x.Success.Should().BeTrue();
             x.Message.Should().Be(Messages.SuccessfulLogin);
         }
@@ -132,7 +145,7 @@ namespace Tests.Business.Handlers
             _userRepository.Verify(x => x.GetByRefreshToken(It.IsAny<string>()), Times.Once);
             _userRepository.Verify(x => x.Update(It.IsAny<User>()), Times.Never);
             _userRepository.Verify(x => x.SaveChangesAsync(), Times.Never);
-            _tokenHelper.Verify(x => x.CreateToken<AccessToken>(It.IsAny<User>()), Times.Never);
+            _tokenHelper.Verify(x => x.CreateToken<AccessToken>(It.IsAny<User>(), It.IsAny<List<string>>()), Times.Never);
             x.Success.Should().BeFalse();
             x.Message.Should().Be(Messages.UserNotFound);
         }
@@ -147,6 +160,23 @@ namespace Tests.Business.Handlers
                 FullName = registerUser.FullName,
                 Password = "123456"
             };
+            
+            // Setup mocks for register
+            _userRepository.Setup(x => x.GetAsync(It.IsAny<Expression<Func<User, bool>>>()))
+                .Returns(() => Task.FromResult((User)null));
+            _userRepository.Setup(x => x.Add(It.IsAny<User>())).Returns(new User());
+            _userRepository.Setup(x => x.SaveChangesAsync()).Returns(Task.FromResult(1));
+            
+            _groupRepository.Setup(x => x.GetAsync(It.IsAny<Expression<Func<Group, bool>>>()))
+                .Returns(() => Task.FromResult(new Group { Id = 1, GroupName = "Farmer" }));
+            _userGroupRepository.Setup(x => x.Add(It.IsAny<UserGroup>())).Returns(new UserGroup());
+            _userGroupRepository.Setup(x => x.SaveChangesAsync()).Returns(Task.FromResult(1));
+            
+            _subscriptionTierRepository.Setup(x => x.GetAsync(It.IsAny<Expression<Func<SubscriptionTier, bool>>>()))
+                .Returns(() => Task.FromResult(new SubscriptionTier { Id = 1, TierName = "Trial" }));
+            _userSubscriptionRepository.Setup(x => x.Add(It.IsAny<UserSubscription>())).Returns(new UserSubscription());
+            _userSubscriptionRepository.Setup(x => x.SaveChangesAsync()).Returns(Task.FromResult(1));
+            
             var result = await _registerUserCommandHandler.Handle(_command, CancellationToken.None);
 
             result.Message.Should().Be(Messages.Added);
