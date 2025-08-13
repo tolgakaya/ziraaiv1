@@ -8,6 +8,10 @@ using Hangfire.PostgreSql;
 using PlantAnalysisWorkerService.Jobs;
 using PlantAnalysisWorkerService.Services;
 
+// CRITICAL FIX: Set PostgreSQL timezone compatibility globally
+System.AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+System.AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+
 var builder = Host.CreateApplicationBuilder(args);
 
 // Configuration Options

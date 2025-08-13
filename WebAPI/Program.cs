@@ -16,6 +16,10 @@ namespace WebAPI
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
+            // CRITICAL FIX: Set PostgreSQL timezone compatibility globally
+            System.AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            System.AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+            
             CreateHostBuilder(args).Build().Run();
         }
 
