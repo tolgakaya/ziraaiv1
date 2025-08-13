@@ -178,26 +178,20 @@ namespace Business.Services.Subscription
         {
             try 
             {
-                Console.WriteLine($"[UsageLog] 🔍 ATTEMPTING TO LOG USAGE - UserId: {userId}, Endpoint: {endpoint}, Method: {method}, Success: {isSuccessful}");
-                
                 var httpContext = _httpContextAccessor.HttpContext;
                 var subscription = subscriptionId.HasValue 
                     ? await _userSubscriptionRepository.GetAsync(s => s.Id == subscriptionId.Value)
                     : await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
 
-                Console.WriteLine($"[UsageLog] Subscription lookup result: {(subscription != null ? $"Found subscription ID {subscription.Id}" : "NOT FOUND")}");
-
                 // Only log if we have a valid subscription to avoid foreign key constraint violations
                 if (subscription == null)
                 {
-                    Console.WriteLine($"[UsageLog] ⚠️ Warning: No active subscription found for userId {userId}, skipping usage log");
+                    Console.WriteLine($"[UsageLog] Warning: No active subscription found for userId {userId}, skipping usage log");
                     return;
                 }
 
                 // Use DateTime.Now instead of DateTime.UtcNow to avoid timezone issues with PostgreSQL
                 var now = DateTime.Now;
-                
-                Console.WriteLine($"[UsageLog] Creating usage log entry with timestamp: {now:yyyy-MM-dd HH:mm:ss}");
                 
                 var usageLog = new SubscriptionUsageLog
                 {
@@ -219,27 +213,16 @@ namespace Business.Services.Subscription
                     CreatedDate = now
                 };
 
-                Console.WriteLine($"[UsageLog] Calling repository.LogUsageAsync...");
                 await _usageLogRepository.LogUsageAsync(usageLog);
-                Console.WriteLine($"[UsageLog] ✅ Usage log saved successfully");
             }
             catch (Exception ex)
             {
                 // Log the error but don't let usage logging failures break the main flow
-                Console.WriteLine($"[UsageLog] ❌ CRITICAL ERROR logging usage for userId {userId}:");
-                Console.WriteLine($"[UsageLog] Exception: {ex.Message}");
-                
+                Console.WriteLine($"[UsageLog] Error logging usage for userId {userId}: {ex.Message}");
                 if (ex.InnerException != null)
                 {
                     Console.WriteLine($"[UsageLog] Inner Exception: {ex.InnerException.Message}");
-                    
-                    if (ex.InnerException.InnerException != null)
-                    {
-                        Console.WriteLine($"[UsageLog] Inner Inner Exception: {ex.InnerException.InnerException.Message}");
-                    }
                 }
-                
-                Console.WriteLine($"[UsageLog] Stack trace: {ex.StackTrace}");
             }
         }
 
