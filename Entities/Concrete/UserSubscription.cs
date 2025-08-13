@@ -1,4 +1,5 @@
 using Core.Entities;
+using Core.Entities.Concrete;
 using System;
 using System.Text.Json.Serialization;
 
@@ -39,6 +40,12 @@ namespace Entities.Concrete
         public bool IsTrialSubscription { get; set; }
         public DateTime? TrialEndDate { get; set; }
         
+        // Sponsorship Information
+        public int? SponsorshipCodeId { get; set; } // Which sponsorship code was used
+        public int? SponsorId { get; set; } // Sponsor company user ID
+        public bool IsSponsoredSubscription { get; set; } // Is this a sponsored subscription
+        public string SponsorshipNotes { get; set; } // Any notes from sponsor
+        
         // Audit fields
         public DateTime CreatedDate { get; set; }
         public DateTime? UpdatedDate { get; set; }
@@ -48,5 +55,11 @@ namespace Entities.Concrete
         // Navigation properties (for EF Core)
         [JsonIgnore]
         public virtual SubscriptionTier SubscriptionTier { get; set; }
+        
+        [JsonIgnore]
+        public virtual SponsorshipCode SponsorshipCode { get; set; }
+        
+        [JsonIgnore]
+        public virtual User Sponsor { get; set; }
     }
 }

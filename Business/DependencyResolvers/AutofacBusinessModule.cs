@@ -7,6 +7,7 @@ using Business.Services.Configuration;
 using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
+using Business.Services.Sponsorship;
 using Microsoft.Extensions.Configuration;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
@@ -64,6 +65,13 @@ namespace Business.DependencyResolvers
             builder.RegisterType<SubscriptionUsageLogRepository>().As<ISubscriptionUsageLogRepository>()
                 .InstancePerLifetimeScope();
             
+            // Sponsorship repositories
+            builder.RegisterType<SponsorshipCodeRepository>().As<ISponsorshipCodeRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SponsorshipPurchaseRepository>().As<ISponsorshipPurchaseRepository>()
+                .InstancePerLifetimeScope();
+            
             builder.RegisterType<PlantAnalysisService>().As<IPlantAnalysisService>()
                 .InstancePerLifetimeScope();
             
@@ -80,6 +88,9 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<RabbitMQConsumerService>().As<IRabbitMQConsumerService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SponsorshipService>().As<ISponsorshipService>()
                 .InstancePerLifetimeScope();
             
             

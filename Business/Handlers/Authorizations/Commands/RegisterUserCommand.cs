@@ -59,7 +59,7 @@ namespace Business.Handlers.Authorizations.Commands
                 if (isThereAnyUser != null)
                 {
                     Console.WriteLine($"[RegisterUser] ❌ User already exists: {request.Email}");
-                    return new ErrorResult(Messages.NameAlreadyExist);
+                    return new ErrorResult(Messages.EmailAlreadyExists);
                 }
 
                 Console.WriteLine($"[RegisterUser] ✅ User email is unique, proceeding with registration...");

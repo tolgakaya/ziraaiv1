@@ -318,7 +318,9 @@ namespace DataAccess.Concrete.Configurations
                 new Translate { Id = 135, LangId = 1, Code = "LogList", Value = "İşlem Kütüğü" },
                 new Translate { Id = 136, LangId = 2, Code = "LogList", Value = "LogList" },
                 new Translate { Id = 137, LangId = 1, Code = "DeleteConfirm", Value = "Emin misiniz?" },
-                new Translate { Id = 138, LangId = 2, Code = "DeleteConfirm", Value = "Are you sure?" }
+                new Translate { Id = 138, LangId = 2, Code = "DeleteConfirm", Value = "Are you sure?" },
+                new Translate { Id = 139, LangId = 1, Code = "EmailAlreadyExists", Value = "Bu e-posta adresi ile zaten bir hesap mevcut." },
+                new Translate { Id = 140, LangId = 2, Code = "EmailAlreadyExists", Value = "An account with this email address already exists." }
             };
         }
     }

@@ -1,4 +1,5 @@
 using Core.Entities;
+using Core.Entities.Concrete;
 using System;
 
 namespace Entities.Concrete
@@ -18,7 +19,11 @@ namespace Entities.Concrete
         // N8N Analysis Response Fields
         public string AnalysisId { get; set; }
         public string FarmerId { get; set; }
-        public string SponsorId { get; set; }
+        
+        // Sponsorship Tracking
+        public string SponsorId { get; set; } // Legacy field for backward compatibility
+        public int? SponsorshipCodeId { get; set; } // Which sponsorship code was used for this analysis
+        public int? SponsorUserId { get; set; } // Sponsor company user ID
         public string Location { get; set; }
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
@@ -82,5 +87,9 @@ namespace Entities.Concrete
         public string Pests { get; set; }
         public string AnalysisResult { get; set; }
         public string N8nWebhookResponse { get; set; }
+        
+        // Navigation properties
+        public virtual SponsorshipCode SponsorshipCode { get; set; }
+        public virtual User SponsorUser { get; set; }
     }
 }

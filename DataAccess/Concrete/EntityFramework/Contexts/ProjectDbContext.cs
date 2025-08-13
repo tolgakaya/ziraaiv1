@@ -61,6 +61,10 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<SubscriptionTier> SubscriptionTiers { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<SubscriptionUsageLog> SubscriptionUsageLogs { get; set; }
+        
+        // Sponsorship System
+        public DbSet<SponsorshipCode> SponsorshipCodes { get; set; }
+        public DbSet<SponsorshipPurchase> SponsorshipPurchases { get; set; }
 
         protected IConfiguration Configuration { get; }
 
