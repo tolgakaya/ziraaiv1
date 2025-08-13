@@ -847,6 +847,78 @@ USAGE_ANALYTICS_RETENTION_DAYS = "365"
 
 This subscription system provides enterprise-grade access control, detailed usage analytics, and flexible billing management while maintaining high performance and reliability.
 
+## Critical Production Deployment Fixes (August 2025)
+
+### Database Stability & Performance Enhancements
+
+#### 1. Complete PostgreSQL Timezone Compatibility Resolution ✅
+**Issue**: Persistent "Cannot write DateTime with Kind=UTC to PostgreSQL type 'timestamp without time zone'" errors blocking all subscription operations.
+
+**Multi-layered Solution**:
+- **Global AppContext Configuration**: Set timezone compatibility switches in Program.cs for both WebAPI and WorkerService
+- **Manual DateTime Handling**: Explicit DateTime.Now assignments in subscription update operations
+- **Database Schema Fixes**: Added missing columns and corrected type mismatches
+- **Enhanced Repository Layer**: Timezone-aware operations in UserSubscriptionRepository
+
+**Technical Implementation**:
+```csharp
+// Program.cs - Global timezone compatibility
+System.AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+System.AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+
+// Service Layer - Manual DateTime handling
+subscription.UpdatedDate = DateTime.Now; // Explicit local timezone
+```
+
+#### 2. Database Schema Alignment & Missing Column Resolution ✅
+**Issues Fixed**:
+- Missing `CreatedDate` column in SubscriptionUsageLogs table
+- Missing `RequestData` column for comprehensive audit trails
+- `ResponseStatus` column type standardization (integer → varchar)
+
+**Database Migration Scripts**:
+```sql
+ALTER TABLE "SubscriptionUsageLogs" ADD COLUMN IF NOT EXISTS "CreatedDate" timestamp without time zone;
+ALTER TABLE "SubscriptionUsageLogs" ADD COLUMN IF NOT EXISTS "RequestData" character varying(4000);
+ALTER TABLE "SubscriptionUsageLogs" ALTER COLUMN "ResponseStatus" TYPE character varying(50);
+```
+
+#### 3. Usage Counter & Quota System Full Restoration ✅
+**Restored Functionality**:
+- ✅ Real-time daily/monthly usage tracking
+- ✅ Automatic quota reset at midnight (daily) and 1st of month (monthly)
+- ✅ Usage increment after successful plant analysis
+- ✅ Complete audit trail with detailed logging
+- ✅ Graceful error handling with user-friendly fallbacks
+
+**Production Features**:
+- Non-blocking subscription validation
+- Comprehensive usage analytics
+- Foreign key integrity maintenance
+- Performance-optimized counter operations
+
+#### 4. Production-Ready Error Handling & Service Resilience ✅
+**Resilience Improvements**:
+- Database connection failure tolerance
+- Timezone mismatch graceful recovery
+- Usage logging error containment
+- Service isolation preventing cascading failures
+
+**Monitoring & Debugging**:
+- Enhanced console logging for subscription operations
+- Detailed exception tracking with inner exception analysis
+- Performance metrics for database operations
+- Real-time quota status reporting
+
+### Deployment Status Summary
+**🎯 Production Ready**: All critical database stability issues resolved
+- ✅ Zero database save exceptions 
+- ✅ Full subscription system functionality
+- ✅ Complete usage tracking and quota enforcement
+- ✅ Comprehensive error handling and monitoring
+- ✅ PostgreSQL timezone compatibility guaranteed
+- ✅ Enterprise-grade reliability and performance
+
 ## Recent Bug Fixes and Production Deployments (August 2025)
 
 ### Critical Database Issues Resolved ✅
@@ -936,7 +1008,20 @@ var now = DateTime.Now;
 subscription.CreatedDate = DateTime.Now;
 ```
 
-**Impact**: Eliminated all database save exceptions related to DateTime timezone mismatches.
+**Global PostgreSQL Timezone Compatibility Fix**:
+Added application-level configuration for comprehensive timezone support:
+
+```csharp
+// Program.cs (WebAPI & WorkerService)
+System.AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+System.AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+```
+
+**Impact**: 
+- Eliminated ALL database save exceptions related to DateTime timezone mismatches
+- Supports both `DateTime.Now` and `DateTime.UtcNow` seamlessly
+- Comprehensive solution applied at application startup level
+- Full compatibility with PostgreSQL timestamp handling
 
 ##### 4. SubscriptionUsageLogs Table Structure Fix (August 2025)
 **Issue**: Database save errors in `ValidateAndLogUsageAsync` due to missing columns and type mismatches.
