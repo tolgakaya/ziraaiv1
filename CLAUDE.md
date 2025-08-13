@@ -915,7 +915,30 @@ new SubscriptionTier
 }
 ```
 
-##### 3. Staging Database Deployment
+##### 3. PostgreSQL DateTime Timezone Compatibility Fix (August 2025)
+**Issue**: `Cannot write DateTime with Kind=UTC to PostgreSQL type 'timestamp without time zone'`
+
+**Root Cause**: PostgreSQL database columns were configured as `timestamp without time zone`, but .NET code was using `DateTime.UtcNow` which has `DateTimeKind.Utc`.
+
+**Solution**: Systematically replaced all `DateTime.UtcNow` with `DateTime.Now` throughout the codebase:
+
+- **SubscriptionValidationService.cs**: Fixed timezone issues in usage logging, subscription expiry checks, and auto-renewals
+- **RegisterUserCommand.cs**: Fixed trial subscription creation during user registration
+- **General Pattern**: Use `DateTime.Now` for all PostgreSQL timestamp operations
+
+```csharp
+// Before (causing PostgreSQL errors):
+var now = DateTime.UtcNow;
+subscription.CreatedDate = DateTime.UtcNow;
+
+// After (PostgreSQL compatible):
+var now = DateTime.Now;
+subscription.CreatedDate = DateTime.Now;
+```
+
+**Impact**: Eliminated all database save exceptions related to DateTime timezone mismatches.
+
+##### 4. Staging Database Deployment
 **Challenge**: Entity Framework migrations were failing due to existing tables and DateTime.UtcNow in seed data.
 
 **Solution**: Created direct database insertion script using `dotnet-script`:

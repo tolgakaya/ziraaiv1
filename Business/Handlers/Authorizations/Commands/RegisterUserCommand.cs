@@ -51,12 +51,17 @@ namespace Business.Handlers.Authorizations.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
             {
+                Console.WriteLine($"[RegisterUser] 🚀 REGISTER STARTED - Email: {request.Email}, FullName: {request.FullName}");
+                
                 var isThereAnyUser = await _userRepository.GetAsync(u => u.Email == request.Email);
 
                 if (isThereAnyUser != null)
                 {
+                    Console.WriteLine($"[RegisterUser] ❌ User already exists: {request.Email}");
                     return new ErrorResult(Messages.NameAlreadyExist);
                 }
+
+                Console.WriteLine($"[RegisterUser] ✅ User email is unique, proceeding with registration...");
 
                 HashingHelper.CreatePasswordHash(request.Password, out var passwordSalt, out var passwordHash);
                 var user = new User
@@ -69,8 +74,10 @@ namespace Business.Handlers.Authorizations.Commands
                     Status = true
                 };
 
+                Console.WriteLine($"[RegisterUser] 💾 Adding user to database...");
                 _userRepository.Add(user);
                 await _userRepository.SaveChangesAsync();
+                Console.WriteLine($"[RegisterUser] ✅ User saved to database with ID: {user.UserId}");
 
                 // Automatically assign Farmer role to new users
                 var farmerGroup = await _groupRepository.GetAsync(g => g.GroupName == "Farmer");
@@ -88,15 +95,35 @@ namespace Business.Handlers.Authorizations.Commands
                 // Create trial subscription for new users
                 try
                 {
+                    Console.WriteLine($"[RegisterUser] Attempting to create trial subscription for user {user.Email} (ID: {user.UserId})");
+                    
+                    // Check if UserId is valid
+                    if (user.UserId <= 0)
+                    {
+                        Console.WriteLine($"[RegisterUser] ❌ Invalid UserId: {user.UserId}. User may not have been saved properly.");
+                        throw new Exception($"User ID is invalid: {user.UserId}");
+                    }
+                    
+                    Console.WriteLine($"[RegisterUser] ✅ User ID verified: {user.UserId}");
+                    
                     var trialTier = await _subscriptionTierRepository.GetAsync(t => t.TierName == "Trial" && t.IsActive);
+                    Console.WriteLine($"[RegisterUser] Trial tier search result: {(trialTier != null ? $"Found ID {trialTier.Id}" : "NOT FOUND")}");
+                    
                     if (trialTier != null)
                     {
+                        Console.WriteLine($"[RegisterUser] Creating trial subscription with tier ID {trialTier.Id}...");
+                        // Use DateTime.Now instead of DateTime.UtcNow to avoid timezone issues with PostgreSQL
+                        var now = DateTime.Now;
+                        var trialEnd = now.AddDays(30);
+                        
+                        Console.WriteLine($"[RegisterUser] Creating subscription with dates: Start={now:yyyy-MM-dd HH:mm:ss}, End={trialEnd:yyyy-MM-dd HH:mm:ss}");
+                        
                         var trialSubscription = new Entities.Concrete.UserSubscription
                         {
                             UserId = user.UserId,
                             SubscriptionTierId = trialTier.Id,
-                            StartDate = DateTime.UtcNow,
-                            EndDate = DateTime.UtcNow.AddDays(30), // 30-day trial
+                            StartDate = now,
+                            EndDate = trialEnd,
                             IsActive = true,
                             AutoRenew = false,
                             PaymentMethod = "Trial",
@@ -104,25 +131,57 @@ namespace Business.Handlers.Authorizations.Commands
                             Currency = "TRY",
                             CurrentDailyUsage = 0,
                             CurrentMonthlyUsage = 0,
-                            LastUsageResetDate = DateTime.UtcNow,
-                            MonthlyUsageResetDate = DateTime.UtcNow,
+                            LastUsageResetDate = now,
+                            MonthlyUsageResetDate = now,
                             Status = "Active",
                             IsTrialSubscription = true,
-                            TrialEndDate = DateTime.UtcNow.AddDays(30),
-                            CreatedDate = DateTime.UtcNow,
+                            TrialEndDate = trialEnd,
+                            CreatedDate = now,
                             CreatedUserId = user.UserId
                         };
+                        
+                        Console.WriteLine($"[RegisterUser] Adding trial subscription to repository...");
                         _userSubscriptionRepository.Add(trialSubscription);
+                        
+                        Console.WriteLine($"[RegisterUser] Saving trial subscription to database...");
                         await _userSubscriptionRepository.SaveChangesAsync();
+                        
+                        Console.WriteLine($"[RegisterUser] ✅ Trial subscription created successfully for user {user.Email}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[RegisterUser] ❌ Trial tier not found! Cannot create trial subscription for user {user.Email}");
                     }
                 }
                 catch (Exception subscriptionEx)
                 {
                     // Log subscription creation error but don't fail registration
-                    Console.WriteLine($"Failed to create trial subscription for user {user.Email}: {subscriptionEx.Message}");
+                    Console.WriteLine($"[RegisterUser] ❌ EXCEPTION: Failed to create trial subscription for user {user.Email}");
+                    Console.WriteLine($"[RegisterUser] Exception message: {subscriptionEx.Message}");
+                    
+                    // Log inner exception details
+                    var innerEx = subscriptionEx.InnerException;
+                    var level = 1;
+                    while (innerEx != null)
+                    {
+                        Console.WriteLine($"[RegisterUser] Inner Exception {level}: {innerEx.Message}");
+                        if (innerEx.Data?.Count > 0)
+                        {
+                            Console.WriteLine($"[RegisterUser] Inner Exception {level} Data:");
+                            foreach (var key in innerEx.Data.Keys)
+                            {
+                                Console.WriteLine($"[RegisterUser]   {key}: {innerEx.Data[key]}");
+                            }
+                        }
+                        innerEx = innerEx.InnerException;
+                        level++;
+                    }
+                    
+                    Console.WriteLine($"[RegisterUser] Stack trace: {subscriptionEx.StackTrace}");
                     // Registration continues without subscription
                 }
 
+                Console.WriteLine($"[RegisterUser] 🎉 REGISTRATION COMPLETED SUCCESSFULLY for {request.Email} (ID: {user.UserId})");
                 return new SuccessResult(Messages.Added);
             }
         }

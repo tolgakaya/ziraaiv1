@@ -48,7 +48,7 @@ namespace Business.Services.Subscription
             }
 
             // Check if subscription is expired
-            if (subscription.EndDate <= DateTime.UtcNow)
+            if (subscription.EndDate <= DateTime.Now)
             {
                 subscription.IsActive = false;
                 subscription.Status = "Expired";
@@ -68,14 +68,14 @@ namespace Business.Services.Subscription
             }
 
             // Reset daily usage if needed
-            if (subscription.LastUsageResetDate?.Date < DateTime.UtcNow.Date)
+            if (subscription.LastUsageResetDate?.Date < DateTime.Now.Date)
             {
                 subscription.CurrentDailyUsage = 0;
-                subscription.LastUsageResetDate = DateTime.UtcNow;
+                subscription.LastUsageResetDate = DateTime.Now;
             }
 
             // Reset monthly usage if needed
-            var currentMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             if (subscription.MonthlyUsageResetDate == null || subscription.MonthlyUsageResetDate < currentMonth)
             {
                 subscription.CurrentMonthlyUsage = 0;
@@ -111,8 +111,8 @@ namespace Business.Services.Subscription
                 MonthlyRemaining = monthlyRemaining,
                 CanMakeRequest = canMakeRequest,
                 LimitExceededMessage = limitMessage,
-                NextDailyReset = DateTime.UtcNow.Date.AddDays(1),
-                NextMonthlyReset = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(1),
+                NextDailyReset = DateTime.Now.Date.AddDays(1),
+                NextMonthlyReset = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1),
                 SubscriptionEndDate = subscription.EndDate
             };
 
@@ -190,13 +190,16 @@ namespace Business.Services.Subscription
                     return;
                 }
 
+                // Use DateTime.Now instead of DateTime.UtcNow to avoid timezone issues with PostgreSQL
+                var now = DateTime.Now;
+                
                 var usageLog = new SubscriptionUsageLog
                 {
                     UserId = userId,
                     UserSubscriptionId = subscription.Id, // Now guaranteed to be valid
                     PlantAnalysisId = plantAnalysisId,
                     UsageType = "PlantAnalysis",
-                    UsageDate = DateTime.UtcNow,
+                    UsageDate = now,
                     RequestEndpoint = endpoint,
                     RequestMethod = method,
                     IsSuccessful = isSuccessful,
@@ -207,7 +210,7 @@ namespace Business.Services.Subscription
                     DailyQuotaLimit = subscription.SubscriptionTier?.DailyRequestLimit ?? 0,
                     MonthlyQuotaUsed = subscription.CurrentMonthlyUsage,
                     MonthlyQuotaLimit = subscription.SubscriptionTier?.MonthlyRequestLimit ?? 0,
-                    CreatedDate = DateTime.UtcNow
+                    CreatedDate = now
                 };
 
                 await _usageLogRepository.LogUsageAsync(usageLog);
@@ -232,14 +235,17 @@ namespace Business.Services.Subscription
 
         public async Task ProcessExpiredSubscriptionsAsync()
         {
+            // Use DateTime.Now instead of DateTime.UtcNow to avoid timezone issues with PostgreSQL
+            var now = DateTime.Now;
+            
             var expiredSubscriptions = await _userSubscriptionRepository.GetListAsync(
-                s => s.IsActive && s.EndDate <= DateTime.UtcNow);
+                s => s.IsActive && s.EndDate <= now);
 
             foreach (var subscription in expiredSubscriptions)
             {
                 subscription.IsActive = false;
                 subscription.Status = "Expired";
-                subscription.UpdatedDate = DateTime.UtcNow;
+                subscription.UpdatedDate = now;
                 
                 _userSubscriptionRepository.Update(subscription);
             }
@@ -250,24 +256,24 @@ namespace Business.Services.Subscription
         public async Task ProcessAutoRenewalsAsync()
         {
             var expiringSubscriptions = await _userSubscriptionRepository.GetExpiringSubscriptionsAsync(
-                DateTime.UtcNow.AddDays(1)); // Process subscriptions expiring in next 24 hours
+                DateTime.Now.AddDays(1)); // Process subscriptions expiring in next 24 hours
 
             foreach (var subscription in expiringSubscriptions)
             {
-                if (subscription.AutoRenew && subscription.NextPaymentDate <= DateTime.UtcNow)
+                if (subscription.AutoRenew && subscription.NextPaymentDate <= DateTime.Now)
                 {
                     // Here you would integrate with payment processing
                     // For now, we'll just extend the subscription
                     subscription.EndDate = subscription.EndDate.AddMonths(1);
-                    subscription.LastPaymentDate = DateTime.UtcNow;
+                    subscription.LastPaymentDate = DateTime.Now;
                     subscription.NextPaymentDate = subscription.EndDate;
-                    subscription.UpdatedDate = DateTime.UtcNow;
+                    subscription.UpdatedDate = DateTime.Now;
                     
                     // Reset usage counters for new period
                     subscription.CurrentDailyUsage = 0;
                     subscription.CurrentMonthlyUsage = 0;
-                    subscription.LastUsageResetDate = DateTime.UtcNow;
-                    subscription.MonthlyUsageResetDate = DateTime.UtcNow;
+                    subscription.LastUsageResetDate = DateTime.Now;
+                    subscription.MonthlyUsageResetDate = DateTime.Now;
                     
                     _userSubscriptionRepository.Update(subscription);
                 }
