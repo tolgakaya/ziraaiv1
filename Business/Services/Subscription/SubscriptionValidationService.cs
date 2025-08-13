@@ -118,8 +118,30 @@ namespace Business.Services.Subscription
 
             if (canMakeRequest)
             {
-                _userSubscriptionRepository.Update(subscription);
-                await _userSubscriptionRepository.SaveChangesAsync();
+                try
+                {
+                    Console.WriteLine($"[CheckSubscriptionStatusAsync] Updating subscription and saving changes...");
+                    _userSubscriptionRepository.Update(subscription);
+                    await _userSubscriptionRepository.SaveChangesAsync();
+                    Console.WriteLine($"[CheckSubscriptionStatusAsync] ✅ Subscription updated successfully");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[CheckSubscriptionStatusAsync] ❌ ERROR saving subscription changes:");
+                    Console.WriteLine($"[CheckSubscriptionStatusAsync] Exception: {ex.Message}");
+                    Console.WriteLine($"[CheckSubscriptionStatusAsync] Exception Type: {ex.GetType().FullName}");
+                    
+                    var innerEx = ex.InnerException;
+                    var level = 1;
+                    while (innerEx != null)
+                    {
+                        Console.WriteLine($"[CheckSubscriptionStatusAsync] Inner Exception {level}: {innerEx.Message}");
+                        Console.WriteLine($"[CheckSubscriptionStatusAsync] Inner Exception {level} Type: {innerEx.GetType().FullName}");
+                        innerEx = innerEx.InnerException;
+                        level++;
+                    }
+                    throw;
+                }
             }
 
             return new SuccessDataResult(status);
@@ -127,17 +149,34 @@ namespace Business.Services.Subscription
 
         public async Task<IResult> ValidateAndLogUsageAsync(int userId, string endpoint, string method)
         {
-            var statusResult = await CheckSubscriptionStatusAsync(userId);
-            
-            if (!statusResult.Success || !statusResult.Data.CanMakeRequest)
+            try
             {
-                // Log failed attempt
-                await LogUsageAsync(userId, endpoint, method, false, statusResult.Message);
-                return new ErrorResult(statusResult.Data?.LimitExceededMessage ?? statusResult.Message);
-            }
+                Console.WriteLine($"[ValidateAndLogUsageAsync] 🔍 Starting validation for userId: {userId}, endpoint: {endpoint}");
+                
+                var statusResult = await CheckSubscriptionStatusAsync(userId);
+                Console.WriteLine($"[ValidateAndLogUsageAsync] CheckSubscriptionStatusAsync result: Success={statusResult.Success}");
+                
+                if (!statusResult.Success || !statusResult.Data.CanMakeRequest)
+                {
+                    Console.WriteLine($"[ValidateAndLogUsageAsync] ❌ Validation failed, attempting to log failed usage...");
+                    // Log failed attempt
+                    await LogUsageAsync(userId, endpoint, method, false, statusResult.Message);
+                    Console.WriteLine($"[ValidateAndLogUsageAsync] ✅ Failed usage logged successfully");
+                    return new ErrorResult(statusResult.Data?.LimitExceededMessage ?? statusResult.Message);
+                }
 
-            // Log successful validation (actual usage will be logged after successful request)
-            return new SuccessResult();
+                Console.WriteLine($"[ValidateAndLogUsageAsync] ✅ Validation successful");
+                // Log successful validation (actual usage will be logged after successful request)
+                return new SuccessResult();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ValidateAndLogUsageAsync] ❌ EXCEPTION in ValidateAndLogUsageAsync:");
+                Console.WriteLine($"[ValidateAndLogUsageAsync] Exception: {ex.Message}");
+                Console.WriteLine($"[ValidateAndLogUsageAsync] Exception Type: {ex.GetType().FullName}");
+                Console.WriteLine($"[ValidateAndLogUsageAsync] Stack trace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async Task<bool> CanUserMakeRequestAsync(int userId)
@@ -218,11 +257,24 @@ namespace Business.Services.Subscription
             catch (Exception ex)
             {
                 // Log the error but don't let usage logging failures break the main flow
-                Console.WriteLine($"[UsageLog] Error logging usage for userId {userId}: {ex.Message}");
-                if (ex.InnerException != null)
+                Console.WriteLine($"[UsageLog] ❌ CRITICAL ERROR logging usage for userId {userId}:");
+                Console.WriteLine($"[UsageLog] Exception: {ex.Message}");
+                Console.WriteLine($"[UsageLog] Exception Type: {ex.GetType().FullName}");
+                
+                var innerEx = ex.InnerException;
+                var level = 1;
+                while (innerEx != null)
                 {
-                    Console.WriteLine($"[UsageLog] Inner Exception: {ex.InnerException.Message}");
+                    Console.WriteLine($"[UsageLog] Inner Exception {level}: {innerEx.Message}");
+                    Console.WriteLine($"[UsageLog] Inner Exception {level} Type: {innerEx.GetType().FullName}");
+                    innerEx = innerEx.InnerException;
+                    level++;
                 }
+                
+                Console.WriteLine($"[UsageLog] Stack trace: {ex.StackTrace}");
+                
+                // Re-throw the exception to see it in the main error log
+                throw;
             }
         }
 

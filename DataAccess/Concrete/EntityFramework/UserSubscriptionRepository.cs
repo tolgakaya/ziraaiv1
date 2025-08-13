@@ -23,7 +23,7 @@ namespace DataAccess.Concrete.EntityFramework
                 .FirstOrDefaultAsync(x => x.UserId == userId 
                     && x.IsActive 
                     && x.Status == "Active" 
-                    && x.EndDate > DateTime.UtcNow);
+                    && x.EndDate > DateTime.Now);
         }
 
         public async Task<List<UserSubscription>> GetUserSubscriptionHistoryAsync(int userId)
@@ -59,7 +59,7 @@ namespace DataAccess.Concrete.EntityFramework
                 .AnyAsync(x => x.UserId == userId 
                     && x.IsActive 
                     && x.Status == "Active" 
-                    && x.EndDate > DateTime.UtcNow);
+                    && x.EndDate > DateTime.Now);
         }
 
         public async Task UpdateUsageCountersAsync(int subscriptionId, int dailyIncrement = 1, int monthlyIncrement = 1)
@@ -68,14 +68,14 @@ namespace DataAccess.Concrete.EntityFramework
             if (subscription != null)
             {
                 // Check if we need to reset daily counter
-                if (subscription.LastUsageResetDate?.Date < DateTime.UtcNow.Date)
+                if (subscription.LastUsageResetDate?.Date < DateTime.Now.Date)
                 {
                     subscription.CurrentDailyUsage = 0;
-                    subscription.LastUsageResetDate = DateTime.UtcNow;
+                    subscription.LastUsageResetDate = DateTime.Now;
                 }
 
                 // Check if we need to reset monthly counter
-                var currentMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+                var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
                 if (subscription.MonthlyUsageResetDate == null || subscription.MonthlyUsageResetDate < currentMonth)
                 {
                     subscription.CurrentMonthlyUsage = 0;
@@ -84,7 +84,7 @@ namespace DataAccess.Concrete.EntityFramework
 
                 subscription.CurrentDailyUsage += dailyIncrement;
                 subscription.CurrentMonthlyUsage += monthlyIncrement;
-                subscription.UpdatedDate = DateTime.UtcNow;
+                subscription.UpdatedDate = DateTime.Now;
 
                 await Context.SaveChangesAsync();
             }
@@ -99,7 +99,7 @@ namespace DataAccess.Concrete.EntityFramework
             foreach (var subscription in activeSubscriptions)
             {
                 subscription.CurrentDailyUsage = 0;
-                subscription.LastUsageResetDate = DateTime.UtcNow;
+                subscription.LastUsageResetDate = DateTime.Now;
             }
 
             await Context.SaveChangesAsync();
@@ -111,7 +111,7 @@ namespace DataAccess.Concrete.EntityFramework
                 .Where(x => x.IsActive && x.Status == "Active")
                 .ToListAsync();
 
-            var currentMonth = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+            var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
             
             foreach (var subscription in activeSubscriptions)
             {
