@@ -1,8 +1,8 @@
 {
   "info": {
     "name": "ZiraAI Plant Analysis API",
-    "description": "Complete API collection for ZiraAI Plant Analysis system with authentication, authorization, and subscription management",
-    "version": "1.0.0",
+    "description": "Complete API collection for ZiraAI Plant Analysis system with authentication, authorization, subscription management, and sponsorship features",
+    "version": "1.1.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -39,6 +39,16 @@
     {
       "key": "sponsorId",
       "value": "SPONSOR001",
+      "type": "string"
+    },
+    {
+      "key": "sponsorshipCode",
+      "value": "AGRI-2025-XXXX",
+      "type": "string"
+    },
+    {
+      "key": "purchaseId",
+      "value": "",
       "type": "string"
     }
   ],
@@ -143,13 +153,35 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"John Farmer\",\n  \"email\": \"farmer@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"citizenId\": 12345678901,\n  \"mobilePhones\": \"+90 555 123 4567\",\n  \"address\": \"Antalya, Turkey\"\n}"
+              "raw": "{\n  \"fullName\": \"John Farmer\",\n  \"email\": \"farmer@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"userRole\": \"Farmer\",\n  \"citizenId\": 12345678901,\n  \"mobilePhones\": \"+90 555 123 4567\",\n  \"address\": \"Antalya, Turkey\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/register",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "auth", "register"]
             }
+          }
+        },
+        {
+          "name": "Register as Sponsor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Sponsor Company Ltd.\",\n  \"email\": \"sponsor@company.com\",\n  \"password\": \"SponsorPassword123!\",\n  \"userRole\": \"Sponsor\",\n  \"citizenId\": 98765432100,\n  \"mobilePhones\": \"+90 555 987 6543\",\n  \"address\": \"Istanbul, Turkey\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Register a new sponsor company account"
           }
         },
         {
@@ -775,6 +807,591 @@
               "path": ["api", "users", "{{userId}}"]
             },
             "description": "Update user profile (own profile or admin)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🤝 Sponsorship Management",
+      "item": [
+        {
+          "name": "Purchase Bulk Subscriptions (Sponsor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Bulk purchase successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('id');",
+                  "        pm.expect(response.data).to.have.property('codesGenerated');",
+                  "        console.log('Purchase ID:', response.data.id);",
+                  "        console.log('Codes Generated:', response.data.codesGenerated);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"quantity\": 10,\n  \"totalAmount\": 2999.90,\n  \"paymentMethod\": \"CreditCard\",\n  \"paymentReference\": \"STRIPE-ch_{{$randomUUID}}\",\n  \"companyName\": \"Test Sponsor Company\",\n  \"invoiceAddress\": \"123 Sponsor Street, Istanbul\",\n  \"taxNumber\": \"1234567890\",\n  \"codePrefix\": \"AGRI\",\n  \"validityDays\": 365,\n  \"notes\": \"Bulk purchase for farmer sponsorship program\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/purchase-bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "purchase-bulk"]
+            },
+            "description": "Purchase bulk subscriptions for distribution to farmers. Sponsor role required."
+          }
+        },
+        {
+          "name": "Redeem Sponsorship Code (Farmer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Code redemption successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('id');",
+                  "        pm.expect(response.data).to.have.property('isSponsoredSubscription');",
+                  "        pm.expect(response.data.isSponsoredSubscription).to.be.true;",
+                  "        console.log('Subscription ID:', response.data.id);",
+                  "        console.log('Sponsor ID:', response.data.sponsorId);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{sponsorshipCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/redeem",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "redeem"]
+            },
+            "description": "Redeem a sponsorship code to get a free subscription. Farmer role required."
+          }
+        },
+        {
+          "name": "Get Sponsorship Codes (Sponsor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Codes retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "    ",
+                  "    if (response.data.length > 0) {",
+                  "        const code = response.data[0];",
+                  "        pm.expect(code).to.have.property('code');",
+                  "        pm.expect(code).to.have.property('isUsed');",
+                  "        pm.expect(code).to.have.property('subscriptionTier');",
+                  "        console.log('Total codes:', response.data.length);",
+                  "        console.log('First code:', code.code);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/codes?onlyUnused=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "codes"],
+              "query": [
+                {
+                  "key": "onlyUnused",
+                  "value": "false",
+                  "description": "Filter to show only unused codes"
+                }
+              ]
+            },
+            "description": "Get all sponsorship codes for current sponsor. Sponsor role required."
+          }
+        },
+        {
+          "name": "Get Unused Codes Only (Sponsor)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/codes?onlyUnused=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "codes"],
+              "query": [
+                {
+                  "key": "onlyUnused",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get only unused sponsorship codes for distribution."
+          }
+        },
+        {
+          "name": "Get Purchase History (Sponsor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Purchase history retrieved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "    ",
+                  "    if (response.data.length > 0) {",
+                  "        const purchase = response.data[0];",
+                  "        pm.expect(purchase).to.have.property('id');",
+                  "        pm.expect(purchase).to.have.property('quantity');",
+                  "        pm.expect(purchase).to.have.property('totalAmount');",
+                  "        pm.expect(purchase).to.have.property('codesGenerated');",
+                  "        pm.expect(purchase).to.have.property('codesUsed');",
+                  "        console.log('Total purchases:', response.data.length);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/purchases",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "purchases"]
+            },
+            "description": "Get purchase history for current sponsor."
+          }
+        },
+        {
+          "name": "Get Sponsored Farmers (Sponsor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Sponsored farmers retrieved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    pm.expect(response.data).to.be.an('array');",
+                  "    ",
+                  "    if (response.data.length > 0) {",
+                  "        const farmer = response.data[0];",
+                  "        pm.expect(farmer).to.have.property('farmerId');",
+                  "        pm.expect(farmer).to.have.property('farmerName');",
+                  "        pm.expect(farmer).to.have.property('code');",
+                  "        pm.expect(farmer).to.have.property('redeemedDate');",
+                  "        console.log('Total sponsored farmers:', response.data.length);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/farmers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "farmers"]
+            },
+            "description": "Get list of farmers sponsored by current sponsor."
+          }
+        },
+        {
+          "name": "Get Sponsorship Statistics (Sponsor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Statistics retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('totalSpent');",
+                  "        pm.expect(response.data).to.have.property('totalCodesPurchased');",
+                  "        pm.expect(response.data).to.have.property('totalCodesUsed');",
+                  "        pm.expect(response.data).to.have.property('usageRate');",
+                  "        pm.expect(response.data).to.have.property('unusedCodes');",
+                  "        ",
+                  "        console.log('Total Spent:', response.data.totalSpent);",
+                  "        console.log('Usage Rate:', response.data.usageRate + '%');",
+                  "        console.log('Unused Codes:', response.data.unusedCodes);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "statistics"]
+            },
+            "description": "Get sponsorship usage statistics for current sponsor."
+          }
+        },
+        {
+          "name": "📱 Send Sponsorship Links (SMS/WhatsApp)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Links sent successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('totalSent');",
+                  "        pm.expect(response.data).to.have.property('successCount');",
+                  "        pm.expect(response.data).to.have.property('failureCount');",
+                  "        pm.expect(response.data).to.have.property('results');",
+                  "        ",
+                  "        console.log('Total Sent:', response.data.totalSent);",
+                  "        console.log('Success Count:', response.data.successCount);",
+                  "        console.log('Failure Count:', response.data.failureCount);",
+                  "        ",
+                  "        // Store first successful code for redemption testing",
+                  "        if (response.data.results && response.data.results.length > 0) {",
+                  "            const firstResult = response.data.results.find(r => r.success);",
+                  "            if (firstResult) {",
+                  "                pm.collectionVariables.set('sponsorshipCode', firstResult.code);",
+                  "                console.log('Stored code for testing:', firstResult.code);",
+                  "            }",
+                  "        }",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\n    {\n      \"code\": \"AGRI-2025-ABC123\",\n      \"phone\": \"+905551234567\",\n      \"name\": \"Ahmet Çiftçi\"\n    },\n    {\n      \"code\": \"AGRI-2025-XYZ789\",\n      \"phone\": \"+905559876543\",\n      \"name\": \"Mehmet Tarım\"\n    }\n  ],\n  \"channel\": \"SMS\",\n  \"customMessage\": \"Optional custom message here\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorship/send-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorship", "send-link"]
+            },
+            "description": "Send sponsorship redemption links via SMS or WhatsApp to farmers. Uses API v1 with proper versioning. Sponsor role required."
+          }
+        },
+        {
+          "name": "📊 Get Link Distribution Statistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Link statistics retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('totalCodes');",
+                  "        pm.expect(response.data).to.have.property('totalLinksGenerated');",
+                  "        pm.expect(response.data).to.have.property('totalLinksSent');",
+                  "        pm.expect(response.data).to.have.property('totalLinksClicked');",
+                  "        pm.expect(response.data).to.have.property('conversionRate');",
+                  "        pm.expect(response.data).to.have.property('clickThroughRate');",
+                  "        ",
+                  "        console.log('Total Codes:', response.data.totalCodes);",
+                  "        console.log('Links Sent:', response.data.totalLinksSent);",
+                  "        console.log('Links Clicked:', response.data.totalLinksClicked);",
+                  "        console.log('Conversion Rate:', response.data.conversionRate + '%');",
+                  "        console.log('Click Through Rate:', response.data.clickThroughRate + '%');",
+                  "        ",
+                  "        if (response.data.channelPerformance) {",
+                  "            console.log('Channel Performance:');",
+                  "            response.data.channelPerformance.forEach(channel => {",
+                  "                console.log(`  ${channel.channel}: ${channel.totalSent} sent, ${channel.clickRate}% click rate`);",
+                  "            });",
+                  "        }",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorship/link-statistics?startDate={{$isoTimestamp}}&endDate={{$isoTimestamp}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorship", "link-statistics"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "{{$isoTimestamp}}",
+                  "description": "Optional: Start date for statistics (ISO format)",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "{{$isoTimestamp}}",
+                  "description": "Optional: End date for statistics (ISO format)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get detailed link distribution analytics including click rates, conversion rates, and channel performance. Sponsor role required."
+          }
+        },
+        {
+          "name": "🔗 Test Public Redemption Link (No Auth)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Public redemption endpoint accessible\", function () {",
+                  "    // We expect either success (if code exists) or a specific error page",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 404, 500]);",
+                  "    ",
+                  "    // For 200 responses, should contain HTML",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.headers.get('Content-Type')).to.include('text/html');",
+                  "        pm.expect(pm.response.text()).to.include('html');",
+                  "    }",
+                  "    ",
+                  "    console.log('Response Status:', pm.response.code);",
+                  "    console.log('Content Type:', pm.response.headers.get('Content-Type'));",
+                  "    ",
+                  "    // If it's an HTML response, log first 200 characters",
+                  "    if (pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('text/html')) {",
+                  "        console.log('HTML Preview:', pm.response.text().substring(0, 200) + '...');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redeem/{{sponsorshipCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["redeem", "{{sponsorshipCode}}"]
+            },
+            "description": "Test the public redemption link that farmers will click. No authentication required. Returns HTML page with auto-account creation and subscription activation."
+          }
+        },
+        {
+          "name": "🔗 Test Versioned Public Redemption",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Versioned redemption endpoint accessible\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 404, 500]);",
+                  "    ",
+                  "    if (pm.response.code === 200) {",
+                  "        pm.expect(pm.response.headers.get('Content-Type')).to.include('text/html');",
+                  "    }",
+                  "    ",
+                  "    console.log('Versioned Response Status:', pm.response.code);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/redeem/{{sponsorshipCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "redeem", "{{sponsorshipCode}}"]
+            },
+            "description": "Test the versioned public redemption endpoint. Alternative URL format with API versioning."
+          }
+        },
+        {
+          "name": "Validate Sponsorship Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Code validation response received\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success');",
+                  "    pm.expect(response).to.have.property('data');",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('code');",
+                  "        pm.expect(response.data).to.have.property('isValid');",
+                  "        ",
+                  "        if (response.data.isValid) {",
+                  "            pm.expect(response.data).to.have.property('subscriptionTier');",
+                  "            pm.expect(response.data).to.have.property('expiryDate');",
+                  "            console.log('Code is valid for tier:', response.data.subscriptionTier);",
+                  "        } else {",
+                  "            console.log('Code is invalid or expired');",
+                  "        }",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/validate/{{sponsorshipCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "validate", "{{sponsorshipCode}}"]
+            },
+            "description": "Validate a sponsorship code without redeeming it."
+          }
+        },
+        {
+          "name": "Get My Sponsor Info (Farmer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/sponsorship/my-sponsor",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sponsorship", "my-sponsor"]
+            },
+            "description": "Get sponsor information for current farmer (if sponsored)."
           }
         }
       ]

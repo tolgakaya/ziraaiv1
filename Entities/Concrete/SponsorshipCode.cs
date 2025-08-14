@@ -32,6 +32,17 @@ namespace Entities.Concrete
         public string DistributionChannel { get; set; } // Email, SMS, Physical, etc.
         public DateTime? DistributionDate { get; set; }
         
+        // Link Distribution Fields
+        public string RedemptionLink { get; set; } // Generated redemption link
+        public DateTime? LinkClickDate { get; set; } // First click timestamp
+        public int LinkClickCount { get; set; } // Total click count
+        public string RecipientPhone { get; set; } // Phone number for SMS/WhatsApp
+        public string RecipientName { get; set; } // Recipient's name for personalized messages
+        public DateTime? LinkSentDate { get; set; } // When the link was sent
+        public string LinkSentVia { get; set; } // SMS, WhatsApp, Email
+        public bool LinkDelivered { get; set; } // Delivery confirmation
+        public string LastClickIpAddress { get; set; } // For tracking and security
+        
         // Navigation properties
         [JsonIgnore]
         public virtual User Sponsor { get; set; }

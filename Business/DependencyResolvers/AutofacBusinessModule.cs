@@ -8,6 +8,7 @@ using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Business.Services.Sponsorship;
+using Business.Services.Redemption;
 using Microsoft.Extensions.Configuration;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
@@ -91,6 +92,9 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<SponsorshipService>().As<ISponsorshipService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<RedemptionService>().As<IRedemptionService>()
                 .InstancePerLifetimeScope();
             
             

@@ -5,6 +5,7 @@ using Core.Extensions;
 using Core.Utilities.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -14,10 +15,17 @@ namespace WebAPI.Controllers
     /// <summary>
     /// Sponsorship management for bulk subscription purchases and code distribution
     /// </summary>
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
     public class SponsorshipController : BaseApiController
     {
+        private readonly ILogger<SponsorshipController> _logger;
+
+        public SponsorshipController(ILogger<SponsorshipController> logger)
+        {
+            _logger = logger;
+        }
         /// <summary>
         /// Purchase bulk subscriptions for distribution to farmers
         /// </summary>
@@ -198,6 +206,83 @@ namespace WebAPI.Controllers
             }
             
             return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Get link distribution statistics for current sponsor
+        /// </summary>
+        /// <param name="startDate">Start date for statistics (optional)</param>
+        /// <param name="endDate">End date for statistics (optional)</param>
+        /// <returns>Link usage and performance statistics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("link-statistics")]
+        public async Task<IActionResult> GetLinkStatistics(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            var userId = GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+                
+            var query = new GetLinkStatisticsQuery
+            {
+                SponsorId = userId.Value,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+            
+            var result = await Mediator.Send(query);
+            
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+            
+            return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Send sponsorship links via SMS or WhatsApp to farmers
+        /// </summary>
+        /// <param name="command">Link sending details with recipients</param>
+        /// <returns>Bulk send results</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("send-link")]
+        public async Task<IActionResult> SendSponsorshipLink([FromBody] SendSponsorshipLinkCommand command)
+        {
+            try
+            {
+                _logger.LogInformation("Send sponsorship link request received");
+                
+                // Set sponsor ID from current user
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("User ID not found in claims");
+                    return Unauthorized();
+                }
+                
+                command.SponsorId = userId.Value;
+                _logger.LogInformation("Sending {Count} links for sponsor {SponsorId} via {Channel}", 
+                    command.Recipients?.Count ?? 0, command.SponsorId, command.Channel);
+                
+                var result = await Mediator.Send(command);
+                
+                if (result.Success)
+                {
+                    _logger.LogInformation("Links sent successfully. Success: {Success}, Failed: {Failed}", 
+                        result.Data?.SuccessCount ?? 0, result.Data?.FailureCount ?? 0);
+                    return Ok(result);
+                }
+                
+                _logger.LogWarning("Failed to send links: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending sponsorship links for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new { error = "Bağlantılar gönderilirken hata oluştu." });
+            }
         }
 
         /// <summary>
