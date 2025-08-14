@@ -99,6 +99,40 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Create individual sponsorship code
+        /// </summary>
+        /// <param name="command">Code creation details</param>
+        /// <returns>Created sponsorship code</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("codes")]
+        public async Task<IActionResult> CreateSponsorshipCode([FromBody] CreateSponsorshipCodeCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized();
+                }
+
+                command.SponsorId = userId.Value;
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating sponsorship code");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        /// <summary>
         /// Get sponsorship codes for current sponsor
         /// </summary>
         /// <param name="onlyUnused">Return only unused codes</param>

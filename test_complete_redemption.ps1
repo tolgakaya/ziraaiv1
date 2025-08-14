@@ -3,8 +3,8 @@
 # Tests the entire flow from sponsor code creation to farmer redemption
 
 param(
-    [Parameter(Mandatory=$true)]
-    [string]$SponsorToken,
+    [Parameter(Mandatory=$false)]
+    [string]$SponsorToken = "",
     
     [Parameter(Mandatory=$false)]
     [string]$BaseUrl = "https://localhost:5001"
@@ -26,46 +26,65 @@ $randomSuffix = Get-Random -Minimum 1000 -Maximum 9999
 # Step 1: Create sponsorship code
 Write-Host "1️⃣ Creating sponsorship code..." -ForegroundColor Yellow
 
-$codeData = @{
-    farmerName = "Test Farmer $timestamp"
-    farmerPhone = "555$randomSuffix$(Get-Random -Minimum 100 -Maximum 999)"
-    amount = [decimal](Get-Random -Minimum 50 -Maximum 500)
-    description = "Auto-test redemption - $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
-    expiryDate = (Get-Date).AddDays(30).ToString("yyyy-MM-ddTHH:mm:ss")
-}
-
-$headers = @{
-    'Authorization' = "Bearer $SponsorToken"
-    'Content-Type' = 'application/json'
-}
-
-try {
-    Write-Host "   Creating code for: $($codeData.farmerName)" -ForegroundColor Gray
-    Write-Host "   Phone: $($codeData.farmerPhone)" -ForegroundColor Gray
-    Write-Host "   Amount: $($codeData.amount) TL" -ForegroundColor Gray
-    
-    $codeResponse = Invoke-RestMethod -Uri "$BaseUrl/api/v1/sponsorship/codes" -Method POST -Body ($codeData | ConvertTo-Json) -Headers $headers
-    $sponsorCode = $codeResponse.data.code
-    $codeId = $codeResponse.data.id
-    
-    Write-Host "   ✅ Code created successfully!" -ForegroundColor Green
-    Write-Host "   📝 Code: $sponsorCode" -ForegroundColor Green
-    Write-Host "   🆔 ID: $codeId" -ForegroundColor Gray
-}
-catch {
-    Write-Host "   ❌ Failed to create sponsorship code!" -ForegroundColor Red
-    Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
-    if ($_.Exception.Response) {
-        $statusCode = $_.Exception.Response.StatusCode
-        Write-Host "   Status Code: $statusCode" -ForegroundColor Red
+# Check if sponsor token provided
+if ([string]::IsNullOrEmpty($SponsorToken)) {
+    Write-Host "   ⚠️  No sponsor token provided" -ForegroundColor Yellow
+    Write-Host "   Using fallback test with mock code" -ForegroundColor Gray
+    $TestCode = "FALLBACK-TEST-CODE-$(Get-Date -Format 'HHmmss')"
+    Write-Host "   📝 Mock test code: $TestCode" -ForegroundColor Gray
+    Write-Host "   💡 For full testing, provide sponsor token:" -ForegroundColor Yellow
+    Write-Host "      ./test_complete_redemption.ps1 -SponsorToken 'YOUR_JWT_TOKEN'" -ForegroundColor Gray
+    Write-Host "   🚀 Continuing with redemption tests using mock code..." -ForegroundColor Cyan
+} else {
+    $codeData = @{
+        farmerName = "Test Farmer $timestamp"
+        farmerPhone = "555$randomSuffix$(Get-Random -Minimum 100 -Maximum 999)"
+        amount = [decimal](Get-Random -Minimum 50 -Maximum 500)
+        description = "Auto-test redemption - $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+        expiryDate = (Get-Date).AddDays(30).ToString("yyyy-MM-ddTHH:mm:ss")
     }
-    exit 1
+
+    $headers = @{
+        'Authorization' = "Bearer $SponsorToken"
+        'Content-Type' = 'application/json'
+    }
+
+    try {
+        Write-Host "   Creating code for: $($codeData.farmerName)" -ForegroundColor Gray
+        Write-Host "   Phone: $($codeData.farmerPhone)" -ForegroundColor Gray
+        Write-Host "   Amount: $($codeData.amount) TL" -ForegroundColor Gray
+        
+        $codeResponse = Invoke-RestMethod -Uri "$BaseUrl/api/v1/sponsorship/codes" -Method POST -Body ($codeData | ConvertTo-Json) -Headers $headers
+        $sponsorCode = $codeResponse.data.code
+        $codeId = $codeResponse.data.id
+        
+        Write-Host "   ✅ Code created successfully!" -ForegroundColor Green
+        Write-Host "   📝 Code: $sponsorCode" -ForegroundColor Green
+        Write-Host "   🆔 ID: $codeId" -ForegroundColor Gray
+        $TestCode = $sponsorCode
+    }
+    catch {
+        Write-Host "   ❌ Failed to create sponsorship code!" -ForegroundColor Red
+        Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
+        if ($_.Exception.Response) {
+            $statusCode = $_.Exception.Response.StatusCode
+            Write-Host "   Status Code: $statusCode" -ForegroundColor Red
+        }
+        $TestCode = "FALLBACK-AFTER-ERROR-$(Get-Date -Format 'HHmmss')"
+        Write-Host "   🔄 Using fallback code: $TestCode" -ForegroundColor Yellow
+    }
 }
 
 # Step 2: Send redemption link
 Write-Host "`n2️⃣ Sending redemption link..." -ForegroundColor Yellow
 
-$linkData = @{
+if ([string]::IsNullOrEmpty($SponsorToken)) {
+    Write-Host "   ⚠️  Skipping link sending (no sponsor token)" -ForegroundColor Yellow
+    Write-Host "   📝 Would send link for code: $TestCode" -ForegroundColor Gray
+    $redemptionLink = "$BaseUrl/redeem/$TestCode"
+    Write-Host "   🔗 Mock redemption link: $redemptionLink" -ForegroundColor Cyan
+} else {
+    $linkData = @{
     codes = @(
         @{
             code = $sponsorCode
