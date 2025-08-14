@@ -1,4 +1,5 @@
 using Business.Constants;
+using Business.Services.FileStorage;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
@@ -6,6 +7,7 @@ using MediatR;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,10 +20,14 @@ namespace Business.Handlers.PlantAnalyses.Queries
         public class GetPlantAnalysisQueryHandler : IRequestHandler<GetPlantAnalysisQuery, IDataResult<PlantAnalysisResponseDto>>
         {
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
+            private readonly IFileStorageService _fileStorageService;
 
-            public GetPlantAnalysisQueryHandler(IPlantAnalysisRepository plantAnalysisRepository)
+            public GetPlantAnalysisQueryHandler(
+                IPlantAnalysisRepository plantAnalysisRepository,
+                IFileStorageService fileStorageService)
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
+                _fileStorageService = fileStorageService;
             }
 
             public async Task<IDataResult<PlantAnalysisResponseDto>> Handle(GetPlantAnalysisQuery request, CancellationToken cancellationToken)
@@ -31,14 +37,123 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 if (plantAnalysis == null)
                     return new ErrorDataResult<PlantAnalysisResponseDto>("Analysis not found");
 
+                // Convert image path to full URL if it's a relative path
+                string imageUrl = plantAnalysis.ImagePath;
+                if (!string.IsNullOrEmpty(imageUrl) && !imageUrl.StartsWith("http"))
+                {
+                    // For relative paths, convert to full URL using base URL
+                    var baseUrl = _fileStorageService.BaseUrl?.TrimEnd('/');
+                    var relativePath = imageUrl.TrimStart('/');
+                    imageUrl = $"{baseUrl}/{relativePath}";
+                }
+
                 var response = new PlantAnalysisResponseDto
                 {
                     Id = plantAnalysis.Id,
-                    ImagePath = plantAnalysis.ImagePath,
+                    ImagePath = imageUrl, // Return full URL instead of relative path
                     AnalysisDate = plantAnalysis.AnalysisDate,
                     Status = plantAnalysis.AnalysisStatus,
+                    UserId = plantAnalysis.UserId,
                     
-                    // Detailed analysis data
+                    // Core Analysis Fields
+                    AnalysisId = plantAnalysis.AnalysisId,
+                    FarmerId = plantAnalysis.FarmerId,
+                    SponsorId = plantAnalysis.SponsorId,
+                    SponsorUserId = plantAnalysis.SponsorUserId,        // Actual sponsor user ID
+                    SponsorshipCodeId = plantAnalysis.SponsorshipCodeId, // SponsorshipCode table ID
+                    Location = plantAnalysis.Location,
+                    GpsCoordinates = plantAnalysis.Latitude.HasValue && plantAnalysis.Longitude.HasValue
+                        ? new GpsCoordinates { Lat = plantAnalysis.Latitude.Value, Lng = plantAnalysis.Longitude.Value }
+                        : null,
+                    Altitude = plantAnalysis.Altitude,
+                    FieldId = plantAnalysis.FieldId,
+                    CropType = plantAnalysis.CropType,
+                    PlantingDate = plantAnalysis.PlantingDate,
+                    ExpectedHarvestDate = plantAnalysis.ExpectedHarvestDate,
+                    UrgencyLevel = plantAnalysis.UrgencyLevel,
+                    Notes = plantAnalysis.Notes,
+                    
+                    // Plant Identification
+                    PlantIdentification = !string.IsNullOrEmpty(plantAnalysis.PlantSpecies)
+                        ? new PlantIdentificationDto
+                        {
+                            Species = plantAnalysis.PlantSpecies,
+                            Variety = plantAnalysis.PlantVariety,
+                            GrowthStage = plantAnalysis.GrowthStage,
+                            Confidence = plantAnalysis.IdentificationConfidence ?? 0
+                        }
+                        : null,
+                    
+                    // Health Assessment
+                    HealthAssessment = plantAnalysis.VigorScore.HasValue
+                        ? new HealthAssessmentDto
+                        {
+                            VigorScore = plantAnalysis.VigorScore.Value,
+                            Severity = plantAnalysis.HealthSeverity,
+                            StressIndicators = !string.IsNullOrEmpty(plantAnalysis.StressIndicators)
+                                ? JsonConvert.DeserializeObject<string[]>(plantAnalysis.StressIndicators)?.ToList()
+                                : null,
+                            DiseaseSymptoms = !string.IsNullOrEmpty(plantAnalysis.DiseaseSymptoms)
+                                ? JsonConvert.DeserializeObject<string[]>(plantAnalysis.DiseaseSymptoms)?.ToList()
+                                : null
+                        }
+                        : null,
+                    
+                    // Nutrient Status
+                    NutrientStatus = !string.IsNullOrEmpty(plantAnalysis.PrimaryDeficiency)
+                        ? new NutrientStatusDto
+                        {
+                            PrimaryDeficiency = plantAnalysis.PrimaryDeficiency,
+                            // Parse full nutrient status from JSON if available
+                        }
+                        : null,
+                    
+                    // Summary
+                    Summary = plantAnalysis.OverallHealthScore.HasValue
+                        ? new SummaryDto
+                        {
+                            OverallHealthScore = plantAnalysis.OverallHealthScore.Value,
+                            PrimaryConcern = plantAnalysis.PrimaryConcern,
+                            Prognosis = plantAnalysis.Prognosis,
+                            EstimatedYieldImpact = plantAnalysis.EstimatedYieldImpact,
+                            ConfidenceLevel = plantAnalysis.ConfidenceLevel ?? 0
+                        }
+                        : null,
+                    
+                    // Processing Metadata
+                    ProcessingMetadata = !string.IsNullOrEmpty(plantAnalysis.AiModel)
+                        ? new ProcessingMetadataDto
+                        {
+                            AiModel = plantAnalysis.AiModel,
+                            ProcessingTimestamp = plantAnalysis.UpdatedDate ?? plantAnalysis.CreatedDate
+                        }
+                        : null,
+                    
+                    // Token Usage
+                    TokenUsage = plantAnalysis.TotalTokens.HasValue
+                        ? new TokenUsageDto
+                        {
+                            Summary = new TokenSummaryDto
+                            {
+                                TotalTokens = (int)plantAnalysis.TotalTokens.Value,
+                                TotalCostUsd = plantAnalysis.TotalCostUsd?.ToString("C2"),
+                                TotalCostTry = plantAnalysis.TotalCostTry?.ToString("C2"),
+                                ImageSizeKb = plantAnalysis.ImageSizeKb ?? 0
+                            }
+                        }
+                        : null,
+                    
+                    // Recommendations
+                    Recommendations = !string.IsNullOrEmpty(plantAnalysis.Recommendations)
+                        ? JsonConvert.DeserializeObject<RecommendationsDto>(plantAnalysis.Recommendations)
+                        : null,
+                    
+                    // Cross Factor Insights
+                    CrossFactorInsights = !string.IsNullOrEmpty(plantAnalysis.CrossFactorInsights)
+                        ? JsonConvert.DeserializeObject<List<CrossFactorInsightDto>>(plantAnalysis.CrossFactorInsights)
+                        : null,
+                    
+                    // Detailed analysis data (full JSON for reference)
                     DetailedAnalysis = !string.IsNullOrEmpty(plantAnalysis.DetailedAnalysisData)
                         ? JsonConvert.DeserializeObject<DetailedPlantAnalysisDto>(plantAnalysis.DetailedAnalysisData)
                         : new DetailedPlantAnalysisDto(),

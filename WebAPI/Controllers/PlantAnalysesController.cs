@@ -89,13 +89,47 @@ namespace WebAPI.Controllers
                 });
             }
             
+            // Automatically determine farmer ID and sponsor details based on authenticated user
+            string farmerId = null;
+            string sponsorId = null;
+            int? sponsorUserId = null;
+            int? sponsorshipCodeId = null;
+            
+            var userRoles = HttpContext.User.FindAll(ClaimTypes.Role).Select(c => c.Value);
+            if (userRoles.Contains("Farmer"))
+            {
+                // Farmer can only analyze for themselves - use their user ID as farmer ID
+                farmerId = $"F{userId.Value:D3}"; // Format: F001, F002, etc.
+                
+                // Get detailed sponsorship information
+                var sponsorshipDetails = await _subscriptionValidationService.GetSponsorshipDetailsAsync(userId.Value);
+                if (sponsorshipDetails.Success && sponsorshipDetails.Data.HasSponsor)
+                {
+                    sponsorId = sponsorshipDetails.Data.SponsorId;              // S001, S002, etc.
+                    sponsorUserId = sponsorshipDetails.Data.SponsorUserId;      // Actual sponsor user ID
+                    sponsorshipCodeId = sponsorshipDetails.Data.SponsorshipCodeId; // SponsorshipCode table ID
+                }
+            }
+            else if (userRoles.Contains("Admin"))
+            {
+                // Admin users: FarmerId can be provided via query parameter or default to their ID
+                // For now, default to admin's formatted ID
+                farmerId = $"F{userId.Value:D3}";
+                // Admin users typically don't have sponsors
+                sponsorId = null;
+                sponsorUserId = null;
+                sponsorshipCodeId = null;
+            }
+            
             // Map request to command
             var command = new CreatePlantAnalysisCommand
             {
                 Image = request.Image,
                 UserId = userId, // Always use authenticated user's ID
-                FarmerId = request.FarmerId,
-                SponsorId = request.SponsorId,
+                FarmerId = farmerId, // Automatically determined
+                SponsorId = sponsorId, // Automatically determined
+                SponsorUserId = sponsorUserId, // Actual sponsor user ID
+                SponsorshipCodeId = sponsorshipCodeId, // SponsorshipCode table ID
                 FieldId = request.FieldId,
                 CropType = request.CropType,
                 Location = request.Location,
@@ -196,7 +230,44 @@ namespace WebAPI.Controllers
                             : "Please upgrade your subscription plan."
                     });
                 }
+                
+                // Automatically determine farmer ID and sponsor details based on authenticated user
+                string farmerId = null;
+                string sponsorId = null;
+                int? sponsorUserId = null;
+                int? sponsorshipCodeId = null;
+                
+                var userRoles = HttpContext.User.FindAll(ClaimTypes.Role).Select(c => c.Value);
+                if (userRoles.Contains("Farmer"))
+                {
+                    // Farmer can only analyze for themselves - use their user ID as farmer ID
+                    farmerId = $"F{userId.Value:D3}"; // Format: F001, F002, etc.
+                    
+                    // Get detailed sponsorship information
+                    var sponsorshipDetails = await _subscriptionValidationService.GetSponsorshipDetailsAsync(userId.Value);
+                    if (sponsorshipDetails.Success && sponsorshipDetails.Data.HasSponsor)
+                    {
+                        sponsorId = sponsorshipDetails.Data.SponsorId;              // S001, S002, etc.
+                        sponsorUserId = sponsorshipDetails.Data.SponsorUserId;      // Actual sponsor user ID
+                        sponsorshipCodeId = sponsorshipDetails.Data.SponsorshipCodeId; // SponsorshipCode table ID
+                    }
+                }
+                else if (userRoles.Contains("Admin"))
+                {
+                    // Admin users: default to their formatted ID
+                    farmerId = $"F{userId.Value:D3}";
+                    // Admin users typically don't have sponsors
+                    sponsorId = null;
+                    sponsorUserId = null;
+                    sponsorshipCodeId = null;
+                }
+                
+                // Set automatically determined values
                 request.UserId = userId; // Set authenticated user's ID
+                request.FarmerId = farmerId; // Automatically determined
+                request.SponsorId = sponsorId; // Automatically determined
+                request.SponsorUserId = sponsorUserId; // Actual sponsor user ID
+                request.SponsorshipCodeId = sponsorshipCodeId; // SponsorshipCode table ID
 
                 // Queue the analysis
                 var analysisId = await _asyncAnalysisService.QueuePlantAnalysisAsync(request);
@@ -264,9 +335,9 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Get all plant analyses for current user (Farmers)
+        /// Get all plant analyses for current user (Farmers) - Full Detail
         /// </summary>
-        /// <returns>List of plant analyses</returns>
+        /// <returns>List of plant analyses with full details</returns>
         [HttpGet("my-analyses")]
         [Authorize]
         [ProducesResponseType(typeof(IDataResult<List<PlantAnalysisResponseDto>>), StatusCodes.Status200OK)]
@@ -275,6 +346,51 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             
             var query = new GetPlantAnalysesQuery { UserId = userId };
+            var result = await _mediator.Send(query);
+            
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Get paginated plant analysis history for mobile app (Farmers)
+        /// Lightweight response optimized for mobile listing with filtering and pagination
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Items per page (default: 20, max: 50)</param>
+        /// <param name="status">Filter by status: Completed, Processing, Failed</param>
+        /// <param name="fromDate">Filter from date (YYYY-MM-DD)</param>
+        /// <param name="toDate">Filter to date (YYYY-MM-DD)</param>
+        /// <param name="cropType">Filter by crop type</param>
+        /// <returns>Paginated list of plant analyses</returns>
+        [HttpGet("list")]
+        [Authorize(Roles = "Farmer")]
+        [ProducesResponseType(typeof(IDataResult<PlantAnalysisListResponseDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAnalysesList(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string status = null,
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null,
+            [FromQuery] string cropType = null)
+        {
+            var userId = GetUserId();
+            
+            // Validate and limit page size for performance
+            if (pageSize > 50) pageSize = 50;
+            if (pageSize < 1) pageSize = 20;
+            if (page < 1) page = 1;
+
+            var query = new GetPlantAnalysesForFarmerQuery 
+            { 
+                UserId = userId.Value,
+                Page = page,
+                PageSize = pageSize,
+                Status = status,
+                FromDate = fromDate,
+                ToDate = toDate,
+                CropType = cropType
+            };
+            
             var result = await _mediator.Send(query);
             
             return Ok(result);

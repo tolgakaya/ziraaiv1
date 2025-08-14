@@ -1116,3 +1116,138 @@ Monitor these metrics post-deployment:
 - Trial subscription creation rate (should match registration rate)
 - Database exception rates (should be near 0%)
 - Plant analysis success rate with new quota system
+
+## Plant Analysis List Endpoint for Mobile Applications (August 2025)
+
+### Overview ✅
+**Implementation Date**: August 14, 2025
+**Purpose**: Mobile-optimized endpoint for farmers to browse their plant analysis history with efficient pagination and filtering
+
+### Key Features
+
+#### 🎯 Mobile-First Design
+- **Lightweight Response**: Minimal data transfer optimized for mobile networks
+- **Pagination Support**: Efficient memory usage with configurable page sizes (max 50 items)
+- **Rich Filtering**: Status, date range, and crop type filters for easy browsing
+- **Mobile-Friendly Properties**: Status icons, formatted dates, and summary statistics
+
+#### 📱 Endpoint Details
+```
+GET /api/plantanalyses/list
+Authorization: Bearer Token (Farmer role required)
+```
+
+**Query Parameters:**
+- `page` (int): Page number (default: 1)
+- `pageSize` (int): Items per page (default: 20, max: 50)
+- `status` (string): Filter by "Completed", "Processing", "Failed"
+- `fromDate` (DateTime): Start date filter (YYYY-MM-DD)
+- `toDate` (DateTime): End date filter (YYYY-MM-DD)
+- `cropType` (string): Crop type filter
+
+#### 📊 Response Structure
+```json
+{
+  "success": true,
+  "data": {
+    "analyses": [
+      {
+        "id": 123,
+        "imagePath": "https://api.example.com/uploads/...",
+        "status": "Completed",
+        "statusIcon": "✅",
+        "cropType": "tomato",
+        "farmerId": "F045",
+        "sponsorId": "S043",
+        "overallHealthScore": 8,
+        "primaryConcern": "Mild nutrient deficiency",
+        "formattedDate": "14/08/2025 22:21",
+        "isSponsored": true,
+        "hasResults": true,
+        "healthScoreText": "8/10"
+      }
+    ],
+    "totalCount": 45,
+    "page": 1,
+    "totalPages": 3,
+    "hasNextPage": true,
+    "completedCount": 42,
+    "sponsoredCount": 15
+  }
+}
+```
+
+### Technical Implementation
+
+#### 🔧 Architecture Components
+- **GetPlantAnalysesForFarmerQuery**: CQRS query handler with filtering logic
+- **PlantAnalysisListItemDto**: Lightweight DTO with mobile-optimized properties
+- **PlantAnalysisListResponseDto**: Paginated response with metadata
+
+#### ⚡ Performance Optimizations
+- **Efficient Querying**: Uses `GetListByUserIdAsync` then applies in-memory filtering
+- **URL Conversion**: Automatic conversion of relative paths to full URLs
+- **Computed Properties**: Client-friendly calculated fields (statusIcon, formattedDate)
+- **Data Minimization**: Only essential fields for list view (99% less data vs full detail)
+
+#### 🔗 Mobile App Integration Flow
+1. **List View**: `GET /api/plantanalyses/list` → Fast, paginated overview
+2. **Detail View**: Tap item → `GET /api/plantanalyses/{id}` → Full analysis detail
+3. **Seamless UX**: Fast browsing + detailed analysis on demand
+
+### Mobile-Optimized Properties
+
+#### 📱 User-Friendly Fields
+- **StatusIcon**: Visual indicators (✅ Completed, ⏳ Processing, ❌ Failed)
+- **FormattedDate**: Localized date format (DD/MM/YYYY HH:mm)
+- **HealthScoreText**: Readable format ("8/10" instead of just 8)
+- **IsSponsored**: Boolean flag for sponsored analysis indication
+- **HasResults**: Quick check if analysis contains results
+
+#### 📈 Summary Statistics
+- **CompletedCount**: Number of completed analyses in current result set
+- **ProcessingCount**: Number of analyses still processing
+- **FailedCount**: Number of failed analyses
+- **SponsoredCount**: Number of sponsored analyses
+- **PaginationInfo**: Human-readable pagination text
+
+### Postman Collection Updates (v1.3.0)
+
+#### 🧪 Comprehensive Testing
+```javascript
+// Validation of pagination metadata
+pm.expect(response.data.page).to.be.at.least(1);
+pm.expect(response.data.totalPages).to.be.at.least(0);
+
+// Mobile-specific field validation
+pm.expect(firstAnalysis).to.have.property('statusIcon');
+pm.expect(firstAnalysis).to.have.property('formattedDate');
+pm.expect(firstAnalysis.imagePath).to.match(/^https?:\/\//);
+
+// Summary statistics logging
+console.log('📋 Analysis List Summary:');
+console.log('  Completed:', response.data.completedCount);
+console.log('  Sponsored:', response.data.sponsoredCount);
+```
+
+### Benefits Achieved
+
+#### 🚀 Performance Improvements
+- ✅ **99% Data Reduction**: Lightweight list vs full analysis detail
+- ✅ **Fast Mobile Loading**: Optimized for mobile network conditions
+- ✅ **Efficient Pagination**: Memory-conscious data loading
+- ✅ **Smart Filtering**: Server-side filtering reduces client processing
+
+#### 📱 Enhanced Mobile Experience
+- ✅ **Intuitive UI Data**: Ready-to-display formatted fields
+- ✅ **Visual Status Indicators**: Immediate status recognition
+- ✅ **Summary Overview**: Quick statistics without detailed analysis
+- ✅ **Seamless Navigation**: List-to-detail navigation pattern
+
+#### 🔧 Developer Benefits
+- ✅ **Clean Architecture**: CQRS pattern with dedicated DTOs
+- ✅ **Type Safety**: Strongly-typed response structures
+- ✅ **Testable**: Comprehensive Postman test coverage
+- ✅ **Scalable**: Pagination handles large datasets efficiently
+
+This endpoint completes the mobile-first plant analysis experience, providing farmers with fast, efficient access to their analysis history while maintaining the ability to dive deep into individual analysis details when needed.

@@ -20,6 +20,8 @@ namespace Entities.Dtos
         public int? UserId { get; set; } // Worker'da entity'ye atamak için
         public string FarmerId { get; set; }
         public string SponsorId { get; set; }
+        public int? SponsorUserId { get; set; }        // Actual sponsor user ID
+        public int? SponsorshipCodeId { get; set; }    // SponsorshipCode table ID
         public string Location { get; set; }
         public GpsCoordinates GpsCoordinates { get; set; }
         public int? Altitude { get; set; }

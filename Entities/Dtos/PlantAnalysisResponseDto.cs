@@ -17,6 +17,8 @@ namespace Entities.Dtos
         public string AnalysisId { get; set; }
         public string FarmerId { get; set; }
         public string SponsorId { get; set; }
+        public int? SponsorUserId { get; set; }        // Actual sponsor user ID
+        public int? SponsorshipCodeId { get; set; }    // SponsorshipCode table ID
         public string Location { get; set; }
         [JsonIgnore]
         public GpsCoordinates GpsCoordinates { get; set; }

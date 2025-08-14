@@ -525,15 +525,16 @@ ZiraAI - Akıllı Tarım Çözümleri";
 
         private async Task<bool> SendMessageAsync(string phone, string message, string channel)
         {
-            // TODO: Integrate with actual SMS/WhatsApp service
-            // For now, just log the message
-            _logger.LogInformation("Sending {Channel} to {Phone}: {Message}", 
-                channel, phone, message);
+            // MOCK IMPLEMENTATION - No real SMS/WhatsApp integration yet
+            _logger.LogInformation("📱 MOCK {Channel} sent to {Phone}", channel, phone);
+            _logger.LogInformation("📝 Message content: {Message}", message);
             
-            // Simulate sending
-            await Task.Delay(100);
+            // Simulate network delay
+            await Task.Delay(200);
             
-            return true; // In production, return actual sending result
+            // Mock success response
+            _logger.LogInformation("✅ MOCK delivery successful to {Phone} via {Channel}", phone, channel);
+            return true; // Always return success in mock mode
         }
     }
 }

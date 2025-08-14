@@ -1,8 +1,8 @@
 {
   "info": {
     "name": "ZiraAI Plant Analysis API",
-    "description": "Complete API collection for ZiraAI Plant Analysis system with authentication, authorization, subscription management, and sponsorship features",
-    "version": "1.1.0",
+    "description": "Complete API collection for ZiraAI Plant Analysis system with authentication, authorization, subscription management, and sponsorship features. Updated for mobile-first analysis listing (v1.3.0) with paginated farmer analysis history endpoint.",
+    "version": "1.3.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -32,22 +32,17 @@
       "type": "string"
     },
     {
-      "key": "farmerId",
-      "value": "FARMER001",
-      "type": "string"
-    },
-    {
-      "key": "sponsorId",
-      "value": "SPONSOR001",
-      "type": "string"
-    },
-    {
       "key": "sponsorshipCode",
       "value": "AGRI-2025-XXXX",
       "type": "string"
     },
     {
       "key": "purchaseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "asyncAnalysisId",
       "value": "",
       "type": "string"
     }
@@ -278,6 +273,37 @@
                   "    }",
                   "});",
                   "",
+                  "pm.test(\"Analysis contains required sponsorship fields\", function () {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data) {",
+                  "        // FarmerId should always be present and formatted as F{userId}",
+                  "        pm.expect(response.data).to.have.property('farmerId');",
+                  "        pm.expect(response.data.farmerId).to.match(/^F\\d+$/);",
+                  "        ",
+                  "        // SponsorId is nullable (only present if user has sponsor)",
+                  "        if (response.data.sponsorId) {",
+                  "            pm.expect(response.data.sponsorId).to.match(/^S\\d+$/);",
+                  "            console.log('Sponsored Analysis - Sponsor ID:', response.data.sponsorId);",
+                  "        }",
+                  "        ",
+                  "        // New detailed sponsorship fields (added August 2025)",
+                  "        // SponsorUserId: Actual sponsor user ID (integer)",
+                  "        if (response.data.sponsorUserId) {",
+                  "            pm.expect(response.data.sponsorUserId).to.be.a('number');",
+                  "            console.log('Sponsor User ID:', response.data.sponsorUserId);",
+                  "        }",
+                  "        ",
+                  "        // SponsorshipCodeId: SponsorshipCode table ID (integer)",
+                  "        if (response.data.sponsorshipCodeId) {",
+                  "            pm.expect(response.data.sponsorshipCodeId).to.be.a('number');",
+                  "            console.log('Sponsorship Code ID:', response.data.sponsorshipCodeId);",
+                  "        }",
+                  "        ",
+                  "        console.log('Farmer ID:', response.data.farmerId);",
+                  "        console.log('Analysis Security: Fields auto-determined by server based on authenticated user');",
+                  "    }",
+                  "});",
+                  "",
                   "pm.test(\"Analysis contains health score\", function () {",
                   "    const response = pm.response.json();",
                   "    if (response.data && response.data.summary) {",
@@ -309,14 +335,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n  \"farmerId\": \"{{farmerId}}\",\n  \"sponsorId\": \"{{sponsorId}}\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Antalya Greenhouse\",\n  \"gpsCoordinates\": {\n    \"latitude\": 36.8969,\n    \"longitude\": 30.7133\n  },\n  \"fieldId\": \"FIELD001\",\n  \"plantSpecies\": \"Solanum lycopersicum\",\n  \"growthStage\": \"flowering\",\n  \"environmentalData\": {\n    \"temperature\": 24.5,\n    \"humidity\": 65.0,\n    \"soilMoisture\": 45.2,\n    \"lightIntensity\": 850.0\n  }\n}"
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Antalya Greenhouse\",\n  \"gpsCoordinates\": {\n    \"lat\": 36.8969,\n    \"lng\": 30.7133\n  },\n  \"fieldId\": \"FIELD001\",\n  \"temperature\": 24.5,\n  \"humidity\": 65.0,\n  \"notes\": \"Leaves showing some yellowing, need analysis\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/plantanalyses/analyze",
               "host": ["{{baseUrl}}"],
               "path": ["api", "plantanalyses", "analyze"]
             },
-            "description": "Synchronous plant analysis with immediate response. Requires active subscription."
+            "description": "Synchronous plant analysis with immediate response. Requires active subscription. NOTE: FarmerId and SponsorId are automatically set by server based on authenticated user - DO NOT include them in request body."
           }
         },
         {
@@ -345,7 +371,14 @@
                   "    pm.expect(response.success).to.be.true;",
                   "    pm.expect(response.data).to.be.a('string');",
                   "    ",
-                  "    console.log(\"Analysis ID:\", response.data);",
+                  "    // Store analysis_id for async retrieval testing",
+                  "    if (response.data) {",
+                  "        pm.collectionVariables.set('asyncAnalysisId', response.data);",
+                  "        console.log('Stored Async Analysis ID:', response.data);",
+                  "    }",
+                  "    ",
+                  "    console.log(\"Note: Sponsorship fields (FarmerId, SponsorId, SponsorUserId, SponsorshipCodeId) are automatically set by server\");",
+                  "    console.log(\"Use 'Get Async Analysis Result' request after 2-5 minutes to verify sponsorship field population\");",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -372,18 +405,57 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n  \"farmerId\": \"{{farmerId}}\",\n  \"sponsorId\": \"{{sponsorId}}\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Antalya Greenhouse\"\n}"
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Antalya Greenhouse\",\n  \"notes\": \"Async analysis test\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/plantanalyses/analyze-async",
               "host": ["{{baseUrl}}"],
               "path": ["api", "plantanalyses", "analyze-async"]
             },
-            "description": "Asynchronous plant analysis processed in background. Returns analysis ID for tracking."
+            "description": "Asynchronous plant analysis processed in background. Returns analysis ID for tracking. NOTE: FarmerId and SponsorId are automatically set by server based on authenticated user - DO NOT include them in request body."
           }
         },
         {
           "name": "Get Analysis by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Analysis retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('id');",
+                  "        pm.expect(response.data).to.have.property('farmerId');",
+                  "        ",
+                  "        // Validate sponsorship fields in retrieved analysis",
+                  "        console.log('Retrieved Analysis - Farmer ID:', response.data.farmerId);",
+                  "        ",
+                  "        if (response.data.sponsorId) {",
+                  "            console.log('Retrieved Analysis - Sponsor ID:', response.data.sponsorId);",
+                  "            pm.expect(response.data.sponsorId).to.match(/^S\\d+$/);",
+                  "        }",
+                  "        ",
+                  "        if (response.data.sponsorUserId) {",
+                  "            console.log('Retrieved Analysis - Sponsor User ID:', response.data.sponsorUserId);",
+                  "            pm.expect(response.data.sponsorUserId).to.be.a('number');",
+                  "        }",
+                  "        ",
+                  "        if (response.data.sponsorshipCodeId) {",
+                  "            console.log('Retrieved Analysis - Sponsorship Code ID:', response.data.sponsorshipCodeId);",
+                  "            pm.expect(response.data.sponsorshipCodeId).to.be.a('number');",
+                  "        }",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -401,7 +473,226 @@
               "raw": "{{baseUrl}}/api/plantanalyses/{{lastAnalysisId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "plantanalyses", "{{lastAnalysisId}}"]
+            },
+            "description": "Retrieve plant analysis by ID. Response includes all sponsorship fields populated by server."
+          }
+        },
+        {
+          "name": "Get Async Analysis Result",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Async analysis result retrieved\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('id');",
+                  "        pm.expect(response.data).to.have.property('farmerId');",
+                  "        pm.expect(response.data).to.have.property('imagePath');",
+                  "        ",
+                  "        // Validate async analysis has URL-based ImagePath (not relative path)",
+                  "        if (response.data.imagePath) {",
+                  "            pm.expect(response.data.imagePath).to.match(/^https?:\\/\\//);",
+                  "            console.log('✅ ImagePath is URL format:', response.data.imagePath);",
+                  "        }",
+                  "        ",
+                  "        // Validate sponsorship fields in async analysis",
+                  "        console.log('Async Analysis - Farmer ID:', response.data.farmerId);",
+                  "        ",
+                  "        if (response.data.sponsorId) {",
+                  "            console.log('Async Analysis - Sponsor ID:', response.data.sponsorId);",
+                  "            pm.expect(response.data.sponsorId).to.match(/^S\\d+$/);",
+                  "        }",
+                  "        ",
+                  "        if (response.data.sponsorUserId) {",
+                  "            console.log('Async Analysis - Sponsor User ID:', response.data.sponsorUserId);",
+                  "            pm.expect(response.data.sponsorUserId).to.be.a('number');",
+                  "        }",
+                  "        ",
+                  "        if (response.data.sponsorshipCodeId) {",
+                  "            console.log('Async Analysis - Sponsorship Code ID:', response.data.sponsorshipCodeId);",
+                  "            pm.expect(response.data.sponsorshipCodeId).to.be.a('number');",
+                  "        }",
+                  "        ",
+                  "        console.log('✅ Async analysis completed with all sponsorship fields populated');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Async vs Sync analysis consistency\", function () {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    if (response.data && response.data.imagePath) {",
+                  "        // ImagePath should be full URL format for both sync and async",
+                  "        pm.expect(response.data.imagePath).to.include('http');",
+                  "        console.log('✅ Async endpoint returns consistent URL format with sync endpoint');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plantanalyses/{{asyncAnalysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plantanalyses", "{{asyncAnalysisId}}"],
+              "query": [
+                {
+                  "key": "note",
+                  "value": "Use this after running async analysis and waiting 2-5 minutes",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Retrieve async analysis result using analysis ID from async endpoint. This endpoint validates that async analyses have the same response quality as sync analyses, including URL-based ImagePath and complete sponsorship field tracking."
+          }
+        },
+        {
+          "name": "Get Plant Analysis List (Mobile)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Plant analysis list retrieved successfully\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('analyses');",
+                  "        pm.expect(response.data).to.have.property('totalCount');",
+                  "        pm.expect(response.data).to.have.property('page');",
+                  "        pm.expect(response.data).to.have.property('pageSize');",
+                  "        pm.expect(response.data).to.have.property('totalPages');",
+                  "        pm.expect(response.data).to.have.property('hasNextPage');",
+                  "        ",
+                  "        console.log('📋 Analysis List Summary:');",
+                  "        console.log('  Total Analyses:', response.data.totalCount);",
+                  "        console.log('  Current Page:', response.data.page, 'of', response.data.totalPages);",
+                  "        console.log('  Items on Page:', response.data.analyses.length);",
+                  "        console.log('  Completed:', response.data.completedCount);",
+                  "        console.log('  Processing:', response.data.processingCount);",
+                  "        console.log('  Failed:', response.data.failedCount);",
+                  "        console.log('  Sponsored:', response.data.sponsoredCount);",
+                  "        ",
+                  "        // Validate first analysis item structure",
+                  "        if (response.data.analyses && response.data.analyses.length > 0) {",
+                  "            const firstAnalysis = response.data.analyses[0];",
+                  "            pm.expect(firstAnalysis).to.have.property('id');",
+                  "            pm.expect(firstAnalysis).to.have.property('imagePath');",
+                  "            pm.expect(firstAnalysis).to.have.property('status');",
+                  "            pm.expect(firstAnalysis).to.have.property('farmerId');",
+                  "            pm.expect(firstAnalysis).to.have.property('statusIcon');",
+                  "            pm.expect(firstAnalysis).to.have.property('formattedDate');",
+                  "            ",
+                  "            // Validate URL format for mobile",
+                  "            if (firstAnalysis.imagePath) {",
+                  "                pm.expect(firstAnalysis.imagePath).to.match(/^https?:\\/\\//);",
+                  "                console.log('✅ Mobile-optimized image URLs confirmed');",
+                  "            }",
+                  "            ",
+                  "            console.log('📱 First Analysis:', firstAnalysis.id, firstAnalysis.statusIcon, firstAnalysis.cropType);",
+                  "        }",
+                  "        ",
+                  "        console.log('✅ Mobile analysis list endpoint working correctly');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Pagination metadata is valid\", function () {",
+                  "    const response = pm.response.json();",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data.page).to.be.a('number');",
+                  "        pm.expect(response.data.totalPages).to.be.a('number');",
+                  "        pm.expect(response.data.totalCount).to.be.a('number');",
+                  "        ",
+                  "        // Logical pagination checks",
+                  "        pm.expect(response.data.page).to.be.at.least(1);",
+                  "        pm.expect(response.data.totalPages).to.be.at.least(0);",
+                  "        pm.expect(response.data.totalCount).to.be.at.least(0);",
+                  "        ",
+                  "        console.log('✅ Pagination metadata is valid and consistent');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plantanalyses/list?page=1&pageSize=10&status=Completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plantanalyses", "list"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10",
+                  "description": "Items per page (default: 20, max: 50)"
+                },
+                {
+                  "key": "status",
+                  "value": "Completed",
+                  "description": "Filter by status: Completed, Processing, Failed"
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2025-01-01",
+                  "description": "Filter from date (YYYY-MM-DD)",
+                  "disabled": true
+                },
+                {
+                  "key": "toDate",
+                  "value": "2025-12-31",
+                  "description": "Filter to date (YYYY-MM-DD)",
+                  "disabled": true
+                },
+                {
+                  "key": "cropType",
+                  "value": "tomato",
+                  "description": "Filter by crop type",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Mobile-optimized endpoint for retrieving farmer's plant analysis history. Returns lightweight data with pagination, filtering, and mobile-friendly response structure. Perfect for mobile app listing views where users can browse their analysis history and tap for details."
           }
         },
         {
@@ -914,6 +1205,56 @@
           }
         },
         {
+          "name": "Create Individual Sponsorship Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Individual code creation successful\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    ",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.success).to.be.true;",
+                  "    ",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('id');",
+                  "        pm.expect(response.data).to.have.property('code');",
+                  "        pm.collectionVariables.set('sponsorshipCode', response.data.code);",
+                  "        console.log('Created Code:', response.data.code);",
+                  "        console.log('Code ID:', response.data.id);",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerName\": \"Test Farmer {{$randomInt}}\",\n  \"farmerPhone\": \"+90555{{$randomInt}}{{$randomInt}}{{$randomInt}}\",\n  \"description\": \"Individual sponsorship code for testing\",\n  \"subscriptionTierId\": 2,\n  \"expiryDate\": \"{{$isoTimestamp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorship/codes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorship", "codes"]
+            },
+            "description": "Create a single sponsorship code for a specific farmer. Sponsor role required. This endpoint is used when creating codes one by one instead of bulk purchase."
+          }
+        },
+        {
           "name": "Get Sponsorship Codes (Sponsor)",
           "event": [
             {
@@ -950,9 +1291,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/sponsorship/codes?onlyUnused=false",
+              "raw": "{{baseUrl}}/api/v1/sponsorship/codes?onlyUnused=false",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "sponsorship", "codes"],
+              "path": ["api", "v1", "sponsorship", "codes"],
               "query": [
                 {
                   "key": "onlyUnused",
@@ -975,9 +1316,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/sponsorship/codes?onlyUnused=true",
+              "raw": "{{baseUrl}}/api/v1/sponsorship/codes?onlyUnused=true",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "sponsorship", "codes"],
+              "path": ["api", "v1", "sponsorship", "codes"],
               "query": [
                 {
                   "key": "onlyUnused",
@@ -1049,7 +1390,7 @@
                   "    ",
                   "    if (response.data.length > 0) {",
                   "        const farmer = response.data[0];",
-                  "        pm.expect(farmer).to.have.property('farmerId');",
+                  "        pm.expect(farmer).to.have.property('email');",
                   "        pm.expect(farmer).to.have.property('farmerName');",
                   "        pm.expect(farmer).to.have.property('code');",
                   "        pm.expect(farmer).to.have.property('redeemedDate');",
@@ -1462,7 +1803,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"analysisId\": \"test_analysis_123\",\n  \"farmerId\": \"{{farmerId}}\",\n  \"sponsorId\": \"{{sponsorId}}\"\n}"
+              "raw": "{\n  \"analysisId\": \"test_analysis_123\",\n  \"notes\": \"Test analysis result\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/test/mock-n8n-response",

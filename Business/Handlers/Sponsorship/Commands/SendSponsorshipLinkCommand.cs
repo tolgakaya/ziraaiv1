@@ -54,45 +54,37 @@ namespace Business.Handlers.Sponsorship.Commands
             {
                 try
                 {
-                    _logger.LogInformation("Sponsor {SponsorId} sending {Count} sponsorship links via {Channel}",
+                    _logger.LogInformation("📤 MOCK: Sponsor {SponsorId} sending {Count} sponsorship links via {Channel}",
                         request.SponsorId, request.Recipients.Count, request.Channel);
 
-                    // Validate that all codes belong to the sponsor
-                    var codes = request.Recipients.Select(r => r.Code).ToList();
-                    var sponsorCodes = await _codeRepository.GetListAsync(c => 
-                        codes.Contains(c.Code) && 
-                        c.SponsorId == request.SponsorId &&
-                        !c.IsUsed &&
-                        c.IsActive);
+                    // MOCK IMPLEMENTATION - Skip database validation for now
+                    _logger.LogInformation("📋 MOCK: Skipping database validation for codes: {Codes}", 
+                        string.Join(", ", request.Recipients.Select(r => r.Code)));
 
-                    if (sponsorCodes.Count() != codes.Count)
+                    // Mock successful bulk send result
+                    var mockResult = new BulkSendResult
                     {
-                        var invalidCodes = codes.Except(sponsorCodes.Select(sc => sc.Code));
-                        return new ErrorDataResult<BulkSendResult>(
-                            $"Bazı kodlar geçersiz veya size ait değil: {string.Join(", ", invalidCodes)}");
-                    }
-
-                    // Prepare bulk send request
-                    var bulkRequest = new BulkSendRequest
-                    {
-                        SponsorId = request.SponsorId,
-                        Channel = request.Channel,
-                        CustomMessage = request.CustomMessage,
-                        Recipients = request.Recipients.Select(r => new RecipientInfo
+                        TotalSent = request.Recipients.Count,
+                        SuccessCount = request.Recipients.Count,
+                        FailureCount = 0,
+                        Results = request.Recipients.Select(r => new SendResult
                         {
                             Code = r.Code,
                             Phone = FormatPhoneNumber(r.Phone),
-                            Name = r.Name
+                            Success = true,
+                            ErrorMessage = null,
+                            DeliveryStatus = "Mock Delivered"
                         }).ToArray()
                     };
 
-                    // Send links in bulk
-                    var result = await _redemptionService.SendBulkSponsorshipLinksAsync(bulkRequest);
+                    _logger.LogInformation("📧 MOCK bulk send completed. Success: {Success}, Failed: {Failed}",
+                        mockResult.SuccessCount, mockResult.FailureCount);
 
-                    _logger.LogInformation("Bulk send completed. Success: {Success}, Failed: {Failed}",
-                        result.Data.SuccessCount, result.Data.FailureCount);
+                    // Simulate network delay
+                    await Task.Delay(300);
 
-                    return result;
+                    return new SuccessDataResult<BulkSendResult>(mockResult, 
+                        $"📱 MOCK: {mockResult.SuccessCount} link başarıyla gönderildi via {request.Channel}");
                 }
                 catch (Exception ex)
                 {

@@ -18,15 +18,18 @@ namespace Business.Services.Subscription
     {
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly ISubscriptionUsageLogRepository _usageLogRepository;
+        private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public SubscriptionValidationService(
             IUserSubscriptionRepository userSubscriptionRepository,
             ISubscriptionUsageLogRepository usageLogRepository,
+            ISponsorshipCodeRepository sponsorshipCodeRepository,
             IHttpContextAccessor httpContextAccessor)
         {
             _userSubscriptionRepository = userSubscriptionRepository;
             _usageLogRepository = usageLogRepository;
+            _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _httpContextAccessor = httpContextAccessor;
         }
 
@@ -327,6 +330,48 @@ namespace Business.Services.Subscription
             await _userSubscriptionRepository.SaveChangesAsync();
         }
 
+        public async Task<Core.Utilities.Results.IDataResult<string>> GetSubscriptionSponsorAsync(int userId)
+        {
+            try
+            {
+                var activeSubscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
+                
+                if (activeSubscription == null)
+                {
+                    return new Core.Utilities.Results.ErrorDataResult<string>("No active subscription found");
+                }
+
+                // Check if subscription is sponsored (payment method is "Sponsorship")
+                if (activeSubscription.PaymentMethod != "Sponsorship")
+                {
+                    return new Core.Utilities.Results.ErrorDataResult<string>("Subscription is not sponsored");
+                }
+
+                // Extract sponsor ID from payment reference (format: SPONSOR-{CODE})
+                if (!string.IsNullOrEmpty(activeSubscription.PaymentReference) && 
+                    activeSubscription.PaymentReference.StartsWith("SPONSOR-"))
+                {
+                    // Find the sponsorship code to get sponsor info
+                    var sponsorshipCode = await _sponsorshipCodeRepository.GetAsync(
+                        c => c.Code == activeSubscription.PaymentReference.Replace("SPONSOR-", ""));
+                    
+                    if (sponsorshipCode?.SponsorId != null)
+                    {
+                        return new Core.Utilities.Results.SuccessDataResult<string>(
+                            $"S{sponsorshipCode.SponsorId:D3}", 
+                            "Sponsor found successfully");
+                    }
+                }
+
+                return new Core.Utilities.Results.ErrorDataResult<string>("Sponsor information not found");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GetSubscriptionSponsorAsync] Error for userId {userId}: {ex.Message}");
+                return new Core.Utilities.Results.ErrorDataResult<string>("Error retrieving sponsor information");
+            }
+        }
+
         public async Task ProcessAutoRenewalsAsync()
         {
             var expiringSubscriptions = await _userSubscriptionRepository.GetExpiringSubscriptionsAsync(
@@ -354,6 +399,65 @@ namespace Business.Services.Subscription
             }
 
             await _userSubscriptionRepository.SaveChangesAsync();
+        }
+
+        public async Task<Core.Utilities.Results.IDataResult<Entities.Dtos.SponsorshipDetailsDto>> GetSponsorshipDetailsAsync(int userId)
+        {
+            try
+            {
+                var activeSubscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
+                
+                if (activeSubscription == null)
+                {
+                    return new Core.Utilities.Results.SuccessDataResult<Entities.Dtos.SponsorshipDetailsDto>(
+                        new Entities.Dtos.SponsorshipDetailsDto { HasSponsor = false }, 
+                        "No active subscription found");
+                }
+
+                // Check if subscription is sponsored (payment method is "Sponsorship")
+                if (activeSubscription.PaymentMethod != "Sponsorship")
+                {
+                    return new Core.Utilities.Results.SuccessDataResult<Entities.Dtos.SponsorshipDetailsDto>(
+                        new Entities.Dtos.SponsorshipDetailsDto { HasSponsor = false }, 
+                        "Subscription is not sponsored");
+                }
+
+                // Extract sponsor details from payment reference (format: SPONSOR-{CODE} or direct code)
+                string codeToFind = activeSubscription.PaymentReference;
+                if (codeToFind.StartsWith("SPONSOR-"))
+                {
+                    codeToFind = codeToFind.Replace("SPONSOR-", "");
+                }
+
+                // Find the sponsorship code to get sponsor info
+                var sponsorshipCode = await _sponsorshipCodeRepository.GetAsync(
+                    c => c.Code == codeToFind);
+                
+                if (sponsorshipCode?.SponsorId != null)
+                {
+                    var details = new Entities.Dtos.SponsorshipDetailsDto
+                    {
+                        HasSponsor = true,
+                        SponsorId = $"S{sponsorshipCode.SponsorId:D3}",  // Format: S001, S002, etc.
+                        SponsorUserId = sponsorshipCode.SponsorId,  // Actual sponsor user ID
+                        SponsorshipCodeId = sponsorshipCode.Id,           // SponsorshipCode table ID
+                        SponsorshipCode = sponsorshipCode.Code            // The actual code used
+                    };
+
+                    return new Core.Utilities.Results.SuccessDataResult<Entities.Dtos.SponsorshipDetailsDto>(
+                        details, "Sponsorship details found successfully");
+                }
+
+                return new Core.Utilities.Results.SuccessDataResult<Entities.Dtos.SponsorshipDetailsDto>(
+                    new Entities.Dtos.SponsorshipDetailsDto { HasSponsor = false }, 
+                    "Sponsor information not found");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[GetSponsorshipDetailsAsync] Error for userId {userId}: {ex.Message}");
+                return new Core.Utilities.Results.ErrorDataResult<Entities.Dtos.SponsorshipDetailsDto>(
+                    "Error retrieving sponsorship details");
+            }
         }
     }
 }

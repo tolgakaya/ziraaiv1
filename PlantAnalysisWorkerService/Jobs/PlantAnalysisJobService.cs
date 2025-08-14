@@ -41,6 +41,8 @@ namespace PlantAnalysisWorkerService.Jobs
                         UserId = result.UserId,
                         FarmerId = result.FarmerId,
                         SponsorId = result.SponsorId,
+                        SponsorUserId = result.SponsorUserId,        // Actual sponsor user ID
+                        SponsorshipCodeId = result.SponsorshipCodeId, // SponsorshipCode table ID
                         FieldId = result.FieldId,
                         CropType = result.CropType,
                         Location = result.Location,

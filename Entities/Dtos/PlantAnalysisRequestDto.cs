@@ -17,12 +17,16 @@ namespace Entities.Dtos
         [ValidImage(500.0)] // High limit for extreme cases, actual limit managed by service layer
         public string Image { get; set; }
         
-        // Optional fields from user context
+        // User context - automatically set by server (DO NOT send from client)
         public int? UserId { get; set; }
         
-        // Optional fields for N8N webhook
+        // Security fields - automatically set by server based on authenticated user (DO NOT send from client)
         public string FarmerId { get; set; }
         public string SponsorId { get; set; }
+        public int? SponsorUserId { get; set; }        // Actual sponsor user ID
+        public int? SponsorshipCodeId { get; set; }    // SponsorshipCode table ID
+        
+        // Optional field for field identification
         public string FieldId { get; set; }
         public string CropType { get; set; }
         public string Location { get; set; }

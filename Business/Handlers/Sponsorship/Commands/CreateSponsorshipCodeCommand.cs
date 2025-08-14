@@ -52,7 +52,7 @@ namespace Business.Handlers.Sponsorship.Commands
                         LinkDelivered = false
                     };
 
-                    await _sponsorshipCodeRepository.AddAsync(sponsorshipCode);
+                    _sponsorshipCodeRepository.Add(sponsorshipCode);
                     await _sponsorshipCodeRepository.SaveChangesAsync();
 
                     return new SuccessDataResult<SponsorshipCode>(sponsorshipCode, "Sponsorship code created successfully");

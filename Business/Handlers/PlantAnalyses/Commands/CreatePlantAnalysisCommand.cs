@@ -43,6 +43,8 @@ namespace Business.Handlers.PlantAnalyses.Commands
                         UserId = request.UserId,
                         FarmerId = request.FarmerId,
                         SponsorId = request.SponsorId,
+                        SponsorUserId = request.SponsorUserId,
+                        SponsorshipCodeId = request.SponsorshipCodeId,
                         FieldId = request.FieldId,
                         CropType = request.CropType,
                         Location = request.Location,
@@ -106,8 +108,8 @@ namespace Business.Handlers.PlantAnalyses.Commands
                         plantAnalysis.N8nWebhookResponse = analysisResponse.DetailedAnalysis?.FullResponseJson;
                         
                         // Update with response data if different from request
-                        if (!string.IsNullOrEmpty(analysisResponse.FarmerId)) plantAnalysis.FarmerId = analysisResponse.FarmerId;
-                        if (!string.IsNullOrEmpty(analysisResponse.SponsorId)) plantAnalysis.SponsorId = analysisResponse.SponsorId;
+                        // SECURITY: FarmerId and SponsorId are NEVER updated from N8N response
+                        // These values are securely determined by the controller based on authenticated user
                         if (!string.IsNullOrEmpty(analysisResponse.Location)) plantAnalysis.Location = analysisResponse.Location;
                         if (analysisResponse.GpsCoordinates != null)
                         {
@@ -183,6 +185,12 @@ namespace Business.Handlers.PlantAnalyses.Commands
 
                         analysisResponse.Id = plantAnalysis.Id;
                         analysisResponse.ImagePath = plantAnalysis.ImagePath;
+                        
+                        // SECURITY: Ensure response contains the secure sponsorship data from database
+                        analysisResponse.FarmerId = plantAnalysis.FarmerId;
+                        analysisResponse.SponsorId = plantAnalysis.SponsorId;
+                        analysisResponse.SponsorUserId = plantAnalysis.SponsorUserId;
+                        analysisResponse.SponsorshipCodeId = plantAnalysis.SponsorshipCodeId;
                     }
                     catch (Exception ex)
                     {

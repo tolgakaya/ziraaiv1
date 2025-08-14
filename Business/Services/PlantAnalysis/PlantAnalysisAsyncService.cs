@@ -76,6 +76,8 @@ namespace Business.Services.PlantAnalysis
                     UserId = request.UserId,
                     FarmerId = request.FarmerId,
                     SponsorId = request.SponsorId,
+                    SponsorUserId = request.SponsorUserId,        // Actual sponsor user ID
+                    SponsorshipCodeId = request.SponsorshipCodeId, // SponsorshipCode table ID
                     FieldId = request.FieldId,
                     CropType = request.CropType,
                     Location = request.Location,
@@ -134,6 +136,8 @@ namespace Business.Services.PlantAnalysis
                     UserId = request.UserId,
                     FarmerId = request.FarmerId,
                     SponsorId = request.SponsorId,
+                    SponsorUserId = request.SponsorUserId,        // Actual sponsor user ID
+                    SponsorshipCodeId = request.SponsorshipCodeId, // SponsorshipCode table ID
                     Location = request.Location,
                     GpsCoordinates = request.GpsCoordinates,
                     CropType = request.CropType,
