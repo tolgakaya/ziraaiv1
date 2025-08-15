@@ -93,7 +93,8 @@ namespace Business.Services.Sponsorship
                 profile.VisibilityLevel = visibilityLevel;
                 profile.UpdatedDate = System.DateTime.Now;
                 
-                await _sponsorProfileRepository.UpdateAsync(profile);
+                _sponsorProfileRepository.Update(profile);
+                await _sponsorProfileRepository.SaveChangesAsync();
             }
         }
     }

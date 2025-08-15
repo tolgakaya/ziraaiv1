@@ -1,6 +1,4 @@
-using Business.Services.Sponsorship;
 using DataAccess.Abstract;
-using Entities.Concrete;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +22,7 @@ namespace Business.Services.Sponsorship
             _plantAnalysisRepository = plantAnalysisRepository;
         }
 
-        public async Task<PlantAnalysis> GetFilteredAnalysisDataAsync(int sponsorId, int plantAnalysisId)
+        public async Task<Entities.Concrete.PlantAnalysis> GetFilteredAnalysisDataAsync(int sponsorId, int plantAnalysisId)
         {
             var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
             if (sponsorProfile == null || !sponsorProfile.IsActive || !sponsorProfile.IsVerified)
@@ -83,7 +81,7 @@ namespace Business.Services.Sponsorship
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
                 var accessPercentage = GetAccessPercentageFromLevel(sponsorProfile?.DataAccessLevel ?? "Basic30");
                 
-                var newAccess = new SponsorAnalysisAccess
+                var newAccess = new Entities.Concrete.SponsorAnalysisAccess
                 {
                     SponsorId = sponsorId,
                     PlantAnalysisId = plantAnalysisId,
@@ -106,7 +104,8 @@ namespace Business.Services.Sponsorship
                     CanViewImages = accessPercentage >= 30
                 };
                 
-                await _sponsorAnalysisAccessRepository.AddAsync(newAccess);
+                _sponsorAnalysisAccessRepository.Add(newAccess);
+                await _sponsorAnalysisAccessRepository.SaveChangesAsync();
             }
             else
             {
@@ -124,7 +123,7 @@ namespace Business.Services.Sponsorship
             return true;
         }
 
-        public async Task<SponsorAnalysisAccess> GetAccessRecordAsync(int sponsorId, int plantAnalysisId)
+        public async Task<Entities.Concrete.SponsorAnalysisAccess> GetAccessRecordAsync(int sponsorId, int plantAnalysisId)
         {
             return await _sponsorAnalysisAccessRepository.GetBySponsorAndAnalysisAsync(sponsorId, plantAnalysisId);
         }
@@ -137,7 +136,8 @@ namespace Business.Services.Sponsorship
                 profile.DataAccessLevel = dataAccessLevel;
                 profile.UpdatedDate = DateTime.Now;
                 
-                await _sponsorProfileRepository.UpdateAsync(profile);
+                _sponsorProfileRepository.Update(profile);
+                await _sponsorProfileRepository.SaveChangesAsync();
             }
         }
 
@@ -152,9 +152,9 @@ namespace Business.Services.Sponsorship
             };
         }
 
-        private PlantAnalysis FilterAnalysisData(PlantAnalysis analysis, int accessPercentage)
+        private Entities.Concrete.PlantAnalysis FilterAnalysisData(Entities.Concrete.PlantAnalysis analysis, int accessPercentage)
         {
-            var filteredAnalysis = new PlantAnalysis
+            var filteredAnalysis = new Entities.Concrete.PlantAnalysis
             {
                 Id = analysis.Id,
                 AnalysisDate = analysis.AnalysisDate,

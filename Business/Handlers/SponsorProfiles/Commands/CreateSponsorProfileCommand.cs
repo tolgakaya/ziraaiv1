@@ -77,7 +77,8 @@ namespace Business.Handlers.SponsorProfiles.Commands
                     CreatedDate = DateTime.Now
                 };
 
-                await _sponsorProfileRepository.AddAsync(sponsorProfile);
+                _sponsorProfileRepository.Add(sponsorProfile);
+                await _sponsorProfileRepository.SaveChangesAsync();
                 return new SuccessResult(Messages.SponsorProfileCreated);
             }
 

@@ -38,7 +38,7 @@ namespace Business.Handlers.SmartLinks.Queries
                     DisplayCount = l.DisplayCount,
                     ClickThroughRate = l.ClickThroughRate,
                     ConversionCount = l.ConversionCount,
-                    ConversionRate = l.ConversionRate ?? 0,
+                    ConversionRate = l.ConversionRate,
                     LastClickDate = l.LastClickDate ?? System.DateTime.MinValue
                 }).ToList();
 

@@ -65,7 +65,8 @@ namespace Business.Services.Sponsorship
                 CreatedDate = DateTime.Now
             };
 
-            await _messageRepository.AddAsync(newMessage);
+            _messageRepository.Add(newMessage);
+            await _messageRepository.SaveChangesAsync();
             return newMessage;
         }
 
@@ -142,7 +143,8 @@ namespace Business.Services.Sponsorship
             replyMessage.SenderName = user?.FullName;
             replyMessage.SenderCompany = sponsorProfile?.CompanyName;
 
-            await _messageRepository.AddAsync(replyMessage);
+            _messageRepository.Add(replyMessage);
+            await _messageRepository.SaveChangesAsync();
             return replyMessage;
         }
 
@@ -165,7 +167,8 @@ namespace Business.Services.Sponsorship
                 message.DeletedDate = DateTime.Now;
                 message.UpdatedDate = DateTime.Now;
                 
-                await _messageRepository.UpdateAsync(message);
+                _messageRepository.Update(message);
+                await _messageRepository.SaveChangesAsync();
             }
         }
 
@@ -178,7 +181,8 @@ namespace Business.Services.Sponsorship
                 message.FlagReason = reason;
                 message.UpdatedDate = DateTime.Now;
                 
-                await _messageRepository.UpdateAsync(message);
+                _messageRepository.Update(message);
+                await _messageRepository.SaveChangesAsync();
             }
         }
 

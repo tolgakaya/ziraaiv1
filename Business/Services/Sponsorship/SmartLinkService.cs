@@ -1,6 +1,4 @@
-using Business.Services.Sponsorship;
 using DataAccess.Abstract;
-using Entities.Concrete;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -51,7 +49,7 @@ namespace Business.Services.Sponsorship
             return links.Count(l => l.IsActive);
         }
 
-        public async Task<SmartLink> CreateSmartLinkAsync(SmartLink smartLink)
+        public async Task<Entities.Concrete.SmartLink> CreateSmartLinkAsync(Entities.Concrete.SmartLink smartLink)
         {
             if (!await CanCreateSmartLinksAsync(smartLink.SponsorId))
                 return null;
@@ -73,7 +71,8 @@ namespace Business.Services.Sponsorship
             var user = await _userRepository.GetAsync(u => u.UserId == smartLink.SponsorId);
             smartLink.SponsorName = user?.FullName;
 
-            await _smartLinkRepository.AddAsync(smartLink);
+            _smartLinkRepository.Add(smartLink);
+            await _smartLinkRepository.SaveChangesAsync();
             return smartLink;
         }
 
@@ -101,12 +100,12 @@ namespace Business.Services.Sponsorship
                               .ToList();
         }
 
-        public async Task<List<SmartLink>> GetSponsorLinksAsync(int sponsorId)
+        public async Task<List<Entities.Concrete.SmartLink>> GetSponsorLinksAsync(int sponsorId)
         {
             return await _smartLinkRepository.GetBySponsorIdAsync(sponsorId);
         }
 
-        public async Task<SmartLink> UpdateSmartLinkAsync(SmartLink smartLink)
+        public async Task<Entities.Concrete.SmartLink> UpdateSmartLinkAsync(Entities.Concrete.SmartLink smartLink)
         {
             var existing = await _smartLinkRepository.GetAsync(l => l.Id == smartLink.Id && l.SponsorId == smartLink.SponsorId);
             if (existing == null)
@@ -122,7 +121,8 @@ namespace Business.Services.Sponsorship
             existing.IsActive = smartLink.IsActive;
             existing.UpdatedDate = DateTime.Now;
 
-            await _smartLinkRepository.UpdateAsync(existing);
+            _smartLinkRepository.Update(existing);
+            await _smartLinkRepository.SaveChangesAsync();
             return existing;
         }
 
@@ -132,7 +132,8 @@ namespace Business.Services.Sponsorship
             if (link == null)
                 return false;
 
-            await _smartLinkRepository.DeleteAsync(link);
+            _smartLinkRepository.Delete(link);
+            await _smartLinkRepository.SaveChangesAsync();
             return true;
         }
 
@@ -142,12 +143,12 @@ namespace Business.Services.Sponsorship
             await UpdateSmartLinkPerformanceAsync(linkId);
         }
 
-        public async Task<List<SmartLink>> GetTopPerformingLinksAsync(int sponsorId, int count = 10)
+        public async Task<List<Entities.Concrete.SmartLink>> GetTopPerformingLinksAsync(int sponsorId, int count = 10)
         {
             return await _smartLinkRepository.GetTopPerformingLinksAsync(sponsorId, count);
         }
 
-        public async Task<decimal> CalculateRelevanceScoreAsync(SmartLink link, PlantAnalysis analysis)
+        public async Task<decimal> CalculateRelevanceScoreAsync(Entities.Concrete.SmartLink link, Entities.Concrete.PlantAnalysis analysis)
         {
             decimal score = 0;
             
@@ -192,13 +193,13 @@ namespace Business.Services.Sponsorship
             catch (JsonException)
             {
                 // JSON parsing error, use base priority
-                score = link.Priority ?? 0;
+                score = link.Priority;
             }
 
             return score;
         }
 
-        public async Task<List<SmartLink>> GetPromotionalLinksAsync()
+        public async Task<List<Entities.Concrete.SmartLink>> GetPromotionalLinksAsync()
         {
             return await _smartLinkRepository.GetPromotionalLinksAsync();
         }
@@ -209,7 +210,7 @@ namespace Business.Services.Sponsorship
             return true;
         }
 
-        public async Task<List<SmartLink>> GetPendingApprovalLinksAsync()
+        public async Task<List<Entities.Concrete.SmartLink>> GetPendingApprovalLinksAsync()
         {
             return await _smartLinkRepository.GetPendingApprovalAsync();
         }
@@ -224,12 +225,12 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<List<SmartLink>> GetAIOptimizedLinksAsync(PlantAnalysis analysis)
+        public async Task<List<Entities.Concrete.SmartLink>> GetAIOptimizedLinksAsync(Entities.Concrete.PlantAnalysis analysis)
         {
             var matchingLinks = await GetMatchingLinksAsync(analysis);
             
             // AI optimization: Prioritize based on recent performance
-            var optimizedLinks = new List<SmartLink>();
+            var optimizedLinks = new List<Entities.Concrete.SmartLink>();
             
             foreach (var link in matchingLinks)
             {
@@ -246,7 +247,7 @@ namespace Business.Services.Sponsorship
             return optimizedLinks.OrderByDescending(l => l.RelevanceScore).Take(3).ToList();
         }
 
-        private List<string> ExtractKeywordsFromAnalysis(PlantAnalysis analysis)
+        private List<string> ExtractKeywordsFromAnalysis(Entities.Concrete.PlantAnalysis analysis)
         {
             var keywords = new List<string>();
             
@@ -272,7 +273,7 @@ namespace Business.Services.Sponsorship
             return keywords.Select(k => k.Trim().ToLower()).Distinct().ToList();
         }
 
-        private string ExtractDiseaseFromAnalysis(PlantAnalysis analysis)
+        private string ExtractDiseaseFromAnalysis(Entities.Concrete.PlantAnalysis analysis)
         {
             if (!string.IsNullOrEmpty(analysis.Diseases))
                 return analysis.Diseases.Split(',')[0].Trim();
@@ -291,7 +292,7 @@ namespace Business.Services.Sponsorship
             return null;
         }
 
-        private string ExtractPestFromAnalysis(PlantAnalysis analysis)
+        private string ExtractPestFromAnalysis(Entities.Concrete.PlantAnalysis analysis)
         {
             if (!string.IsNullOrEmpty(analysis.Pests))
                 return analysis.Pests.Split(',')[0].Trim();
