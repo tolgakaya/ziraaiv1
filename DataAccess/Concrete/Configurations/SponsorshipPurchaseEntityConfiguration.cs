@@ -62,6 +62,25 @@ namespace DataAccess.Concrete.Configurations
             builder.Property(x => x.PurchaseReason)
                 .HasMaxLength(500);
             
+            // Tier-Based Features
+            builder.Property(x => x.SponsorTierFeatures)
+                .HasMaxLength(4000);
+            
+            builder.Property(x => x.VisibilityLevel)
+                .HasMaxLength(50);
+            
+            builder.Property(x => x.DataAccessLevel)
+                .HasMaxLength(50);
+            
+            builder.Property(x => x.DataAccessPercentage)
+                .HasDefaultValue(0);
+            
+            builder.Property(x => x.MaxSmartLinks)
+                .HasDefaultValue(0);
+            
+            builder.Property(x => x.MaxMessagesPerDay)
+                .HasDefaultValue(0);
+            
             builder.Property(x => x.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
             

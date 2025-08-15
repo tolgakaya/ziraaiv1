@@ -37,6 +37,16 @@ namespace Entities.Concrete
         public string CodePrefix { get; set; } // Custom prefix for codes (e.g., "AGRI", "FARM")
         public int ValidityDays { get; set; } // How many days codes are valid
         
+        // Tier-Based Features
+        public string SponsorTierFeatures { get; set; } // JSON object storing tier-specific features
+        public string VisibilityLevel { get; set; } // ResultOnly, StartAndResult, AllScreens
+        public string DataAccessLevel { get; set; } // Basic30, Medium60, Full100
+        public bool HasMessaging { get; set; } // L and XL tiers
+        public bool HasSmartLinking { get; set; } // XL tier only
+        public int DataAccessPercentage { get; set; } // 30, 60, or 100
+        public int MaxSmartLinks { get; set; } // Maximum smart links allowed
+        public int MaxMessagesPerDay { get; set; } // Message quota
+        
         // Status and Notes
         public string Status { get; set; } // Active, Completed, Cancelled
         public string Notes { get; set; } // Internal notes

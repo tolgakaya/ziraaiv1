@@ -65,6 +65,12 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         // Sponsorship System
         public DbSet<SponsorshipCode> SponsorshipCodes { get; set; }
         public DbSet<SponsorshipPurchase> SponsorshipPurchases { get; set; }
+        
+        // Sponsor Tier-Based Benefits System
+        public DbSet<SponsorProfile> SponsorProfiles { get; set; }
+        public DbSet<SponsorAnalysisAccess> SponsorAnalysisAccess { get; set; }
+        public DbSet<AnalysisMessage> AnalysisMessages { get; set; }
+        public DbSet<SmartLink> SmartLinks { get; set; }
 
         protected IConfiguration Configuration { get; }
 

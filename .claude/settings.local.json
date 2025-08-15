@@ -42,7 +42,9 @@
       "Bash(type 'timestamp without time zone'\" errors by ensuring consistent timezone\nhandling throughout the application lifecycle.\n\nKey Changes:\n- WebAPI/Program.cs: Global AppContext switches before CreateHostBuilder\n- PlantAnalysisWorkerService/Program.cs: Same switches for worker service\n- ProjectDbContext.cs: Enhanced configuration documentation\n- Database analysis script for troubleshooting\n\nExpected Result: Both DateTime.Now and DateTime.UtcNow should work seamlessly\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git checkout:*)",
       "Bash(set ASPNETCORE_URLS=http://localhost:5001)",
-      "Bash(set ASPNETCORE_URLS=https://localhost:5001)"
+      "Bash(set ASPNETCORE_URLS=https://localhost:5001)",
+      "Bash(git branch:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
