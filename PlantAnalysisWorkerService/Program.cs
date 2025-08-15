@@ -36,11 +36,21 @@ builder.Services.AddMemoryCache();
 // Add DbContext
 builder.Services.AddDbContext<DataAccess.Concrete.EntityFramework.Contexts.ProjectDbContext>();
 
+// Add HttpClient for FreeImageHostStorageService
+builder.Services.AddHttpClient();
+
 // Manual dependency injection for Worker Service
 // Add necessary services manually instead of full business module
 builder.Services.AddScoped<DataAccess.Abstract.IConfigurationRepository, DataAccess.Concrete.EntityFramework.ConfigurationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IPlantAnalysisRepository, DataAccess.Concrete.EntityFramework.PlantAnalysisRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IUserSubscriptionRepository, DataAccess.Concrete.EntityFramework.UserSubscriptionRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.ISponsorshipCodeRepository, DataAccess.Concrete.EntityFramework.SponsorshipCodeRepository>();
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
+builder.Services.AddScoped<Business.Services.FileStorage.IFileStorageService, Business.Services.FileStorage.FreeImageHostStorageService>();
+builder.Services.AddScoped<Business.Services.PlantAnalysis.IPlantAnalysisService, Business.Services.PlantAnalysis.PlantAnalysisService>();
+
+// Add HttpContextAccessor for URL generation
+builder.Services.AddHttpContextAccessor();
 
 // Add worker services
 builder.Services.AddHostedService<RabbitMQConsumerWorker>();

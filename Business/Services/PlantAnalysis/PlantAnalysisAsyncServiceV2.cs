@@ -1,4 +1,5 @@
 using Business.Services.Configuration;
+using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Core.Configuration;
@@ -25,6 +26,7 @@ namespace Business.Services.PlantAnalysis
         private readonly IConfigurationService _configurationService;
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IFileStorageService _fileStorageService;
         private readonly RabbitMQOptions _rabbitMQOptions;
 
         public PlantAnalysisAsyncServiceV2(
@@ -33,6 +35,7 @@ namespace Business.Services.PlantAnalysis
             IConfigurationService configurationService,
             IPlantAnalysisRepository plantAnalysisRepository,
             IHttpContextAccessor httpContextAccessor,
+            IFileStorageService fileStorageService,
             IOptions<RabbitMQOptions> rabbitMQOptions)
         {
             _messageQueueService = messageQueueService;
@@ -40,6 +43,7 @@ namespace Business.Services.PlantAnalysis
             _configurationService = configurationService;
             _plantAnalysisRepository = plantAnalysisRepository;
             _httpContextAccessor = httpContextAccessor;
+            _fileStorageService = fileStorageService;
             _rabbitMQOptions = rabbitMQOptions.Value;
         }
 
@@ -123,44 +127,19 @@ namespace Business.Services.PlantAnalysis
 
         private async Task<(string path, string url)> SaveImageAndGetUrlAsync(string dataUri, string analysisId)
         {
-            // Save image to file system
-            var relativePath = await SaveImageToFileSystemAsync(dataUri, analysisId);
-            
-            // Generate accessible URL
-            var request = _httpContextAccessor.HttpContext?.Request;
-            if (request != null)
-            {
-                var baseUrl = $"{request.Scheme}://{request.Host}";
-                var imageUrl = $"{baseUrl}/{relativePath.Replace('\\', '/')}";
-                return (relativePath, imageUrl);
-            }
-            
-            // Fallback to local path
-            return (relativePath, $"https://localhost:5001/{relativePath.Replace('\\', '/')}");
-        }
-
-        private async Task<string> SaveImageToFileSystemAsync(string dataUri, string analysisId)
-        {
             try
             {
-                var parts = dataUri.Split(',');
-                var base64Data = parts[1];
-                var imageBytes = Convert.FromBase64String(base64Data);
+                // Use file storage service with unique ID - same as SaveImageFileAsync in PlantAnalysisService
+                var uniqueAnalysisId = $"async_{analysisId}_{DateTime.Now:yyyyMMdd_HHmmss}";
+                var imageUrl = await _fileStorageService.UploadImageFromDataUriAsync(
+                    dataUri, 
+                    uniqueAnalysisId, 
+                    "plant-images"
+                );
                 
-                // Always save as JPEG for consistency
-                var fileName = $"plant_analysis_{analysisId}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}.jpg";
-                var relativePath = Path.Combine("uploads", "plant-images", fileName);
-                var fullPath = Path.Combine("wwwroot", relativePath);
-                
-                var directory = Path.GetDirectoryName(fullPath);
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-                
-                await File.WriteAllBytesAsync(fullPath, imageBytes);
-                
-                return relativePath;
+                // The imageUrl is already the full URL from storage service (e.g., https://iili.io/FDuqN99.jpg)
+                // For database, we store the full URL as ImagePath (matching sync behavior)
+                return (imageUrl, imageUrl);
             }
             catch (Exception ex)
             {
@@ -177,6 +156,8 @@ namespace Business.Services.PlantAnalysis
                 UserId = request.UserId,
                 FarmerId = request.FarmerId,
                 SponsorId = request.SponsorId,
+                SponsorUserId = request.SponsorUserId,
+                SponsorshipCodeId = request.SponsorshipCodeId,
                 FieldId = request.FieldId,
                 CropType = request.CropType,
                 Location = request.Location,
@@ -223,6 +204,8 @@ namespace Business.Services.PlantAnalysis
                 UserId = request.UserId,
                 FarmerId = request.FarmerId,
                 SponsorId = request.SponsorId,
+                SponsorUserId = request.SponsorUserId,
+                SponsorshipCodeId = request.SponsorshipCodeId,
                 Location = request.Location,
                 GpsCoordinates = request.GpsCoordinates,
                 CropType = request.CropType,

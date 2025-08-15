@@ -222,7 +222,9 @@ namespace Business.Services.FileStorage
             if (urlPath.StartsWith("/"))
                 urlPath = urlPath.Substring(1);
 
-            return $"{_baseUrl}/{urlPath}";
+            // Get current base URL (dynamic)
+            var currentBaseUrl = GetBaseUrl();
+            return $"{currentBaseUrl}/{urlPath}";
         }
 
         private string GetBaseUrl()

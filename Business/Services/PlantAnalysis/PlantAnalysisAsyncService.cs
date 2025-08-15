@@ -23,7 +23,7 @@ namespace Business.Services.PlantAnalysis
         private readonly IImageProcessingService _imageProcessingService;
         private readonly IConfigurationService _configurationService;
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
-        private readonly IFileStorageService _fileStorageService;
+        private readonly IPlantAnalysisService _plantAnalysisService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
         private readonly RabbitMQOptions _rabbitMQOptions;
@@ -33,7 +33,7 @@ namespace Business.Services.PlantAnalysis
             IImageProcessingService imageProcessingService,
             IConfigurationService configurationService,
             IPlantAnalysisRepository plantAnalysisRepository,
-            IFileStorageService fileStorageService,
+            IPlantAnalysisService plantAnalysisService,
             IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             IOptions<RabbitMQOptions> rabbitMQOptions)
@@ -42,7 +42,7 @@ namespace Business.Services.PlantAnalysis
             _imageProcessingService = imageProcessingService;
             _configurationService = configurationService;
             _plantAnalysisRepository = plantAnalysisRepository;
-            _fileStorageService = fileStorageService;
+            _plantAnalysisService = plantAnalysisService;
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _rabbitMQOptions = rabbitMQOptions.Value;
@@ -59,14 +59,11 @@ namespace Business.Services.PlantAnalysis
                 // Process image for AI (aggressive optimization for token reduction)
                 var processedImageDataUri = await ProcessImageForAIAsync(request.Image);
                 
-                // Save processed image using file storage service
-                var imageUrl = await _fileStorageService.UploadImageFromDataUriAsync(
-                    processedImageDataUri, 
-                    analysisId, 
-                    "plant-images");
+                // Use PlantAnalysisService for image upload (same as sync endpoint)
+                var imageUrl = await _plantAnalysisService.SaveImageFileAsync(processedImageDataUri, 999999);
                 
-                // Extract relative path for database storage (for backward compatibility)
-                var imagePath = ExtractRelativePathFromUrl(imageUrl);
+                // Store full URL in database (consistent with sync endpoint)
+                var imagePath = imageUrl;
 
                 // Create initial PlantAnalysis entity with all request data
                 var plantAnalysis = new Entities.Concrete.PlantAnalysis
@@ -117,7 +114,7 @@ namespace Business.Services.PlantAnalysis
                     // Status
                     AnalysisStatus = "Processing",
                     Status = true,
-                    CreatedDate = DateTime.UtcNow
+                    CreatedDate = DateTime.Now
                 };
 
                 // Save to database first
@@ -197,29 +194,6 @@ namespace Business.Services.PlantAnalysis
             }
         }
 
-        private string ExtractRelativePathFromUrl(string imageUrl)
-        {
-            try
-            {
-                // If using local storage, extract relative path from URL
-                if (_fileStorageService.ProviderType == "Local")
-                {
-                    var uri = new Uri(imageUrl);
-                    var path = uri.AbsolutePath;
-                    if (path.StartsWith("/"))
-                        path = path.Substring(1);
-                    return path;
-                }
-                
-                // For external storage providers, store the full URL
-                return imageUrl;
-            }
-            catch
-            {
-                // Fallback: return the URL as is
-                return imageUrl;
-            }
-        }
         
         private async Task<string> ProcessImageForAIAsync(string originalDataUri)
         {

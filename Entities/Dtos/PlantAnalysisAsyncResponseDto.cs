@@ -1,91 +1,215 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Entities.Dtos
 {
     public class PlantAnalysisAsyncResponseDto
     {
+        [JsonProperty("plant_identification")]
         public PlantIdentification PlantIdentification { get; set; }
+        
+        [JsonProperty("health_assessment")]
         public HealthAssessment HealthAssessment { get; set; }
+        
+        [JsonProperty("nutrient_status")]
         public NutrientStatus NutrientStatus { get; set; }
+        
+        [JsonProperty("pest_disease")]
         public PestDisease PestDisease { get; set; }
+        
+        [JsonProperty("environmental_stress")]
         public EnvironmentalStress EnvironmentalStress { get; set; }
+        
+        [JsonProperty("cross_factor_insights")]
         public List<CrossFactorInsight> CrossFactorInsights { get; set; }
+        
+        [JsonProperty("recommendations")]
         public Recommendations Recommendations { get; set; }
+        
+        [JsonProperty("summary")]
         public AnalysisSummary Summary { get; set; }
         
         // Metadata
+        [JsonProperty("analysis_id")]
         public string AnalysisId { get; set; }
+        
+        [JsonProperty("timestamp")]
         public DateTime Timestamp { get; set; }
+        
+        [JsonProperty("user_id")]
         public int? UserId { get; set; } // Worker'da entity'ye atamak için
+        
+        [JsonProperty("farmer_id")]
         public string FarmerId { get; set; }
+        
+        [JsonProperty("sponsor_id")]
         public string SponsorId { get; set; }
         public int? SponsorUserId { get; set; }        // Actual sponsor user ID
         public int? SponsorshipCodeId { get; set; }    // SponsorshipCode table ID
+        
+        [JsonProperty("location")]
         public string Location { get; set; }
+        
+        [JsonProperty("gps_coordinates")]
         public GpsCoordinates GpsCoordinates { get; set; }
+        
+        [JsonProperty("altitude")]
         public int? Altitude { get; set; }
+        
+        [JsonProperty("field_id")]
         public string FieldId { get; set; }
+        
+        [JsonProperty("crop_type")]
         public string CropType { get; set; }
+        
+        [JsonProperty("planting_date")]
         public DateTime? PlantingDate { get; set; }
+        
+        [JsonProperty("expected_harvest_date")]
         public DateTime? ExpectedHarvestDate { get; set; }
+        
+        [JsonProperty("last_fertilization")]
         public DateTime? LastFertilization { get; set; }
+        
+        [JsonProperty("last_irrigation")]
         public DateTime? LastIrrigation { get; set; }
+        
+        [JsonProperty("previous_treatments")]
         public string[] PreviousTreatments { get; set; }
+        
+        [JsonProperty("weather_conditions")]
         public string WeatherConditions { get; set; }
+        
+        [JsonProperty("temperature")]
         public decimal? Temperature { get; set; }
+        
+        [JsonProperty("humidity")]
         public decimal? Humidity { get; set; }
+        
+        [JsonProperty("soil_type")]
         public string SoilType { get; set; }
+        
+        [JsonProperty("urgency_level")]
         public string UrgencyLevel { get; set; }
+        
+        [JsonProperty("notes")]
         public string Notes { get; set; }
+        [JsonProperty("contact_info")]
         public ContactInfo ContactInfo { get; set; }
+        
+        [JsonProperty("additional_info")]
         public AdditionalInfoData AdditionalInfo { get; set; }
         
+        // Image URL and Path
+        [JsonProperty("image_url")]
+        public string ImageUrl { get; set; }
+        
+        [JsonProperty("image_path")]
+        public string ImagePath { get; set; }
+        
         // Image and Processing Metadata
+        [JsonProperty("image_metadata")]
         public ImageMetadata ImageMetadata { get; set; }
+        
+        [JsonProperty("rabbitmq_metadata")]
         public RabbitMQMetadata RabbitMQMetadata { get; set; }
+        
+        [JsonProperty("processing_metadata")]
         public ProcessingMetadata ProcessingMetadata { get; set; }
         
         // Response Status
+        [JsonProperty("success")]
         public bool Success { get; set; }
+        
+        [JsonProperty("message")]
         public string Message { get; set; }
+        
+        [JsonProperty("error")]
         public bool Error { get; set; }
+        
+        [JsonProperty("error_message")]
         public string ErrorMessage { get; set; }
+        
+        [JsonProperty("error_type")]
         public string ErrorType { get; set; }
     }
 
     public class PlantIdentification
     {
+        [JsonProperty("species")]
         public string Species { get; set; }
+        
+        [JsonProperty("variety")]
         public string Variety { get; set; }
+        
+        [JsonProperty("growth_stage")]
         public string GrowthStage { get; set; }
+        
+        [JsonProperty("confidence")]
         public int Confidence { get; set; }
+        
+        [JsonProperty("identifying_features")]
         public string[] IdentifyingFeatures { get; set; }
+        
+        [JsonProperty("visible_parts")]
         public string[] VisibleParts { get; set; }
     }
 
     public class HealthAssessment
     {
+        [JsonProperty("vigor_score")]
         public int VigorScore { get; set; }
+        
+        [JsonProperty("leaf_color")]
         public string LeafColor { get; set; }
+        
+        [JsonProperty("leaf_texture")]
         public string LeafTexture { get; set; }
+        
+        [JsonProperty("growth_pattern")]
         public string GrowthPattern { get; set; }
+        
+        [JsonProperty("structural_integrity")]
         public string StructuralIntegrity { get; set; }
+        
+        [JsonProperty("stress_indicators")]
         public string[] StressIndicators { get; set; }
+        
+        [JsonProperty("disease_symptoms")]
         public string[] DiseaseSymptoms { get; set; }
+        
+        [JsonProperty("severity")]
         public string Severity { get; set; }
     }
 
     public class NutrientStatus
     {
+        [JsonProperty("nitrogen")]
         public string Nitrogen { get; set; }
+        
+        [JsonProperty("phosphorus")]
         public string Phosphorus { get; set; }
+        
+        [JsonProperty("potassium")]
         public string Potassium { get; set; }
+        
+        [JsonProperty("calcium")]
         public string Calcium { get; set; }
+        
+        [JsonProperty("magnesium")]
         public string Magnesium { get; set; }
+        
+        [JsonProperty("iron")]
         public string Iron { get; set; }
+        
+        [JsonProperty("primary_deficiency")]
         public string PrimaryDeficiency { get; set; }
+        
+        [JsonProperty("secondary_deficiencies")]
         public string[] SecondaryDeficiencies { get; set; }
+        
+        [JsonProperty("severity")]
         public string Severity { get; set; }
     }
 
@@ -143,23 +267,37 @@ namespace Entities.Dtos
 
     public class AnalysisSummary
     {
+        [JsonProperty("overall_health_score")]
         public int OverallHealthScore { get; set; }
+        
+        [JsonProperty("primary_concern")]
         public string PrimaryConcern { get; set; }
+        
+        [JsonProperty("secondary_concerns")]
         public string[] SecondaryConcerns { get; set; }
+        
+        [JsonProperty("critical_issues_count")]
         public int CriticalIssuesCount { get; set; }
+        
+        [JsonProperty("confidence_level")]
         public int ConfidenceLevel { get; set; }
+        
+        [JsonProperty("prognosis")]
         public string Prognosis { get; set; }
+        
+        [JsonProperty("estimated_yield_impact")]
         public string EstimatedYieldImpact { get; set; }
     }
 
     public class ImageMetadata
     {
         public string Format { get; set; }
-        public decimal SizeBytes { get; set; }
-        public decimal SizeKb { get; set; }
-        public decimal SizeMb { get; set; }
-        public int Base64Length { get; set; }
-        public DateTime UploadTimestamp { get; set; }
+        public string URL { get; set; } // Image URL from N8N response
+        public decimal? SizeBytes { get; set; }
+        public decimal? SizeKb { get; set; }
+        public decimal? SizeMb { get; set; }
+        public int? Base64Length { get; set; }
+        public DateTime? UploadTimestamp { get; set; }
     }
 
     public class RabbitMQMetadata

@@ -1,3 +1,4 @@
+using Business.Services.FileStorage;
 using DataAccess.Abstract;
 using Entities.Concrete;
 using Entities.Dtos;
@@ -10,13 +11,16 @@ namespace PlantAnalysisWorkerService.Jobs
     {
         private readonly ILogger<PlantAnalysisJobService> _logger;
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
+        private readonly IFileStorageService _fileStorageService;
 
         public PlantAnalysisJobService(
             ILogger<PlantAnalysisJobService> logger,
-            IPlantAnalysisRepository plantAnalysisRepository)
+            IPlantAnalysisRepository plantAnalysisRepository,
+            IFileStorageService fileStorageService)
         {
             _logger = logger;
             _plantAnalysisRepository = plantAnalysisRepository;
+            _fileStorageService = fileStorageService;
         }
 
         [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
@@ -34,11 +38,21 @@ namespace PlantAnalysisWorkerService.Jobs
                     _logger.LogWarning($"No existing analysis found for ID: {result.AnalysisId}. Creating new record.");
                     
                     // Fallback: Create new record if not found (shouldn't happen in normal flow)
+                    // Extract UserId from FarmerId format (F046 -> 46)
+                    int? userId = null;
+                    if (!string.IsNullOrEmpty(result.FarmerId) && result.FarmerId.StartsWith("F"))
+                    {
+                        if (int.TryParse(result.FarmerId.Substring(1), out var parsedUserId))
+                        {
+                            userId = parsedUserId;
+                        }
+                    }
+                    
                     var newAnalysis = new PlantAnalysis
                     {
                         // Basic Info from response
                         AnalysisId = result.AnalysisId,
-                        UserId = result.UserId,
+                        UserId = userId, // Extracted from FarmerId
                         FarmerId = result.FarmerId,
                         SponsorId = result.SponsorId,
                         SponsorUserId = result.SponsorUserId,        // Actual sponsor user ID
@@ -48,6 +62,9 @@ namespace PlantAnalysisWorkerService.Jobs
                         Location = result.Location,
                         UrgencyLevel = result.UrgencyLevel,
                         Notes = result.Notes,
+                        
+                        // Image URL from image_metadata (critical fix!)
+                        ImagePath = result.ImageMetadata?.URL ?? result.ImageUrl ?? result.ImagePath,
                         
                         // GPS and Environment
                         Latitude = result.GpsCoordinates?.Lat,
@@ -79,7 +96,9 @@ namespace PlantAnalysisWorkerService.Jobs
                         AnalysisResult = JsonConvert.SerializeObject(result),
                         AnalysisStatus = "Completed",
                         Status = true,
-                        CreatedDate = DateTime.UtcNow,
+                        CreatedDate = DateTime.Now,
+                        AnalysisDate = result.Timestamp.ToLocalTime(),
+                        N8nWebhookResponse = JsonConvert.SerializeObject(result),
                         
                         // Processing metadata
                         AiModel = result.ProcessingMetadata?.AiModel,
@@ -92,8 +111,11 @@ namespace PlantAnalysisWorkerService.Jobs
                         
                         VigorScore = result.HealthAssessment?.VigorScore,
                         HealthSeverity = result.HealthAssessment?.Severity,
+                        StressIndicators = JsonConvert.SerializeObject(result.HealthAssessment?.StressIndicators ?? new string[0]),
+                        DiseaseSymptoms = JsonConvert.SerializeObject(result.HealthAssessment?.DiseaseSymptoms ?? new string[0]),
                         
                         PrimaryDeficiency = result.NutrientStatus?.PrimaryDeficiency,
+                        NutrientStatus = JsonConvert.SerializeObject(result.NutrientStatus),
                         
                         OverallHealthScore = result.Summary?.OverallHealthScore,
                         PrimaryConcern = result.Summary?.PrimaryConcern,
@@ -104,7 +126,13 @@ namespace PlantAnalysisWorkerService.Jobs
                         // Store detailed data as JSON
                         DetailedAnalysisData = JsonConvert.SerializeObject(result),
                         Recommendations = JsonConvert.SerializeObject(result.Recommendations),
-                        CrossFactorInsights = JsonConvert.SerializeObject(result.CrossFactorInsights)
+                        CrossFactorInsights = JsonConvert.SerializeObject(result.CrossFactorInsights),
+                        
+                        // Legacy fields for backward compatibility
+                        PlantType = result.PlantIdentification?.Species,
+                        ElementDeficiencies = JsonConvert.SerializeObject(result.NutrientStatus),
+                        Diseases = JsonConvert.SerializeObject(result.PestDisease?.DiseasesDetected ?? new object[0]),
+                        Pests = JsonConvert.SerializeObject(result.PestDisease?.PestsDetected ?? new object[0])
                     };
                     
                     _plantAnalysisRepository.Add(newAnalysis);
@@ -116,7 +144,12 @@ namespace PlantAnalysisWorkerService.Jobs
                     // Update existing record with analysis results
                     existingAnalysis.AnalysisResult = JsonConvert.SerializeObject(result);
                     existingAnalysis.AnalysisStatus = "Completed";
-                    existingAnalysis.UpdatedDate = DateTime.UtcNow;
+                    existingAnalysis.UpdatedDate = DateTime.Now;
+                    existingAnalysis.AnalysisDate = result.Timestamp.ToLocalTime();
+                    existingAnalysis.N8nWebhookResponse = JsonConvert.SerializeObject(result);
+                    
+                    // Update ImagePath from image_metadata (critical fix!)
+                    existingAnalysis.ImagePath = result.ImageMetadata?.URL ?? ConvertToFullUrlIfNeeded(existingAnalysis.ImagePath);
                     
                     // Update AI processing results
                     existingAnalysis.AiModel = result.ProcessingMetadata?.AiModel;
@@ -130,9 +163,12 @@ namespace PlantAnalysisWorkerService.Jobs
                     // Update health assessment results
                     existingAnalysis.VigorScore = result.HealthAssessment?.VigorScore;
                     existingAnalysis.HealthSeverity = result.HealthAssessment?.Severity;
+                    existingAnalysis.StressIndicators = JsonConvert.SerializeObject(result.HealthAssessment?.StressIndicators ?? new string[0]);
+                    existingAnalysis.DiseaseSymptoms = JsonConvert.SerializeObject(result.HealthAssessment?.DiseaseSymptoms ?? new string[0]);
                     
                     // Update nutrient status
                     existingAnalysis.PrimaryDeficiency = result.NutrientStatus?.PrimaryDeficiency;
+                    existingAnalysis.NutrientStatus = JsonConvert.SerializeObject(result.NutrientStatus);
                     
                     // Update summary results
                     existingAnalysis.OverallHealthScore = result.Summary?.OverallHealthScore;
@@ -145,6 +181,12 @@ namespace PlantAnalysisWorkerService.Jobs
                     existingAnalysis.DetailedAnalysisData = JsonConvert.SerializeObject(result);
                     existingAnalysis.Recommendations = JsonConvert.SerializeObject(result.Recommendations);
                     existingAnalysis.CrossFactorInsights = JsonConvert.SerializeObject(result.CrossFactorInsights);
+                    
+                    // Update legacy fields for backward compatibility
+                    existingAnalysis.PlantType = result.PlantIdentification?.Species;
+                    existingAnalysis.ElementDeficiencies = JsonConvert.SerializeObject(result.NutrientStatus);
+                    existingAnalysis.Diseases = JsonConvert.SerializeObject(result.PestDisease?.DiseasesDetected ?? new object[0]);
+                    existingAnalysis.Pests = JsonConvert.SerializeObject(result.PestDisease?.PestsDetected ?? new object[0]);
                     
                     _plantAnalysisRepository.Update(existingAnalysis);
                 }
@@ -170,7 +212,7 @@ namespace PlantAnalysisWorkerService.Jobs
                     if (failedAnalysis != null)
                     {
                         failedAnalysis.AnalysisStatus = "Failed";
-                        failedAnalysis.UpdatedDate = DateTime.UtcNow;
+                        failedAnalysis.UpdatedDate = DateTime.Now;
                         _plantAnalysisRepository.Update(failedAnalysis);
                         await _plantAnalysisRepository.SaveChangesAsync();
                     }
@@ -216,6 +258,34 @@ namespace PlantAnalysisWorkerService.Jobs
             {
                 _logger.LogError(ex, $"Failed to send notification for analysis: {result.AnalysisId}");
                 throw; // Re-throw to trigger Hangfire retry
+            }
+        }
+        
+        private string ConvertToFullUrlIfNeeded(string imagePath)
+        {
+            try
+            {
+                // If already a full URL, return as is
+                if (string.IsNullOrEmpty(imagePath) || imagePath.StartsWith("http"))
+                {
+                    return imagePath;
+                }
+                
+                // Convert relative path to full URL
+                var baseUrl = _fileStorageService.BaseUrl?.TrimEnd('/');
+                if (!string.IsNullOrEmpty(baseUrl))
+                {
+                    var relativePath = imagePath.TrimStart('/');
+                    return $"{baseUrl}/{relativePath}";
+                }
+                
+                // Fallback: return the original path
+                return imagePath;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Failed to convert image path to URL: {ex.Message}");
+                return imagePath;
             }
         }
     }
