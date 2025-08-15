@@ -24,19 +24,16 @@ namespace Business.Handlers.SponsorProfiles.Commands
         public string ContactEmail { get; set; }
         public string ContactPhone { get; set; }
         public string ContactPerson { get; set; }
-        public int CurrentSubscriptionTierId { get; set; }
+        public string CompanyType { get; set; }
+        public string BusinessModel { get; set; }
 
         public class CreateSponsorProfileCommandHandler : IRequestHandler<CreateSponsorProfileCommand, IResult>
         {
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
-            private readonly ISubscriptionTierRepository _subscriptionTierRepository;
 
-            public CreateSponsorProfileCommandHandler(
-                ISponsorProfileRepository sponsorProfileRepository,
-                ISubscriptionTierRepository subscriptionTierRepository)
+            public CreateSponsorProfileCommandHandler(ISponsorProfileRepository sponsorProfileRepository)
             {
                 _sponsorProfileRepository = sponsorProfileRepository;
-                _subscriptionTierRepository = subscriptionTierRepository;
             }
 
             [ValidationAspect(typeof(CreateSponsorProfileValidator), Priority = 1)]
@@ -49,11 +46,6 @@ namespace Business.Handlers.SponsorProfiles.Commands
                 if (existingProfile != null)
                     return new ErrorResult(Messages.SponsorProfileAlreadyExists);
 
-                // Get subscription tier to set capabilities
-                var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == request.CurrentSubscriptionTierId);
-                if (tier == null)
-                    return new ErrorResult(Messages.SubscriptionTierNotFound);
-
                 var sponsorProfile = new SponsorProfile
                 {
                     SponsorId = request.SponsorId,
@@ -64,15 +56,13 @@ namespace Business.Handlers.SponsorProfiles.Commands
                     ContactEmail = request.ContactEmail,
                     ContactPhone = request.ContactPhone,
                     ContactPerson = request.ContactPerson,
-                    CurrentSubscriptionTierId = request.CurrentSubscriptionTierId,
-                    VisibilityLevel = GetVisibilityLevel(tier.TierName),
-                    DataAccessLevel = GetDataAccessLevel(tier.TierName),
-                    HasMessaging = GetMessagingCapability(tier.TierName),
-                    HasSmartLinking = GetSmartLinkingCapability(tier.TierName),
-                    IsVerified = false,
+                    CompanyType = request.CompanyType ?? "Agriculture",
+                    BusinessModel = request.BusinessModel ?? "B2B",
+                    IsVerifiedCompany = false,
                     IsActive = true,
-                    TotalSponsored = 0,
-                    ActiveSponsored = 0,
+                    TotalPurchases = 0,
+                    TotalCodesGenerated = 0,
+                    TotalCodesRedeemed = 0,
                     TotalInvestment = 0,
                     CreatedDate = DateTime.Now
                 };
@@ -82,39 +72,6 @@ namespace Business.Handlers.SponsorProfiles.Commands
                 return new SuccessResult(Messages.SponsorProfileCreated);
             }
 
-            private string GetVisibilityLevel(string tierName)
-            {
-                return tierName switch
-                {
-                    "S" => "ResultOnly",
-                    "M" => "StartAndResult",
-                    "L" => "AllScreens",
-                    "XL" => "AllScreens",
-                    _ => "ResultOnly"
-                };
-            }
-
-            private string GetDataAccessLevel(string tierName)
-            {
-                return tierName switch
-                {
-                    "S" => "Basic30",
-                    "M" => "Basic30",
-                    "L" => "Medium60",
-                    "XL" => "Full100",
-                    _ => "Basic30"
-                };
-            }
-
-            private bool GetMessagingCapability(string tierName)
-            {
-                return tierName == "L" || tierName == "XL";
-            }
-
-            private bool GetSmartLinkingCapability(string tierName)
-            {
-                return tierName == "XL";
-            }
         }
     }
 }

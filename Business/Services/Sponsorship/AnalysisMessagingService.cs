@@ -26,11 +26,23 @@ namespace Business.Services.Sponsorship
         public async Task<bool> CanSendMessageAsync(int sponsorId)
         {
             var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (profile == null || !profile.IsActive || !profile.IsVerified)
+            if (profile == null || !profile.IsActive || !profile.IsVerifiedCompany)
                 return false;
 
-            // Sadece L ve XL paketleri mesajlaşma hakkına sahip
-            return profile.HasMessaging;
+            // Sponsor'un M, L veya XL paketi satın almış olması gerekiyor (mesajlaşma için)
+            if (profile.SponsorshipPurchases != null)
+            {
+                foreach (var purchase in profile.SponsorshipPurchases)
+                {
+                    // M, L, XL tier'larında mesajlaşma var
+                    if (purchase.SubscriptionTierId >= 2) // M=2, L=3, XL=4
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
         }
 
         public async Task<AnalysisMessage> SendMessageAsync(int fromUserId, int toUserId, int plantAnalysisId, string message, string messageType = "Information")

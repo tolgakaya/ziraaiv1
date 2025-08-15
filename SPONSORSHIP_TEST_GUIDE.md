@@ -31,71 +31,146 @@ POST https://localhost:5001/api/v1/auth/login
 }
 ```
 
-#### C. S Paketi Sponsor Profili Oluşturma
+#### C. Sponsor Profili Oluşturma (Tek Seferlik)
 ```bash
+# Önce sponsor company profile oluştur (tier bağımsız)
 POST https://localhost:5001/api/sponsorships/create-profile
 Authorization: Bearer {token}
 {
-  "sponsorId": 101,
-  "companyName": "Tarım S Şirketi",
-  "companyDescription": "Temel tarım destek hizmetleri",
-  "sponsorLogoUrl": "https://example.com/s-logo.png",
-  "websiteUrl": "https://tarims.com.tr",
-  "contactEmail": "info@tarims.com.tr", 
+  "companyName": "Tarım Teknoloji A.Ş.",
+  "companyDescription": "Modern tarım çözümleri ve danışmanlık hizmetleri",
+  "sponsorLogoUrl": "https://example.com/company-logo.png",
+  "websiteUrl": "https://tarimteknoloji.com.tr",
+  "contactEmail": "info@tarimteknoloji.com.tr", 
   "contactPhone": "+90 212 555 01 01",
-  "contactPerson": "S Paket Sponsor",
-  "currentSubscriptionTierId": 1
+  "contactPerson": "Ahmet Yılmaz",
+  "companyType": "Agriculture",
+  "businessModel": "B2B"
 }
 
 # Beklenen Response:
 {
   "success": true,
+  "message": "Sponsor profile created successfully",
   "data": {
     "id": 1,
-    "dataAccessLevel": "Basic", // %30 erişim
-    "logoVisibilityLevel": "ResultOnly", // Sadece sonuç ekranı
-    "messagingEnabled": false, // Mesajlaşma YOK
-    "smartLinksEnabled": false // Smart link YOK
+    "sponsorId": 101,
+    "companyName": "Tarım Teknoloji A.Ş.",
+    "isActive": true,
+    "totalPurchases": 0,
+    "totalCodesGenerated": 0,
+    "totalCodesRedeemed": 0
   }
 }
 ```
 
-#### D. S Paketi Logo Görünürlük Testi
+#### D. S Paketi Satın Alma
 ```bash
-# Logo yetkilerini kontrol et
-GET https://localhost:5001/api/sponsorships/logo-permissions/101
+# Şimdi S paketi satın al (100 adet sponsorship code)
+POST https://localhost:5001/api/sponsorships/purchase-package
 Authorization: Bearer {token}
+{
+  "subscriptionTierId": 1, // S paketi
+  "quantity": 100,
+  "unitPrice": 29.99,
+  "totalAmount": 2999.00,
+  "currency": "TRY",
+  "paymentMethod": "CreditCard",
+  "paymentReference": "TXN_S_20250815_001"
+}
 
-# Beklenen Response (S Paketi):
+# Beklenen Response:
 {
   "success": true,
   "data": {
-    "sponsorId": 101,
-    "canShowOnStart": false, // ❌ Başlangıç ekranında gösterilmez
-    "canShowOnResult": true, // ✅ Sadece sonuç ekranında
-    "canShowOnAnalysis": false, // ❌ Analiz detayında gösterilmez
-    "canShowOnProfile": false, // ❌ Profil sayfasında gösterilmez
-    "tierLevel": "S"
+    "purchaseId": 1,
+    "codesGenerated": 100,
+    "tierFeatures": {
+      "logoVisibility": "ResultOnly",
+      "dataAccessPercentage": 30,
+      "messagingEnabled": false,
+      "smartLinksEnabled": false
+    },
+    "codes": ["AGRI-S-001", "AGRI-S-002", ..., "AGRI-S-100"]
+  }
+}
+```
+
+#### E. Kod Dağıtımı ve Kullanımı (Farmer Tarafı)
+```bash
+# Farmer S paket kodunu kullanarak analiz yapar
+POST https://localhost:5001/api/v1/plantanalyses/analyze
+Authorization: Bearer {farmer_token}
+{
+  "image": "data:image/jpeg;base64,/9j/4AAQ...",
+  "sponsorshipCode": "AGRI-S-001", // S paketi kodu
+  "farmerId": "F001",
+  "cropType": "tomato"
+}
+
+# Beklenen Response:
+{
+  "success": true,
+  "data": {
+    "id": 456,
+    "analysisId": "ANALYSIS_20250815_001",
+    "sponsorshipCodeId": 1,
+    "status": "Completed"
+  }
+}
+```
+
+#### F. S Paketi Logo Görünürlük Testi (Analysis-Based - YENİ MANTIK)
+```bash
+# Analiz bazlı logo görünürlük kontrolü (YENİ ENDPOINT)
+GET https://localhost:5001/api/sponsorships/logo-permissions/analysis/456
+Authorization: Bearer {token}
+
+# Beklenen Response (S Paketi - Analiz ID: 456):
+{
+  "success": true,
+  "data": {
+    "plantAnalysisId": 456,
+    "tierName": "S",
+    "canShowOnStart": false, // ❌ S paketi start screen'de logo gösteremez
+    "canShowOnResult": true, // ✅ S paketi result screen'de logo gösterebilir
+    "canShowOnAnalysis": false, // ❌ S paketi analysis detayında logo gösteremez
+    "canShowOnProfile": false, // ❌ S paketi profil sayfasında logo gösteremez
+    "sponsorInfo": {
+      "sponsorId": 101,
+      "companyName": "Tarım Teknoloji A.Ş.",
+      "sponsorLogoUrl": "https://example.com/company-logo.png"
+    }
   }
 }
 
-# Result screen için display info testi
-GET https://localhost:5001/api/sponsorships/display-info/456?screen=result
+# Result screen için display info testi (YENİ ENDPOINT)
+GET https://localhost:5001/api/sponsorships/display-info/analysis/456?screen=result
 Authorization: Bearer {token}
 
 # Beklenen Response:
 {
   "success": true,
   "data": {
-    "sponsorLogoUrl": "https://example.com/s-logo.png",
-    "companyName": "Tarım S Şirketi",
-    "websiteUrl": "https://tarims.com.tr"
+    "sponsorLogoUrl": "https://example.com/company-logo.png",
+    "companyName": "Tarım Teknoloji A.Ş.",
+    "websiteUrl": "https://tarimteknoloji.com.tr",
+    "tierName": "S",
+    "canDisplay": true
   }
 }
 
 # Start screen test (başarısız olmalı)
-GET https://localhost:5001/api/sponsorships/display-info/456?screen=start
-# Beklenen: 403 Forbidden veya null data
+GET https://localhost:5001/api/sponsorships/display-info/analysis/456?screen=start
+# Beklenen: canDisplay = false çünkü S paketi start screen'de logo gösteremez
+{
+  "success": true,
+  "data": {
+    "canDisplay": false,
+    "tierName": "S",
+    "reason": "S tier cannot display logo on start screen"
+  }
+}
 ```
 
 #### E. S Paketi Veri Erişim Testi (%30 Erişim)
@@ -148,31 +223,34 @@ GET https://localhost:5001/api/sponsorships/matching-links/456
 
 ### **Adım 2: M Paketi (Orta Seviye) Test Senaryoları**
 
-#### A. M Paketi Sponsor Profili Oluşturma
+#### A. M Paketi Satın Alma (Aynı Sponsor Firması)
 ```bash
-POST https://localhost:5001/api/sponsorships/create-profile
+# Aynı sponsor şirketi M paketi de satın alabilir
+POST https://localhost:5001/api/sponsorships/purchase-package
 Authorization: Bearer {token}
 {
-  "sponsorId": 102,
-  "companyName": "Tarım M Teknoloji",
-  "companyDescription": "Orta düzey tarım çözümleri ve iletişim",
-  "sponsorLogoUrl": "https://example.com/m-logo.png",
-  "websiteUrl": "https://tarimm.com.tr",
-  "contactEmail": "info@tarimm.com.tr",
-  "contactPhone": "+90 212 555 02 02",
-  "contactPerson": "M Paket Sponsor",
-  "currentSubscriptionTierId": 2
+  "subscriptionTierId": 2, // M paketi  
+  "quantity": 50,
+  "unitPrice": 59.99,
+  "totalAmount": 2999.50,
+  "currency": "TRY",
+  "paymentMethod": "CreditCard",
+  "paymentReference": "TXN_M_20250815_002"
 }
 
 # Beklenen Response:
 {
   "success": true,
   "data": {
-    "id": 2,
-    "dataAccessLevel": "Basic", // Hala %30 erişim
-    "logoVisibilityLevel": "StartAndResult", // Başlangıç + Sonuç
-    "messagingEnabled": true, // ✅ Mesajlaşma aktif
-    "smartLinksEnabled": false // Smart link hala YOK
+    "purchaseId": 2,
+    "codesGenerated": 50,
+    "tierFeatures": {
+      "logoVisibility": "StartAndResult", // Başlangıç + Sonuç
+      "dataAccessPercentage": 30, // Hala %30 erişim
+      "messagingEnabled": true, // ✅ Mesajlaşma aktif
+      "smartLinksEnabled": false // Smart link hala YOK
+    },
+    "codes": ["AGRI-M-001", "AGRI-M-002", ..., "AGRI-M-050"]
   }
 }
 ```
@@ -876,7 +954,7 @@ GET https://localhost:5001/api/sponsorships/filtered-analysis/104/123
 
 ---
 
-## 📊 Beklenen Test Sonuçları Özeti
+## 📊 Beklenen Test Sonuçları Özeti (YENİ ARCHITECTURE)
 
 | Özellik | S | M | L | XL |
 |---------|---|---|---|----| 
@@ -888,6 +966,27 @@ GET https://localhost:5001/api/sponsorships/filtered-analysis/104/123
 | Mesajlaşma | ❌ | ✅ | ✅ | ✅ |
 | Smart Links | ❌ | ❌ | ❌ | ✅ |
 | Analytics | Temel | Temel | Detaylı | Premium |
+
+## 🏗️ **YENİ ARCHITECTURE DEĞİŞİKLİKLERİ**
+
+### ✅ **DOĞRU İŞ AKIŞI (Düzeltildi):**
+1. **Sponsor Registration**: Tek company profile oluşturma
+2. **Package Purchase**: S/M/L/XL paketlerini ayrı ayrı satın alma
+3. **Code Generation**: Her satın alma için unique kodlar
+4. **Code Distribution**: Sponsor kodları çiftçilere dağıtır  
+5. **Analysis with Code**: Çiftçi kodu kullanarak analiz yapar
+6. **Feature Access**: Kullanılan kod tier'ına göre özellikler açılır
+
+### ❌ **ESKİ YANLIŞ LOGIC (Düzeltildi):**
+- ~~Her tier için ayrı sponsor profile~~
+- ~~Sponsor tier'ına göre sabit özellikler~~  
+- ~~Profile-based feature access~~
+
+### 🔧 **YENİ ENDPOINT'LER:**
+- `POST /api/sponsorships/create-profile` - Company profile (tier bağımsız)
+- `POST /api/sponsorships/purchase-package` - Paket satın alma
+- `GET /api/sponsorships/logo-permissions/analysis/{id}` - Analiz bazlı logo izinleri
+- `GET /api/sponsorships/display-info/analysis/{id}?screen=result` - Analiz bazlı sponsor bilgisi
 
 ---
 

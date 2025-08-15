@@ -9,6 +9,6 @@ namespace DataAccess.Abstract
         Task<SponsorProfile> GetBySponsorIdAsync(int sponsorId);
         Task<SponsorProfile> GetByCompanyNameAsync(string companyName);
         Task<bool> IsSponsorVerifiedAsync(int sponsorId);
-        Task UpdateStatisticsAsync(int sponsorId, int totalSponsored, int activeSponsored, decimal totalInvestment);
+        Task UpdateStatisticsAsync(int sponsorId, int totalPurchases, int totalCodesGenerated, int totalCodesRedeemed, decimal totalInvestment);
     }
 }

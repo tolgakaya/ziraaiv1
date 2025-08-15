@@ -16,8 +16,6 @@ namespace DataAccess.Concrete.EntityFramework
         public async Task<SponsorProfile> GetBySponsorIdAsync(int sponsorId)
         {
             return await Context.SponsorProfiles
-                .Include(x => x.Sponsor)
-                .Include(x => x.CurrentSubscriptionTier)
                 .FirstOrDefaultAsync(x => x.SponsorId == sponsorId);
         }
 
@@ -25,7 +23,7 @@ namespace DataAccess.Concrete.EntityFramework
         {
             return await Context.SponsorProfiles
                 .Include(x => x.Sponsor)
-                .Include(x => x.CurrentSubscriptionTier)
+                .Include(x => x.SponsorshipPurchases)
                 .FirstOrDefaultAsync(x => x.CompanyName == companyName);
         }
 
@@ -34,16 +32,17 @@ namespace DataAccess.Concrete.EntityFramework
             var profile = await Context.SponsorProfiles
                 .FirstOrDefaultAsync(x => x.SponsorId == sponsorId);
             
-            return profile?.IsVerified == true;
+            return profile?.IsVerifiedCompany == true;
         }
 
-        public async Task UpdateStatisticsAsync(int sponsorId, int totalSponsored, int activeSponsored, decimal totalInvestment)
+        public async Task UpdateStatisticsAsync(int sponsorId, int totalPurchases, int totalCodesGenerated, int totalCodesRedeemed, decimal totalInvestment)
         {
             var profile = await GetBySponsorIdAsync(sponsorId);
             if (profile != null)
             {
-                profile.TotalSponsored = totalSponsored;
-                profile.ActiveSponsored = activeSponsored;
+                profile.TotalPurchases = totalPurchases;
+                profile.TotalCodesGenerated = totalCodesGenerated;
+                profile.TotalCodesRedeemed = totalCodesRedeemed;
                 profile.TotalInvestment = totalInvestment;
                 profile.UpdatedDate = System.DateTime.Now;
                 

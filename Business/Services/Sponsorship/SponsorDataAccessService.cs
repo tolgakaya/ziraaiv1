@@ -25,7 +25,7 @@ namespace Business.Services.Sponsorship
         public async Task<Entities.Concrete.PlantAnalysis> GetFilteredAnalysisDataAsync(int sponsorId, int plantAnalysisId)
         {
             var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (sponsorProfile == null || !sponsorProfile.IsActive || !sponsorProfile.IsVerified)
+            if (sponsorProfile == null || !sponsorProfile.IsActive || !sponsorProfile.IsVerifiedCompany)
                 return null;
 
             var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
@@ -35,18 +35,40 @@ namespace Business.Services.Sponsorship
             // Access kaydını oluştur/güncelle
             await RecordAccessAsync(sponsorId, plantAnalysisId, analysis.UserId ?? 0);
 
-            var accessPercentage = GetAccessPercentageFromLevel(sponsorProfile.DataAccessLevel);
+            var accessPercentage = await GetDataAccessPercentageFromPurchasesAsync(sponsorId);
             
             return FilterAnalysisData(analysis, accessPercentage);
         }
 
         public async Task<int> GetDataAccessPercentageAsync(int sponsorId)
         {
+            return await GetDataAccessPercentageFromPurchasesAsync(sponsorId);
+        }
+
+        private async Task<int> GetDataAccessPercentageFromPurchasesAsync(int sponsorId)
+        {
             var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (sponsorProfile == null)
+            if (sponsorProfile?.SponsorshipPurchases == null)
                 return 0;
 
-            return GetAccessPercentageFromLevel(sponsorProfile.DataAccessLevel);
+            // En yüksek tier'ın veri erişim yüzdesini döndür
+            int maxAccessPercentage = 0;
+            foreach (var purchase in sponsorProfile.SponsorshipPurchases)
+            {
+                var accessPercentage = purchase.SubscriptionTierId switch
+                {
+                    1 => 30, // S tier: %30
+                    2 => 30, // M tier: %30  
+                    3 => 60, // L tier: %60
+                    4 => 100, // XL tier: %100
+                    _ => 0
+                };
+                
+                if (accessPercentage > maxAccessPercentage)
+                    maxAccessPercentage = accessPercentage;
+            }
+
+            return maxAccessPercentage;
         }
 
         public async Task<bool> CanAccessFieldAsync(int sponsorId, string fieldName)
@@ -78,15 +100,21 @@ namespace Business.Services.Sponsorship
             
             if (existingAccess == null)
             {
-                var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-                var accessPercentage = GetAccessPercentageFromLevel(sponsorProfile?.DataAccessLevel ?? "Basic30");
+                var accessPercentage = await GetDataAccessPercentageFromPurchasesAsync(sponsorId);
+                var accessLevel = accessPercentage switch
+                {
+                    30 => "Basic30",
+                    60 => "Extended60", 
+                    100 => "Full100",
+                    _ => "Basic30"
+                };
                 
                 var newAccess = new Entities.Concrete.SponsorAnalysisAccess
                 {
                     SponsorId = sponsorId,
                     PlantAnalysisId = plantAnalysisId,
                     FarmerId = farmerId,
-                    AccessLevel = sponsorProfile?.DataAccessLevel ?? "Basic30",
+                    AccessLevel = accessLevel,
                     AccessPercentage = accessPercentage,
                     FirstViewedDate = DateTime.Now,
                     LastViewedDate = DateTime.Now,
@@ -116,7 +144,7 @@ namespace Business.Services.Sponsorship
         public async Task<bool> HasAccessToAnalysisAsync(int sponsorId, int plantAnalysisId)
         {
             var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (sponsorProfile == null || !sponsorProfile.IsActive || !sponsorProfile.IsVerified)
+            if (sponsorProfile == null || !sponsorProfile.IsActive || !sponsorProfile.IsVerifiedCompany)
                 return false;
 
             // Sponsor profile aktif ve verified ise erişim var
@@ -130,15 +158,9 @@ namespace Business.Services.Sponsorship
 
         public async Task UpdateAccessPermissionsAsync(int sponsorId, string dataAccessLevel, int accessPercentage)
         {
-            var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (profile != null)
-            {
-                profile.DataAccessLevel = dataAccessLevel;
-                profile.UpdatedDate = DateTime.Now;
-                
-                _sponsorProfileRepository.Update(profile);
-                await _sponsorProfileRepository.SaveChangesAsync();
-            }
+            // Artık profile'da DataAccessLevel yok - bu method'u kaldırabiliriz
+            // veya satın alımları güncellemek için kullanabiliriz
+            await Task.CompletedTask;
         }
 
         private int GetAccessPercentageFromLevel(string dataAccessLevel)

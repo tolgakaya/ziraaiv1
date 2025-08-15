@@ -1,6 +1,7 @@
 using Core.Entities;
 using Core.Entities.Concrete;
 using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Entities.Concrete
@@ -35,12 +36,10 @@ namespace Entities.Concrete
         public string Country { get; set; }
         public string PostalCode { get; set; }
         
-        // Tier and Features
-        public int CurrentSubscriptionTierId { get; set; }
-        public string VisibilityLevel { get; set; } // ResultOnly, StartAndResult, AllScreens
-        public string DataAccessLevel { get; set; } // Basic30, Medium60, Full100
-        public bool HasMessaging { get; set; }
-        public bool HasSmartLinking { get; set; }
+        // Company Features (tier-independent)
+        public bool IsVerifiedCompany { get; set; } // Company verification status
+        public string CompanyType { get; set; } // Agriculture, Technology, Retail, etc.
+        public string BusinessModel { get; set; } // B2B, B2C, B2B2C
         
         // Verification and Status
         public bool IsVerified { get; set; }
@@ -48,10 +47,11 @@ namespace Entities.Concrete
         public string VerificationNotes { get; set; }
         public bool IsActive { get; set; }
         
-        // Statistics
-        public int TotalSponsored { get; set; } // Total farmers sponsored
-        public int ActiveSponsored { get; set; } // Currently active sponsorships
-        public decimal TotalInvestment { get; set; } // Total amount spent on sponsorships
+        // Statistics (calculated from purchases)
+        public int TotalPurchases { get; set; } // Total package purchases
+        public int TotalCodesGenerated { get; set; } // Total codes generated across all purchases
+        public int TotalCodesRedeemed { get; set; } // Total codes redeemed by farmers
+        public decimal TotalInvestment { get; set; } // Total amount spent on all purchases
         
         // Audit
         public DateTime CreatedDate { get; set; }
@@ -64,12 +64,17 @@ namespace Entities.Concrete
         public virtual User Sponsor { get; set; }
         
         [JsonIgnore]
-        public virtual SubscriptionTier CurrentSubscriptionTier { get; set; }
+        public virtual ICollection<SponsorshipPurchase> SponsorshipPurchases { get; set; }
         
         [JsonIgnore]
         public virtual User CreatedByUser { get; set; }
         
         [JsonIgnore]
         public virtual User UpdatedByUser { get; set; }
+        
+        public SponsorProfile()
+        {
+            SponsorshipPurchases = new HashSet<SponsorshipPurchase>();
+        }
     }
 }

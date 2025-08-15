@@ -26,17 +26,29 @@ namespace Business.Services.Sponsorship
         public async Task<bool> CanCreateSmartLinksAsync(int sponsorId)
         {
             var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (profile == null || !profile.IsActive || !profile.IsVerified)
+            if (profile == null || !profile.IsActive || !profile.IsVerifiedCompany)
                 return false;
 
             // Sadece XL paketi smart link oluşturabilir
-            return profile.HasSmartLinking;
+            if (profile.SponsorshipPurchases != null)
+            {
+                foreach (var purchase in profile.SponsorshipPurchases)
+                {
+                    // XL tier (ID=4) smart link oluşturabilir
+                    if (purchase.SubscriptionTierId == 4) // XL tier
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
         }
 
         public async Task<int> GetMaxSmartLinksAsync(int sponsorId)
         {
-            var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (profile == null || !profile.HasSmartLinking)
+            var canCreate = await CanCreateSmartLinksAsync(sponsorId);
+            if (!canCreate)
                 return 0;
 
             // XL paket için varsayılan 50 smart link hakkı

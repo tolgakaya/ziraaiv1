@@ -10,10 +10,13 @@ using Business.Handlers.PlantAnalyses.Queries;
 using Core.Entities.Concrete;
 using Core.Extensions;
 using Core.Utilities.Results;
+using Entities.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -22,9 +25,8 @@ namespace WebAPI.Controllers
     /// <summary>
     /// Sponsorship management for bulk subscription purchases and code distribution
     /// </summary>
-    [Route("api/v{version:apiVersion}/[controller]")]
+    [Route("api/v{version:apiVersion}/sponsorship")]
     [ApiController]
-    [ApiVersion("1.0")]
     public class SponsorshipController : BaseApiController
     {
         private readonly ILogger<SponsorshipController> _logger;
@@ -34,13 +36,67 @@ namespace WebAPI.Controllers
             _logger = logger;
         }
         /// <summary>
-        /// Purchase bulk subscriptions for distribution to farmers
+        /// Create sponsor company profile (one-time setup)
         /// </summary>
-        /// <param name="command">Purchase details</param>
+        /// <param name="dto">Company profile information</param>
+        /// <returns>Created sponsor profile</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("create-profile")]
+        public async Task<IActionResult> CreateSponsorProfile([FromBody] CreateSponsorProfileDto dto)
+        {
+            try
+            {
+                Console.WriteLine("[SponsorshipController] Create profile request received");
+                
+                // Set sponsor ID from current user
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    Console.WriteLine("[SponsorshipController] User ID not found in claims");
+                    return Unauthorized();
+                }
+                
+                // Map DTO to Command and set SponsorId from authenticated user
+                var command = new CreateSponsorProfileCommand
+                {
+                    SponsorId = userId.Value,
+                    CompanyName = dto.CompanyName,
+                    CompanyDescription = dto.CompanyDescription,
+                    SponsorLogoUrl = dto.SponsorLogoUrl,
+                    WebsiteUrl = dto.WebsiteUrl,
+                    ContactEmail = dto.ContactEmail,
+                    ContactPhone = dto.ContactPhone,
+                    ContactPerson = dto.ContactPerson,
+                    CompanyType = dto.CompanyType,
+                    BusinessModel = dto.BusinessModel
+                };
+                
+                var result = await Mediator.Send(command);
+                
+                if (!result.Success)
+                {
+                    Console.WriteLine($"[SponsorshipController] Profile creation failed: {result.Message}");
+                    return BadRequest(result);
+                }
+                
+                Console.WriteLine($"[SponsorshipController] Profile created successfully for sponsor {userId}");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SponsorshipController] Exception in CreateSponsorProfile: {ex.Message}");
+                return StatusCode(500, new ErrorResult($"Profile creation failed: {ex.Message}"));
+            }
+        }
+        
+        /// <summary>
+        /// Purchase subscription packages for distribution to farmers
+        /// </summary>
+        /// <param name="command">Package purchase details</param>
         /// <returns>Purchase record with generated codes</returns>
         [Authorize(Roles = "Sponsor,Admin")]
-        [HttpPost("purchase-bulk")]
-        public async Task<IActionResult> PurchaseBulkSubscriptions([FromBody] PurchaseBulkSponsorshipCommand command)
+        [HttpPost("purchase-package")]
+        public async Task<IActionResult> PurchasePackage([FromBody] PurchaseBulkSponsorshipCommand command)
         {
             try
             {
@@ -413,7 +469,7 @@ namespace WebAPI.Controllers
         /// <returns>Created/updated profile</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpPost("profile")]
-        public async Task<IActionResult> CreateSponsorProfile([FromBody] CreateSponsorProfileCommand command)
+        public async Task<IActionResult> CreateOrUpdateSponsorProfile([FromBody] CreateSponsorProfileCommand command)
         {
             var userId = GetUserId();
             if (!userId.HasValue)
@@ -570,6 +626,66 @@ namespace WebAPI.Controllers
             return BadRequest(result);
         }
 
+        // ====== NEW CORRECTED ARCHITECTURE ENDPOINTS ======
+
+        /// <summary>
+        /// Get sponsor logo permissions for a specific analysis (NEW LOGIC)
+        /// </summary>
+        /// <param name="plantAnalysisId">Plant analysis ID</param>
+        /// <returns>Logo display permissions based on redeemed code tier</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("logo-permissions/analysis/{plantAnalysisId}")]
+        public async Task<IActionResult> GetLogoPermissionsForAnalysis(int plantAnalysisId)
+        {
+            try
+            {
+                // This would use the new SponsorVisibilityService methods
+                // TODO: Create GetLogoPermissionsForAnalysisQuery
+                
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Feature being implemented with new architecture",
+                    PlantAnalysisId = plantAnalysisId
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SponsorshipController] Exception in GetLogoPermissionsForAnalysis: {ex.Message}");
+                return StatusCode(500, new ErrorResult($"Logo permissions check failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get sponsor display information for a specific analysis screen (NEW LOGIC)
+        /// </summary>
+        /// <param name="plantAnalysisId">Plant analysis ID</param>
+        /// <param name="screen">Screen type (start, result, analysis, profile)</param>
+        /// <returns>Sponsor information if logo can be displayed</returns>
+        [Authorize]
+        [HttpGet("display-info/analysis/{plantAnalysisId}")]
+        public async Task<IActionResult> GetDisplayInfoForAnalysis(int plantAnalysisId, [FromQuery] string screen = "result")
+        {
+            try
+            {
+                // This would use the new SponsorVisibilityService methods
+                // TODO: Create GetSponsorDisplayInfoForAnalysisQuery
+                
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Feature being implemented with new architecture",
+                    PlantAnalysisId = plantAnalysisId,
+                    Screen = screen
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SponsorshipController] Exception in GetDisplayInfoForAnalysis: {ex.Message}");
+                return StatusCode(500, new ErrorResult($"Display info retrieval failed: {ex.Message}"));
+            }
+        }
+
         private int? GetUserId()
         {
             var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -588,6 +704,46 @@ namespace WebAPI.Controllers
         private string GetUserFullName()
         {
             return User?.FindFirst(ClaimTypes.Name)?.Value;
+        }
+
+        /// <summary>
+        /// Debug endpoint to check user's roles and claims
+        /// </summary>
+        /// <returns>User's roles and claims</returns>
+        [Authorize]
+        [HttpGet("debug/user-info")]
+        public IActionResult GetUserInfo()
+        {
+            try
+            {
+                var userId = GetUserId();
+                var userRoles = User?.FindAll(ClaimTypes.Role)?.Select(c => c.Value).ToList() ?? new List<string>();
+                var allClaims = User?.Claims?.Select(c => new { Type = c.Type, Value = c.Value }).ToList();
+
+                return Ok(new
+                {
+                    Success = true,
+                    Data = new
+                    {
+                        UserId = userId,
+                        Roles = userRoles,
+                        HasSponsorRole = userRoles.Contains("Sponsor"),
+                        HasAdminRole = userRoles.Contains("Admin"),
+                        AllClaims = allClaims,
+                        IsAuthenticated = User?.Identity?.IsAuthenticated ?? false,
+                        UserName = User?.Identity?.Name
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new
+                {
+                    Success = false,
+                    Message = $"Debug failed: {ex.Message}",
+                    Exception = ex.ToString()
+                });
+            }
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Business.Handlers.SponsorProfiles.ValidationRules
             RuleFor(x => x.ContactEmail).EmailAddress().MaximumLength(100);
             RuleFor(x => x.ContactPhone).MaximumLength(20);
             RuleFor(x => x.ContactPerson).MaximumLength(100);
-            RuleFor(x => x.CurrentSubscriptionTierId).GreaterThan(0);
+            // CurrentSubscriptionTierId artık yok - tier bilgisi purchase'larda tutulacak
         }
     }
 }

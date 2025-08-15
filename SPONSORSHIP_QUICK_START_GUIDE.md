@@ -1,10 +1,18 @@
 # 🚀 ZiraAI Sponsorluk Sistemi - Hızlı Başlangıç Kılavuzu
+## ✅ **CORRECTED ARCHITECTURE v2.0**
+
+> **⚠️ ÖNEMLİ GÜNCELLEME:**
+> Bu kılavuz, düzeltilmiş sponsorluk sistemi mimarisini yansıtır.
+> **Doğru Akış**: Tek şirket profili → Çoklu paket satın alma → Kod dağıtımı → Özellik aktivasyonu
+
+---
 
 ## 📋 İçindekiler
 - [Hızlı Kurulum](#hızlı-kurulum)
-- [API Testleri](#api-testleri)
+- [Yeni İş Akışı](#yeni-iş-akışı)
+- [API Test Örnekleri](#api-test-örnekleri)
 - [Frontend Entegrasyonu](#frontend-entegrasyonu)
-- [Sık Sorulan Sorular](#sik-sorulan-sorular)
+- [Sık Sorulan Sorular](#sık-sorulan-sorular)
 
 ---
 
@@ -12,379 +20,652 @@
 
 ### 1. Database Migration
 ```bash
-# Sponsorluk tablolarını oluştur
+# Yeni sponsorluk tablolarını oluştur
 dotnet ef database update --project DataAccess --startup-project WebAPI --context ProjectDbContext
 
-# Seed data kontrolü
-dotnet script check_sponsor_tables.csx
+# Migration script'i manuel çalıştır (varsa mevcut data için)
+dotnet script migrate_sponsorship_v2.csx
 ```
 
 ### 2. Servis Kayıtları
 `Business/DependencyResolvers/AutofacBusinessModule.cs` dosyasına ekleyin:
 
 ```csharp
-// Sponsorship Services
+// Corrected Sponsorship Services
 builder.RegisterType<SponsorVisibilityService>().As<ISponsorVisibilityService>().InstancePerLifetimeScope();
 builder.RegisterType<SponsorDataAccessService>().As<ISponsorDataAccessService>().InstancePerLifetimeScope();
 builder.RegisterType<AnalysisMessagingService>().As<IAnalysisMessagingService>().InstancePerLifetimeScope();
 builder.RegisterType<SmartLinkService>().As<ISmartLinkService>().InstancePerLifetimeScope();
+
+// Repository registrations
+builder.RegisterType<SponsorProfileRepository>().As<ISponsorProfileRepository>().InstancePerLifetimeScope();
+builder.RegisterType<SponsorshipPurchaseRepository>().As<ISponsorshipPurchaseRepository>().InstancePerLifetimeScope();
+builder.RegisterType<SponsorshipCodeRepository>().As<ISponsorshipCodeRepository>().InstancePerLifetimeScope();
 ```
 
 ### 3. Postman Koleksiyonu
-- [ZiraAI_Postman_Collection_v1.4.0.json](./ZiraAI_Postman_Collection_v1.4.0.json) dosyasını Postman'e import edin
-- Environment variables ayarlayın:
+- [ZiraAI_Postman_Collection_v1.5.0.json](./ZiraAI_Postman_Collection_v1.5.0.json) dosyasını import edin
+- Environment variables:
   - `baseUrl`: https://localhost:5001
-  - `accessToken`: (login sonrası otomatik dolar)
-  - `sponsorId`: (sponsor login sonrası otomatik dolar)
+  - `accessToken`: Login sonrası otomatik
+  - `sponsorId`: Sponsor ID
+  - `plantAnalysisId`: Test için kullanılacak analiz ID
 
 ---
 
-## 🧪 API Testleri
+## 🔄 Yeni İş Akışı
 
-### Adım 1: Authentication
+### Sponsor Tarafı
+
+#### Adım 1: Sponsor Kayıt ve Giriş
 ```bash
-# Admin olarak giriş
-POST /api/v1/auth/login
+# Sponsor olarak kayıt ol
+POST /api/v1/auth/register
 {
-  "email": "admin@ziraai.com",
-  "password": "Admin123!"
+  "email": "sponsor@company.com",
+  "password": "SecurePass123!",
+  "fullName": "Sponsor Company",
+  "role": "Sponsor"
 }
 
-# Sponsor olarak giriş  
+# Giriş yap
 POST /api/v1/auth/login
 {
   "email": "sponsor@company.com",
-  "password": "SponsorPassword123!"
+  "password": "SecurePass123!"
 }
 ```
 
-### Adım 2: Sponsor Profile Oluşturma
+#### Adım 2: Şirket Profili Oluştur (Tek Seferlik)
 ```bash
-# Sponsor profili oluştur (M paketi)
 POST /api/sponsorships/create-profile
+Authorization: Bearer {token}
 {
-  "sponsorId": 123,
-  "companyName": "Tarım Tech Ltd.",
-  "companyDescription": "Akıllı tarım çözümleri",
+  "companyName": "Tarım Teknoloji A.Ş.",
+  "companyDescription": "Modern tarım çözümleri sağlayıcısı",
   "sponsorLogoUrl": "https://example.com/logo.png",
   "websiteUrl": "https://tarimtech.com.tr",
   "contactEmail": "info@tarimtech.com.tr",
-  "contactPhone": "+90 212 555 12 34",
+  "contactPhone": "+90 212 555 0000",
   "contactPerson": "Ahmet Yılmaz",
-  "currentSubscriptionTierId": 2
+  "companyType": "Agriculture",
+  "businessModel": "B2B"
 }
 ```
 
-### Adım 3: Logo Görünürlük Testi
+#### Adım 3: Paket Satın Al (İhtiyaç Kadar)
 ```bash
-# Logo görünürlük kontrolü
-GET /api/sponsorships/logo-permissions/123
-
-# Analiz için logo bilgisi
-GET /api/sponsorships/display-info/456?screen=result
-```
-
-### Adım 4: Veri Erişim Testi
-```bash
-# Filtrelenmiş analiz verisi (%30 erişim)
-GET /api/sponsorships/filtered-analysis/123/456
-
-# Erişim istatistikleri
-GET /api/sponsorships/access-statistics/123
-```
-
-### Adım 5: Mesajlaşma Testi (L/XL Paketi)
-```bash
-# Mesaj gönder
-POST /api/sponsorships/send-message
+# S Paketi satın al (100 kod)
+POST /api/sponsorships/purchase-package
 {
-  "fromUserId": 123,
-  "toUserId": 456,
-  "plantAnalysisId": 789,
-  "message": "Analizinize göre önerilerimiz var.",
-  "messageType": "Information"
+  "subscriptionTierId": 1,
+  "quantity": 100,
+  "unitPrice": 29.99,
+  "totalAmount": 2999.00,
+  "paymentMethod": "CreditCard"
 }
 
-# Mesaj geçmişi
-GET /api/sponsorships/conversation/123/456/789
+# M Paketi satın al (50 kod)
+POST /api/sponsorships/purchase-package
+{
+  "subscriptionTierId": 2,
+  "quantity": 50,
+  "unitPrice": 59.99,
+  "totalAmount": 2999.50,
+  "paymentMethod": "CreditCard"
+}
+
+# L Paketi satın al (20 kod)
+POST /api/sponsorships/purchase-package
+{
+  "subscriptionTierId": 3,
+  "quantity": 20,
+  "unitPrice": 99.99,
+  "totalAmount": 1999.80,
+  "paymentMethod": "CreditCard"
+}
+
+# XL Paketi satın al (10 kod)
+POST /api/sponsorships/purchase-package
+{
+  "subscriptionTierId": 4,
+  "quantity": 10,
+  "unitPrice": 149.99,
+  "totalAmount": 1499.90,
+  "paymentMethod": "CreditCard"
+}
 ```
 
-### Adım 6: Smart Link Testi (XL Paketi)
+#### Adım 4: Kodları Çiftçilere Dağıt
 ```bash
-# Smart link oluştur
-POST /api/sponsorships/create-smart-link
+# Kullanılmamış kodları listele
+GET /api/sponsorships/codes?onlyUnused=true
+
+# Kodları SMS/WhatsApp ile gönder
+POST /api/sponsorships/send-codes
 {
-  "sponsorId": 123,
-  "linkUrl": "https://tarimtech.com.tr/azot-gubresi",
-  "linkText": "Azot Gübresi - %25 İndirim!",
-  "keywords": ["azot", "gübre", "domates"],
-  "targetCropTypes": ["tomato"],
-  "productName": "TarımTech Azot Plus",
-  "productPrice": 149.99,
-  "discountPercentage": 25
+  "recipients": [
+    {
+      "phoneNumber": "+90 555 111 2233",
+      "farmerName": "Mehmet Çiftçi",
+      "code": "AGRI-S-001"
+    },
+    {
+      "phoneNumber": "+90 555 444 5566",
+      "farmerName": "Ali Üretici",
+      "code": "AGRI-M-001"
+    }
+  ],
+  "channel": "SMS"
+}
+```
+
+### Farmer (Çiftçi) Tarafı
+
+#### Adım 1: Kodu Doğrula
+```bash
+GET /api/sponsorships/validate/AGRI-M-001
+
+Response:
+{
+  "success": true,
+  "data": {
+    "code": "AGRI-M-001",
+    "tierName": "M",
+    "tierFeatures": {
+      "logoOnStart": true,
+      "logoOnResult": true,
+      "dataAccessPercentage": 30,
+      "messagingEnabled": true
+    },
+    "expiryDate": "2026-08-15T00:00:00Z"
+  }
+}
+```
+
+#### Adım 2: Kodu Kullanarak Analiz Yap
+```bash
+POST /api/v1/plantanalyses/analyze
+Authorization: Bearer {farmer_token}
+{
+  "image": "data:image/jpeg;base64,/9j/4AAQ...",
+  "sponsorshipCode": "AGRI-M-001",
+  "farmerId": "F001",
+  "cropType": "tomato"
 }
 
-# Eşleşen linkler
-GET /api/sponsorships/matching-links/789
+Response:
+{
+  "success": true,
+  "data": {
+    "plantAnalysisId": 456,
+    "sponsorshipCodeId": 1001,
+    "tierName": "M",
+    "analysisResult": {...}
+  }
+}
+```
+
+#### Adım 3: Sponsor Logosunu Görüntüle
+```bash
+# Analiz sonuç ekranında logo kontrolü
+GET /api/sponsorships/display-info/analysis/456?screen=result
+
+Response:
+{
+  "success": true,
+  "data": {
+    "canDisplay": true,
+    "tierName": "M",
+    "sponsorInfo": {
+      "companyName": "Tarım Teknoloji A.Ş.",
+      "sponsorLogoUrl": "https://example.com/logo.png",
+      "websiteUrl": "https://tarimtech.com.tr"
+    }
+  }
+}
+```
+
+---
+
+## 🧪 API Test Örnekleri
+
+### Paket Özelliklerini Test Etme
+
+#### S Paketi Testi
+```javascript
+// S paketi kodu ile yapılan analizde
+const analysisId = 456; // S kodu ile yapılan analiz
+
+// Logo kontrolü - Result screen (başarılı olmalı)
+fetch(`/api/sponsorships/display-info/analysis/${analysisId}?screen=result`)
+  .then(res => res.json())
+  .then(data => {
+    console.assert(data.data.canDisplay === true, "S tier should show logo on result");
+  });
+
+// Logo kontrolü - Start screen (başarısız olmalı)
+fetch(`/api/sponsorships/display-info/analysis/${analysisId}?screen=start`)
+  .then(res => res.json())
+  .then(data => {
+    console.assert(data.data.canDisplay === false, "S tier should NOT show logo on start");
+  });
+
+// Veri erişimi (%30)
+fetch(`/api/sponsorships/analysis/${analysisId}/filtered`)
+  .then(res => res.json())
+  .then(data => {
+    console.assert(data.data.accessLevel === "30%", "S tier should have 30% data access");
+  });
+```
+
+#### M Paketi Testi
+```javascript
+// M paketi özellikleri
+const mAnalysisId = 789;
+
+// Logo hem start hem result'ta görünmeli
+// Mesajlaşma aktif olmalı
+// Veri erişimi %30
+
+// Mesajlaşma testi
+fetch('/api/sponsorships/messages', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${sponsorToken}`
+  },
+  body: JSON.stringify({
+    toUserId: farmerId,
+    plantAnalysisId: mAnalysisId,
+    message: "Analizinize göre önerilerimiz var."
+  })
+})
+.then(res => {
+  console.assert(res.ok, "M tier should allow messaging");
+});
+```
+
+#### XL Paketi Testi
+```javascript
+// XL paketi - tüm özellikler aktif
+const xlAnalysisId = 999;
+
+// Smart link oluşturma (sadece XL)
+fetch('/api/sponsorships/smart-links', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${sponsorToken}`
+  },
+  body: JSON.stringify({
+    linkUrl: "https://tarimtech.com.tr/ozel-urun",
+    linkText: "Özel İndirim",
+    keywords: ["azot", "gübre"],
+    productName: "Premium Gübre",
+    productPrice: 299.99
+  })
+})
+.then(res => {
+  console.assert(res.ok, "XL tier should allow smart links");
+});
+
+// %100 veri erişimi
+fetch(`/api/sponsorships/analysis/${xlAnalysisId}/filtered`)
+  .then(res => res.json())
+  .then(data => {
+    console.assert(data.data.accessLevel === "100%", "XL tier should have 100% data access");
+    console.assert(data.data.visibleData.gpsCoordinates !== undefined, "Should see GPS data");
+    console.assert(data.data.visibleData.farmerContact !== undefined, "Should see farmer contact");
+  });
 ```
 
 ---
 
 ## 💻 Frontend Entegrasyonu
 
-### React Component Örnekleri
-
-#### 1. Sponsor Logo Gösterimi
+### React - Sponsor Dashboard
 ```jsx
-const SponsorLogo = ({ plantAnalysisId, screenType }) => {
-  const [sponsorInfo, setSponsorInfo] = useState(null);
+import React, { useState, useEffect } from 'react';
+
+const SponsorDashboard = () => {
+  const [profile, setProfile] = useState(null);
+  const [purchases, setPurchases] = useState([]);
+  const [codes, setCodes] = useState([]);
 
   useEffect(() => {
-    fetch(`/api/sponsorships/display-info/${plantAnalysisId}?screen=${screenType}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setSponsorInfo(data.data);
-      });
-  }, [plantAnalysisId, screenType]);
+    loadDashboardData();
+  }, []);
 
-  if (!sponsorInfo) return null;
-
-  return (
-    <div className="sponsor-logo-container">
-      <img 
-        src={sponsorInfo.sponsorLogoUrl}
-        alt={sponsorInfo.companyName}
-        onClick={() => window.open(sponsorInfo.websiteUrl)}
-      />
-      <span>{sponsorInfo.companyName} sponsorluğunda</span>
-    </div>
-  );
-};
-```
-
-#### 2. Smart Links
-```jsx
-const SmartLinks = ({ plantAnalysisId }) => {
-  const [links, setLinks] = useState([]);
-
-  useEffect(() => {
-    fetch(`/api/sponsorships/matching-links/${plantAnalysisId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setLinks(data.data);
-      });
-  }, [plantAnalysisId]);
-
-  const handleClick = (link) => {
-    // Tıklama kaydı
-    fetch('/api/sponsorships/increment-click', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ smartLinkId: link.id })
+  const loadDashboardData = async () => {
+    // Profil bilgisi
+    const profileRes = await fetch('/api/sponsorships/profile', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
     });
-    
-    window.open(link.linkUrl);
+    const profileData = await profileRes.json();
+    setProfile(profileData.data);
+
+    // Satın almalar
+    const purchasesRes = await fetch('/api/sponsorships/purchases', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    const purchasesData = await purchasesRes.json();
+    setPurchases(purchasesData.data);
+
+    // Kodlar
+    const codesRes = await fetch('/api/sponsorships/codes?onlyUnused=true', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    const codesData = await codesRes.json();
+    setCodes(codesData.data.codes);
   };
 
-  return (
-    <div className="smart-links">
-      <h3>🌱 Size Özel Öneriler</h3>
-      {links.map(link => (
-        <div key={link.id} className="product-card" onClick={() => handleClick(link)}>
-          <h4>{link.productName}</h4>
-          <p>{link.linkText}</p>
-          <div className="price">
-            ₺{link.productPrice}
-            {link.discountPercentage && (
-              <span className="discount">%{link.discountPercentage} İndirim</span>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-```
-
-#### 3. Mesajlaşma Sistemi
-```jsx
-const SponsorMessaging = ({ plantAnalysisId, currentUserId, targetUserId }) => {
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-
-  const sendMessage = async () => {
-    const response = await fetch('/api/sponsorships/send-message', {
+  const handlePurchase = async (tierId, tierName, quantity) => {
+    const unitPrices = { S: 29.99, M: 59.99, L: 99.99, XL: 149.99 };
+    const unitPrice = unitPrices[tierName];
+    
+    const response = await fetch('/api/sponsorships/purchase-package', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
       body: JSON.stringify({
-        fromUserId: currentUserId,
-        toUserId: targetUserId,
-        plantAnalysisId: plantAnalysisId,
-        message: newMessage
+        subscriptionTierId: tierId,
+        quantity: quantity,
+        unitPrice: unitPrice,
+        totalAmount: unitPrice * quantity,
+        paymentMethod: 'CreditCard'
       })
     });
-    
+
     if (response.ok) {
-      setNewMessage('');
-      loadMessages(); // Mesajları yenile
+      alert(`${quantity} adet ${tierName} paketi kodu oluşturuldu!`);
+      loadDashboardData();
     }
   };
 
   return (
-    <div className="sponsor-messaging">
-      <div className="messages">
-        {messages.map(msg => (
-          <div key={msg.id} className={`message ${msg.senderRole.toLowerCase()}`}>
-            <strong>{msg.senderName}</strong>
-            <p>{msg.message}</p>
-            <small>{new Date(msg.sentDate).toLocaleString()}</small>
+    <div className="sponsor-dashboard">
+      {/* Company Profile Section */}
+      <div className="profile-section">
+        <h2>{profile?.companyName}</h2>
+        <div className="stats-grid">
+          <div className="stat-card">
+            <span className="stat-value">{profile?.totalPurchases}</span>
+            <span className="stat-label">Toplam Satın Alma</span>
           </div>
+          <div className="stat-card">
+            <span className="stat-value">{profile?.totalCodesGenerated}</span>
+            <span className="stat-label">Üretilen Kod</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-value">{profile?.totalCodesRedeemed}</span>
+            <span className="stat-label">Kullanılan Kod</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-value">₺{profile?.totalInvestment}</span>
+            <span className="stat-label">Toplam Yatırım</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Package Purchase Section */}
+      <div className="purchase-section">
+        <h3>Paket Satın Al</h3>
+        <div className="package-grid">
+          {['S', 'M', 'L', 'XL'].map((tier, index) => (
+            <PackageCard
+              key={tier}
+              tier={tier}
+              tierId={index + 1}
+              onPurchase={handlePurchase}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Purchase History */}
+      <div className="history-section">
+        <h3>Satın Alma Geçmişi</h3>
+        <table className="purchase-table">
+          <thead>
+            <tr>
+              <th>Paket</th>
+              <th>Adet</th>
+              <th>Kullanılan</th>
+              <th>Kalan</th>
+              <th>Tarih</th>
+            </tr>
+          </thead>
+          <tbody>
+            {purchases.map(p => (
+              <tr key={p.purchaseId}>
+                <td>{p.tierName}</td>
+                <td>{p.quantity}</td>
+                <td>{p.codesUsed}</td>
+                <td>{p.quantity - p.codesUsed}</td>
+                <td>{new Date(p.purchaseDate).toLocaleDateString('tr-TR')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Available Codes */}
+      <div className="codes-section">
+        <h3>Kullanılmamış Kodlar</h3>
+        <div className="codes-grid">
+          {codes.map(code => (
+            <div key={code.code} className="code-card">
+              <span className="code-text">{code.code}</span>
+              <span className="code-tier">{code.tierName} Paketi</span>
+              <button onClick={() => copyToClipboard(code.code)}>
+                Kopyala
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PackageCard = ({ tier, tierId, onPurchase }) => {
+  const [quantity, setQuantity] = useState(10);
+  
+  const features = {
+    S: ['Sonuç ekranında logo', '%30 veri erişimi'],
+    M: ['Başlangıç + Sonuç logo', '%30 veri', 'Mesajlaşma'],
+    L: ['Tüm ekranlarda logo', '%60 veri', 'Gelişmiş mesajlaşma'],
+    XL: ['Tüm özellikler', '%100 veri', 'AI Smart Links', 'Premium analitik']
+  };
+
+  const prices = { S: 29.99, M: 59.99, L: 99.99, XL: 149.99 };
+
+  return (
+    <div className={`package-card tier-${tier.toLowerCase()}`}>
+      <h4>{tier} Paketi</h4>
+      <div className="price">₺{prices[tier]}/kod</div>
+      <ul className="features">
+        {features[tier].map((f, i) => (
+          <li key={i}>{f}</li>
         ))}
-      </div>
-      <div className="message-input">
-        <textarea
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Mesajınızı yazın..."
-        />
-        <button onClick={sendMessage}>Gönder</button>
-      </div>
+      </ul>
+      <input
+        type="number"
+        value={quantity}
+        onChange={(e) => setQuantity(parseInt(e.target.value))}
+        min="1"
+        max="1000"
+      />
+      <div className="total">Toplam: ₺{(prices[tier] * quantity).toFixed(2)}</div>
+      <button onClick={() => onPurchase(tierId, tier, quantity)}>
+        Satın Al
+      </button>
     </div>
   );
 };
 ```
 
-### CSS Stilleri
-```css
-.sponsor-logo-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 8px;
-}
+### React - Farmer Analysis Component
+```jsx
+const FarmerAnalysis = () => {
+  const [sponsorshipCode, setSponsorshipCode] = useState('');
+  const [codeInfo, setCodeInfo] = useState(null);
+  const [image, setImage] = useState(null);
 
-.sponsor-logo-container img {
-  max-height: 40px;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
+  const validateCode = async () => {
+    const response = await fetch(`/api/sponsorships/validate/${sponsorshipCode}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      setCodeInfo(data.data);
+      toast.success('Kod doğrulandı! Analiz yapabilirsiniz.');
+    } else {
+      toast.error('Geçersiz veya kullanılmış kod!');
+    }
+  };
 
-.sponsor-logo-container img:hover {
-  transform: scale(1.05);
-}
+  const startAnalysis = async () => {
+    const formData = new FormData();
+    formData.append('image', image);
+    formData.append('sponsorshipCode', sponsorshipCode);
+    formData.append('cropType', 'tomato');
 
-.smart-links .product-card {
-  background: white;
-  border-radius: 8px;
-  padding: 15px;
-  margin: 10px 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
+    const response = await fetch('/api/v1/plantanalyses/analyze', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: formData
+    });
 
-.smart-links .product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-}
+    if (response.ok) {
+      const result = await response.json();
+      // Analiz sonuç sayfasına yönlendir
+      window.location.href = `/analysis/${result.data.plantAnalysisId}`;
+    }
+  };
 
-.sponsor-messaging .message {
-  background: white;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 8px;
-  border-left: 3px solid #dee2e6;
-}
+  return (
+    <div className="farmer-analysis">
+      <h2>Sponsorlu Analiz</h2>
+      
+      <div className="code-section">
+        <label>Sponsorluk Kodu</label>
+        <input
+          type="text"
+          value={sponsorshipCode}
+          onChange={(e) => setSponsorshipCode(e.target.value)}
+          placeholder="AGRI-XXX-000"
+        />
+        <button onClick={validateCode}>Kodu Doğrula</button>
+      </div>
 
-.sponsor-messaging .message.sponsor {
-  border-left-color: #007bff;
-}
-
-.sponsor-messaging .message.farmer {
-  border-left-color: #28a745;
-}
+      {codeInfo && (
+        <div className="code-info">
+          <div className="alert alert-success">
+            ✅ Kod geçerli! <strong>{codeInfo.tierName} Paketi</strong>
+          </div>
+          <ul>
+            {codeInfo.tierFeatures.logoOnStart && <li>Başlangıç ekranında sponsor logosu</li>}
+            <li>Sonuç ekranında sponsor logosu</li>
+            <li>%{codeInfo.tierFeatures.dataAccessPercentage} veri erişimi</li>
+            {codeInfo.tierFeatures.messagingEnabled && <li>Sponsor ile mesajlaşma</li>}
+            {codeInfo.tierFeatures.smartLinksEnabled && <li>Akıllı ürün önerileri</li>}
+          </ul>
+          
+          <div className="image-upload">
+            <label>Analiz için fotoğraf yükleyin</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files[0])}
+            />
+          </div>
+          
+          {image && (
+            <button className="btn-primary" onClick={startAnalysis}>
+              Analizi Başlat
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 ```
 
 ---
 
 ## ❓ Sık Sorulan Sorular
 
-### Q: Sponsorluk paketleri arasındaki farklar nelerdir?
-**A:** 4 farklı paket var:
-- **S Paketi**: Sadece sonuç ekranında logo, %30 veri erişimi
-- **M Paketi**: Başlangıç + sonuç ekranında logo, %30 veri + mesajlaşma
-- **L Paketi**: Tüm ekranlarda logo, %60 veri + tam mesajlaşma
-- **XL Paketi**: Tüm özellikler + %100 veri + AI akıllı linkler
+### Q: Bir sponsor firma kaç farklı paket satın alabilir?
+**A:** İstediği kadar! Aynı firma S, M, L ve XL paketlerinden dilediği miktarda satın alabilir. Her satın alma için ayrı kodlar üretilir.
 
-### Q: Logo hangi ekranlarda görünür?
-**A:** Paketlere göre:
-- S: Sadece result screen
-- M: Start + result screens
-- L/XL: Tüm ekranlar (start, result, analysis, profile)
-
-### Q: Mesajlaşma sistemi nasıl çalışır?
+### Q: Paketler arasındaki ana farklar nedir?
 **A:** 
-- L ve XL paketlerinde aktif
-- Sponsor ↔ Çiftçi doğrudan mesajlaşma
-- Analiz bazında konuşma geçmişi
-- Okundu/okunmadı durumu takibi
+- **S**: Temel (sadece sonuç logosu, %30 veri)
+- **M**: Orta (başlangıç+sonuç logosu, %30 veri, mesajlaşma)
+- **L**: İleri (tüm ekranlar logo, %60 veri, gelişmiş mesajlaşma)
+- **XL**: Premium (tüm özellikler, %100 veri, AI smart links)
 
-### Q: Smart Link sistemi nedir?
-**A:**
-- Sadece XL pakette mevcut
-- AI analize dayalı ürün önerisi
-- Anahtar kelime eşleştirmesi
-- Performans analitikleri (CTR, conversion)
+### Q: Bir çiftçi hangi paketi kullandığını nasıl anlar?
+**A:** Kod doğrulama endpoint'i (`GET /api/sponsorships/validate/{code}`) kodun hangi pakete ait olduğunu ve sağladığı özellikleri gösterir.
 
-### Q: Veri erişim yüzdeleri nasıl hesaplanır?
-**A:**
-- %30: Temel sağlık skorları, tür bilgisi
-- %60: + Hastalık/zararlı analizi, lokasyon, öneriler
-- %100: + İletişim bilgileri, detaylı veriler
+### Q: Logo görünürlüğü nasıl kontrol ediliyor?
+**A:** `GET /api/sponsorships/display-info/analysis/{id}?screen={screenType}` endpoint'i kullanılan kodun tier'ına göre logo gösterilip gösterilmeyeceğini belirler.
 
-### Q: API rate limit var mı?
-**A:** Standart API rate limit kuralları geçerli. Sponsorluk endpoint'leri için özel limit yok.
+### Q: Veri erişim filtreleme nasıl çalışıyor?
+**A:** 
+- %30: Temel bilgiler (bitki türü, sağlık skoru, tarih)
+- %60: + Hastalık/zararlı detayları, öneriler, hava durumu
+- %100: + GPS, çiftçi iletişim, detaylı çevresel veriler
 
-### Q: Cache sistemi nasıl çalışır?
-**A:**
-- Sponsor profilleri: 1 saat cache
-- Smart linkler: 30 dakika cache
-- Analitikler: 15 dakika cache
+### Q: Mevcut sistemden nasıl migrate edilir?
+**A:** Migration guide dokümantasyonunda detaylı adımlar mevcut. Temel olarak:
+1. SponsorProfile entity'sinden tier bağımlılığı kaldırılır
+2. Mevcut tier bilgileri SponsorshipPurchase'a taşınır
+3. API endpoint'ler güncellenir
+4. Frontend analysis-based endpoint'lere geçirilir
 
 ### Q: Test ortamında nasıl test edilir?
-**A:**
-1. Postman koleksiyonunu import edin
-2. Admin/Sponsor hesabı ile login olun
-3. Sponsor profili oluşturun
-4. Tier-based endpoint'leri test edin
-5. Analytics kontrolü yapın
+**A:** 
+1. Sponsor olarak giriş yap
+2. Şirket profili oluştur (tek seferlik)
+3. Farklı paketlerden satın al
+4. Kodları dağıt
+5. Farmer olarak kodu kullan ve analiz yap
+6. Her tier'ın özelliklerini doğrula
 
-### Q: Production deployment öncesi checklist?
-**A:**
+### Q: Smart Links sadece XL pakette mi?
+**A:** Evet, AI-powered smart link özelliği sadece XL paketinde mevcut. Bu özellik analiz sonuçlarına göre otomatik ürün önerisi yapar.
+
+### Q: Mesajlaşma hangi paketlerde var?
+**A:** M, L ve XL paketlerinde mesajlaşma özelliği aktif. S paketinde mesajlaşma yoktur.
+
+### Q: Production deployment checklist?
+**A:** 
 - [ ] Database migration tamamlandı
-- [ ] Seed data yüklendi
-- [ ] Servis kayıtları yapıldı
-- [ ] Cache ayarları yapılandırıldı
-- [ ] Environment config güncellendi
-- [ ] Health check endpoint'leri test edildi
-
-### Q: Hata durumları nasıl handle ediliyor?
-**A:**
-- Yetkisiz erişim: HTTP 401/403
-- Paket yetersizliği: User-friendly mesaj
-- Veri erişim kısıtı: Filtrelenmiş response
-- Service hatalar: Graceful fallback
+- [ ] Service registrations yapıldı
+- [ ] API endpoints güncellendi
+- [ ] Frontend analysis-based endpoint'lere geçti
+- [ ] Test senaryoları başarılı
+- [ ] Health check endpoint'leri çalışıyor
 
 ---
 
 ## 📞 Destek
 
 - **Dokümantasyon**: [SPONSORSHIP_SYSTEM_DOCUMENTATION.md](./SPONSORSHIP_SYSTEM_DOCUMENTATION.md)
-- **API Koleksiyonu**: [ZiraAI_Postman_Collection_v1.4.0.json](./ZiraAI_Postman_Collection_v1.4.0.json)
-- **GitHub Issues**: Teknik sorunlar için issue açın
+- **Test Guide**: [SPONSORSHIP_TEST_GUIDE.md](./SPONSORSHIP_TEST_GUIDE.md)
+- **API Koleksiyonu**: [ZiraAI_Postman_Collection_v1.5.0.json](./ZiraAI_Postman_Collection_v1.5.0.json)
 
 ---
 
-**🎉 Sponsorluk sistemi başarıyla entegre edildi! Tier-based özelliklerinin keyfini çıkarın.**
+**🎉 Corrected sponsorship system başarıyla entegre edildi!**
+
+**Version**: 2.0 (Corrected Architecture)
+**Last Updated**: August 2025
+**Status**: Production Ready

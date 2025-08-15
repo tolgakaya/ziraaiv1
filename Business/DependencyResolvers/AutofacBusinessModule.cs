@@ -67,6 +67,9 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
             
             // Sponsorship repositories
+            builder.RegisterType<SponsorProfileRepository>().As<ISponsorProfileRepository>()
+                .InstancePerLifetimeScope();
+            
             builder.RegisterType<SponsorshipCodeRepository>().As<ISponsorshipCodeRepository>()
                 .InstancePerLifetimeScope();
             

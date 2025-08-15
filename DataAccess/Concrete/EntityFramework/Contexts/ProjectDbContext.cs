@@ -41,7 +41,9 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
             : base(options)
         {
             Configuration = configuration;
-           
+            // CRITICAL FIX: Enable legacy timestamp behavior for PostgreSQL timezone compatibility
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
         }
 
         public DbSet<OperationClaim> OperationClaims { get; set; }

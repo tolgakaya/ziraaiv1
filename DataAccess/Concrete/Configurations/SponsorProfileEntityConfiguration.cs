@@ -63,10 +63,10 @@ namespace DataAccess.Concrete.Configurations
             builder.Property(x => x.PostalCode)
                 .HasMaxLength(20);
             
-            builder.Property(x => x.VisibilityLevel)
-                .HasMaxLength(50);
+            builder.Property(x => x.CompanyType)
+                .HasMaxLength(100);
             
-            builder.Property(x => x.DataAccessLevel)
+            builder.Property(x => x.BusinessModel)
                 .HasMaxLength(50);
             
             builder.Property(x => x.VerificationNotes)
@@ -79,11 +79,6 @@ namespace DataAccess.Concrete.Configurations
             builder.HasOne(x => x.Sponsor)
                 .WithMany()
                 .HasForeignKey(x => x.SponsorId)
-                .OnDelete(DeleteBehavior.Restrict);
-            
-            builder.HasOne(x => x.CurrentSubscriptionTier)
-                .WithMany()
-                .HasForeignKey(x => x.CurrentSubscriptionTierId)
                 .OnDelete(DeleteBehavior.Restrict);
             
             builder.HasOne(x => x.CreatedByUser)

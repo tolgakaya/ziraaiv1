@@ -44,7 +44,8 @@
       "Bash(set ASPNETCORE_URLS=http://localhost:5001)",
       "Bash(set ASPNETCORE_URLS=https://localhost:5001)",
       "Bash(git branch:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
