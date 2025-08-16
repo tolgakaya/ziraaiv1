@@ -26,7 +26,7 @@ namespace Business.Services.Sponsorship
         public async Task<bool> CanCreateSmartLinksAsync(int sponsorId)
         {
             var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (profile == null || !profile.IsActive || !profile.IsVerifiedCompany)
+            if (profile == null || !profile.IsActive)
                 return false;
 
             // Sadece XL paketi smart link oluşturabilir

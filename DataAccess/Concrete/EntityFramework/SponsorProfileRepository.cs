@@ -16,6 +16,8 @@ namespace DataAccess.Concrete.EntityFramework
         public async Task<SponsorProfile> GetBySponsorIdAsync(int sponsorId)
         {
             return await Context.SponsorProfiles
+                .Include(x => x.SponsorshipPurchases)
+                    .ThenInclude(p => p.SubscriptionTier)
                 .FirstOrDefaultAsync(x => x.SponsorId == sponsorId);
         }
 

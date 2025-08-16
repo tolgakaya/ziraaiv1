@@ -847,6 +847,443 @@ USAGE_ANALYTICS_RETENTION_DAYS = "365"
 
 This subscription system provides enterprise-grade access control, detailed usage analytics, and flexible billing management while maintaining high performance and reliability.
 
+## Corrected Sponsorship System Architecture (August 2025) ✅
+
+### Overview
+**Implementation Date**: August 15, 2025
+**Purpose**: Complete architectural restructure from flawed "profile-per-tier" model to correct "purchase-based tier access" business logic
+
+### Business Logic Correction
+
+#### ❌ Previous Incorrect Model
+```
+Sponsor → Creates separate profile for each tier (S/M/L/XL)
+Sponsor → Direct tier assignment per profile
+Farmer → Uses sponsorshipCode in plant analysis payload
+```
+
+#### ✅ New Correct Model
+```
+Company Profile → Multiple Package Purchases → Code Distribution → Feature Access
+Sponsor → Creates ONE company profile
+Sponsor → Purchases multiple packages (S/M/L/XL bulk codes)
+Sponsor → Distributes codes to farmers
+Farmer → Redeems code to get subscription
+Farmer → Does normal analysis using subscription limits
+```
+
+### Key Architectural Changes
+
+#### 1. Entity Structure Corrections
+**SponsorProfile.cs** - Removed tier-dependent fields:
+```csharp
+// ❌ Removed (incorrect tier-coupling):
+// public int? CurrentSubscriptionTierId { get; set; }
+// public string VisibilityLevel { get; set; }
+// public string DataAccessLevel { get; set; }
+// public bool HasMessaging { get; set; }
+// public bool HasSmartLinking { get; set; }
+
+// ✅ Added (company-focused):
+public string CompanyType { get; set; } // "Cooperative", "Private", "NGO"
+public string BusinessModel { get; set; } // "B2B", "B2C", "Hybrid"
+public int TotalPurchases { get; set; }
+public int TotalCodesGenerated { get; set; }
+public int TotalCodesRedeemed { get; set; }
+```
+
+**SponsorshipPurchase.cs** - Purchase-based tier access:
+```csharp
+public class SponsorshipPurchase
+{
+    public int SponsorId { get; set; } // Links to sponsor profile
+    public int SubscriptionTierId { get; set; } // S/M/L/XL package type
+    public int Quantity { get; set; } // Number of codes to generate
+    public decimal Amount { get; set; }
+    public string PaymentReference { get; set; }
+    public string CodePrefix { get; set; } // Auto-generated (e.g., "SPT001")
+    public int ValidityDays { get; set; }
+    // Tier features calculated dynamically from SubscriptionTier relationship
+}
+```
+
+#### 2. Service Layer Redesign
+**SponsorshipService.cs** - Code-based tier detection:
+```csharp
+// ✅ New tier detection method:
+public async Task<SubscriptionTier> GetTierBySponsorshipCodeAsync(string sponsorshipCode)
+{
+    var code = await _sponsorshipCodeRepository.GetByCodeAsync(sponsorshipCode);
+    if (code?.Purchase?.SubscriptionTier != null)
+        return code.Purchase.SubscriptionTier;
+    return null;
+}
+
+// ✅ Bulk purchase with code generation:
+public async Task<SponsorshipPurchaseResponseDto> PurchaseBulkSubscriptionsAsync(
+    int sponsorId, int tierId, int quantity, decimal amount, string paymentReference)
+{
+    var purchase = new SponsorshipPurchase { /* ... */ };
+    await _sponsorshipPurchaseRepository.AddAsync(purchase);
+    
+    // Generate sponsorship codes
+    var codes = await _sponsorshipCodeRepository.GenerateCodesAsync(
+        purchase.Id, sponsorId, tierId, quantity, purchase.CodePrefix, purchase.ValidityDays);
+    
+    // Return purchase details with generated codes
+    return new SponsorshipPurchaseResponseDto
+    {
+        // Purchase metadata...
+        GeneratedCodes = codes.Select(c => new SponsorshipCodeDto
+        {
+            Code = c.Code,
+            TierName = tier.TierName,
+            ExpiryDate = c.ExpiryDate
+        }).ToList()
+    };
+}
+```
+
+#### 3. API Endpoint Corrections
+**SponsorshipController.cs** - Simplified endpoints:
+```csharp
+// ✅ One profile creation (company-based):
+[HttpPost("create-profile")]
+[Authorize(Roles = "Sponsor,Admin")]
+public async Task<IActionResult> CreateProfile([FromBody] CreateSponsorProfileCommand command)
+
+// ✅ Purchase packages (generates codes):
+[HttpPost("purchase-package")]
+[Authorize(Roles = "Sponsor,Admin")]
+public async Task<IActionResult> PurchasePackage([FromBody] PurchaseBulkSubscriptionsCommand command)
+
+// ✅ View generated codes:
+[HttpGet("my-codes")]
+[Authorize(Roles = "Sponsor,Admin")]
+public async Task<IActionResult> GetMyCodes()
+```
+
+### Sponsorship Flow Correction
+
+#### 🔄 Complete Business Process
+1. **Sponsor Registration**: `POST /auth/register` with `"role": "Sponsor"`
+2. **Profile Creation**: `POST /sponsorships/create-profile` (ONE company profile)
+3. **Package Purchase**: `POST /sponsorships/purchase-package` (generates bulk codes)
+4. **Code Distribution**: Sponsor shares codes with farmers (external process)
+5. **Code Redemption**: `POST /subscriptions/redeem-code` (farmer gets subscription)
+6. **Normal Analysis**: `POST /plantanalyses/analyze` (uses subscription limits)
+
+#### 🚫 What Changed in Plant Analysis
+Plant analysis payloads NO LONGER include sponsorship codes:
+```json
+// ❌ Previous (incorrect):
+{
+  "image": "data:image/jpeg;base64,...",
+  "sponsorshipCode": "SPT001-ABC123"
+}
+
+// ✅ Current (correct):
+{
+  "image": "data:image/jpeg;base64,...",
+  "farmerId": "F001",
+  "cropType": "tomato"
+}
+```
+
+### Production Fixes Applied (August 2025)
+
+#### Database Compatibility Fixes
+```csharp
+// PostgreSQL DateTime timezone compatibility (Program.cs):
+System.AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+System.AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
+
+// Service layer datetime handling:
+subscription.CreatedDate = DateTime.Now; // Use local time for PostgreSQL
+```
+
+#### JSON Property Mapping Fix
+```csharp
+// RegisterUserCommand.cs - Fixed role assignment:
+[JsonPropertyName("role")]
+public string UserRole { get; set; } = "Farmer";
+```
+
+#### Repository Pattern Corrections
+```csharp
+// SponsorProfileRepository.cs - Removed deprecated field references:
+public async Task<SponsorProfile> GetByUserIdAsync(int userId)
+{
+    return await GetAsync(x => x.UserId == userId);
+    // ❌ Removed: .Include(x => x.CurrentSubscriptionTier)
+}
+```
+
+### API Documentation
+
+#### Complete Postman Collection (v2.1)
+- **97 Endpoints** across **18 Controllers**
+- **14 Categories**: Authentication, Plant Analysis, Subscriptions, Sponsorship, etc.
+- **Comprehensive Testing**: JSON validation, authorization tests, error handling
+- **Environment Variables**: `{{baseUrl}}`, `{{token}}`, dynamic data management
+
+#### Key Sponsorship Endpoints
+```bash
+# Company profile management
+POST /api/v1/sponsorships/create-profile
+PUT /api/v1/sponsorships/update-profile/{id}
+GET /api/v1/sponsorships/my-profile
+
+# Package purchasing (generates codes)
+POST /api/v1/sponsorships/purchase-package
+GET /api/v1/sponsorships/my-purchases
+
+# Code management
+GET /api/v1/sponsorships/my-codes
+PUT /api/v1/sponsorships/deactivate-code/{id}
+
+# Analytics
+GET /api/v1/sponsorships/sponsored-analyses
+GET /api/v1/sponsorships/usage-analytics
+```
+
+### Benefits Achieved
+- ✅ **Correct Business Logic**: One company profile supports multiple package types
+- ✅ **Simplified User Experience**: Sponsors create one profile, not multiple
+- ✅ **Purchase-Based Access**: Features determined by package purchase, not profile tier
+- ✅ **Code Distribution Model**: Bulk code generation for farmer distribution
+- ✅ **Clean Analysis Flow**: Plant analysis uses subscription limits, not sponsorship codes
+- ✅ **Complete API Coverage**: 97 endpoints with comprehensive testing
+- ✅ **Production Stability**: PostgreSQL compatibility and role assignment fixes
+
+This architectural correction transforms the sponsorship system from a flawed profile-per-tier model to a scalable, business-logic-correct purchase-based system that properly supports enterprise sponsorship workflows.
+
+## Tier-Based Sponsorship System (August 2025) ✅
+
+### Overview
+**Implementation Date**: August 16, 2025
+**Purpose**: Complete tier-based access control system where messaging capability correlates with farmer profile visibility
+
+### Business Logic Architecture
+
+#### 🎯 Tier Feature Matrix
+| Tier | Messaging | Farmer Profile | Logo Visibility | Data Access | 
+|------|-----------|----------------|-----------------|-------------|
+| **S** | ❌ No | None | Results Screen | 30% |
+| **M** | ❌ No | Anonymous | Results Screen | 30% |
+| **L** | ✅ Yes | Full Profile | Results Screen | 60% |
+| **XL** | ✅ Yes | Full Profile | Results Screen | 100% |
+
+#### 🔑 Key Business Rules
+1. **Messaging ↔ Profile Visibility Correlation**: Only tiers with messaging capability (L/XL) can see full farmer profiles
+2. **Data Access Percentages**: S/M get 30%, L gets 60%, XL gets 100% of analysis data
+3. **Verification Independence**: `IsActive` status is sufficient; `IsVerifiedCompany` requirement removed
+4. **Purchase-Based Features**: Tier features determined by package purchase, not profile configuration
+
+### Service Layer Implementation
+
+#### 1. **AnalysisMessagingService** (`Business/Services/Sponsorship/AnalysisMessagingService.cs`)
+```csharp
+// Messaging permission validation
+public async Task<IResult> SendMessageAsync(SendMessageCommand command)
+{
+    var profile = await _sponsorProfileRepository.GetByUserIdAsync(command.SponsorUserId);
+    if (profile == null || !profile.IsActive)
+        return new ErrorResult("Sponsor profile not found or inactive");
+
+    var purchase = await _sponsorshipPurchaseRepository.GetLatestActivePurchaseByProfileIdAsync(profile.Id);
+    if (purchase == null || purchase.SubscriptionTierId < 3) // L=3, XL=4
+        return new ErrorResult("Messaging is not allowed for your subscription tier");
+    
+    // Continue with message sending logic...
+}
+```
+
+#### 2. **FarmerProfileVisibilityService** (`Business/Services/Sponsorship/FarmerProfileVisibilityService.cs`)
+```csharp
+public async Task<bool> CanViewFarmerProfileAsync(int sponsorUserId, int farmerId)
+{
+    var purchase = await GetActivePurchaseAsync(sponsorUserId);
+    if (purchase == null) return false;
+    
+    // Full profile access for L/XL tiers (correlates with messaging)
+    return purchase.SubscriptionTierId >= 3;
+}
+
+public async Task<string> GetFarmerVisibilityLevelAsync(int sponsorUserId)
+{
+    var purchase = await GetActivePurchaseAsync(sponsorUserId);
+    if (purchase == null) return "None";
+    
+    return purchase.SubscriptionTierId switch
+    {
+        1 => "None",      // S tier
+        2 => "Anonymous", // M tier  
+        >= 3 => "Full"    // L/XL tiers
+    };
+}
+```
+
+#### 3. **SponsorDataAccessService** (`Business/Services/Sponsorship/SponsorDataAccessService.cs`)
+```csharp
+public async Task<List<PlantAnalysis>> GetFilteredAnalysisDataAsync(int sponsorUserId, int limit = 100)
+{
+    var profile = await _sponsorProfileRepository.GetByUserIdAsync(sponsorUserId);
+    if (profile == null || !profile.IsActive)
+        return new List<PlantAnalysis>();
+
+    var purchase = await _sponsorshipPurchaseRepository.GetLatestActivePurchaseByProfileIdAsync(profile.Id);
+    if (purchase == null) return new List<PlantAnalysis>();
+
+    // Data access percentage by tier
+    var dataPercentage = purchase.SubscriptionTierId switch
+    {
+        1 => 0.30m, // S: 30%
+        2 => 0.30m, // M: 30%  
+        3 => 0.60m, // L: 60%
+        4 => 1.00m, // XL: 100%
+        _ => 0.30m
+    };
+
+    var adjustedLimit = (int)(limit * dataPercentage);
+    return await _plantAnalysisRepository.GetRandomAnalysesAsync(adjustedLimit);
+}
+```
+
+### API Endpoints
+
+#### 🔗 Sponsorship Messaging API
+```bash
+# Send message to farmer (L/XL tiers only)
+POST /api/sponsorship/messages
+Authorization: Bearer {token}
+Roles: Sponsor
+{
+  "farmerId": 123,
+  "subject": "Plant Analysis Follow-up",
+  "message": "Your tomato plants show excellent growth patterns..."
+}
+
+# Get conversation history
+GET /api/sponsorship/messages/conversation/{farmerId}
+Authorization: Bearer {token}
+Roles: Sponsor
+
+# Get all messages for sponsor
+GET /api/sponsorship/messages
+Authorization: Bearer {token}
+Roles: Sponsor
+```
+
+#### 👁️ Farmer Profile Visibility API
+```bash
+# Get farmer profile (visibility based on tier)
+GET /api/sponsorship/farmer-profile/{farmerId}
+Authorization: Bearer {token}
+Roles: Sponsor
+
+# Response varies by tier:
+# S tier: 403 Forbidden
+# M tier: Anonymous profile data
+# L/XL tier: Full profile with contact details
+```
+
+#### 📊 Smart Linking & Analytics
+```bash
+# Create smart link (all active tiers)
+POST /api/sponsorship/smart-links
+Authorization: Bearer {token}
+Roles: Sponsor
+
+# Get filtered analysis data (percentage based on tier)
+GET /api/sponsorship/analysis-data?limit=100
+Authorization: Bearer {token}
+Roles: Sponsor
+```
+
+### Error Handling & User Experience
+
+#### 🚫 Tier Restriction Messages
+```json
+// S/M tier messaging attempt
+{
+  "success": false,
+  "message": "Messaging is not allowed for your subscription tier. Upgrade to Large or Extra Large package to access farmer messaging.",
+  "tierInfo": {
+    "currentTier": "S",
+    "messagingTiers": ["L", "XL"],
+    "upgradeRequired": true
+  }
+}
+
+// Profile visibility restriction
+{
+  "success": false,
+  "message": "Farmer profile access is limited for your tier. Upgrade for full profile visibility.",
+  "visibilityLevel": "Anonymous"
+}
+```
+
+### Database Changes
+
+#### 📋 Entity Updates
+```csharp
+// SponsorProfile.cs - Removed tier-specific fields
+// ❌ Removed: CurrentSubscriptionTierId, HasMessaging, HasSmartLinking
+// ✅ Added: CompanyType, BusinessModel, TotalPurchases tracking
+
+// AnalysisMessage.cs - Messaging system
+public class AnalysisMessage
+{
+    public int Id { get; set; }
+    public int SponsorUserId { get; set; }
+    public int FarmerId { get; set; }
+    public string Subject { get; set; }
+    public string Message { get; set; }
+    public DateTime SentDate { get; set; }
+    public bool IsRead { get; set; }
+    public DateTime? ReadDate { get; set; }
+}
+```
+
+### Validation & Security
+
+#### 🔒 FluentValidation Rules
+```csharp
+// SendMessageValidator.cs - Null-safe validation
+public class SendMessageValidator : AbstractValidator<SendMessageCommand>
+{
+    public SendMessageValidator()
+    {
+        RuleFor(x => x.FarmerId)
+            .Must((command, farmerId) => farmerId > 0)
+            .WithMessage("Valid farmer ID is required");
+
+        RuleFor(x => x.Message)
+            .Must((command, message) => !string.IsNullOrWhiteSpace(message))
+            .WithMessage("Message content is required");
+    }
+}
+```
+
+### Production Deployment
+
+#### ✅ Deployment Checklist
+- [x] **Service Registration**: All new services registered in AutofacBusinessModule
+- [x] **Database Schema**: AnalysisMessages table created with proper constraints
+- [x] **Validation Aspects**: ValidationAspect re-enabled with null-safe patterns
+- [x] **Error Handling**: Comprehensive tier-based error messages
+- [x] **Authorization**: Role-based access control for all endpoints
+- [x] **Testing**: Postman collection updated with tier scenarios
+
+#### 🎯 Business Benefits
+- ✅ **Clear Value Proposition**: Higher tiers get messaging + profile access
+- ✅ **Scalable Architecture**: Purchase-based tier determination
+- ✅ **Enhanced User Experience**: Tier-appropriate feature access
+- ✅ **Revenue Optimization**: Incentivizes tier upgrades for messaging features
+
+This tier-based system provides a coherent business model where messaging capability directly correlates with farmer profile visibility, creating clear upgrade incentives while maintaining appropriate data access levels for each sponsorship tier.
+
 ### Plant Analysis Async Service Complete Synchronization ✅
 - **Implementation Date**: August 15, 2025
 - **Purpose**: Full feature parity between synchronous and asynchronous plant analysis endpoints

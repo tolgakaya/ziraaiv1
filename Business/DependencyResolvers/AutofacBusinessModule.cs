@@ -76,6 +76,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<SponsorshipPurchaseRepository>().As<ISponsorshipPurchaseRepository>()
                 .InstancePerLifetimeScope();
             
+            builder.RegisterType<AnalysisMessageRepository>().As<IAnalysisMessageRepository>()
+                .InstancePerLifetimeScope();
+            
             builder.RegisterType<PlantAnalysisService>().As<IPlantAnalysisService>()
                 .InstancePerLifetimeScope();
             
@@ -100,6 +103,14 @@ namespace Business.DependencyResolvers
             builder.RegisterType<RedemptionService>().As<IRedemptionService>()
                 .InstancePerLifetimeScope();
             
+            builder.RegisterType<AnalysisMessagingService>().As<IAnalysisMessagingService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SmartLinkService>().As<ISmartLinkService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<FarmerProfileVisibilityService>().As<IFarmerProfileVisibilityService>()
+                .InstancePerLifetimeScope();
             
             // Register all storage implementations first
             builder.RegisterType<LocalFileStorageService>().InstancePerLifetimeScope();

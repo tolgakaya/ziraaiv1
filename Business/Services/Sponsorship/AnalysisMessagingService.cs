@@ -3,6 +3,7 @@ using DataAccess.Abstract;
 using Entities.Concrete;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Business.Services.Sponsorship
@@ -26,20 +27,32 @@ namespace Business.Services.Sponsorship
         public async Task<bool> CanSendMessageAsync(int sponsorId)
         {
             var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (profile == null || !profile.IsActive || !profile.IsVerifiedCompany)
+            
+            // If not a sponsor, allow messaging (farmers can always send messages)
+            if (profile == null)
+            {
+                return true;
+            }
+            
+            // For sponsors, check if they have active profile (verification not required for messaging)
+            if (!profile.IsActive)
+            {
                 return false;
+            }
 
             // Sponsor'un M, L veya XL paketi satın almış olması gerekiyor (mesajlaşma için)
-            if (profile.SponsorshipPurchases != null)
+            if (profile.SponsorshipPurchases != null && profile.SponsorshipPurchases.Any())
             {
                 foreach (var purchase in profile.SponsorshipPurchases)
                 {
-                    // M, L, XL tier'larında mesajlaşma var
-                    if (purchase.SubscriptionTierId >= 2) // M=2, L=3, XL=4
+                    // Sadece L, XL tier'larında mesajlaşma var (L=3, XL=4)
+                    // M tier'da mesajlaşma yok çünkü çiftçi profili anonim
+                    if (purchase.SubscriptionTierId >= 3) // L=3, XL=4
                     {
                         return true;
                     }
                 }
+                return false;
             }
             
             return false;
@@ -47,39 +60,53 @@ namespace Business.Services.Sponsorship
 
         public async Task<AnalysisMessage> SendMessageAsync(int fromUserId, int toUserId, int plantAnalysisId, string message, string messageType = "Information")
         {
-            // Gönderen kullanıcının mesajlaşma yetkisi var mı kontrol et
-            var fromUser = await _userRepository.GetAsync(u => u.UserId == fromUserId);
-            var toUser = await _userRepository.GetAsync(u => u.UserId == toUserId);
-            
-            if (fromUser == null || toUser == null)
-                return null;
-
-            // Sponsor ise mesajlaşma yetkisi kontrolü
-            var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(fromUserId);
-            if (sponsorProfile != null && !await CanSendMessageAsync(fromUserId))
-                return null;
-
-            var newMessage = new AnalysisMessage
+            try
             {
-                PlantAnalysisId = plantAnalysisId,
-                FromUserId = fromUserId,
-                ToUserId = toUserId,
-                Message = message,
-                MessageType = messageType,
-                SentDate = DateTime.Now,
-                IsRead = false,
-                IsApproved = true, // Auto-approve for verified sponsors and farmers
-                SenderRole = sponsorProfile != null ? "Sponsor" : "Farmer",
-                SenderName = fromUser.FullName,
-                SenderCompany = sponsorProfile?.CompanyName,
-                Priority = "Normal",
-                Category = "General",
-                CreatedDate = DateTime.Now
-            };
+                // Gönderen kullanıcının mesajlaşma yetkisi var mı kontrol et
+                var fromUser = await _userRepository.GetAsync(u => u.UserId == fromUserId);
+                var toUser = await _userRepository.GetAsync(u => u.UserId == toUserId);
+                
+                if (fromUser == null || toUser == null)
+                {
+                    return null;
+                }
 
-            _messageRepository.Add(newMessage);
-            await _messageRepository.SaveChangesAsync();
-            return newMessage;
+                // Sponsor ise mesajlaşma yetkisi kontrolü
+                var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(fromUserId);
+                
+                // Check messaging permissions for sponsors
+                if (sponsorProfile != null && !await CanSendMessageAsync(fromUserId))
+                {
+                    return null;
+                }
+
+                var newMessage = new AnalysisMessage
+                {
+                    PlantAnalysisId = plantAnalysisId,
+                    FromUserId = fromUserId,
+                    ToUserId = toUserId,
+                    Message = message ?? string.Empty,
+                    MessageType = messageType ?? "Information",
+                    SentDate = DateTime.Now,
+                    IsRead = false,
+                    IsApproved = true, // Auto-approve for verified sponsors and farmers
+                    SenderRole = sponsorProfile != null ? "Sponsor" : "Farmer",
+                    SenderName = fromUser.FullName ?? string.Empty,
+                    SenderCompany = sponsorProfile?.CompanyName ?? string.Empty,
+                    Priority = "Normal",
+                    Category = "General",
+                    CreatedDate = DateTime.Now
+                };
+
+                _messageRepository.Add(newMessage);
+                await _messageRepository.SaveChangesAsync();
+                
+                return newMessage;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
         }
 
         public async Task<List<AnalysisMessage>> GetConversationAsync(int fromUserId, int toUserId, int plantAnalysisId)

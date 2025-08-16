@@ -8,6 +8,7 @@
         <CodeAnalysisRuleSet>$(SolutionDir)\shared\DevArchitectureCodeAnalysis.ruleset</CodeAnalysisRuleSet>
     </PropertyGroup>
         <ItemGroup>
+			
           <Compile Remove="Helpers\EnumerableExtensions.cs" />
         </ItemGroup>
 

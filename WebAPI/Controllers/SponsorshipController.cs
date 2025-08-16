@@ -1,5 +1,6 @@
 using Business.Handlers.Sponsorship.Commands;
 using Business.Handlers.Sponsorship.Queries;
+using Business.Handlers.Sponsorships.Queries;
 using Business.Handlers.SponsorProfiles.Commands;
 using Business.Handlers.SponsorProfiles.Queries;
 using Business.Handlers.AnalysisMessages.Commands;
@@ -46,13 +47,10 @@ namespace WebAPI.Controllers
         {
             try
             {
-                Console.WriteLine("[SponsorshipController] Create profile request received");
-                
                 // Set sponsor ID from current user
                 var userId = GetUserId();
                 if (!userId.HasValue)
                 {
-                    Console.WriteLine("[SponsorshipController] User ID not found in claims");
                     return Unauthorized();
                 }
                 
@@ -75,16 +73,14 @@ namespace WebAPI.Controllers
                 
                 if (!result.Success)
                 {
-                    Console.WriteLine($"[SponsorshipController] Profile creation failed: {result.Message}");
                     return BadRequest(result);
                 }
                 
-                Console.WriteLine($"[SponsorshipController] Profile created successfully for sponsor {userId}");
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[SponsorshipController] Exception in CreateSponsorProfile: {ex.Message}");
+                _logger.LogError(ex, "Error creating sponsor profile for user {UserId}", GetUserId());
                 return StatusCode(500, new ErrorResult($"Profile creation failed: {ex.Message}"));
             }
         }
@@ -100,23 +96,15 @@ namespace WebAPI.Controllers
         {
             try
             {
-                Console.WriteLine("[SponsorshipController] Purchase bulk request received");
-                
                 // Set sponsor ID from current user
                 var userId = GetUserId();
                 if (!userId.HasValue)
                 {
-                    Console.WriteLine("[SponsorshipController] User ID not found in claims");
                     return Unauthorized();
                 }
                 
-                Console.WriteLine($"[SponsorshipController] User ID: {userId.Value}");
                 command.SponsorId = userId.Value;
-                
-                Console.WriteLine($"[SponsorshipController] Sending command to mediator: TierId={command.SubscriptionTierId}, Quantity={command.Quantity}");
                 var result = await Mediator.Send(command);
-                
-                Console.WriteLine($"[SponsorshipController] Mediator result: Success={result.Success}");
                 
                 if (result.Success)
                 {
@@ -127,9 +115,8 @@ namespace WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[SponsorshipController] Exception in PurchaseBulkSubscriptions: {ex.Message}");
-                Console.WriteLine($"[SponsorshipController] Stack trace: {ex.StackTrace}");
-                return StatusCode(500, new { error = ex.Message, details = ex.StackTrace });
+                _logger.LogError(ex, "Error purchasing bulk subscriptions for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new { error = ex.Message });
             }
         }
 
@@ -512,7 +499,7 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Send message to farmer (L and XL tiers only)
+        /// Send message to farmer (M, L and XL tiers only)
         /// </summary>
         /// <param name="command">Message details</param>
         /// <returns>Sent message information</returns>
@@ -520,17 +507,30 @@ namespace WebAPI.Controllers
         [HttpPost("messages")]
         public async Task<IActionResult> SendMessage([FromBody] SendMessageCommand command)
         {
-            var userId = GetUserId();
-            if (!userId.HasValue)
-                return Unauthorized();
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+                    
+                command.FromUserId = userId.Value;
                 
-            command.FromUserId = userId.Value;
-            var result = await Mediator.Send(command);
-            
-            if (result.Success)
-                return Ok(result);
-            
-            return BadRequest(result);
+                _logger.LogInformation($"[SendMessage] User {userId} sending message. Command: {System.Text.Json.JsonSerializer.Serialize(command)}");
+                
+                var result = await Mediator.Send(command);
+                
+                _logger.LogInformation($"[SendMessage] Result: Success={result.Success}, Message={result.Message}");
+                
+                if (result.Success)
+                    return Ok(result);
+                
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[SendMessage] Exception occurred: {ex.Message}");
+                return StatusCode(500, new { success = false, message = ex.Message, innerException = ex.InnerException?.Message });
+            }
         }
 
         /// <summary>
@@ -651,7 +651,7 @@ namespace WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[SponsorshipController] Exception in GetLogoPermissionsForAnalysis: {ex.Message}");
+                _logger.LogError(ex, "Error getting logo permissions for analysis {PlantAnalysisId}", plantAnalysisId);
                 return StatusCode(500, new ErrorResult($"Logo permissions check failed: {ex.Message}"));
             }
         }
@@ -668,20 +668,24 @@ namespace WebAPI.Controllers
         {
             try
             {
-                // This would use the new SponsorVisibilityService methods
-                // TODO: Create GetSponsorDisplayInfoForAnalysisQuery
-                
-                return Ok(new
+                var query = new GetSponsorDisplayInfoForAnalysisQuery
                 {
-                    Success = true,
-                    Message = "Feature being implemented with new architecture",
                     PlantAnalysisId = plantAnalysisId,
                     Screen = screen
-                });
+                };
+                
+                var result = await Mediator.Send(query);
+                
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                
+                return BadRequest(result);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[SponsorshipController] Exception in GetDisplayInfoForAnalysis: {ex.Message}");
+                _logger.LogError(ex, "Error getting display info for analysis {PlantAnalysisId}, screen {Screen}", plantAnalysisId, screen);
                 return StatusCode(500, new ErrorResult($"Display info retrieval failed: {ex.Message}"));
             }
         }

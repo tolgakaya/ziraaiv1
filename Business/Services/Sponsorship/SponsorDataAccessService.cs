@@ -25,7 +25,7 @@ namespace Business.Services.Sponsorship
         public async Task<Entities.Concrete.PlantAnalysis> GetFilteredAnalysisDataAsync(int sponsorId, int plantAnalysisId)
         {
             var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (sponsorProfile == null || !sponsorProfile.IsActive || !sponsorProfile.IsVerifiedCompany)
+            if (sponsorProfile == null || !sponsorProfile.IsActive)
                 return null;
 
             var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
@@ -144,10 +144,10 @@ namespace Business.Services.Sponsorship
         public async Task<bool> HasAccessToAnalysisAsync(int sponsorId, int plantAnalysisId)
         {
             var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (sponsorProfile == null || !sponsorProfile.IsActive || !sponsorProfile.IsVerifiedCompany)
+            if (sponsorProfile == null || !sponsorProfile.IsActive)
                 return false;
 
-            // Sponsor profile aktif ve verified ise erişim var
+            // Sponsor profile aktif ise erişim var
             return true;
         }
 

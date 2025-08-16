@@ -1,6 +1,12 @@
-# 🧪 ZiraAI Sponsorluk Sistemi Test Kılavuzu
+# 🧪 ZiraAI Sponsorluk Sistemi Test Kılavuzu (v2.0 - Corrected Business Model)
 
-## 🎯 Test Stratejisi: S Paketinden XL Paketine Adım Adım
+## 🎯 Test Stratejisi: Düzeltilmiş Purchase-Based Tier Erişim Modeli
+
+### **🔄 YENİ İŞ MODELİ ÖZETİ**
+- **TEK Company Profile**: Sponsor tek profil oluşturur
+- **Çoklu Paket Satın Alma**: Aynı sponsor S/M/L/XL paketlerini ayrı ayrı satın alabilir
+- **Kod Bazlı Tier Erişimi**: Her kod hangi paketten alındıysa o tier'ın özelliklerini taşır
+- **Farmer Normal Analiz**: Farmer kod kullanmaz, subscription üzerinden analiz yapar
 
 ### **Adım 1: S Paketi (Temel Seviye) Test Senaryoları**
 
@@ -13,29 +19,32 @@ dotnet ef database update --project DataAccess --startup-project WebAPI --contex
 dotnet run --project WebAPI
 ```
 
-#### B. Authentication ve Sponsor Profili Oluşturma
+#### B. Sponsor Hesabı Oluşturma ve Giriş
 ```bash
-# 1. Admin olarak giriş yap
-POST https://localhost:5001/api/v1/auth/login
+# 1. Yeni sponsor hesabı oluştur
+POST https://localhost:5001/api/v1/auth/register
 {
-  "email": "admin@ziraai.com", 
-  "password": "Admin123!"
+  "email": "sponsor@agricompany.com",
+  "password": "Sponsor123!",
+  "firstName": "Ali",
+  "lastName": "Sponsor",
+  "role": "Sponsor"
 }
-# Token'ı kaydet: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
 
-# 2. Sponsor hesabı oluştur veya mevcut sponsor ile giriş yap
+# 2. Sponsor olarak giriş yap
 POST https://localhost:5001/api/v1/auth/login
 {
-  "email": "sponsor@company.com",
-  "password": "SponsorPassword123!"
+  "email": "sponsor@agricompany.com",
+  "password": "Sponsor123!"
 }
+# Token'ı kaydet
 ```
 
-#### C. Sponsor Profili Oluşturma (Tek Seferlik)
+#### C. TEK Company Profile Oluşturma (Tier Bağımsız)
 ```bash
-# Önce sponsor company profile oluştur (tier bağımsız)
+# Company profile oluştur (tier bilgisi YOK)
 POST https://localhost:5001/api/sponsorships/create-profile
-Authorization: Bearer {token}
+Authorization: Bearer {sponsor_token}
 {
   "companyName": "Tarım Teknoloji A.Ş.",
   "companyDescription": "Modern tarım çözümleri ve danışmanlık hizmetleri",
@@ -43,8 +52,8 @@ Authorization: Bearer {token}
   "websiteUrl": "https://tarimteknoloji.com.tr",
   "contactEmail": "info@tarimteknoloji.com.tr", 
   "contactPhone": "+90 212 555 01 01",
-  "contactPerson": "Ahmet Yılmaz",
-  "companyType": "Agriculture",
+  "contactPerson": "Ali Sponsor",
+  "companyType": "Cooperative",
   "businessModel": "B2B"
 }
 
@@ -54,8 +63,10 @@ Authorization: Bearer {token}
   "message": "Sponsor profile created successfully",
   "data": {
     "id": 1,
-    "sponsorId": 101,
+    "userId": 123,
     "companyName": "Tarım Teknoloji A.Ş.",
+    "companyType": "Cooperative",
+    "businessModel": "B2B",
     "isActive": true,
     "totalPurchases": 0,
     "totalCodesGenerated": 0,
@@ -64,19 +75,17 @@ Authorization: Bearer {token}
 }
 ```
 
-#### D. S Paketi Satın Alma
+#### D. S Paketi Satın Alma ve Kod Üretimi
 ```bash
-# Şimdi S paketi satın al (100 adet sponsorship code)
+# S paketi satın al (5 adet kod üretilecek)
 POST https://localhost:5001/api/sponsorships/purchase-package
-Authorization: Bearer {token}
+Authorization: Bearer {sponsor_token}
 {
-  "subscriptionTierId": 1, // S paketi
-  "quantity": 100,
-  "unitPrice": 29.99,
-  "totalAmount": 2999.00,
-  "currency": "TRY",
+  "subscriptionTierId": 2, // S paketi ID (database'de 2)
+  "quantity": 5,
   "paymentMethod": "CreditCard",
-  "paymentReference": "TXN_S_20250815_001"
+  "paymentReference": "PAY_S_20250816_001",
+  "validityDays": 365
 }
 
 # Beklenen Response:
@@ -84,28 +93,90 @@ Authorization: Bearer {token}
   "success": true,
   "data": {
     "purchaseId": 1,
-    "codesGenerated": 100,
+    "sponsorId": 1,
+    "tierName": "S",
+    "quantity": 5,
+    "amount": 499.95,
+    "codePrefix": "SPT001",
+    "generatedCodes": [
+      {
+        "code": "SPT001-ABC123",
+        "tierName": "S",
+        "expiryDate": "2026-08-16T00:00:00"
+      },
+      {
+        "code": "SPT001-DEF456",
+        "tierName": "S",
+        "expiryDate": "2026-08-16T00:00:00"
+      }
+      // ... 5 kod
+    ],
     "tierFeatures": {
-      "logoVisibility": "ResultOnly",
-      "dataAccessPercentage": 30,
-      "messagingEnabled": false,
-      "smartLinksEnabled": false
-    },
-    "codes": ["AGRI-S-001", "AGRI-S-002", ..., "AGRI-S-100"]
+      "dailyLimit": 5,
+      "monthlyLimit": 50,
+      "prioritySupport": false,
+      "advancedAnalytics": false,
+      "apiAccess": false
+    }
   }
 }
 ```
 
-#### E. Kod Dağıtımı ve Kullanımı (Farmer Tarafı)
+#### E. Farmer Kod Kullanımı (Subscription Oluşturma)
 ```bash
-# Farmer S paket kodunu kullanarak analiz yapar
+# 1. Farmer hesabı oluştur
+POST https://localhost:5001/api/v1/auth/register
+{
+  "email": "farmer1@example.com",
+  "password": "Farmer123!",
+  "firstName": "Mehmet",
+  "lastName": "Çiftçi",
+  "role": "Farmer"
+}
+
+# 2. Farmer olarak giriş
+POST https://localhost:5001/api/v1/auth/login
+{
+  "email": "farmer1@example.com",
+  "password": "Farmer123!"
+}
+
+# 3. Sponsorship kodunu kullanarak subscription oluştur
+POST https://localhost:5001/api/subscriptions/redeem-code
+Authorization: Bearer {farmer_token}
+{
+  "sponsorshipCode": "SPT001-ABC123"
+}
+
+# Beklenen Response:
+{
+  "success": true,
+  "message": "Sponsorship code redeemed successfully. You now have an S tier subscription.",
+  "data": {
+    "subscriptionId": 1,
+    "tierName": "S",
+    "dailyLimit": 5,
+    "monthlyLimit": 50,
+    "startDate": "2025-08-16T00:00:00",
+    "endDate": "2026-08-16T00:00:00",
+    "sponsorInfo": {
+      "companyName": "Tarım Teknoloji A.Ş.",
+      "sponsorId": 1
+    }
+  }
+}
+```
+
+#### F. Farmer Normal Analiz Yapması (Subscription ile)
+```bash
+# Farmer artık subscription'ı olduğu için normal analiz yapabilir
 POST https://localhost:5001/api/v1/plantanalyses/analyze
 Authorization: Bearer {farmer_token}
 {
   "image": "data:image/jpeg;base64,/9j/4AAQ...",
-  "sponsorshipCode": "AGRI-S-001", // S paketi kodu
   "farmerId": "F001",
   "cropType": "tomato"
+  // NOT: sponsorshipCode GEREKMİYOR, subscription üzerinden çalışır
 }
 
 # Beklenen Response:
@@ -113,33 +184,17 @@ Authorization: Bearer {farmer_token}
   "success": true,
   "data": {
     "id": 456,
-    "analysisId": "ANALYSIS_20250815_001",
-    "sponsorshipCodeId": 1,
-    "status": "Completed"
-  }
-}
-```
-
-#### F. S Paketi Logo Görünürlük Testi (Analysis-Based - YENİ MANTIK)
-```bash
-# Analiz bazlı logo görünürlük kontrolü (YENİ ENDPOINT)
-GET https://localhost:5001/api/sponsorships/logo-permissions/analysis/456
-Authorization: Bearer {token}
-
-# Beklenen Response (S Paketi - Analiz ID: 456):
-{
-  "success": true,
-  "data": {
-    "plantAnalysisId": 456,
-    "tierName": "S",
-    "canShowOnStart": false, // ❌ S paketi start screen'de logo gösteremez
-    "canShowOnResult": true, // ✅ S paketi result screen'de logo gösterebilir
-    "canShowOnAnalysis": false, // ❌ S paketi analysis detayında logo gösteremez
-    "canShowOnProfile": false, // ❌ S paketi profil sayfasında logo gösteremez
-    "sponsorInfo": {
-      "sponsorId": 101,
-      "companyName": "Tarım Teknoloji A.Ş.",
-      "sponsorLogoUrl": "https://example.com/company-logo.png"
+    "analysisId": "ANALYSIS_20250816_001",
+    "sponsorUserId": 123, // Sponsorun user ID'si otomatik kaydedilir
+    "sponsorshipCodeId": 1, // Kullanılan kodun ID'si
+    "status": "Completed",
+    "overallHealthScore": 8,
+    "subscriptionInfo": {
+      "tierName": "S",
+      "dailyUsed": 1,
+      "dailyLimit": 5,
+      "monthlyUsed": 1,
+      "monthlyLimit": 50
     }
   }
 }
@@ -225,17 +280,15 @@ GET https://localhost:5001/api/sponsorships/matching-links/456
 
 #### A. M Paketi Satın Alma (Aynı Sponsor Firması)
 ```bash
-# Aynı sponsor şirketi M paketi de satın alabilir
+# Aynı sponsor M paketi de satın alabilir (farklı müşteri grubu için)
 POST https://localhost:5001/api/sponsorships/purchase-package
-Authorization: Bearer {token}
+Authorization: Bearer {sponsor_token}
 {
-  "subscriptionTierId": 2, // M paketi  
-  "quantity": 50,
-  "unitPrice": 59.99,
-  "totalAmount": 2999.50,
-  "currency": "TRY",
-  "paymentMethod": "CreditCard",
-  "paymentReference": "TXN_M_20250815_002"
+  "subscriptionTierId": 3, // M paketi ID (database'de 3)
+  "quantity": 10,
+  "paymentMethod": "BankTransfer",
+  "paymentReference": "PAY_M_20250816_002",
+  "validityDays": 365
 }
 
 # Beklenen Response:
@@ -243,57 +296,55 @@ Authorization: Bearer {token}
   "success": true,
   "data": {
     "purchaseId": 2,
-    "codesGenerated": 50,
+    "sponsorId": 1,
+    "tierName": "M",
+    "quantity": 10,
+    "amount": 2999.90,
+    "codePrefix": "SPT002",
+    "generatedCodes": [
+      {
+        "code": "SPT002-GHI789",
+        "tierName": "M",
+        "expiryDate": "2026-08-16T00:00:00"
+      }
+      // ... 10 kod
+    ],
     "tierFeatures": {
-      "logoVisibility": "StartAndResult", // Başlangıç + Sonuç
-      "dataAccessPercentage": 30, // Hala %30 erişim
-      "messagingEnabled": true, // ✅ Mesajlaşma aktif
-      "smartLinksEnabled": false // Smart link hala YOK
-    },
-    "codes": ["AGRI-M-001", "AGRI-M-002", ..., "AGRI-M-050"]
+      "dailyLimit": 20,
+      "monthlyLimit": 200,
+      "prioritySupport": false,
+      "advancedAnalytics": false,
+      "apiAccess": true
+    }
   }
 }
 ```
 
-#### B. M Paketi Logo Görünürlük Testi (Gelişmiş)
+#### B. Farmer M Paketi Kodu Kullanımı
 ```bash
-# Logo yetkilerini kontrol et
-GET https://localhost:5001/api/sponsorships/logo-permissions/102
-Authorization: Bearer {token}
-
-# Beklenen Response (M Paketi):
+# Yeni farmer M paketi kodunu kullanır
+POST https://localhost:5001/api/subscriptions/redeem-code
+Authorization: Bearer {farmer2_token}
 {
-  "success": true,
-  "data": {
-    "sponsorId": 102,
-    "canShowOnStart": true, // ✅ Başlangıç ekranında göster
-    "canShowOnResult": true, // ✅ Sonuç ekranında göster
-    "canShowOnAnalysis": false, // ❌ Analiz detayı yok
-    "canShowOnProfile": false, // ❌ Profil sayfası yok
-    "tierLevel": "M"
-  }
+  "sponsorshipCode": "SPT002-GHI789"
 }
-
-# Start screen test (başarılı olmalı)
-GET https://localhost:5001/api/sponsorships/display-info/789?screen=start
-Authorization: Bearer {token}
 
 # Beklenen Response:
 {
   "success": true,
+  "message": "Sponsorship code redeemed successfully. You now have an M tier subscription.",
   "data": {
-    "sponsorLogoUrl": "https://example.com/m-logo.png",
-    "companyName": "Tarım M Teknoloji",
-    "websiteUrl": "https://tarimm.com.tr"
+    "subscriptionId": 2,
+    "tierName": "M",
+    "dailyLimit": 20,
+    "monthlyLimit": 200,
+    "startDate": "2025-08-16T00:00:00",
+    "endDate": "2026-08-16T00:00:00"
   }
 }
-
-# Result screen test (başarılı olmalı)
-GET https://localhost:5001/api/sponsorships/display-info/789?screen=result
-# Yine başarılı olmalı
 ```
 
-#### C. M Paketi Mesajlaşma Sistemi Testi
+#### C. M Paketi Analiz ve Sponsor Bilgisi Testi
 ```bash
 # Mesaj gönder (başarılı olmalı)
 POST https://localhost:5001/api/sponsorships/send-message
@@ -394,31 +445,44 @@ Authorization: Bearer {token}
 
 ### **Adım 3: L Paketi (İleri Seviye) Test Senaryoları**
 
-#### A. L Paketi Sponsor Profili Oluşturma
+#### A. L Paketi Satın Alma (Aynı veya Farklı Sponsor)
 ```bash
-POST https://localhost:5001/api/sponsorships/create-profile
-Authorization: Bearer {token}
+# L paketi satın al (premium farmers için)
+POST https://localhost:5001/api/sponsorships/purchase-package
+Authorization: Bearer {sponsor_token}
 {
-  "sponsorId": 103,
-  "companyName": "Tarım L Premium",
-  "companyDescription": "İleri düzey tarım analizi ve tam mesajlaşma",
-  "sponsorLogoUrl": "https://example.com/l-logo.png",
-  "websiteUrl": "https://tariml.com.tr",
-  "contactEmail": "info@tariml.com.tr",
-  "contactPhone": "+90 212 555 03 03",
-  "contactPerson": "L Paket Sponsor",
-  "currentSubscriptionTierId": 3
+  "subscriptionTierId": 4, // L paketi ID (database'de 4)
+  "quantity": 3,
+  "paymentMethod": "CreditCard",
+  "paymentReference": "PAY_L_20250816_003",
+  "validityDays": 365
 }
 
 # Beklenen Response:
 {
   "success": true,
   "data": {
-    "id": 3,
-    "dataAccessLevel": "Intermediate", // %60 erişim
-    "logoVisibilityLevel": "AllScreens", // Tüm ekranlar
-    "messagingEnabled": true, // ✅ Tam mesajlaşma
-    "smartLinksEnabled": false // Smart link hala YOK
+    "purchaseId": 3,
+    "sponsorId": 1,
+    "tierName": "L",
+    "quantity": 3,
+    "amount": 1799.97,
+    "codePrefix": "SPT003",
+    "generatedCodes": [
+      {
+        "code": "SPT003-JKL012",
+        "tierName": "L",
+        "expiryDate": "2026-08-16T00:00:00"
+      }
+      // ... 3 kod
+    ],
+    "tierFeatures": {
+      "dailyLimit": 50,
+      "monthlyLimit": 500,
+      "prioritySupport": true,
+      "advancedAnalytics": true,
+      "apiAccess": true
+    }
   }
 }
 ```
@@ -581,31 +645,49 @@ Authorization: Bearer {token}
 
 ### **Adım 4: XL Paketi (Premium Seviye) Test Senaryoları**
 
-#### A. XL Paketi Sponsor Profili Oluşturma
+#### A. XL Paketi Satın Alma (Enterprise Level)
 ```bash
-POST https://localhost:5001/api/sponsorships/create-profile
-Authorization: Bearer {token}
+# XL paketi satın al (enterprise farmers için)
+POST https://localhost:5001/api/sponsorships/purchase-package
+Authorization: Bearer {sponsor_token}
 {
-  "sponsorId": 104,
-  "companyName": "Tarım XL Enterprise",
-  "companyDescription": "Premium tarım teknolojileri ve AI destekli çözümler",
-  "sponsorLogoUrl": "https://example.com/xl-logo.png",
-  "websiteUrl": "https://tarimxl.com.tr",
-  "contactEmail": "info@tarimxl.com.tr",
-  "contactPhone": "+90 212 555 04 04",
-  "contactPerson": "XL Paket Sponsor",
-  "currentSubscriptionTierId": 4
+  "subscriptionTierId": 5, // XL paketi ID (database'de 5)
+  "quantity": 2,
+  "paymentMethod": "CorporateInvoice",
+  "paymentReference": "PAY_XL_20250816_004",
+  "validityDays": 365
 }
 
 # Beklenen Response:
 {
   "success": true,
   "data": {
-    "id": 4,
-    "dataAccessLevel": "Full", // %100 tam erişim
-    "logoVisibilityLevel": "AllScreens", // Tüm ekranlar
-    "messagingEnabled": true, // ✅ Tam mesajlaşma
-    "smartLinksEnabled": true // ✅ AI Smart Links aktif
+    "purchaseId": 4,
+    "sponsorId": 1,
+    "tierName": "XL",
+    "quantity": 2,
+    "amount": 2999.98,
+    "codePrefix": "SPT004",
+    "generatedCodes": [
+      {
+        "code": "SPT004-MNO345",
+        "tierName": "XL",
+        "expiryDate": "2026-08-16T00:00:00"
+      },
+      {
+        "code": "SPT004-PQR678",
+        "tierName": "XL",
+        "expiryDate": "2026-08-16T00:00:00"
+      }
+    ],
+    "tierFeatures": {
+      "dailyLimit": 200,
+      "monthlyLimit": 2000,
+      "prioritySupport": true,
+      "advancedAnalytics": true,
+      "apiAccess": true,
+      "responseTimeHours": 1
+    }
   }
 }
 ```
@@ -967,26 +1049,46 @@ GET https://localhost:5001/api/sponsorships/filtered-analysis/104/123
 | Smart Links | ❌ | ❌ | ❌ | ✅ |
 | Analytics | Temel | Temel | Detaylı | Premium |
 
-## 🏗️ **YENİ ARCHITECTURE DEĞİŞİKLİKLERİ**
+## 🏗️ **YENİ ARCHITECTURE (v2.0 - AUGUST 2025)**
 
-### ✅ **DOĞRU İŞ AKIŞI (Düzeltildi):**
-1. **Sponsor Registration**: Tek company profile oluşturma
-2. **Package Purchase**: S/M/L/XL paketlerini ayrı ayrı satın alma
-3. **Code Generation**: Her satın alma için unique kodlar
-4. **Code Distribution**: Sponsor kodları çiftçilere dağıtır  
-5. **Analysis with Code**: Çiftçi kodu kullanarak analiz yapar
-6. **Feature Access**: Kullanılan kod tier'ına göre özellikler açılır
+### ✅ **DOĞRU İŞ AKIŞI (Purchase-Based Model):**
+1. **Sponsor Registration**: Sponsor rolü ile kayıt
+2. **Company Profile**: TEK profil oluşturma (tier bağımsız)
+3. **Package Purchase**: S/M/L/XL paketlerini ihtiyaca göre satın alma
+4. **Code Generation**: Her satın alma için otomatik kod üretimi
+5. **Code Distribution**: Sponsor kodları farmers'a dağıtır (offline)
+6. **Code Redemption**: Farmer kodu kullanarak subscription oluşturur
+7. **Normal Analysis**: Farmer subscription limitleri ile analiz yapar
+8. **Sponsor Tracking**: Analiz otomatik sponsor ile ilişkilendirilir
 
-### ❌ **ESKİ YANLIŞ LOGIC (Düzeltildi):**
+### ❌ **ESKİ YANLIŞ MODEL (Kaldırıldı):**
 - ~~Her tier için ayrı sponsor profile~~
-- ~~Sponsor tier'ına göre sabit özellikler~~  
-- ~~Profile-based feature access~~
+- ~~Profile'a bağlı tier özellikleri~~
+- ~~Analiz payload'ında sponsorshipCode~~
+- ~~Direct tier-to-profile coupling~~
 
-### 🔧 **YENİ ENDPOINT'LER:**
-- `POST /api/sponsorships/create-profile` - Company profile (tier bağımsız)
-- `POST /api/sponsorships/purchase-package` - Paket satın alma
-- `GET /api/sponsorships/logo-permissions/analysis/{id}` - Analiz bazlı logo izinleri
-- `GET /api/sponsorships/display-info/analysis/{id}?screen=result` - Analiz bazlı sponsor bilgisi
+### 🔧 **YENİ API ENDPOINTS:**
+
+#### Sponsor Management
+- `POST /api/sponsorships/create-profile` - Company profile (tier-independent)
+- `PUT /api/sponsorships/update-profile/{id}` - Profile güncelleme
+- `GET /api/sponsorships/my-profile` - Sponsor profil görüntüleme
+
+#### Package & Code Management
+- `POST /api/sponsorships/purchase-package` - Paket satın alma + kod üretimi
+- `GET /api/sponsorships/my-purchases` - Satın alma geçmişi
+- `GET /api/sponsorships/my-codes` - Üretilen kodları listeleme
+- `GET /api/sponsorships/code-status/{code}` - Kod durumu sorgulama
+- `PUT /api/sponsorships/deactivate-code/{id}` - Kod deaktivasyonu
+
+#### Analytics & Reporting
+- `GET /api/sponsorships/sponsored-analyses` - Sponsor edilen analizler
+- `GET /api/sponsorships/usage-analytics` - Kullanım analitiği
+- `GET /api/sponsorships/code-redemption-stats` - Kod kullanım istatistikleri
+
+#### Farmer Side
+- `POST /api/subscriptions/redeem-code` - Kod ile subscription oluşturma
+- `GET /api/subscriptions/my-subscription` - Aktif subscription görüntüleme
 
 ---
 
@@ -1009,33 +1111,169 @@ GET https://localhost:5001/api/sponsorships/filtered-analysis/104/123
 
 ---
 
-## 🚀 Hızlı Test Script'i
+## 🚀 Kapsamlı Test Senaryoları
 
+### End-to-End Test Scenario
 ```bash
 #!/bin/bash
 
-# Sponsorship System Test Runner
-echo "🧪 ZiraAI Sponsorship System Test Starting..."
+# 1. SPONSOR SETUP
+echo "=== SPONSOR SETUP ==="
 
-# Test S Package
-echo "Testing S Package..."
+# Register sponsor
+curl -X POST "https://localhost:5001/api/v1/auth/register" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "test.sponsor@company.com",
+       "password": "TestSponsor123!",
+       "firstName": "Test",
+       "lastName": "Sponsor",
+       "role": "Sponsor"
+     }'
+
+# Login and get token
+TOKEN=$(curl -X POST "https://localhost:5001/api/v1/auth/login" \
+     -H "Content-Type: application/json" \
+     -d '{"email": "test.sponsor@company.com", "password": "TestSponsor123!"}' \
+     | jq -r '.data.accessToken')
+
+# Create company profile
 curl -X POST "https://localhost:5001/api/sponsorships/create-profile" \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
-     -d @s_package_data.json
+     -d '{
+       "companyName": "Test Agriculture Co.",
+       "companyDescription": "Test company for sponsorship",
+       "companyType": "Cooperative",
+       "businessModel": "B2B"
+     }'
 
-# Test M Package
-echo "Testing M Package..."
-curl -X POST "https://localhost:5001/api/sponsorships/create-profile" \
+# 2. PACKAGE PURCHASES
+echo "=== PURCHASING PACKAGES ==="
+
+# Purchase S package (5 codes)
+curl -X POST "https://localhost:5001/api/sponsorships/purchase-package" \
      -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
-     -d @m_package_data.json
+     -d '{
+       "subscriptionTierId": 2,
+       "quantity": 5,
+       "paymentMethod": "Test",
+       "paymentReference": "TEST_001"
+     }'
 
-# ... diğer testler
+# Purchase M package (3 codes)
+curl -X POST "https://localhost:5001/api/sponsorships/purchase-package" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "subscriptionTierId": 3,
+       "quantity": 3,
+       "paymentMethod": "Test",
+       "paymentReference": "TEST_002"
+     }'
 
-echo "✅ All tests completed. Check results above."
+# 3. VIEW GENERATED CODES
+echo "=== VIEWING CODES ==="
+curl -X GET "https://localhost:5001/api/sponsorships/my-codes" \
+     -H "Authorization: Bearer $TOKEN"
+
+# 4. FARMER REDEMPTION
+echo "=== FARMER CODE REDEMPTION ==="
+
+# Register farmer
+curl -X POST "https://localhost:5001/api/v1/auth/register" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "test.farmer@example.com",
+       "password": "TestFarmer123!",
+       "firstName": "Test",
+       "lastName": "Farmer",
+       "role": "Farmer"
+     }'
+
+# Farmer login
+FARMER_TOKEN=$(curl -X POST "https://localhost:5001/api/v1/auth/login" \
+     -H "Content-Type: application/json" \
+     -d '{"email": "test.farmer@example.com", "password": "TestFarmer123!"}' \
+     | jq -r '.data.accessToken')
+
+# Redeem sponsorship code
+curl -X POST "https://localhost:5001/api/subscriptions/redeem-code" \
+     -H "Authorization: Bearer $FARMER_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"sponsorshipCode": "SPT001-ABC123"}'
+
+# 5. PLANT ANALYSIS
+echo "=== PLANT ANALYSIS ==="
+curl -X POST "https://localhost:5001/api/v1/plantanalyses/analyze" \
+     -H "Authorization: Bearer $FARMER_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "image": "data:image/jpeg;base64,/9j/4AAQ...",
+       "farmerId": "F001",
+       "cropType": "tomato"
+     }'
+
+# 6. SPONSOR ANALYTICS
+echo "=== SPONSOR ANALYTICS ==="
+curl -X GET "https://localhost:5001/api/sponsorships/sponsored-analyses" \
+     -H "Authorization: Bearer $TOKEN"
+
+curl -X GET "https://localhost:5001/api/sponsorships/code-redemption-stats" \
+     -H "Authorization: Bearer $TOKEN"
+
+echo "✅ All tests completed successfully!"
+```
+
+### Test Validation Checklist
+
+#### 🔍 Database Verification
+```sql
+-- Check sponsor profiles
+SELECT * FROM "SponsorProfiles" WHERE "CompanyName" = 'Test Agriculture Co.';
+
+-- Check purchases
+SELECT p.*, t."TierName" 
+FROM "SponsorshipPurchases" p
+JOIN "SubscriptionTiers" t ON p."SubscriptionTierId" = t."Id"
+WHERE p."SponsorId" = 1;
+
+-- Check generated codes
+SELECT c.*, t."TierName"
+FROM "SponsorshipCodes" c
+JOIN "SubscriptionTiers" t ON c."SubscriptionTierId" = t."Id"
+WHERE c."SponsorId" = 1;
+
+-- Check farmer subscriptions
+SELECT s.*, t."TierName", u."Email"
+FROM "UserSubscriptions" s
+JOIN "SubscriptionTiers" t ON s."SubscriptionTierId" = t."Id"
+JOIN "Users" u ON s."UserId" = u."Id"
+WHERE s."SponsorshipCodeId" IS NOT NULL;
+
+-- Check plant analyses with sponsor
+SELECT p."Id", p."SponsorUserId", p."SponsorshipCodeId", p."OverallHealthScore"
+FROM "PlantAnalyses" p
+WHERE p."SponsorUserId" IS NOT NULL;
 ```
 
 ---
 
-**🎉 Bu kapsamlı test kılavuzu ile sponsorluk sisteminin tüm özelliklerini adım adım doğrulayabilirsiniz!**
+## 📋 Özet: Kritik Değişiklikler
+
+### ✅ YAPILMASI GEREKENLER:
+1. **TEK Profil**: Sponsor sadece bir company profile oluşturur
+2. **Çoklu Paket**: İhtiyaca göre farklı paketler satın alabilir
+3. **Kod Dağıtımı**: Üretilen kodları farmers'a dağıtır
+4. **Normal Analiz**: Farmer subscription ile analiz yapar
+
+### ❌ YAPILMAMASI GEREKENLER:
+1. **Her tier için ayrı profil oluşturmayın**
+2. **Analiz payload'ında sponsorshipCode göndermeyın**
+3. **Profile'a tier bağlamayın**
+4. **Farmer'ın doğrudan sponsor özelliklerine erişmesini beklemeyin**
+
+---
+
+**🎉 Bu güncellenmiş test kılavuzu ile düzeltilmiş sponsorluk sistemini başarıyla test edebilirsiniz!**
