@@ -73,6 +73,14 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<SponsorAnalysisAccess> SponsorAnalysisAccess { get; set; }
         public DbSet<AnalysisMessage> AnalysisMessages { get; set; }
         public DbSet<SmartLink> SmartLinks { get; set; }
+        
+        // Deep Links System
+        public DbSet<DeepLink> DeepLinks { get; set; }
+        public DbSet<DeepLinkClickRecord> DeepLinkClickRecords { get; set; }
+        
+        // Security System
+        public DbSet<SecurityEvent> SecurityEvents { get; set; }
+        public DbSet<BlockedEntity> BlockedEntities { get; set; }
 
         protected IConfiguration Configuration { get; }
 

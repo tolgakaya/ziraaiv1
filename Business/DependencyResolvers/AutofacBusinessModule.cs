@@ -9,6 +9,7 @@ using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Business.Services.Sponsorship;
 using Business.Services.Redemption;
+using Business.Services.MobileIntegration;
 using Microsoft.Extensions.Configuration;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
@@ -76,7 +77,17 @@ namespace Business.DependencyResolvers
             builder.RegisterType<SponsorshipPurchaseRepository>().As<ISponsorshipPurchaseRepository>()
                 .InstancePerLifetimeScope();
             
+            builder.RegisterType<SponsorAnalysisAccessRepository>().As<ISponsorAnalysisAccessRepository>()
+                .InstancePerLifetimeScope();
+            
             builder.RegisterType<AnalysisMessageRepository>().As<IAnalysisMessageRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SmartLinkRepository>().As<ISmartLinkRepository>()
+                .InstancePerLifetimeScope();
+            
+            // Deep Links repositories
+            builder.RegisterType<DeepLinkRepository>().As<IDeepLinkRepository>()
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<PlantAnalysisService>().As<IPlantAnalysisService>()
@@ -110,6 +121,13 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<FarmerProfileVisibilityService>().As<IFarmerProfileVisibilityService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SponsorDataAccessService>().As<ISponsorDataAccessService>()
+                .InstancePerLifetimeScope();
+            
+            // Deep Links services
+            builder.RegisterType<Business.Services.MobileIntegration.DeepLinkService>().As<Business.Services.MobileIntegration.IDeepLinkService>()
                 .InstancePerLifetimeScope();
             
             // Register all storage implementations first

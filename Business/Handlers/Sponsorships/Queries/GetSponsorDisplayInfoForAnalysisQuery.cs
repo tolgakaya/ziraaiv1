@@ -120,7 +120,7 @@ namespace Business.Handlers.Sponsorships.Queries
             private bool DetermineLogoVisibility(string tierName, string screen)
             {
                 // Business rules for logo visibility based on tier
-                screen = screen?.ToLower() ?? "result";
+                screen = NormalizeScreenParameter(screen?.ToLower() ?? "result");
                 tierName = tierName?.ToUpper() ?? "";
 
                 switch (tierName)
@@ -140,6 +140,24 @@ namespace Business.Handlers.Sponsorships.Queries
                         
                     default:
                         return false;
+                }
+            }
+
+            private string NormalizeScreenParameter(string screen)
+            {
+                // Handle plural forms and common variations
+                switch (screen)
+                {
+                    case "results":
+                        return "result";
+                    case "analyses":
+                        return "analysis";
+                    case "profiles":
+                        return "profile";
+                    case "starts":
+                        return "start";
+                    default:
+                        return screen;
                 }
             }
         }

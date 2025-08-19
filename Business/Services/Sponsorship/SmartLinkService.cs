@@ -25,24 +25,47 @@ namespace Business.Services.Sponsorship
 
         public async Task<bool> CanCreateSmartLinksAsync(int sponsorId)
         {
-            var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (profile == null || !profile.IsActive)
-                return false;
-
-            // Sadece XL paketi smart link oluşturabilir
-            if (profile.SponsorshipPurchases != null)
+            try
             {
-                foreach (var purchase in profile.SponsorshipPurchases)
+                var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
+                if (profile == null)
                 {
-                    // XL tier (ID=4) smart link oluşturabilir
-                    if (purchase.SubscriptionTierId == 4) // XL tier
-                    {
-                        return true;
-                    }
+                    Console.WriteLine($"[SmartLinkService] No sponsor profile found for sponsorId: {sponsorId}");
+                    return false;
                 }
+                
+                if (!profile.IsActive)
+                {
+                    Console.WriteLine($"[SmartLinkService] Sponsor profile is inactive for sponsorId: {sponsorId}");
+                    return false;
+                }
+
+                // Sadece XL paketi smart link oluşturabilir
+                if (profile.SponsorshipPurchases != null && profile.SponsorshipPurchases.Any())
+                {
+                    foreach (var purchase in profile.SponsorshipPurchases)
+                    {
+                        // XL tier (ID=4) smart link oluşturabilir
+                        if (purchase.SubscriptionTierId == 4) // XL tier
+                        {
+                            Console.WriteLine($"[SmartLinkService] Sponsor {sponsorId} has XL tier, can create smart links");
+                            return true;
+                        }
+                    }
+                    Console.WriteLine($"[SmartLinkService] Sponsor {sponsorId} does not have XL tier");
+                }
+                else
+                {
+                    Console.WriteLine($"[SmartLinkService] No purchases found for sponsorId: {sponsorId}");
+                }
+                
+                return false;
             }
-            
-            return false;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SmartLinkService] Error checking smart link permissions: {ex.Message}");
+                return false;
+            }
         }
 
         public async Task<int> GetMaxSmartLinksAsync(int sponsorId)
@@ -63,29 +86,45 @@ namespace Business.Services.Sponsorship
 
         public async Task<Entities.Concrete.SmartLink> CreateSmartLinkAsync(Entities.Concrete.SmartLink smartLink)
         {
-            if (!await CanCreateSmartLinksAsync(smartLink.SponsorId))
+            try
+            {
+                if (!await CanCreateSmartLinksAsync(smartLink.SponsorId))
+                {
+                    Console.WriteLine($"[SmartLinkService] Sponsor {smartLink.SponsorId} cannot create smart links");
+                    return null;
+                }
+
+                var maxLinks = await GetMaxSmartLinksAsync(smartLink.SponsorId);
+                var activeCount = await GetActiveSmartLinksCountAsync(smartLink.SponsorId);
+                
+                if (activeCount >= maxLinks)
+                {
+                    Console.WriteLine($"[SmartLinkService] Quota exceeded for sponsor {smartLink.SponsorId}: {activeCount}/{maxLinks}");
+                    return null; // Quota exceeded
+                }
+
+                smartLink.CreatedDate = DateTime.Now;
+                smartLink.IsActive = true;
+                smartLink.IsApproved = false; // Requires approval
+                smartLink.Priority = smartLink.Priority > 0 ? smartLink.Priority : 50; // Use provided or default priority
+                smartLink.DisplayCount = 0;
+                smartLink.ClickCount = 0;
+                smartLink.UniqueClickCount = 0;
+                
+                var user = await _userRepository.GetAsync(u => u.UserId == smartLink.SponsorId);
+                smartLink.SponsorName = user?.FullName ?? "Unknown Sponsor";
+
+                _smartLinkRepository.Add(smartLink);
+                await _smartLinkRepository.SaveChangesAsync();
+                
+                Console.WriteLine($"[SmartLinkService] Smart link created successfully for sponsor {smartLink.SponsorId}");
+                return smartLink;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SmartLinkService] Error creating smart link: {ex.Message}");
                 return null;
-
-            var maxLinks = await GetMaxSmartLinksAsync(smartLink.SponsorId);
-            var activeCount = await GetActiveSmartLinksCountAsync(smartLink.SponsorId);
-            
-            if (activeCount >= maxLinks)
-                return null; // Quota exceeded
-
-            smartLink.CreatedDate = DateTime.Now;
-            smartLink.IsActive = true;
-            smartLink.IsApproved = false; // Requires approval
-            smartLink.Priority = 50; // Default priority
-            smartLink.DisplayCount = 0;
-            smartLink.ClickCount = 0;
-            smartLink.UniqueClickCount = 0;
-            
-            var user = await _userRepository.GetAsync(u => u.UserId == smartLink.SponsorId);
-            smartLink.SponsorName = user?.FullName;
-
-            _smartLinkRepository.Add(smartLink);
-            await _smartLinkRepository.SaveChangesAsync();
-            return smartLink;
+            }
         }
 
         public async Task<List<Entities.Concrete.SmartLink>> GetMatchingLinksAsync(Entities.Concrete.PlantAnalysis analysis)
@@ -114,7 +153,17 @@ namespace Business.Services.Sponsorship
 
         public async Task<List<Entities.Concrete.SmartLink>> GetSponsorLinksAsync(int sponsorId)
         {
-            return await _smartLinkRepository.GetBySponsorIdAsync(sponsorId);
+            try
+            {
+                var links = await _smartLinkRepository.GetBySponsorIdAsync(sponsorId);
+                Console.WriteLine($"[SmartLinkService] Retrieved {links?.Count ?? 0} smart links for sponsor {sponsorId}");
+                return links ?? new List<Entities.Concrete.SmartLink>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SmartLinkService] Error getting sponsor links: {ex.Message}");
+                return new List<Entities.Concrete.SmartLink>();
+            }
         }
 
         public async Task<Entities.Concrete.SmartLink> UpdateSmartLinkAsync(Entities.Concrete.SmartLink smartLink)

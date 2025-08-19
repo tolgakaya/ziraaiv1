@@ -32,8 +32,16 @@ namespace Business.Services.Sponsorship
             if (analysis == null)
                 return null;
 
-            // Access kaydını oluştur/güncelle
-            await RecordAccessAsync(sponsorId, plantAnalysisId, analysis.UserId ?? 0);
+            // Access kaydını oluştur/güncelle (hata durumunda devam et)
+            try
+            {
+                await RecordAccessAsync(sponsorId, plantAnalysisId, analysis.UserId ?? 0);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SponsorDataAccessService] Warning: Could not record access: {ex.Message}");
+                // Continue with analysis filtering even if access recording fails
+            }
 
             var accessPercentage = await GetDataAccessPercentageFromPurchasesAsync(sponsorId);
             
@@ -47,28 +55,46 @@ namespace Business.Services.Sponsorship
 
         private async Task<int> GetDataAccessPercentageFromPurchasesAsync(int sponsorId)
         {
-            var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-            if (sponsorProfile?.SponsorshipPurchases == null)
-                return 0;
-
-            // En yüksek tier'ın veri erişim yüzdesini döndür
-            int maxAccessPercentage = 0;
-            foreach (var purchase in sponsorProfile.SponsorshipPurchases)
+            try
             {
-                var accessPercentage = purchase.SubscriptionTierId switch
+                var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
+                if (sponsorProfile == null)
                 {
-                    1 => 30, // S tier: %30
-                    2 => 30, // M tier: %30  
-                    3 => 60, // L tier: %60
-                    4 => 100, // XL tier: %100
-                    _ => 0
-                };
-                
-                if (accessPercentage > maxAccessPercentage)
-                    maxAccessPercentage = accessPercentage;
-            }
+                    Console.WriteLine($"[SponsorDataAccessService] No sponsor profile found for sponsorId: {sponsorId}");
+                    return 30; // Default to basic access
+                }
 
-            return maxAccessPercentage;
+                if (sponsorProfile.SponsorshipPurchases == null || !sponsorProfile.SponsorshipPurchases.Any())
+                {
+                    Console.WriteLine($"[SponsorDataAccessService] No purchases found for sponsorId: {sponsorId}");
+                    return 30; // Default to basic access
+                }
+
+                // En yüksek tier'ın veri erişim yüzdesini döndür
+                int maxAccessPercentage = 30; // Minimum access level
+                foreach (var purchase in sponsorProfile.SponsorshipPurchases)
+                {
+                    var accessPercentage = purchase.SubscriptionTierId switch
+                    {
+                        1 => 30, // S tier: %30
+                        2 => 30, // M tier: %30  
+                        3 => 60, // L tier: %60
+                        4 => 100, // XL tier: %100
+                        _ => 30
+                    };
+                    
+                    if (accessPercentage > maxAccessPercentage)
+                        maxAccessPercentage = accessPercentage;
+                }
+
+                Console.WriteLine($"[SponsorDataAccessService] Access percentage for sponsorId {sponsorId}: {maxAccessPercentage}%");
+                return maxAccessPercentage;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SponsorDataAccessService] Error getting access percentage: {ex.Message}");
+                return 30; // Default to basic access on error
+            }
         }
 
         public async Task<bool> CanAccessFieldAsync(int sponsorId, string fieldName)

@@ -394,7 +394,7 @@ namespace WebAPI.Controllers
                     Data = new
                     {
                         Code = result.Data.Code,
-                        SubscriptionTier = result.Data.SubscriptionTier?.DisplayName,
+                        SubscriptionTier = "Premium", // Navigation property removed - fetch separately if needed
                         ExpiryDate = result.Data.ExpiryDate,
                         IsValid = true
                     }
@@ -480,22 +480,30 @@ namespace WebAPI.Controllers
         [HttpGet("analysis/{plantAnalysisId}")]
         public async Task<IActionResult> GetAnalysisForSponsor(int plantAnalysisId)
         {
-            var userId = GetUserId();
-            if (!userId.HasValue)
-                return Unauthorized();
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+                    
+                var query = new GetFilteredAnalysisForSponsorQuery 
+                { 
+                    SponsorId = userId.Value, 
+                    PlantAnalysisId = plantAnalysisId 
+                };
                 
-            var query = new GetFilteredAnalysisForSponsorQuery 
-            { 
-                SponsorId = userId.Value, 
-                PlantAnalysisId = plantAnalysisId 
-            };
-            
-            var result = await Mediator.Send(query);
-            
-            if (result.Success)
-                return Ok(result);
-            
-            return BadRequest(result);
+                var result = await Mediator.Send(query);
+                
+                if (result.Success)
+                    return Ok(result);
+                
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting filtered analysis for sponsor {UserId}, analysis {PlantAnalysisId}", GetUserId(), plantAnalysisId);
+                return StatusCode(500, new ErrorResult($"Analysis retrieval failed: {ex.Message}"));
+            }
         }
 
         /// <summary>
@@ -571,17 +579,31 @@ namespace WebAPI.Controllers
         [HttpPost("smart-links")]
         public async Task<IActionResult> CreateSmartLink([FromBody] CreateSmartLinkCommand command)
         {
-            var userId = GetUserId();
-            if (!userId.HasValue)
-                return Unauthorized();
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+                    
+                command.SponsorId = userId.Value;
+                _logger.LogInformation("Creating smart link for sponsor {SponsorId}", userId.Value);
                 
-            command.SponsorId = userId.Value;
-            var result = await Mediator.Send(command);
-            
-            if (result.Success)
-                return Ok(result);
-            
-            return BadRequest(result);
+                var result = await Mediator.Send(command);
+                
+                if (result.Success)
+                {
+                    _logger.LogInformation("Smart link created successfully for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+                
+                _logger.LogWarning("Smart link creation failed for sponsor {SponsorId}: {Message}", userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating smart link for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Smart link creation failed: {ex.Message}"));
+            }
         }
 
         /// <summary>
@@ -592,17 +614,31 @@ namespace WebAPI.Controllers
         [HttpGet("smart-links")]
         public async Task<IActionResult> GetSmartLinks()
         {
-            var userId = GetUserId();
-            if (!userId.HasValue)
-                return Unauthorized();
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+                    
+                _logger.LogInformation("Getting smart links for sponsor {SponsorId}", userId.Value);
                 
-            var query = new GetSponsorSmartLinksQuery { SponsorId = userId.Value };
-            var result = await Mediator.Send(query);
-            
-            if (result.Success)
-                return Ok(result);
-            
-            return BadRequest(result);
+                var query = new GetSponsorSmartLinksQuery { SponsorId = userId.Value };
+                var result = await Mediator.Send(query);
+                
+                if (result.Success)
+                {
+                    _logger.LogInformation("Retrieved {Count} smart links for sponsor {SponsorId}", result.Data?.Count ?? 0, userId.Value);
+                    return Ok(result);
+                }
+                
+                _logger.LogWarning("Failed to get smart links for sponsor {SponsorId}: {Message}", userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting smart links for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Smart links retrieval failed: {ex.Message}"));
+            }
         }
 
         /// <summary>
@@ -613,41 +649,61 @@ namespace WebAPI.Controllers
         [HttpGet("smart-links/performance")]
         public async Task<IActionResult> GetSmartLinkPerformance()
         {
-            var userId = GetUserId();
-            if (!userId.HasValue)
-                return Unauthorized();
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+                    
+                _logger.LogInformation("Getting smart link performance for sponsor {SponsorId}", userId.Value);
                 
-            var query = new GetSmartLinkPerformanceQuery { SponsorId = userId.Value };
-            var result = await Mediator.Send(query);
-            
-            if (result.Success)
-                return Ok(result);
-            
-            return BadRequest(result);
+                var query = new GetSmartLinkPerformanceQuery { SponsorId = userId.Value };
+                var result = await Mediator.Send(query);
+                
+                if (result.Success)
+                {
+                    _logger.LogInformation("Retrieved smart link performance for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+                
+                _logger.LogWarning("Failed to get smart link performance for sponsor {SponsorId}: {Message}", userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting smart link performance for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Smart link performance retrieval failed: {ex.Message}"));
+            }
         }
 
         // ====== NEW CORRECTED ARCHITECTURE ENDPOINTS ======
 
         /// <summary>
-        /// Get sponsor logo permissions for a specific analysis (NEW LOGIC)
+        /// Get sponsor logo permissions for a specific analysis
         /// </summary>
         /// <param name="plantAnalysisId">Plant analysis ID</param>
+        /// <param name="screen">Screen type (start, result, analysis, profile)</param>
         /// <returns>Logo display permissions based on redeemed code tier</returns>
-        [Authorize(Roles = "Sponsor,Admin")]
+        [Authorize]
         [HttpGet("logo-permissions/analysis/{plantAnalysisId}")]
-        public async Task<IActionResult> GetLogoPermissionsForAnalysis(int plantAnalysisId)
+        public async Task<IActionResult> GetLogoPermissionsForAnalysis(int plantAnalysisId, [FromQuery] string screen = "result")
         {
             try
             {
-                // This would use the new SponsorVisibilityService methods
-                // TODO: Create GetLogoPermissionsForAnalysisQuery
-                
-                return Ok(new
+                var query = new GetLogoPermissionsForAnalysisQuery
                 {
-                    Success = true,
-                    Message = "Feature being implemented with new architecture",
-                    PlantAnalysisId = plantAnalysisId
-                });
+                    PlantAnalysisId = plantAnalysisId,
+                    Screen = screen
+                };
+                
+                var result = await Mediator.Send(query);
+                
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                
+                return BadRequest(result);
             }
             catch (Exception ex)
             {

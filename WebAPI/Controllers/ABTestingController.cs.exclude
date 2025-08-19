@@ -1,0 +1,567 @@
+using Business.Services.ABTesting;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.Threading.Tasks;
+
+namespace WebAPI.Controllers
+{
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Authorize(Roles = "Sponsor,Admin")]
+    public class ABTestingController : BaseApiController
+    {
+        private readonly IABTestingService _abTestingService;
+
+        public ABTestingController(IABTestingService abTestingService)
+        {
+            _abTestingService = abTestingService;
+        }
+
+        /// <summary>
+        /// Create a new A/B test campaign with multiple message variants
+        /// Supports statistical analysis, automated winner selection, and performance tracking
+        /// </summary>
+        [HttpPost("create")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> CreateABTest([FromBody] CreateABTestRequest request)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                request.SponsorId = sponsorId.Value;
+                var result = await _abTestingService.CreateABTestAsync(request);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B test oluşturulamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get details of a specific A/B test including real-time metrics
+        /// </summary>
+        [HttpGet("{testId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetABTest(string testId)
+        {
+            try
+            {
+                var result = await _abTestingService.GetABTestAsync(testId);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B test alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get list of A/B tests for current sponsor with optional status filtering
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetABTests([FromQuery] ABTestStatus? status = null)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _abTestingService.GetABTestsAsync(sponsorId.Value, status);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B testler alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Update A/B test configuration (only available for draft/scheduled tests)
+        /// </summary>
+        [HttpPut("{testId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateABTest(string testId, [FromBody] UpdateABTestRequest request)
+        {
+            try
+            {
+                var result = await _abTestingService.UpdateABTestAsync(testId, request);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B test güncellenemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Start an A/B test campaign
+        /// </summary>
+        [HttpPost("{testId}/start")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> StartABTest(string testId)
+        {
+            try
+            {
+                var result = await _abTestingService.StartABTestAsync(testId);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B test başlatılamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Pause a running A/B test
+        /// </summary>
+        [HttpPost("{testId}/pause")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> PauseABTest(string testId)
+        {
+            try
+            {
+                var result = await _abTestingService.PauseABTestAsync(testId);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B test duraklatılamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Stop an A/B test permanently
+        /// </summary>
+        [HttpPost("{testId}/stop")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> StopABTest(string testId)
+        {
+            try
+            {
+                var result = await _abTestingService.StopABTestAsync(testId);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B test durdurulamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get comprehensive A/B test results with statistical analysis
+        /// Includes winner determination, confidence intervals, and business impact
+        /// </summary>
+        [HttpGet("{testId}/results")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetABTestResults(string testId)
+        {
+            try
+            {
+                var result = await _abTestingService.GetABTestResultsAsync(testId);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B test sonuçları alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Record an A/B test event (impression, click, conversion)
+        /// Used by external systems to track user interactions
+        /// </summary>
+        [HttpPost("{testId}/events")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RecordABTestEvent(string testId, [FromBody] ABTestEvent testEvent)
+        {
+            try
+            {
+                var result = await _abTestingService.RecordABTestEventAsync(testId, testEvent);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Olay kaydedilemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get advanced insights and optimization suggestions for A/B test
+        /// Includes trend analysis, audience insights, and channel performance
+        /// </summary>
+        [HttpGet("{testId}/insights")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetABTestInsights(string testId)
+        {
+            try
+            {
+                var result = await _abTestingService.GetABTestInsightsAsync(testId);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"A/B test öngörüleri alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get template variations and performance history for A/B test
+        /// </summary>
+        [HttpGet("{testId}/templates")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTemplateVariations(string testId)
+        {
+            try
+            {
+                var result = await _abTestingService.GetTemplateVariationsAsync(testId);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Şablon varyasyonları alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Manually declare a winner for A/B test
+        /// </summary>
+        [HttpPost("{testId}/declare-winner")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeclareWinner(string testId, [FromBody] DeclareWinnerRequest request)
+        {
+            try
+            {
+                var result = await _abTestingService.DeclareWinnerAsync(testId, request.VariantId);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Kazanan belirlenemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get personalized optimization recommendations for sponsor
+        /// Based on historical test performance and industry benchmarks
+        /// </summary>
+        [HttpGet("recommendations")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetOptimizationRecommendations()
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _abTestingService.GetOptimizationRecommendationsAsync(sponsorId.Value);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Optimizasyon önerileri alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get detailed statistical analysis for A/B test
+        /// Includes power analysis, effect size, and confidence intervals
+        /// </summary>
+        [HttpGet("{testId}/statistics")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTestStatistics(string testId)
+        {
+            try
+            {
+                var result = await _abTestingService.GetTestStatisticsAsync(testId);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Test istatistikleri alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get A/B testing best practices and guidelines
+        /// </summary>
+        [HttpGet("best-practices")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetBestPractices()
+        {
+            try
+            {
+                var bestPractices = new
+                {
+                    test_design = new
+                    {
+                        title = "Test Tasarımı",
+                        practices = new[]
+                        {
+                            new { practice = "Tek değişken testi", description = "Her testte sadece bir değişkeni test edin (mesaj tonu, gönderim zamanı, vb.)", importance = "critical" },
+                            new { practice = "Kontrol grubu", description = "Her zaman mevcut en iyi performanslı versiyonu kontrol grubu olarak kullanın", importance = "high" },
+                            new { practice = "Anlamlı fark", description = "En az %10 fark yaratabilecek değişiklikleri test edin", importance = "medium" },
+                            new { practice = "Hedef belirle", description = "Testten önce başarı metriklerini net olarak tanımlayın", importance = "high" }
+                        }
+                    },
+                    sample_size = new
+                    {
+                        title = "Örneklem Büyüklüğü",
+                        practices = new[]
+                        {
+                            new { practice = "Minimum örneklem", description = "İstatistiksel anlamlılık için varyant başına en az 100 katılımcı", importance = "critical" },
+                            new { practice = "Test süresi", description = "Güvenilir sonuçlar için en az 1 hafta test çalıştırın", importance = "high" },
+                            new { practice = "Güç analizi", description = "%80 istatistiksel güç hedefleyin", importance = "medium" },
+                            new { practice = "Erken sonlandırma", description = "Anlamlı sonuçlar çıksa bile minimum test süresini tamamlayın", importance = "medium" }
+                        }
+                    },
+                    implementation = new
+                    {
+                        title = "Uygulama",
+                        practices = new[]
+                        {
+                            new { practice = "Rastgele atama", description = "Katılımcıları varyantlara rastgele atayın", importance = "critical" },
+                            new { practice = "Eş zamanlı test", description = "Tüm varyantları aynı zamanda çalıştırın", importance = "high" },
+                            new { practice = "Değişken kontrol", description = "Test sırasında hiçbir değişkeni değiştirmeyin", importance = "high" },
+                            new { practice = "Veri bütünlüğü", description = "Tüm etkileşimleri doğru şekilde takip edin", importance = "critical" }
+                        }
+                    },
+                    analysis = new
+                    {
+                        title = "Analiz",
+                        practices = new[]
+                        {
+                            new { practice = "İstatistiksel anlamlılık", description = "%95 güven aralığını hedefleyin", importance = "high" },
+                            new { practice = "Pratik anlamlılık", description = "İstatistiksel anlamlılığın yanında iş etkisini de değerlendirin", importance = "medium" },
+                            new { practice = "Segment analizi", description = "Sonuçları farklı kullanıcı segmentlerine göre inceleyin", importance = "medium" },
+                            new { practice = "Tekrar test", description = "Önemli sonuçları farklı örneklemlerle doğrulayın", importance = "low" }
+                        }
+                    },
+                    common_mistakes = new
+                    {
+                        title = "Yaygın Hatalar",
+                        mistakes = new[]
+                        {
+                            new { mistake = "Erken sonlandırma", description = "İlk olumlu sonuçları görünce testi erkenden durdurmak", solution = "Minimum test süresini bekleyin" },
+                            new { mistake = "Çok fazla varyant", description = "Aynı anda çok fazla varyant test etmek", solution = "Maksimum 3-4 varyant kullanın" },
+                            new { mistake = "Yanlış metrik", description = "Yanlış başarı metriği seçmek", solution = "İş hedeflerinize uygun metrikleri seçin" },
+                            new { mistake = "Örneklem bias'ı", description = "Belirli bir gruba odaklanmak", solution = "Hedef kitlenizi temsil eden örneklem kullanın" }
+                        }
+                    },
+                    agriculture_specific = new
+                    {
+                        title = "Tarım Sektörüne Özel",
+                        practices = new[]
+                        {
+                            new { practice = "Mevsimsel faktörler", description = "Tarım döngüsünü göz önünde bulundurarak test planlayın", importance = "high" },
+                            new { practice = "Bölgesel farklar", description = "Farklı coğrafi bölgelerdeki çiftçi davranışlarını dikkate alın", importance = "medium" },
+                            new { practice = "Ürün döngüsü", description = "Ekim, bakım ve hasat dönemlerine göre mesaj içeriklerini test edin", importance = "medium" },
+                            new { practice = "Teknoloji adaptasyonu", description = "Çiftçilerin teknoloji kullanım seviyelerine göre mesaj karmaşıklığını ayarlayın", importance = "high" }
+                        }
+                    }
+                };
+
+                return Ok(new { success = true, data = bestPractices });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"En iyi uygulamalar alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get A/B testing templates library
+        /// Pre-built message templates optimized for agriculture sector
+        /// </summary>
+        [HttpGet("template-library")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTemplateLibrary()
+        {
+            try
+            {
+                var templateLibrary = new
+                {
+                    categories = new[]
+                    {
+                        new
+                        {
+                            category = "message_tone",
+                            name = "Mesaj Tonu",
+                            description = "Farklı iletişim tonları ve yaklaşımları",
+                            templates = new[]
+                            {
+                                new
+                                {
+                                    id = "friendly_casual",
+                                    name = "Samimi ve Rahat",
+                                    message = "Merhaba {name}! 🌱 Tarımsal işlerinizde size yardım edebiliriz. Detaylar için: {link}",
+                                    tone = "informal",
+                                    performance_hint = "Genç çiftçiler için etkili"
+                                },
+                                new
+                                {
+                                    id = "professional_formal",
+                                    name = "Profesyonel ve Resmi",
+                                    message = "Sayın {name}, tarımsal verimliliğinizi artırmak için gelişmiş çözümlerimizi inceleyebilirsiniz: {link}",
+                                    tone = "formal",
+                                    performance_hint = "Deneyimli çiftçiler için uygun"
+                                },
+                                new
+                                {
+                                    id = "expert_technical",
+                                    name = "Uzman ve Teknik",
+                                    message = "{name}, toprak analizi ve bitki besleme optimizasyonu için bilimsel çözümlerimiz: {link}",
+                                    tone = "technical",
+                                    performance_hint = "Büyük çiftlik sahipleri için"
+                                }
+                            }
+                        },
+                        new
+                        {
+                            category = "value_proposition",
+                            name = "Değer Önerisi",
+                            description = "Farklı fayda ve değer vurguları",
+                            templates = new[]
+                            {
+                                new
+                                {
+                                    id = "cost_savings",
+                                    name = "Maliyet Tasarrufu",
+                                    message = "{name}, tarımsal maliyetlerinizi %30'a kadar azaltabilirsiniz. Ücretsiz analiz: {link}",
+                                    value_type = "cost_reduction",
+                                    performance_hint = "Ekonomik zorluk yaşayan çiftçiler için"
+                                },
+                                new
+                                {
+                                    id = "yield_increase",
+                                    name = "Verim Artışı",
+                                    message = "Merhaba {name}, ürün veriminizi %40'a kadar artırın. Nasıl mı? {link}",
+                                    value_type = "productivity",
+                                    performance_hint = "Büyüme odaklı çiftçiler için"
+                                },
+                                new
+                                {
+                                    id = "time_saving",
+                                    name = "Zaman Tasarrufu",
+                                    message = "{name}, günde 3 saat zaman kazanın. Akıllı tarım çözümleri: {link}",
+                                    value_type = "efficiency",
+                                    performance_hint = "Yoğun çalışan çiftçiler için"
+                                }
+                            }
+                        },
+                        new
+                        {
+                            category = "urgency_scarcity",
+                            name = "Aciliyet ve Kıtlık",
+                            description = "Harekete geçirici aciliyet mesajları",
+                            templates = new[]
+                            {
+                                new
+                                {
+                                    id = "limited_time",
+                                    name = "Sınırlı Zaman",
+                                    message = "{name}, bu hafta sonu bitiyor! Ücretsiz analiz fırsatı: {link}",
+                                    urgency_type = "time_limited",
+                                    performance_hint = "Kısa vadeli kampanyalar için"
+                                },
+                                new
+                                {
+                                    id = "seasonal_timing",
+                                    name = "Mevsimsel Zamanlama",
+                                    message = "Ekim sezonu yaklaşıyor {name}! Toprak analizinizi hemen yaptırın: {link}",
+                                    urgency_type = "seasonal",
+                                    performance_hint = "Mevsimsel operasyonlar için"
+                                }
+                            }
+                        }
+                    },
+                    usage_guidelines = new
+                    {
+                        title = "Kullanım Rehberi",
+                        guidelines = new[]
+                        {
+                            "Her kategoriden en fazla 1 template seçin",
+                            "Hedef kitlenize uygun tonu seçin",
+                            "A/B testinde maksimum 3 varyant kullanın",
+                            "Şablonları kendi mesajınıza uyarlayın",
+                            "Sonuçlara göre gelecekteki testleri planlayın"
+                        }
+                    },
+                    personalization_variables = new[]
+                    {
+                        new { variable = "{name}", description = "Çiftçinin adı", required = true },
+                        new { variable = "{link}", description = "Sponsorluk linki", required = true },
+                        new { variable = "{crop_type}", description = "Ürün türü", required = false },
+                        new { variable = "{location}", description = "Bölge bilgisi", required = false },
+                        new { variable = "{season}", description = "Mevsim bilgisi", required = false }
+                    }
+                };
+
+                return Ok(new { success = true, data = templateLibrary });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Şablon kütüphanesi alınamadı: {ex.Message}" });
+            }
+        }
+
+        #region Private Helper Methods
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdClaim?.Value, out int userId))
+            {
+                return userId;
+            }
+            return null;
+        }
+
+        #endregion
+    }
+
+    #region Request/Response Models
+
+    public class DeclareWinnerRequest
+    {
+        public string VariantId { get; set; }
+    }
+
+    #endregion
+}

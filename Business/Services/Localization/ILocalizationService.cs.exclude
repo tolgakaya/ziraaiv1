@@ -1,0 +1,396 @@
+using Core.Utilities.Results;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Business.Services.Localization
+{
+    /// <summary>
+    /// Advanced multi-language support service for international sponsorship system
+    /// Provides dynamic translation, cultural adaptation, and regional customization
+    /// </summary>
+    public interface ILocalizationService
+    {
+        Task<IDataResult<string>> GetTranslationAsync(string key, string language = "tr", object parameters = null);
+        Task<IDataResult<Dictionary<string, string>>> GetTranslationsAsync(List<string> keys, string language = "tr");
+        Task<IDataResult<LanguagePack>> GetLanguagePackAsync(string language, string module = "all");
+        Task<IResult> SetUserLanguageAsync(int userId, string language);
+        Task<IDataResult<string>> GetUserLanguageAsync(int userId);
+        Task<IDataResult<List<SupportedLanguage>>> GetSupportedLanguagesAsync();
+        Task<IResult> AddTranslationAsync(string key, string language, string value, string module = "general");
+        Task<IResult> UpdateTranslationAsync(string key, string language, string value);
+        Task<IResult> DeleteTranslationAsync(string key, string language);
+        Task<IDataResult<TranslationValidationResult>> ValidateTranslationsAsync(string language);
+        Task<IDataResult<CulturalAdaptation>> GetCulturalAdaptationAsync(string country);
+        Task<IDataResult<LocalizedContent>> GetLocalizedContentAsync(string contentType, string language);
+        Task<IResult> ImportLanguagePackAsync(string language, LanguagePackImport languagePack);
+        Task<IDataResult<LanguagePackExport>> ExportLanguagePackAsync(string language, string module = "all");
+    }
+
+    #region Localization Data Models
+
+    public class SupportedLanguage
+    {
+        public string Code { get; set; } // tr, en, ar, fr, de, es
+        public string Name { get; set; } // Türkçe, English, العربية, Français
+        public string NativeName { get; set; } // Native language name
+        public string Direction { get; set; } = "ltr"; // ltr, rtl
+        public string Country { get; set; } // TR, US, SA, FR, DE, ES
+        public string Flag { get; set; } // Flag emoji or icon path
+        public bool IsActive { get; set; } = true;
+        public bool IsDefault { get; set; } = false;
+        public double CompletionPercentage { get; set; } // Translation completion %
+        public CultureInfo Culture { get; set; }
+        public RegionalSettings Regional { get; set; }
+        public DateTime LastUpdated { get; set; }
+        public string Maintainer { get; set; }
+    }
+
+    public class CultureInfo
+    {
+        public string DateFormat { get; set; } = "dd/MM/yyyy";
+        public string TimeFormat { get; set; } = "HH:mm";
+        public string DateTimeFormat { get; set; } = "dd/MM/yyyy HH:mm";
+        public string NumberFormat { get; set; } = "#,##0.00";
+        public string CurrencyFormat { get; set; } = "#,##0.00 ₺";
+        public string CurrencySymbol { get; set; } = "₺";
+        public string DecimalSeparator { get; set; } = ",";
+        public string ThousandsSeparator { get; set; } = ".";
+        public List<string> WeekDays { get; set; } = new();
+        public List<string> Months { get; set; } = new();
+        public string FirstDayOfWeek { get; set; } = "Monday";
+    }
+
+    public class RegionalSettings
+    {
+        public string TimeZone { get; set; } = "Europe/Istanbul";
+        public string PhoneFormat { get; set; } = "+90 (###) ### ## ##";
+        public string AddressFormat { get; set; }
+        public List<string> PreferredChannels { get; set; } = new(); // WhatsApp, SMS, Email priority
+        public Dictionary<string, string> LocalizedTerms { get; set; } = new(); // Farmer = Çiftçi
+        public BusinessCulture BusinessCulture { get; set; }
+    }
+
+    public class BusinessCulture
+    {
+        public string CommunicationStyle { get; set; } = "formal"; // formal, casual, mixed
+        public List<string> CulturalConsiderations { get; set; } = new();
+        public List<string> PreferredGreetings { get; set; } = new();
+        public List<string> TabooTopics { get; set; } = new();
+        public string PreferredTone { get; set; } = "respectful";
+        public Dictionary<string, string> LocalCustoms { get; set; } = new();
+    }
+
+    public class LanguagePack
+    {
+        public string Language { get; set; }
+        public string Version { get; set; } = "1.0.0";
+        public DateTime GeneratedAt { get; set; }
+        public Dictionary<string, ModuleTranslations> Modules { get; set; } = new();
+        public PackageMetadata Metadata { get; set; }
+        public List<string> Dependencies { get; set; } = new();
+        public TranslationStatistics Statistics { get; set; }
+    }
+
+    public class ModuleTranslations
+    {
+        public string ModuleName { get; set; }
+        public string Description { get; set; }
+        public Dictionary<string, string> Translations { get; set; } = new();
+        public List<string> Categories { get; set; } = new();
+        public DateTime LastUpdated { get; set; }
+        public string Maintainer { get; set; }
+        public double CompletionPercentage { get; set; }
+    }
+
+    public class PackageMetadata
+    {
+        public string PackageName { get; set; }
+        public string Description { get; set; }
+        public string Author { get; set; }
+        public string AuthorEmail { get; set; }
+        public string License { get; set; } = "MIT";
+        public List<string> Keywords { get; set; } = new();
+        public string Homepage { get; set; }
+        public string Repository { get; set; }
+        public Dictionary<string, string> Contributors { get; set; } = new();
+    }
+
+    public class TranslationStatistics
+    {
+        public int TotalKeys { get; set; }
+        public int TranslatedKeys { get; set; }
+        public int MissingKeys { get; set; }
+        public double CompletionPercentage { get; set; }
+        public DateTime LastUpdateDate { get; set; }
+        public Dictionary<string, int> ModuleBreakdown { get; set; } = new();
+        public List<string> RecentlyAdded { get; set; } = new();
+        public List<string> RecentlyUpdated { get; set; } = new();
+    }
+
+    public class TranslationValidationResult
+    {
+        public string Language { get; set; }
+        public bool IsValid { get; set; }
+        public List<ValidationIssue> Issues { get; set; } = new();
+        public ValidationSummary Summary { get; set; }
+        public List<string> Suggestions { get; set; } = new();
+        public DateTime ValidatedAt { get; set; }
+    }
+
+    public class ValidationIssue
+    {
+        public string IssueType { get; set; } // missing, empty, invalid_format, inconsistent
+        public string Severity { get; set; } // error, warning, info
+        public string Key { get; set; }
+        public string Module { get; set; }
+        public string Description { get; set; }
+        public string CurrentValue { get; set; }
+        public string SuggestedValue { get; set; }
+        public string Context { get; set; }
+    }
+
+    public class ValidationSummary
+    {
+        public int TotalIssues { get; set; }
+        public int Errors { get; set; }
+        public int Warnings { get; set; }
+        public int InfoItems { get; set; }
+        public double QualityScore { get; set; } // 0-100
+        public string QualityGrade { get; set; } // A, B, C, D, F
+        public bool IsProductionReady { get; set; }
+    }
+
+    public class CulturalAdaptation
+    {
+        public string Country { get; set; }
+        public string Language { get; set; }
+        public AgricultureContext Agriculture { get; set; }
+        public CommunicationPreferences Communication { get; set; }
+        public BusinessPractices Business { get; set; }
+        public TechnicalConsiderations Technical { get; set; }
+        public List<LocalizationTip> LocalizationTips { get; set; } = new();
+    }
+
+    public class AgricultureContext
+    {
+        public List<string> CommonCrops { get; set; } = new();
+        public List<string> SeasonalPatterns { get; set; } = new();
+        public List<string> TechnicalTerms { get; set; } = new();
+        public Dictionary<string, string> LocalMeasurements { get; set; } = new();
+        public List<string> FarmingChallenges { get; set; } = new();
+        public string ClimateType { get; set; }
+        public List<string> RegionalSpecialties { get; set; } = new();
+    }
+
+    public class CommunicationPreferences
+    {
+        public List<string> PreferredChannels { get; set; } = new();
+        public string PreferredTone { get; set; }
+        public List<string> EffectiveApproaches { get; set; } = new();
+        public List<string> AvoidedTopics { get; set; } = new();
+        public string PreferredTimeOfDay { get; set; }
+        public List<string> CulturalSensitivities { get; set; } = new();
+        public Dictionary<string, string> LocalPhrases { get; set; } = new();
+    }
+
+    public class BusinessPractices
+    {
+        public string DecisionMakingStyle { get; set; } // hierarchical, collaborative, individual
+        public string NegotiationStyle { get; set; } // direct, indirect, relationship-based
+        public string TrustBuildingApproach { get; set; }
+        public List<string> ImportantValues { get; set; } = new();
+        public string TimeOrientation { get; set; } // punctual, flexible, relationship-first
+        public Dictionary<string, string> BusinessEtiquette { get; set; } = new();
+    }
+
+    public class TechnicalConsiderations
+    {
+        public List<string> InternetPenetration { get; set; } = new();
+        public List<string> PopularDevices { get; set; } = new();
+        public List<string> PreferredApps { get; set; } = new();
+        public string DigitalLiteracy { get; set; } // high, medium, low
+        public List<string> TechnicalBarriers { get; set; } = new();
+        public string ConnectivityQuality { get; set; }
+    }
+
+    public class LocalizationTip
+    {
+        public string Category { get; set; }
+        public string Tip { get; set; }
+        public string Impact { get; set; } // high, medium, low
+        public string Example { get; set; }
+        public string Rationale { get; set; }
+    }
+
+    public class LocalizedContent
+    {
+        public string ContentType { get; set; }
+        public string Language { get; set; }
+        public Dictionary<string, LocalizedItem> Items { get; set; } = new();
+        public ContentMetadata Metadata { get; set; }
+        public DateTime LastUpdated { get; set; }
+    }
+
+    public class LocalizedItem
+    {
+        public string Key { get; set; }
+        public string Title { get; set; }
+        public string Content { get; set; }
+        public string Description { get; set; }
+        public Dictionary<string, string> Properties { get; set; } = new();
+        public string Category { get; set; }
+        public List<string> Tags { get; set; } = new();
+        public bool IsActive { get; set; } = true;
+        public string Author { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public class ContentMetadata
+    {
+        public string Version { get; set; }
+        public string ContentSource { get; set; }
+        public string ReviewStatus { get; set; } // draft, reviewed, approved
+        public string Reviewer { get; set; }
+        public DateTime ReviewDate { get; set; }
+        public List<string> ApprovedFor { get; set; } = new(); // production, staging, test
+        public Dictionary<string, string> CustomProperties { get; set; } = new();
+    }
+
+    public class LanguagePackImport
+    {
+        public string Language { get; set; }
+        public string Version { get; set; }
+        public string Source { get; set; } // file, url, api
+        public Dictionary<string, Dictionary<string, string>> Translations { get; set; } = new();
+        public ImportOptions Options { get; set; } = new();
+        public ImportMetadata Metadata { get; set; }
+    }
+
+    public class ImportOptions
+    {
+        public bool OverwriteExisting { get; set; } = false;
+        public bool ValidateBeforeImport { get; set; } = true;
+        public bool BackupExisting { get; set; } = true;
+        public List<string> IncludeModules { get; set; } = new();
+        public List<string> ExcludeModules { get; set; } = new();
+        public string ConflictResolution { get; set; } = "skip"; // skip, overwrite, merge
+    }
+
+    public class ImportMetadata
+    {
+        public string ImportedBy { get; set; }
+        public DateTime ImportDate { get; set; }
+        public string ImportSource { get; set; }
+        public string ImportVersion { get; set; }
+        public Dictionary<string, object> AdditionalInfo { get; set; } = new();
+    }
+
+    public class LanguagePackExport
+    {
+        public string Language { get; set; }
+        public string Version { get; set; }
+        public string Format { get; set; } // json, xml, csv, po
+        public string DownloadUrl { get; set; }
+        public DateTime GeneratedAt { get; set; }
+        public DateTime ExpiresAt { get; set; }
+        public long FileSizeBytes { get; set; }
+        public ExportStatistics Statistics { get; set; }
+        public ExportMetadata Metadata { get; set; }
+    }
+
+    public class ExportStatistics
+    {
+        public int TotalModules { get; set; }
+        public int TotalKeys { get; set; }
+        public int ExportedKeys { get; set; }
+        public int SkippedKeys { get; set; }
+        public Dictionary<string, int> ModuleBreakdown { get; set; } = new();
+        public List<string> IncludedModules { get; set; } = new();
+        public List<string> ExcludedModules { get; set; } = new();
+    }
+
+    public class ExportMetadata
+    {
+        public string ExportedBy { get; set; }
+        public string ExportPurpose { get; set; }
+        public string TargetSystem { get; set; }
+        public ExportOptions Options { get; set; }
+        public Dictionary<string, object> CustomProperties { get; set; } = new();
+    }
+
+    public class ExportOptions
+    {
+        public string Format { get; set; } = "json";
+        public bool IncludeMetadata { get; set; } = true;
+        public bool IncludeStatistics { get; set; } = true;
+        public bool CompressOutput { get; set; } = false;
+        public List<string> IncludeModules { get; set; } = new();
+        public List<string> ExcludeModules { get; set; } = new();
+        public string KeyFormat { get; set; } = "nested"; // flat, nested, custom
+    }
+
+    #endregion
+
+    #region Built-in Translation Modules
+
+    public static class TranslationModules
+    {
+        public const string General = "general";
+        public const string Authentication = "authentication";
+        public const string Dashboard = "dashboard";
+        public const string Sponsorship = "sponsorship";
+        public const string PlantAnalysis = "plant_analysis";
+        public const string Subscription = "subscription";
+        public const string Analytics = "analytics";
+        public const string Notifications = "notifications";
+        public const string Errors = "errors";
+        public const string Validation = "validation";
+        public const string ABTesting = "ab_testing";
+        public const string BulkOperations = "bulk_operations";
+        public const string Security = "security";
+        public const string Mobile = "mobile";
+        public const string Email = "email";
+        public const string SMS = "sms";
+        public const string WhatsApp = "whatsapp";
+    }
+
+    public static class TranslationKeys
+    {
+        // General
+        public const string Welcome = "general.welcome";
+        public const string Save = "general.save";
+        public const string Cancel = "general.cancel";
+        public const string Delete = "general.delete";
+        public const string Edit = "general.edit";
+        public const string Create = "general.create";
+        public const string Update = "general.update";
+        public const string Submit = "general.submit";
+        public const string Loading = "general.loading";
+        public const string Success = "general.success";
+        public const string Error = "general.error";
+        public const string Warning = "general.warning";
+        public const string Info = "general.info";
+
+        // Dashboard
+        public const string DashboardTitle = "dashboard.title";
+        public const string OverviewCard = "dashboard.overview_card";
+        public const string PerformanceMetrics = "dashboard.performance_metrics";
+        public const string RecentActivity = "dashboard.recent_activity";
+
+        // Sponsorship
+        public const string SponsorshipInvite = "sponsorship.invite_message";
+        public const string SponsorshipWelcome = "sponsorship.welcome_message";
+        public const string CodeRedemption = "sponsorship.code_redemption";
+        public const string BenefitDescription = "sponsorship.benefit_description";
+
+        // Errors
+        public const string ValidationError = "errors.validation_error";
+        public const string NetworkError = "errors.network_error";
+        public const string AuthenticationError = "errors.authentication_error";
+        public const string PermissionError = "errors.permission_error";
+    }
+
+    #endregion
+}

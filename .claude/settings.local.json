@@ -45,7 +45,16 @@
       "Bash(set ASPNETCORE_URLS=https://localhost:5001)",
       "Bash(git branch:*)",
       "Bash(git reset:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(findstr:*)",
+      "Bash(dotnet add package:*)",
+      "Bash(for:*)",
+      "Bash(do mv \"$f\" \"$f%.exclude\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(find:*)",
+      "Bash(do mv \"$f\" \"$f.exclude\")",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

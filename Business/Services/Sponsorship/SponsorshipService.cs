@@ -113,7 +113,7 @@ namespace Business.Services.Sponsorship
                         ExpiryDate = c.ExpiryDate,
                         UsedDate = c.UsedDate,
                         UsedByUserId = c.UsedByUserId,
-                        UsedByUserName = c.UsedByUser?.FullName,
+                        UsedByUserName = null, // Navigation property removed - fetch separately if needed
                         Notes = c.Notes
                     }).ToList()
                 };
@@ -346,17 +346,34 @@ namespace Business.Services.Sponsorship
             {
                 var usedCodes = await _sponsorshipCodeRepository.GetUsedCodesBySponsorAsync(sponsorId);
                 
-                var farmers = usedCodes.Select(code => new
+                // Create result list
+                var farmers = new List<object>();
+                
+                foreach (var code in usedCodes)
                 {
-                    FarmerId = code.UsedByUserId,
-                    FarmerName = code.UsedByUser?.FullName,
-                    FarmerEmail = code.UsedByUser?.Email,
-                    Code = code.Code,
-                    SubscriptionTier = code.SubscriptionTier?.DisplayName,
-                    RedeemedDate = code.UsedDate,
-                    DistributedTo = code.DistributedTo,
-                    Notes = code.Notes
-                }).ToList<object>();
+                    // Fetch user and tier information separately since navigation properties are removed
+                    Core.Entities.Concrete.User farmer = null;
+                    SubscriptionTier tier = null;
+                    
+                    if (code.UsedByUserId.HasValue)
+                    {
+                        farmer = await _userRepository.GetAsync(u => u.UserId == code.UsedByUserId.Value);
+                    }
+                    
+                    tier = await _subscriptionTierRepository.GetAsync(t => t.Id == code.SubscriptionTierId);
+                    
+                    farmers.Add(new
+                    {
+                        FarmerId = code.UsedByUserId,
+                        FarmerName = farmer?.FullName,
+                        FarmerEmail = farmer?.Email,
+                        Code = code.Code,
+                        SubscriptionTier = tier?.DisplayName,
+                        RedeemedDate = code.UsedDate,
+                        DistributedTo = code.DistributedTo,
+                        Notes = code.Notes
+                    });
+                }
 
                 return new SuccessDataResult<List<object>>(farmers);
             }

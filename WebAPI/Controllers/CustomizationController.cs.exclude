@@ -1,0 +1,637 @@
+using Business.Services.Customization;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.Threading.Tasks;
+
+namespace WebAPI.Controllers
+{
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    [Authorize(Roles = "Sponsor,Admin")]
+    public class CustomizationController : BaseApiController
+    {
+        private readonly ICustomizationService _customizationService;
+
+        public CustomizationController(ICustomizationService customizationService)
+        {
+            _customizationService = customizationService;
+        }
+
+        /// <summary>
+        /// Get sponsor's complete customization configuration
+        /// Includes branding, themes, workflows, custom fields, and white-label settings
+        /// </summary>
+        [HttpGet("my-customization")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetMyCustomization()
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.GetSponsorCustomizationAsync(sponsorId.Value);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Özelleştirmeler alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Update sponsor's customization configuration
+        /// Supports partial updates for specific customization areas
+        /// </summary>
+        [HttpPut("my-customization")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateMyCustomization([FromBody] SponsorCustomizationUpdate update)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.UpdateSponsorCustomizationAsync(sponsorId.Value, update);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Özelleştirmeler güncellenemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get sponsor's branding configuration (logos, colors, typography)
+        /// </summary>
+        [HttpGet("branding")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetBrandingConfiguration()
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.GetBrandingConfigurationAsync(sponsorId.Value);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Marka yapılandırması alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Update sponsor's branding configuration
+        /// </summary>
+        [HttpPut("branding")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateBrandingConfiguration([FromBody] BrandingConfiguration branding)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.UpdateBrandingConfigurationAsync(sponsorId.Value, branding);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Marka yapılandırması güncellenemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get list of available themes for customization
+        /// Includes both system themes and custom-created themes
+        /// </summary>
+        [HttpGet("themes")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAvailableThemes()
+        {
+            try
+            {
+                var result = await _customizationService.GetAvailableThemesAsync();
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Temalar alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Create a custom theme for sponsor
+        /// Allows full control over styling and appearance
+        /// </summary>
+        [HttpPost("themes")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> CreateCustomTheme([FromBody] CustomTheme theme)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.CreateCustomThemeAsync(sponsorId.Value.ToString(), theme);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Özel tema oluşturulamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get workflow templates available for customization
+        /// Can filter by category (outreach, analysis, follow-up, etc.)
+        /// </summary>
+        [HttpGet("workflows")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetWorkflowTemplates([FromQuery] string category = null)
+        {
+            try
+            {
+                var result = await _customizationService.GetWorkflowTemplatesAsync(category);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"İş akışı şablonları alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Create a custom workflow template
+        /// Defines step-by-step processes for sponsor operations
+        /// </summary>
+        [HttpPost("workflows")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateWorkflowTemplate([FromBody] WorkflowTemplate template)
+        {
+            try
+            {
+                var result = await _customizationService.CreateWorkflowTemplateAsync(template);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"İş akışı şablonu oluşturulamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get custom fields defined for sponsor
+        /// Includes both sponsor-specific and global custom fields
+        /// </summary>
+        [HttpGet("custom-fields")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetCustomFields()
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.GetCustomFieldsAsync(sponsorId.Value);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Özel alanlar alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Create a new custom field
+        /// Allows sponsors to collect additional data from farmers
+        /// </summary>
+        [HttpPost("custom-fields")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> CreateCustomField([FromBody] CustomField field)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                field.SponsorId = sponsorId.Value;
+                var result = await _customizationService.CreateCustomFieldAsync(field);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Özel alan oluşturulamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get white-label configuration for sponsor
+        /// Controls branding removal and custom domain settings
+        /// </summary>
+        [HttpGet("white-label")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetWhiteLabelConfiguration()
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.GetWhiteLabelConfigurationAsync(sponsorId.Value);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"White-label yapılandırması alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Update white-label configuration
+        /// Requires enterprise-level subscription
+        /// </summary>
+        [HttpPut("white-label")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateWhiteLabelConfiguration([FromBody] WhiteLabelConfiguration config)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.UpdateWhiteLabelConfigurationAsync(sponsorId.Value, config);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"White-label yapılandırması güncellenemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Preview customization changes before applying
+        /// Generates temporary preview URL for testing
+        /// </summary>
+        [HttpPost("preview")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> PreviewCustomization([FromBody] SponsorCustomizationUpdate update)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var result = await _customizationService.PreviewCustomizationAsync(sponsorId.Value, update);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Önizleme oluşturulamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get customization analytics and usage statistics
+        /// Provides insights on customization performance and user engagement
+        /// </summary>
+        [HttpGet("analytics")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetCustomizationAnalytics([FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null)
+        {
+            try
+            {
+                var sponsorId = GetCurrentUserId();
+                if (!sponsorId.HasValue)
+                {
+                    return Forbid("Sponsor ID bulunamadı");
+                }
+
+                var from = fromDate ?? DateTime.Now.AddMonths(-1);
+                var to = toDate ?? DateTime.Now;
+
+                var result = await _customizationService.GetCustomizationAnalyticsAsync(sponsorId.Value, from, to);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Analitik verileri alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get customization guidelines and best practices
+        /// Helps sponsors create effective customizations
+        /// </summary>
+        [HttpGet("guidelines")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetCustomizationGuidelines()
+        {
+            try
+            {
+                var guidelines = new
+                {
+                    branding_guidelines = new
+                    {
+                        title = "Marka Rehberi",
+                        recommendations = new[]
+                        {
+                            new { category = "Logo", tip = "PNG formatında, şeffaf arka plan kullanın", importance = "high" },
+                            new { category = "Renkler", tip = "Tarım sektörüne uygun yeşil tonları tercih edin", importance = "medium" },
+                            new { category = "Tipografi", tip = "Okunabilir, sans-serif fontlar seçin", importance = "high" },
+                            new { category = "Kontrast", tip = "Metin ve arka plan arasında yeterli kontrast sağlayın", importance = "critical" }
+                        }
+                    },
+                    theme_best_practices = new
+                    {
+                        title = "Tema En İyi Uygulamaları",
+                        practices = new[]
+                        {
+                            "Kullanıcı deneyimini önceleyerek tema seçin",
+                            "Mobil cihazlarda da iyi görünmesini sağlayın",
+                            "Aşırı renkli veya karmaşık tasarımlardan kaçının",
+                            "Markaya uygun tutarlı bir görünüm koruyun"
+                        }
+                    },
+                    workflow_optimization = new
+                    {
+                        title = "İş Akışı Optimizasyonu",
+                        tips = new[]
+                        {
+                            new { tip = "Basit ve anlaşılır adımlar oluşturun", impact = "Kullanıcı deneyimi artışı" },
+                            new { tip = "Gereksiz adımları elimine edin", impact = "Dönüşüm oranı artışı" },
+                            new { tip = "Otomatik adımları akıllıca kullanın", impact = "Zaman tasarrufu" },
+                            new { tip = "Test ve iyileştirme yapın", impact = "Sürekli gelişim" }
+                        }
+                    },
+                    custom_fields_guide = new
+                    {
+                        title = "Özel Alan Rehberi",
+                        field_types = new[]
+                        {
+                            new { type = "text", usage = "Kısa metin bilgileri için (isim, telefon)", example = "Çiftçi Adı" },
+                            new { type = "textarea", usage = "Uzun açıklamalar için", example = "Tarım Deneyimi" },
+                            new { type = "number", usage = "Sayısal veriler için", example = "Arazi Büyüklüğü (dönüm)" },
+                            new { type = "select", usage = "Önceden tanımlı seçenekler", example = "Ürün Türü" },
+                            new { type = "checkbox", usage = "Evet/Hayır sorular için", example = "Organik Tarım Yapıyor mu?" },
+                            new { type = "date", usage = "Tarih bilgileri için", example = "Ekim Tarihi" }
+                        },
+                        validation_rules = new[]
+                        {
+                            "Zorunlu alanları net belirtin",
+                            "Uygun veri doğrulama kuralları ekleyin",
+                            "Kullanıcı dostu hata mesajları yazın",
+                            "Alan sayısını makul seviyede tutun"
+                        }
+                    },
+                    white_label_considerations = new
+                    {
+                        title = "White-Label Değerlendirmeleri",
+                        enterprise_features = new[]
+                        {
+                            "Özel domain kullanımı",
+                            "Powered by ZiraAI kaldırma",
+                            "Özel destek e-posta adresi",
+                            "Özel yasal sayfalar (şartlar, gizlilik)",
+                            "Özel e-posta şablonları"
+                        },
+                        requirements = new[]
+                        {
+                            "Enterprise abonelik gereklidir",
+                            "SSL sertifikası sağlanmalıdır",
+                            "DNS yapılandırması gereklidir",
+                            "Özel domain doğrulaması yapılmalıdır"
+                        }
+                    },
+                    performance_tips = new
+                    {
+                        title = "Performans İpuçları",
+                        optimization_areas = new[]
+                        {
+                            new { area = "Görseller", tip = "Optimized PNG/JPG kullanın, boyutları uygun tutun" },
+                            new { area = "CSS", tip = "Gereksiz CSS kurallarından kaçının" },
+                            new { area = "Fontlar", tip = "Web-safe fontları tercih edin" },
+                            new { area = "Tema", tip = "Hafif temaları seçin" }
+                        }
+                    },
+                    agriculture_specific = new
+                    {
+                        title = "Tarıma Özel Öneriler",
+                        sector_considerations = new[]
+                        {
+                            "Çiftçi kültürüne uygun renk paleti kullanın",
+                            "Teknik terimler yerine anlaşılır dil tercih edin",
+                            "Mevsimsel içerikleri dikkate alın",
+                            "Bölgesel farklılıkları göz önünde bulundurun",
+                            "Tarımsal süreçlere uygun iş akışları tasarlayın"
+                        ]
+                    }
+                };
+
+                return Ok(new { success = true, data = guidelines });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Rehber bilgileri alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get customization template library
+        /// Pre-built configurations for quick setup
+        /// </summary>
+        [HttpGet("templates")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetCustomizationTemplates()
+        {
+            try
+            {
+                var templates = new
+                {
+                    branding_templates = new[]
+                    {
+                        new
+                        {
+                            id = "modern_agriculture",
+                            name = "Modern Tarım",
+                            description = "Güncel ve profesyonel tarım işletmesi görünümü",
+                            preview_url = "https://preview.ziraai.com/branding/modern_agriculture",
+                            color_scheme = new { primary = "#2E7D32", secondary = "#4CAF50", accent = "#8BC34A" },
+                            recommended_for = "Büyük çiftlik işletmeleri"
+                        },
+                        new
+                        {
+                            id = "traditional_farming",
+                            name = "Geleneksel Çiftçilik",
+                            description = "Samimi ve güvenilir görünüm",
+                            preview_url = "https://preview.ziraai.com/branding/traditional_farming",
+                            color_scheme = new { primary = "#8D6E63", secondary = "#A1887F", accent = "#BCAAA4" },
+                            recommended_for = "Küçük aile çiftlikleri"
+                        },
+                        new
+                        {
+                            id = "tech_agriculture",
+                            name = "Teknoloji Odaklı",
+                            description = "İnovatif ve gelecek odaklı tarım",
+                            preview_url = "https://preview.ziraai.com/branding/tech_agriculture",
+                            color_scheme = new { primary = "#1976D2", secondary = "#2196F3", accent = "#03DAC6" },
+                            recommended_for = "Akıllı tarım şirketleri"
+                        }
+                    ],
+                    workflow_templates = new[]
+                    {
+                        new
+                        {
+                            id = "simple_outreach",
+                            name = "Basit Erişim",
+                            description = "Minimum adımlarla hızlı çiftçi erişimi",
+                            steps = new[] { "Link oluştur", "Mesaj gönder", "Takip et" },
+                            estimated_time = "5 dakika",
+                            recommended_for = "Acil duyurular"
+                        },
+                        new
+                        {
+                            id = "detailed_consultation",
+                            name = "Detaylı Danışmanlık",
+                            description = "Kapsamlı bilgi toplama ve analiz süreci",
+                            steps = new[] { "Ön bilgi toplama", "Analiz talep", "Sonuç değerlendirme", "Takip önerileri" },
+                            estimated_time = "20 dakika",
+                            recommended_for = "Uzman danışmanlık hizmetleri"
+                        },
+                        new
+                        {
+                            id = "seasonal_campaign",
+                            name = "Mevsimsel Kampanya",
+                            description = "Tarım döngüsüne uygun planlı erişim",
+                            steps = new[] { "Mevsim planlaması", "Hedef belirleme", "Içerik hazırlığı", "Zamanlı gönderim" },
+                            estimated_time = "30 dakika",
+                            estimated_time = "Büyük ölçekli kampanyalar"
+                        }
+                    ],
+                    field_templates = new[]
+                    {
+                        new
+                        {
+                            id = "basic_farmer_info",
+                            name = "Temel Çiftçi Bilgileri",
+                            description = "Standart çiftçi profil alanları",
+                            fields = new[]
+                            {
+                                new { name = "farm_size", label = "Arazi Büyüklüğü (dönüm)", type = "number", required = true },
+                                new { name = "main_crop", label = "Ana Ürün", type = "select", required = true },
+                                new { name = "farming_experience", label = "Tarım Deneyimi (yıl)", type = "number", required = false },
+                                new { name = "organic_farming", label = "Organik Tarım", type = "checkbox", required = false }
+                            }
+                        },
+                        new
+                        {
+                            id = "advanced_analysis",
+                            name = "Gelişmiş Analiz Bilgileri",
+                            description = "Detaylı tarımsal analiz için ek bilgiler",
+                            fields = new[]
+                            {
+                                new { name = "soil_type", label = "Toprak Türü", type = "select", required = true },
+                                new { name = "irrigation_method", label = "Sulama Yöntemi", type = "select", required = false },
+                                new { name = "fertilizer_usage", label = "Gübre Kullanımı", type = "textarea", required = false },
+                                new { name = "pest_problems", label = "Haşere Sorunları", type = "textarea", required = false },
+                                new { name = "last_harvest_date", label = "Son Hasat Tarihi", type = "date", required = false }
+                            }
+                        }
+                    ],
+                    usage_instructions = new
+                    {
+                        title = "Şablon Kullanım Rehberi",
+                        steps = new[]
+                        {
+                            "İhtiyacınıza uygun şablon kategorisini seçin",
+                            "Şablon detaylarını inceleyin ve uygunluğunu değerlendirin",
+                            "Şablonu kendi ihtiyaçlarınıza göre özelleştirin",
+                            "Önizleme özelliğini kullanarak test edin",
+                            "Şablonu etkinleştirin ve kullanmaya başlayın"
+                        ],
+                        tips = new[]
+                        {
+                            "Şablonları olduğu gibi kullanmak zorunda değilsiniz",
+                            "Birden fazla şablonu harmanlayabilirsiniz",
+                            "Sektör önerilerini dikkate alın",
+                            "Kullanıcı geri bildirimlerine göre ayarlama yapın"
+                        }
+                    }
+                };
+
+                return Ok(new { success = true, data = templates });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Şablonlar alınamadı: {ex.Message}" });
+            }
+        }
+
+        #region Private Helper Methods
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdClaim?.Value, out int userId))
+            {
+                return userId;
+            }
+            return null;
+        }
+
+        #endregion
+    }
+}
