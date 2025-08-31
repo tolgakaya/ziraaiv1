@@ -11,6 +11,7 @@ using Business.Services.Sponsorship;
 using Business.Services.Redemption;
 using Business.Services.MobileIntegration;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
 using DataAccess.Abstract;
@@ -141,7 +142,6 @@ namespace Business.DependencyResolvers
             if (_configuration != null)
             {
                 var configManager = _configuration;
-                Console.WriteLine($"[FileStorage] AutofacBusinessModule Mode: {configManager.Mode}");
                 
                 // For now, register based on environment mode
                 // In Development/Staging: Use FreeImageHost, in Production: Use S3 or Local
@@ -149,22 +149,22 @@ namespace Business.DependencyResolvers
                 {
                     case ApplicationMode.Development:
                     case ApplicationMode.Staging:
-                        Console.WriteLine("[FileStorage] Registering FreeImageHostStorageService for Development/Staging");
+                        // Development/Staging: Use FreeImageHost for external URL generation
                         builder.Register<IFileStorageService>(c => c.Resolve<FreeImageHostStorageService>()).InstancePerLifetimeScope();
                         break;
                     case ApplicationMode.Production:
-                        Console.WriteLine("[FileStorage] Registering LocalFileStorageService for Production");
+                        // Production: Use Local file storage
                         builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
                         break;
                     default:
-                        Console.WriteLine("[FileStorage] Registering LocalFileStorageService as default");
+                        // Default: Use Local file storage
                         builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
                         break;
                 }
             }
             else
             {
-                Console.WriteLine("[FileStorage] No ConfigurationManager available, using LocalFileStorageService");
+                // No ConfigurationManager available, use LocalFileStorageService as fallback
                 builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
             }
 
