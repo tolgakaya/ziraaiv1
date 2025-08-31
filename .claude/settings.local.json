@@ -5,7 +5,9 @@
       "Bash(git push:*)",
       "Bash(powershell:*)",
       "Bash(dotnet build:*)",
-      "Bash(git clean:*)"
+      "Bash(git clean:*)",
+      "Bash(git revert:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": [],
