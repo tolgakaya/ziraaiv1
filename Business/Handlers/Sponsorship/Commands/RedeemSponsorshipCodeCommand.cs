@@ -2,6 +2,8 @@ using Business.Services.Sponsorship;
 using Core.Utilities.Results;
 using Entities.Concrete;
 using MediatR;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,7 +11,10 @@ namespace Business.Handlers.Sponsorship.Commands
 {
     public class RedeemSponsorshipCodeCommand : IRequest<IDataResult<UserSubscription>>
     {
+        [JsonPropertyName("code")]
+        [Required(ErrorMessage = "Sponsorship code is required")]
         public string Code { get; set; }
+        
         public int UserId { get; set; }
         public string UserEmail { get; set; } // For logging
         public string UserFullName { get; set; } // For logging

@@ -30,7 +30,6 @@ namespace DataAccess.Concrete.EntityFramework
             return await Context.SponsorshipPurchases
                 .Include(sp => sp.SubscriptionTier)
                 .Include(sp => sp.SponsorshipCodes)
-                    .ThenInclude(sc => sc.UsedByUser)
                 .FirstOrDefaultAsync(sp => sp.Id == purchaseId);
         }
 

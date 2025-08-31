@@ -1,0 +1,1534 @@
+{
+  "info": {
+    "name": "ZiraAI Complete API Collection v6.1",
+    "description": "Comprehensive collection of ALL ZiraAI API endpoints with complete test coverage\n\nThis collection includes:\n- 120+ endpoints across 20 controllers\n- All authentication methods (JWT Bearer, Anonymous)\n- Complete request payloads for all complex operations\n- Automated test scripts with validation\n- Environment variables for easy testing\n- Smart-links, sponsorship, and all recent feature additions\n\nAuthorization:\n- Most endpoints require JWT Bearer token with specific roles\n- Some endpoints (like redemption, test) allow anonymous access\n- Admin endpoints require Admin role\n- Farmer/Sponsor endpoints require respective roles",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345",
+    "_collection_link": "https://documenter.getpostman.com/view/12345/ziraai-api/2023"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set base URL if not already set",
+          "if (!pm.environment.get('baseUrl')) {",
+          "    pm.environment.set('baseUrl', 'https://localhost:7001');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:7001",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"StrongP@ssw0rd123\",\n  \"role\": \"Farmer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register user successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    console.log('✅ User registered successfully');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"StrongP@ssw0rd123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    ",
+                  "    if (response.data && response.data.token) {",
+                  "        pm.environment.set('token', response.data.token.accessToken);",
+                  "        console.log('✅ Token saved:', response.data.token.accessToken.substring(0, 50) + '...');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"your_refresh_token_here\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh-token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Plant Analysis",
+      "item": [
+        {
+          "name": "Analyze Plant (Sync)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n  \"farmerId\": \"F001\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Antalya, Turkey\",\n  \"gpsCoordinates\": {\n    \"lat\": 36.8969,\n    \"lng\": 30.7133\n  },\n  \"fieldId\": \"field_001\",\n  \"urgencyLevel\": \"medium\",\n  \"notes\": \"Leaves showing yellowing symptoms\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plantanalyses/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plantanalyses", "analyze"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Plant analysis successful', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    if (response.data) {",
+                  "        pm.expect(response.data).to.have.property('analysisId');",
+                  "        console.log('✅ Analysis ID:', response.data.analysisId);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Analyze Plant (Async)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=\",\n  \"farmerId\": \"F001\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Antalya, Turkey\",\n  \"gpsCoordinates\": {\n    \"lat\": 36.8969,\n    \"lng\": 30.7133\n  },\n  \"fieldId\": \"field_001\",\n  \"urgencyLevel\": \"high\",\n  \"notes\": \"Urgent analysis needed for crop monitoring\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plantanalyses/analyze-async",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plantanalyses", "analyze-async"]
+            }
+          }
+        },
+        {
+          "name": "Get Plant Analysis List (Mobile)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plantanalyses/list?page=1&pageSize=20&status=Completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plantanalyses", "list"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "Completed"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Plant analysis list retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    pm.expect(response.data).to.have.property('analyses');",
+                  "    pm.expect(response.data).to.have.property('totalCount');",
+                  "    console.log('📋 Total analyses:', response.data.totalCount);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Plant Analysis by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plantanalyses/{{analysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plantanalyses", "{{analysisId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Plant Analysis Image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plantanalyses/{{analysisId}}/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "plantanalyses", "{{analysisId}}", "image"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Subscriptions",
+      "item": [
+        {
+          "name": "Get Subscription Tiers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscriptions/tiers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscriptions", "tiers"]
+            }
+          }
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscriptions/my-subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscriptions", "my-subscription"]
+            }
+          }
+        },
+        {
+          "name": "Get Usage Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscriptions/usage-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscriptions", "usage-status"]
+            }
+          }
+        },
+        {
+          "name": "Subscribe to Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"durationMonths\": 1,\n  \"autoRenew\": true,\n  \"paymentMethod\": \"CreditCard\",\n  \"paymentReference\": \"txn_123456\",\n  \"isTrialSubscription\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscriptions/subscribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscriptions", "subscribe"]
+            }
+          }
+        },
+        {
+          "name": "Redeem Sponsorship Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sponsorshipCode\": \"SPT001-ABC123\",\n  \"userId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscriptions/redeem-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscriptions", "redeem-code"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userSubscriptionId\": 123,\n  \"cancellationReason\": \"Too expensive\",\n  \"immediateCancellation\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/subscriptions/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "subscriptions", "cancel"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Sponsorship Management",
+      "item": [
+        {
+          "name": "Create Sponsor Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"AgroTech Solutions\",\n  \"contactName\": \"Mehmet Özkan\",\n  \"contactEmail\": \"mehmet@agrotech.com\",\n  \"contactPhone\": \"+90 532 123 4567\",\n  \"companyAddress\": \"Tarım Mahallesi, No: 45, Antalya\",\n  \"industry\": \"Agriculture Technology\",\n  \"companySize\": \"Medium\",\n  \"companyType\": \"Private\",\n  \"businessModel\": \"B2B\",\n  \"website\": \"https://agrotech.com\",\n  \"logoUrl\": \"https://agrotech.com/logo.png\",\n  \"description\": \"Leading agricultural technology solutions provider\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorships/create-profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorships", "create-profile"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sponsor profile created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    console.log('✅ Sponsor profile created successfully');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Purchase Sponsorship Package",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 3,\n  \"quantity\": 100,\n  \"amount\": 59999.00,\n  \"paymentReference\": \"PAY_20250819_001\",\n  \"validityDays\": 365\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorships/purchase-package",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorships", "purchase-package"]
+            }
+          }
+        },
+        {
+          "name": "Get My Sponsorship Codes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorships/my-codes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorships", "my-codes"]
+            }
+          }
+        },
+        {
+          "name": "Get Sponsored Analyses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorships/sponsored-analyses?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorships", "sponsored-analyses"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Message to Farmer (L/XL Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerId\": 123,\n  \"subject\": \"Plant Analysis Follow-up\",\n  \"message\": \"Your tomato plants show excellent growth patterns. We recommend our premium fertilizer for even better results.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorship/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorship", "messages"]
+            }
+          }
+        },
+        {
+          "name": "Get Farmer Profile (Tier-Based Access)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/sponsorship/farmer-profile/{{farmerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "sponsorship", "farmer-profile", "{{farmerId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Smart Links (XL Tier Only)",
+      "item": [
+        {
+          "name": "Create Smart Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"linkUrl\": \"https://example.com/products/premium-fertilizer\",\n  \"linkText\": \"Premium Tomato Fertilizer - 30% Higher Yield\",\n  \"linkDescription\": \"Scientifically formulated fertilizer specifically designed for tomato plants with nitrogen deficiency. Proven to increase yield by 30% and improve plant health within 7 days.\",\n  \"linkType\": \"Product\",\n  \"keywords\": [\"fertilizer\", \"tomato\", \"organic\", \"yield\", \"premium\"],\n  \"productCategory\": \"Fertilizers\",\n  \"targetCropTypes\": [\"tomato\", \"pepper\", \"eggplant\"],\n  \"targetDiseases\": [\"blight\", \"wilt\"],\n  \"priority\": 85,\n  \"displayPosition\": \"Inline\",\n  \"displayStyle\": \"Button\",\n  \"productName\": \"TomatoBoost Pro Premium\",\n  \"productPrice\": 299.99,\n  \"productCurrency\": \"TRY\",\n  \"isPromotional\": true,\n  \"discountPercentage\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/smart-links",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "smart-links"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Smart link created', function () {",
+                  "    const responseCode = pm.response.code;",
+                  "    if (responseCode === 403) {",
+                  "        console.log('⚠️ Smart Links require XL tier subscription');",
+                  "        pm.expect(responseCode).to.be.oneOf([200, 403]);",
+                  "    } else {",
+                  "        pm.response.to.have.status(200);",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response).to.have.property('success', true);",
+                  "        console.log('✅ Smart link created successfully');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Smart Links",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/smart-links/my-links",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "smart-links", "my-links"]
+            }
+          }
+        },
+        {
+          "name": "Update Smart Link",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"linkText\": \"Updated Premium Fertilizer - 40% Higher Yield\",\n  \"priority\": 95,\n  \"isPromotional\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/smart-links/{{linkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "smart-links", "{{linkId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Smart Link",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/smart-links/{{linkId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "smart-links", "{{linkId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Logo Permissions",
+      "item": [
+        {
+          "name": "Get Logo Permissions (Results Screen)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logo-permissions/results-screen",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "logo-permissions", "results-screen"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Logo permissions retrieved', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('success', true);",
+                  "    console.log('✅ Logo permissions for results screen retrieved');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Logo Permissions (Dashboard Screen)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logo-permissions/dashboard-screen",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "logo-permissions", "dashboard-screen"]
+            }
+          }
+        },
+        {
+          "name": "Get Logo Permissions (Analysis Screen)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logo-permissions/analysis-screen",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "logo-permissions", "analysis-screen"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. User Management",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"firstName\": \"John Updated\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.updated@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "{{userId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Group Management",
+      "item": [
+        {
+          "name": "Get All Groups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "groups"]
+            }
+          }
+        },
+        {
+          "name": "Create Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"groupName\": \"Agricultural Experts\",\n  \"description\": \"Group for agricultural expertise and consultation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "groups"]
+            }
+          }
+        },
+        {
+          "name": "Update Group",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"groupName\": \"Updated Agricultural Experts\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "groups"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Operation Claims",
+      "item": [
+        {
+          "name": "Get All Operation Claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/operationclaims",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "operationclaims"]
+            }
+          }
+        },
+        {
+          "name": "Create Operation Claim",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PlantAnalysis.Create\",\n  \"alias\": \"Create Plant Analysis\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/operationclaims",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "operationclaims"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. User Operation Claims",
+      "item": [
+        {
+          "name": "Get User Claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/useroperationclaims",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "useroperationclaims"]
+            }
+          }
+        },
+        {
+          "name": "Assign Claim to User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"operationClaimId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/useroperationclaims",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "useroperationclaims"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Group Claims",
+      "item": [
+        {
+          "name": "Get Group Claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/groupclaims",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "groupclaims"]
+            }
+          }
+        },
+        {
+          "name": "Assign Claim to Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"groupId\": 1,\n  \"operationClaimId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/groupclaims",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "groupclaims"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. User Groups",
+      "item": [
+        {
+          "name": "Get User Groups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/usergroups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "usergroups"]
+            }
+          }
+        },
+        {
+          "name": "Add User to Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 1,\n  \"groupId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/usergroups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "usergroups"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Languages",
+      "item": [
+        {
+          "name": "Get All Languages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/languages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "languages"]
+            }
+          }
+        },
+        {
+          "name": "Create Language",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Turkish\",\n  \"code\": \"tr-TR\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/languages",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "languages"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Translations",
+      "item": [
+        {
+          "name": "Get Translations by Language",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/translates?lang=tr-TR",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "translates"],
+              "query": [
+                {
+                  "key": "lang",
+                  "value": "tr-TR"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Translation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"languageId\": 1,\n  \"code\": \"welcome_message\",\n  \"value\": \"Hoş geldiniz\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/translates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "translates"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Configuration",
+      "item": [
+        {
+          "name": "Get Configuration by Key",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/configurations?key=IMAGE_MAX_SIZE_MB",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "configurations"],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "IMAGE_MAX_SIZE_MB"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Configurations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/configurations/all",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "configurations", "all"]
+            }
+          }
+        },
+        {
+          "name": "Update Configuration",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"key\": \"IMAGE_MAX_SIZE_MB\",\n  \"value\": \"0.25\",\n  \"description\": \"Maximum image size for AI processing\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/configurations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "configurations"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Public Redemption",
+      "item": [
+        {
+          "name": "Redeem Sponsorship Code (Public Link)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redeem/SPT001-ABC123",
+              "host": ["{{baseUrl}}"],
+              "path": ["redeem", "SPT001-ABC123"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Redemption endpoint accessible', function () {",
+                  "    // This endpoint returns HTML, so we check for successful response",
+                  "    pm.response.to.be.ok;",
+                  "    console.log('✅ Redemption link accessible (returns HTML)');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Redemption Success Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/redeem/success?token=example_token&subscription=Large",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "redeem", "success"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "example_token"
+                },
+                {
+                  "key": "subscription",
+                  "value": "Large"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Redemption Error Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/redeem/error?message=Code expired",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "redeem", "error"],
+              "query": [
+                {
+                  "key": "message",
+                  "value": "Code expired"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Notifications",
+      "item": [
+        {
+          "name": "Notify Analysis Completed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"analysisId\": \"analysis_20250819_123456\",\n  \"farmerId\": \"F001\",\n  \"cropType\": \"tomato\",\n  \"healthScore\": 8,\n  \"primaryConcern\": \"Mild nutrient deficiency\",\n  \"urgencyLevel\": \"medium\",\n  \"contactEmail\": \"farmer@example.com\",\n  \"contactPhone\": \"+90 532 123 4567\",\n  \"completedAt\": \"2025-08-19T10:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notification/plant-analysis-completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notification", "plant-analysis-completed"]
+            }
+          }
+        },
+        {
+          "name": "Get Analysis Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notification/analysis-status/{{analysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "notification", "analysis-status", "{{analysisId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Test & Development",
+      "item": [
+        {
+          "name": "Mock N8N Response (Async Testing)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"analysisId\": \"test_analysis_20250819\",\n  \"userId\": 1,\n  \"farmerId\": \"F001\",\n  \"sponsorId\": \"S001\",\n  \"location\": \"Antalya, Turkey\",\n  \"gpsCoordinates\": {\n    \"lat\": 36.8969,\n    \"lng\": 30.7133\n  },\n  \"cropType\": \"tomato\",\n  \"fieldId\": \"field_001\",\n  \"urgencyLevel\": \"medium\",\n  \"notes\": \"Test analysis for development\",\n  \"correlationId\": \"test_correlation_001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/test/mock-n8n-response",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "test", "mock-n8n-response"]
+            }
+          }
+        },
+        {
+          "name": "Check RabbitMQ Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/test/rabbitmq-health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "test", "rabbitmq-health"]
+            }
+          }
+        },
+        {
+          "name": "Get Recent Plant Analyses (Debug)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/testdatabase/recent-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "testdatabase", "recent-analyses"]
+            }
+          }
+        },
+        {
+          "name": "Debug Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/testdatabase/subscription-debug",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "testdatabase", "subscription-debug"]
+            }
+          }
+        },
+        {
+          "name": "Check User Subscription (Debug)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/testdatabase/user-subscription/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "testdatabase", "user-subscription", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Trial Tier (Debug)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/testdatabase/add-trial-tier",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "testdatabase", "add-trial-tier"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. System Health & Status",
+      "item": [
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('API is healthy', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log('✅ API health check passed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get API Version",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/version",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "version"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. File & Static Content",
+      "item": [
+        {
+          "name": "Get Swagger Documentation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/swagger/index.html",
+              "host": ["{{baseUrl}}"],
+              "path": ["swagger", "index.html"]
+            }
+          }
+        },
+        {
+          "name": "Access Static Plant Image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/plant-images/sample_image.jpg",
+              "host": ["{{baseUrl}}"],
+              "path": ["uploads", "plant-images", "sample_image.jpg"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

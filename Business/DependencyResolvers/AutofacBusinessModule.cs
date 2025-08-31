@@ -9,7 +9,9 @@ using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Business.Services.Sponsorship;
 using Business.Services.Redemption;
+using Business.Services.MobileIntegration;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
 using DataAccess.Abstract;
@@ -67,10 +69,26 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
             
             // Sponsorship repositories
+            builder.RegisterType<SponsorProfileRepository>().As<ISponsorProfileRepository>()
+                .InstancePerLifetimeScope();
+            
             builder.RegisterType<SponsorshipCodeRepository>().As<ISponsorshipCodeRepository>()
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<SponsorshipPurchaseRepository>().As<ISponsorshipPurchaseRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SponsorAnalysisAccessRepository>().As<ISponsorAnalysisAccessRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<AnalysisMessageRepository>().As<IAnalysisMessageRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SmartLinkRepository>().As<ISmartLinkRepository>()
+                .InstancePerLifetimeScope();
+            
+            // Deep Links repositories
+            builder.RegisterType<DeepLinkRepository>().As<IDeepLinkRepository>()
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<PlantAnalysisService>().As<IPlantAnalysisService>()
@@ -97,6 +115,21 @@ namespace Business.DependencyResolvers
             builder.RegisterType<RedemptionService>().As<IRedemptionService>()
                 .InstancePerLifetimeScope();
             
+            builder.RegisterType<AnalysisMessagingService>().As<IAnalysisMessagingService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SmartLinkService>().As<ISmartLinkService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<FarmerProfileVisibilityService>().As<IFarmerProfileVisibilityService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<SponsorDataAccessService>().As<ISponsorDataAccessService>()
+                .InstancePerLifetimeScope();
+            
+            // Deep Links services
+            builder.RegisterType<Business.Services.MobileIntegration.DeepLinkService>().As<Business.Services.MobileIntegration.IDeepLinkService>()
+                .InstancePerLifetimeScope();
             
             // Register all storage implementations first
             builder.RegisterType<LocalFileStorageService>().InstancePerLifetimeScope();
@@ -109,7 +142,6 @@ namespace Business.DependencyResolvers
             if (_configuration != null)
             {
                 var configManager = _configuration;
-                Console.WriteLine($"[FileStorage] AutofacBusinessModule Mode: {configManager.Mode}");
                 
                 // For now, register based on environment mode
                 // In Development/Staging: Use FreeImageHost, in Production: Use S3 or Local
@@ -117,22 +149,22 @@ namespace Business.DependencyResolvers
                 {
                     case ApplicationMode.Development:
                     case ApplicationMode.Staging:
-                        Console.WriteLine("[FileStorage] Registering FreeImageHostStorageService for Development/Staging");
+                        // Development/Staging: Use FreeImageHost for external URL generation
                         builder.Register<IFileStorageService>(c => c.Resolve<FreeImageHostStorageService>()).InstancePerLifetimeScope();
                         break;
                     case ApplicationMode.Production:
-                        Console.WriteLine("[FileStorage] Registering LocalFileStorageService for Production");
+                        // Production: Use Local file storage
                         builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
                         break;
                     default:
-                        Console.WriteLine("[FileStorage] Registering LocalFileStorageService as default");
+                        // Default: Use Local file storage
                         builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
                         break;
                 }
             }
             else
             {
-                Console.WriteLine("[FileStorage] No ConfigurationManager available, using LocalFileStorageService");
+                // No ConfigurationManager available, use LocalFileStorageService as fallback
                 builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
             }
 

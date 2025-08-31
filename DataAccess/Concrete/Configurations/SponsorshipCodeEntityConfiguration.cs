@@ -32,31 +32,15 @@ namespace DataAccess.Concrete.Configurations
             builder.Property(x => x.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
             
-            // Relationships
-            builder.HasOne(x => x.Sponsor)
-                .WithMany()
-                .HasForeignKey(x => x.SponsorId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // Foreign key relationships (without navigation properties to prevent EF save conflicts)
+            builder.Property(x => x.SponsorId)
+                .IsRequired();
             
-            builder.HasOne(x => x.UsedByUser)
-                .WithMany()
-                .HasForeignKey(x => x.UsedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+            builder.Property(x => x.SubscriptionTierId)
+                .IsRequired();
             
-            builder.HasOne(x => x.SubscriptionTier)
-                .WithMany()
-                .HasForeignKey(x => x.SubscriptionTierId)
-                .OnDelete(DeleteBehavior.Restrict);
-            
-            builder.HasOne(x => x.SponsorshipPurchase)
-                .WithMany(p => p.SponsorshipCodes)
-                .HasForeignKey(x => x.SponsorshipPurchaseId)
-                .OnDelete(DeleteBehavior.Cascade);
-            
-            builder.HasOne(x => x.CreatedSubscription)
-                .WithOne(s => s.SponsorshipCode)
-                .HasForeignKey<SponsorshipCode>(x => x.CreatedSubscriptionId)
-                .OnDelete(DeleteBehavior.Restrict);
+            builder.Property(x => x.SponsorshipPurchaseId)
+                .IsRequired();
             
             // Indexes for performance
             builder.HasIndex(x => x.SponsorId)
