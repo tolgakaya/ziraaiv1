@@ -43,20 +43,7 @@ namespace Entities.Concrete
         public bool LinkDelivered { get; set; } // Delivery confirmation
         public string LastClickIpAddress { get; set; } // For tracking and security
         
-        // Navigation properties
-        [JsonIgnore]
-        public virtual User Sponsor { get; set; }
-        
-        [JsonIgnore]
-        public virtual User UsedByUser { get; set; }
-        
-        [JsonIgnore]
-        public virtual SubscriptionTier SubscriptionTier { get; set; }
-        
-        [JsonIgnore]
-        public virtual SponsorshipPurchase SponsorshipPurchase { get; set; }
-        
-        [JsonIgnore]
-        public virtual UserSubscription CreatedSubscription { get; set; }
+        // Navigation properties (removed to prevent EF save conflicts)
+        // Use foreign key IDs directly instead of navigation properties
     }
 }

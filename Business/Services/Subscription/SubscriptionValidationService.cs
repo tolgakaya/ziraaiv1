@@ -1,10 +1,13 @@
 using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Business.Constants;
 using DataAccess.Abstract;
 using Entities.Concrete;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using IResult = Core.Utilities.Results.IResult;
 using IDataResult = Core.Utilities.Results.IDataResult<Entities.Dtos.SubscriptionUsageStatusDto>;
 using SuccessResult = Core.Utilities.Results.SuccessResult;
@@ -20,183 +23,287 @@ namespace Business.Services.Subscription
         private readonly ISubscriptionUsageLogRepository _usageLogRepository;
         private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<SubscriptionValidationService> _logger;
 
         public SubscriptionValidationService(
             IUserSubscriptionRepository userSubscriptionRepository,
             ISubscriptionUsageLogRepository usageLogRepository,
             ISponsorshipCodeRepository sponsorshipCodeRepository,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<SubscriptionValidationService> logger)
         {
             _userSubscriptionRepository = userSubscriptionRepository;
             _usageLogRepository = usageLogRepository;
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
+            
+            _logger.LogInformation("SubscriptionValidationService initialized successfully");
         }
 
         public async Task<IDataResult> CheckSubscriptionStatusAsync(int userId)
         {
-            var subscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
-            
-            if (subscription == null)
+            var stopwatch = Stopwatch.StartNew();
+            var correlationId = Guid.NewGuid().ToString("N")[..8];
+
+            _logger.LogInformation("[SUBSCRIPTION_CHECK_START] Starting subscription validation - UserId: {UserId}, CorrelationId: {CorrelationId}", 
+                userId, correlationId);
+
+            try
             {
-                return new ErrorDataResult(
-                    new SubscriptionUsageStatusDto
-                    {
-                        HasActiveSubscription = false,
-                        SubscriptionStatus = "No Active Subscription",
-                        CanMakeRequest = false,
-                        LimitExceededMessage = "You need an active subscription to make analysis requests. Please subscribe to one of our plans."
-                    },
-                    "No active subscription found");
-            }
-
-            // Check if subscription is expired
-            if (subscription.EndDate <= DateTime.Now)
-            {
-                subscription.IsActive = false;
-                subscription.Status = "Expired";
-                _userSubscriptionRepository.Update(subscription);
-                await _userSubscriptionRepository.SaveChangesAsync();
-
-                return new ErrorDataResult(
-                    new SubscriptionUsageStatusDto
-                    {
-                        HasActiveSubscription = false,
-                        SubscriptionStatus = "Expired",
-                        CanMakeRequest = false,
-                        LimitExceededMessage = "Your subscription has expired. Please renew to continue using the service.",
-                        SubscriptionEndDate = subscription.EndDate
-                    },
-                    "Subscription expired");
-            }
-
-            // Reset daily usage if needed
-            if (subscription.LastUsageResetDate?.Date < DateTime.Now.Date)
-            {
-                subscription.CurrentDailyUsage = 0;
-                subscription.LastUsageResetDate = DateTime.Now;
-            }
-
-            // Reset monthly usage if needed
-            var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            if (subscription.MonthlyUsageResetDate == null || subscription.MonthlyUsageResetDate < currentMonth)
-            {
-                subscription.CurrentMonthlyUsage = 0;
-                subscription.MonthlyUsageResetDate = currentMonth;
-            }
-
-            var tier = subscription.SubscriptionTier;
-            var dailyRemaining = tier.DailyRequestLimit - subscription.CurrentDailyUsage;
-            var monthlyRemaining = tier.MonthlyRequestLimit - subscription.CurrentMonthlyUsage;
-
-            var canMakeRequest = dailyRemaining > 0 && monthlyRemaining > 0;
-            string limitMessage = null;
-
-            if (dailyRemaining <= 0)
-            {
-                limitMessage = $"Daily request limit reached ({tier.DailyRequestLimit} requests). Resets at midnight.";
-            }
-            else if (monthlyRemaining <= 0)
-            {
-                limitMessage = $"Monthly request limit reached ({tier.MonthlyRequestLimit} requests). Resets on the 1st of next month.";
-            }
-
-            var status = new SubscriptionUsageStatusDto
-            {
-                HasActiveSubscription = true,
-                SubscriptionStatus = subscription.Status,
-                TierName = tier.TierName,
-                DailyUsed = subscription.CurrentDailyUsage,
-                DailyLimit = tier.DailyRequestLimit,
-                DailyRemaining = dailyRemaining,
-                MonthlyUsed = subscription.CurrentMonthlyUsage,
-                MonthlyLimit = tier.MonthlyRequestLimit,
-                MonthlyRemaining = monthlyRemaining,
-                CanMakeRequest = canMakeRequest,
-                LimitExceededMessage = limitMessage,
-                NextDailyReset = DateTime.Now.Date.AddDays(1),
-                NextMonthlyReset = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1),
-                SubscriptionEndDate = subscription.EndDate
-            };
-
-            if (canMakeRequest)
-            {
-                try
+                var subscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
+                
+                if (subscription == null)
                 {
-                    Console.WriteLine($"[CheckSubscriptionStatusAsync] Updating subscription counters and saving changes...");
+                    stopwatch.Stop();
+                    _logger.LogWarning("[SUBSCRIPTION_CHECK_NO_SUBSCRIPTION] No active subscription found - UserId: {UserId}, CorrelationId: {CorrelationId}, CheckTime: {CheckTime}ms", 
+                        userId, correlationId, stopwatch.ElapsedMilliseconds);
                     
-                    // CRITICAL FIX: Manually set all DateTime fields to prevent PostgreSQL timezone issues
-                    var now = DateTime.Now;
-                    subscription.UpdatedDate = now;
+                    return new ErrorDataResult(
+                        new SubscriptionUsageStatusDto
+                        {
+                            HasActiveSubscription = false,
+                            SubscriptionStatus = "No Active Subscription",
+                            CanMakeRequest = false,
+                            LimitExceededMessage = "You need an active subscription to make analysis requests. Please subscribe to one of our plans."
+                        },
+                        "No active subscription found");
+                }
+
+                _logger.LogInformation("[SUBSCRIPTION_CHECK_FOUND] Active subscription found - UserId: {UserId}, CorrelationId: {CorrelationId}, SubscriptionId: {SubscriptionId}, TierName: {TierName}, Status: {Status}", 
+                    userId, correlationId, subscription.Id, subscription.SubscriptionTier?.TierName ?? "Unknown", subscription.Status);
+
+                // Check if subscription is expired
+                if (subscription.EndDate <= DateTime.Now)
+                {
+                    _logger.LogWarning("[SUBSCRIPTION_CHECK_EXPIRED] Subscription expired - UserId: {UserId}, CorrelationId: {CorrelationId}, SubscriptionId: {SubscriptionId}, ExpiredDate: {ExpiredDate}", 
+                        userId, correlationId, subscription.Id, subscription.EndDate);
                     
-                    // Ensure all DateTime fields use DateTime.Now (not UtcNow)
-                    if (subscription.LastUsageResetDate?.Date < now.Date)
-                    {
-                        subscription.LastUsageResetDate = now;
-                    }
-                    
-                    var currentMonthStart = new DateTime(now.Year, now.Month, 1);
-                    if (subscription.MonthlyUsageResetDate == null || subscription.MonthlyUsageResetDate < currentMonthStart)
-                    {
-                        subscription.MonthlyUsageResetDate = currentMonthStart;
-                    }
-                    
+                    subscription.IsActive = false;
+                    subscription.Status = "Expired";
                     _userSubscriptionRepository.Update(subscription);
                     await _userSubscriptionRepository.SaveChangesAsync();
-                    Console.WriteLine($"[CheckSubscriptionStatusAsync] ✅ Subscription updated successfully");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[CheckSubscriptionStatusAsync] ❌ ERROR saving subscription changes:");
-                    Console.WriteLine($"[CheckSubscriptionStatusAsync] Exception: {ex.Message}");
-                    Console.WriteLine($"[CheckSubscriptionStatusAsync] Exception Type: {ex.GetType().FullName}");
-                    
-                    var innerEx = ex.InnerException;
-                    var level = 1;
-                    while (innerEx != null)
-                    {
-                        Console.WriteLine($"[CheckSubscriptionStatusAsync] Inner Exception {level}: {innerEx.Message}");
-                        Console.WriteLine($"[CheckSubscriptionStatusAsync] Inner Exception {level} Type: {innerEx.GetType().FullName}");
-                        innerEx = innerEx.InnerException;
-                        level++;
-                    }
-                    
-                    // Don't throw - let the request continue without counter update
-                    Console.WriteLine($"[CheckSubscriptionStatusAsync] ⚠️ Continuing without counter update to avoid blocking user");
-                }
-            }
 
-            return new SuccessDataResult(status);
+                    stopwatch.Stop();
+                    _logger.LogInformation("[SUBSCRIPTION_CHECK_EXPIRED_UPDATED] Subscription marked as expired - UserId: {UserId}, CorrelationId: {CorrelationId}, CheckTime: {CheckTime}ms", 
+                        userId, correlationId, stopwatch.ElapsedMilliseconds);
+
+                    return new ErrorDataResult(
+                        new SubscriptionUsageStatusDto
+                        {
+                            HasActiveSubscription = false,
+                            SubscriptionStatus = "Expired",
+                            CanMakeRequest = false,
+                            LimitExceededMessage = "Your subscription has expired. Please renew to continue using the service.",
+                            SubscriptionEndDate = subscription.EndDate
+                        },
+                        "Subscription expired");
+                }
+
+                var hasResetDaily = false;
+                var hasResetMonthly = false;
+
+                // Reset daily usage if needed
+                if (subscription.LastUsageResetDate?.Date < DateTime.Now.Date)
+                {
+                    var previousDailyUsage = subscription.CurrentDailyUsage;
+                    subscription.CurrentDailyUsage = 0;
+                    subscription.LastUsageResetDate = DateTime.Now;
+                    hasResetDaily = true;
+                    
+                    _logger.LogInformation("[SUBSCRIPTION_CHECK_DAILY_RESET] Daily usage reset - UserId: {UserId}, CorrelationId: {CorrelationId}, PreviousUsage: {PreviousUsage}, ResetDate: {ResetDate}", 
+                        userId, correlationId, previousDailyUsage, subscription.LastUsageResetDate);
+                }
+
+                // Reset monthly usage if needed
+                var currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                if (subscription.MonthlyUsageResetDate == null || subscription.MonthlyUsageResetDate < currentMonth)
+                {
+                    var previousMonthlyUsage = subscription.CurrentMonthlyUsage;
+                    subscription.CurrentMonthlyUsage = 0;
+                    subscription.MonthlyUsageResetDate = currentMonth;
+                    hasResetMonthly = true;
+                    
+                    _logger.LogInformation("[SUBSCRIPTION_CHECK_MONTHLY_RESET] Monthly usage reset - UserId: {UserId}, CorrelationId: {CorrelationId}, PreviousUsage: {PreviousUsage}, ResetDate: {ResetDate}", 
+                        userId, correlationId, previousMonthlyUsage, subscription.MonthlyUsageResetDate);
+                }
+
+                // Save resets if any occurred
+                if (hasResetDaily || hasResetMonthly)
+                {
+                    try
+                    {
+                        _userSubscriptionRepository.Update(subscription);
+                        await _userSubscriptionRepository.SaveChangesAsync();
+                        
+                        _logger.LogInformation("[SUBSCRIPTION_CHECK_USAGE_RESET_SAVED] Usage reset saved successfully - UserId: {UserId}, CorrelationId: {CorrelationId}, DailyReset: {DailyReset}, MonthlyReset: {MonthlyReset}", 
+                            userId, correlationId, hasResetDaily, hasResetMonthly);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[SUBSCRIPTION_CHECK_USAGE_RESET_ERROR] Failed to save usage reset - UserId: {UserId}, CorrelationId: {CorrelationId}, ExceptionType: {ExceptionType}", 
+                            userId, correlationId, ex.GetType().Name);
+                        // Continue without throwing - usage reset will happen on next check
+                    }
+                }
+
+                var tier = subscription.SubscriptionTier;
+                var dailyRemaining = tier.DailyRequestLimit - subscription.CurrentDailyUsage;
+                var monthlyRemaining = tier.MonthlyRequestLimit - subscription.CurrentMonthlyUsage;
+
+                var canMakeRequest = dailyRemaining > 0 && monthlyRemaining > 0;
+                string limitMessage = null;
+
+                if (dailyRemaining <= 0)
+                {
+                    limitMessage = $"Daily request limit reached ({tier.DailyRequestLimit} requests). Resets at midnight.";
+                    _logger.LogWarning("[SUBSCRIPTION_CHECK_DAILY_LIMIT_EXCEEDED] Daily limit reached - UserId: {UserId}, CorrelationId: {CorrelationId}, DailyUsed: {DailyUsed}, DailyLimit: {DailyLimit}", 
+                        userId, correlationId, subscription.CurrentDailyUsage, tier.DailyRequestLimit);
+                }
+                else if (monthlyRemaining <= 0)
+                {
+                    limitMessage = $"Monthly request limit reached ({tier.MonthlyRequestLimit} requests). Resets on the 1st of next month.";
+                    _logger.LogWarning("[SUBSCRIPTION_CHECK_MONTHLY_LIMIT_EXCEEDED] Monthly limit reached - UserId: {UserId}, CorrelationId: {CorrelationId}, MonthlyUsed: {MonthlyUsed}, MonthlyLimit: {MonthlyLimit}", 
+                        userId, correlationId, subscription.CurrentMonthlyUsage, tier.MonthlyRequestLimit);
+                }
+
+                _logger.LogInformation("[SUBSCRIPTION_CHECK_QUOTA_STATUS] Quota status calculated - UserId: {UserId}, CorrelationId: {CorrelationId}, CanMakeRequest: {CanMakeRequest}, DailyRemaining: {DailyRemaining}, MonthlyRemaining: {MonthlyRemaining}", 
+                    userId, correlationId, canMakeRequest, dailyRemaining, monthlyRemaining);
+
+                var status = new SubscriptionUsageStatusDto
+                {
+                    HasActiveSubscription = true,
+                    SubscriptionStatus = subscription.Status,
+                    TierName = tier.TierName,
+                    DailyUsed = subscription.CurrentDailyUsage,
+                    DailyLimit = tier.DailyRequestLimit,
+                    DailyRemaining = dailyRemaining,
+                    MonthlyUsed = subscription.CurrentMonthlyUsage,
+                    MonthlyLimit = tier.MonthlyRequestLimit,
+                    MonthlyRemaining = monthlyRemaining,
+                    CanMakeRequest = canMakeRequest,
+                    LimitExceededMessage = limitMessage,
+                    NextDailyReset = DateTime.Now.Date.AddDays(1),
+                    NextMonthlyReset = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1),
+                    SubscriptionEndDate = subscription.EndDate
+                };
+
+                // Only attempt database update if request can be made
+                if (canMakeRequest)
+                {
+                    try
+                    {
+                        _logger.LogDebug("[SUBSCRIPTION_CHECK_UPDATE_START] Updating subscription counters - UserId: {UserId}, CorrelationId: {CorrelationId}", 
+                            userId, correlationId);
+                        
+                        // CRITICAL FIX: Manually set all DateTime fields to prevent PostgreSQL timezone issues
+                        var now = DateTime.Now;
+                        subscription.UpdatedDate = now;
+                        
+                        // Ensure all DateTime fields use DateTime.Now (not UtcNow)
+                        if (subscription.LastUsageResetDate?.Date < now.Date)
+                        {
+                            subscription.LastUsageResetDate = now;
+                        }
+                        
+                        var currentMonthStart = new DateTime(now.Year, now.Month, 1);
+                        if (subscription.MonthlyUsageResetDate == null || subscription.MonthlyUsageResetDate < currentMonthStart)
+                        {
+                            subscription.MonthlyUsageResetDate = currentMonthStart;
+                        }
+                        
+                        _userSubscriptionRepository.Update(subscription);
+                        await _userSubscriptionRepository.SaveChangesAsync();
+                        
+                        _logger.LogInformation("[SUBSCRIPTION_CHECK_UPDATE_SUCCESS] Subscription updated successfully - UserId: {UserId}, CorrelationId: {CorrelationId}", 
+                            userId, correlationId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[SUBSCRIPTION_CHECK_UPDATE_ERROR] Failed to save subscription changes - UserId: {UserId}, CorrelationId: {CorrelationId}, ExceptionType: {ExceptionType}, Message: {ErrorMessage}", 
+                            userId, correlationId, ex.GetType().Name, ex.Message);
+                        
+                        var innerEx = ex.InnerException;
+                        var level = 1;
+                        while (innerEx != null && level <= 3) // Limit to 3 levels
+                        {
+                            _logger.LogError("[SUBSCRIPTION_CHECK_INNER_EXCEPTION] Inner Exception Level {Level} - UserId: {UserId}, CorrelationId: {CorrelationId}, Type: {InnerExceptionType}, Message: {InnerMessage}", 
+                                level, userId, correlationId, innerEx.GetType().Name, innerEx.Message);
+                            innerEx = innerEx.InnerException;
+                            level++;
+                        }
+                        
+                        _logger.LogWarning("[SUBSCRIPTION_CHECK_CONTINUE_WITHOUT_UPDATE] Continuing without counter update to avoid blocking user - UserId: {UserId}, CorrelationId: {CorrelationId}", 
+                            userId, correlationId);
+                    }
+                }
+
+                stopwatch.Stop();
+                _logger.LogInformation("[SUBSCRIPTION_CHECK_COMPLETED] Subscription check completed - UserId: {UserId}, CorrelationId: {CorrelationId}, TotalTime: {TotalTime}ms, CanMakeRequest: {CanMakeRequest}", 
+                    userId, correlationId, stopwatch.ElapsedMilliseconds, canMakeRequest);
+
+                return new SuccessDataResult(status);
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "[SUBSCRIPTION_CHECK_GENERAL_ERROR] Unexpected error during subscription check - UserId: {UserId}, CorrelationId: {CorrelationId}, ElapsedTime: {ElapsedTime}ms, ExceptionType: {ExceptionType}", 
+                    userId, correlationId, stopwatch.ElapsedMilliseconds, ex.GetType().Name);
+                
+                // Return error result with safe fallback
+                return new ErrorDataResult(
+                    new SubscriptionUsageStatusDto
+                    {
+                        HasActiveSubscription = false,
+                        SubscriptionStatus = "Error",
+                        CanMakeRequest = false,
+                        LimitExceededMessage = "Unable to verify subscription status. Please try again."
+                    }, 
+                    $"Subscription check failed: {ex.Message}");
+            }
         }
 
         public async Task<IResult> ValidateAndLogUsageAsync(int userId, string endpoint, string method)
         {
+            var stopwatch = Stopwatch.StartNew();
+            var correlationId = Guid.NewGuid().ToString("N")[..8];
+
+            _logger.LogInformation("[USAGE_VALIDATION_START] Starting usage validation - UserId: {UserId}, CorrelationId: {CorrelationId}, Endpoint: {Endpoint}, Method: {Method}", 
+                userId, correlationId, endpoint, method);
+
             try
             {
-                Console.WriteLine($"[ValidateAndLogUsageAsync] 🔍 Starting validation for userId: {userId}, endpoint: {endpoint}");
-                
                 var statusResult = await CheckSubscriptionStatusAsync(userId);
-                Console.WriteLine($"[ValidateAndLogUsageAsync] CheckSubscriptionStatusAsync result: Success={statusResult.Success}");
+                
+                _logger.LogInformation("[USAGE_VALIDATION_STATUS_CHECK] Subscription status checked - UserId: {UserId}, CorrelationId: {CorrelationId}, Success: {Success}, CanMakeRequest: {CanMakeRequest}", 
+                    userId, correlationId, statusResult.Success, statusResult.Data?.CanMakeRequest ?? false);
                 
                 if (!statusResult.Success || !statusResult.Data.CanMakeRequest)
                 {
-                    Console.WriteLine($"[ValidateAndLogUsageAsync] ❌ Validation failed, attempting to log failed usage...");
+                    _logger.LogWarning("[USAGE_VALIDATION_FAILED] Usage validation failed - UserId: {UserId}, CorrelationId: {CorrelationId}, Reason: {Reason}", 
+                        userId, correlationId, statusResult.Message);
+                    
                     // Log failed attempt
                     await LogUsageAsync(userId, endpoint, method, false, statusResult.Message);
-                    Console.WriteLine($"[ValidateAndLogUsageAsync] ✅ Failed usage logged successfully");
+                    
+                    stopwatch.Stop();
+                    _logger.LogInformation("[USAGE_VALIDATION_FAILED_LOGGED] Failed usage logged - UserId: {UserId}, CorrelationId: {CorrelationId}, ValidationTime: {ValidationTime}ms", 
+                        userId, correlationId, stopwatch.ElapsedMilliseconds);
+                    
                     return new ErrorResult(statusResult.Data?.LimitExceededMessage ?? statusResult.Message);
                 }
 
-                Console.WriteLine($"[ValidateAndLogUsageAsync] ✅ Validation successful");
-                // Log successful validation (actual usage will be logged after successful request)
+                stopwatch.Stop();
+                _logger.LogInformation("[USAGE_VALIDATION_SUCCESS] Usage validation successful - UserId: {UserId}, CorrelationId: {CorrelationId}, ValidationTime: {ValidationTime}ms", 
+                    userId, correlationId, stopwatch.ElapsedMilliseconds);
+                
                 return new SuccessResult();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ValidateAndLogUsageAsync] ❌ EXCEPTION in ValidateAndLogUsageAsync:");
-                Console.WriteLine($"[ValidateAndLogUsageAsync] Exception: {ex.Message}");
-                Console.WriteLine($"[ValidateAndLogUsageAsync] Exception Type: {ex.GetType().FullName}");
-                Console.WriteLine($"[ValidateAndLogUsageAsync] Stack trace: {ex.StackTrace}");
+                stopwatch.Stop();
+                _logger.LogError(ex, "[USAGE_VALIDATION_EXCEPTION] Exception during usage validation - UserId: {UserId}, CorrelationId: {CorrelationId}, ElapsedTime: {ElapsedTime}ms, ExceptionType: {ExceptionType}, Message: {ErrorMessage}", 
+                    userId, correlationId, stopwatch.ElapsedMilliseconds, ex.GetType().Name, ex.Message);
                 throw;
             }
         }
@@ -237,6 +344,11 @@ namespace Business.Services.Subscription
         private async Task LogUsageAsync(int userId, string endpoint, string method, bool isSuccessful, 
             string responseStatus, int? subscriptionId = null, int? plantAnalysisId = null)
         {
+            var correlationId = Guid.NewGuid().ToString("N")[..8];
+            
+            _logger.LogDebug("[USAGE_LOG_START] Starting usage logging - UserId: {UserId}, CorrelationId: {CorrelationId}, Endpoint: {Endpoint}, IsSuccessful: {IsSuccessful}", 
+                userId, correlationId, endpoint, isSuccessful);
+
             try 
             {
                 var httpContext = _httpContextAccessor.HttpContext;
@@ -247,7 +359,8 @@ namespace Business.Services.Subscription
                 // Only log if we have a valid subscription to avoid foreign key constraint violations
                 if (subscription == null)
                 {
-                    Console.WriteLine($"[UsageLog] Warning: No active subscription found for userId {userId}, skipping usage log");
+                    _logger.LogWarning("[USAGE_LOG_NO_SUBSCRIPTION] No active subscription found, skipping usage log - UserId: {UserId}, CorrelationId: {CorrelationId}", 
+                        userId, correlationId);
                     return;
                 }
 
@@ -275,25 +388,28 @@ namespace Business.Services.Subscription
                 };
 
                 await _usageLogRepository.LogUsageAsync(usageLog);
+                
+                _logger.LogInformation("[USAGE_LOG_SUCCESS] Usage logged successfully - UserId: {UserId}, CorrelationId: {CorrelationId}, SubscriptionId: {SubscriptionId}, PlantAnalysisId: {PlantAnalysisId}", 
+                    userId, correlationId, subscription.Id, plantAnalysisId);
             }
             catch (Exception ex)
             {
                 // Log the error but don't let usage logging failures break the main flow
-                Console.WriteLine($"[UsageLog] ❌ CRITICAL ERROR logging usage for userId {userId}:");
-                Console.WriteLine($"[UsageLog] Exception: {ex.Message}");
-                Console.WriteLine($"[UsageLog] Exception Type: {ex.GetType().FullName}");
+                _logger.LogError(ex, "[USAGE_LOG_ERROR] Critical error logging usage - UserId: {UserId}, CorrelationId: {CorrelationId}, ExceptionType: {ExceptionType}, Message: {ErrorMessage}", 
+                    userId, correlationId, ex.GetType().Name, ex.Message);
                 
                 var innerEx = ex.InnerException;
                 var level = 1;
-                while (innerEx != null)
+                while (innerEx != null && level <= 3) // Limit to 3 levels
                 {
-                    Console.WriteLine($"[UsageLog] Inner Exception {level}: {innerEx.Message}");
-                    Console.WriteLine($"[UsageLog] Inner Exception {level} Type: {innerEx.GetType().FullName}");
+                    _logger.LogError("[USAGE_LOG_INNER_EXCEPTION] Inner Exception Level {Level} - UserId: {UserId}, CorrelationId: {CorrelationId}, Type: {InnerExceptionType}, Message: {InnerMessage}", 
+                        level, userId, correlationId, innerEx.GetType().Name, innerEx.Message);
                     innerEx = innerEx.InnerException;
                     level++;
                 }
                 
-                Console.WriteLine($"[UsageLog] Stack trace: {ex.StackTrace}");
+                _logger.LogError("[USAGE_LOG_STACK_TRACE] Stack trace - UserId: {UserId}, CorrelationId: {CorrelationId}, StackTrace: {StackTrace}", 
+                    userId, correlationId, ex.StackTrace?.Split('\n').Take(10).ToArray().Aggregate((a, b) => $"{a}\n{b}") ?? "No stack trace available");
                 
                 // Re-throw the exception to see it in the main error log
                 throw;

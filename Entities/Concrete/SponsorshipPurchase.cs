@@ -37,6 +37,9 @@ namespace Entities.Concrete
         public string CodePrefix { get; set; } // Custom prefix for codes (e.g., "AGRI", "FARM")
         public int ValidityDays { get; set; } // How many days codes are valid
         
+        // Tier-Based Features are now calculated dynamically from SponsorshipCode -> Tier relationship
+        // These fields have been removed to match corrected architecture
+        
         // Status and Notes
         public string Status { get; set; } // Active, Completed, Cancelled
         public string Notes { get; set; } // Internal notes
@@ -51,6 +54,9 @@ namespace Entities.Concrete
         // Navigation properties
         [JsonIgnore]
         public virtual User Sponsor { get; set; }
+        
+        [JsonIgnore]
+        public virtual SponsorProfile SponsorProfile { get; set; }
         
         [JsonIgnore]
         public virtual SubscriptionTier SubscriptionTier { get; set; }

@@ -7,7 +7,7 @@ namespace Business.Services.Sponsorship
 {
     public interface ISponsorshipService
     {
-        Task<IDataResult<SponsorshipPurchase>> PurchaseBulkSubscriptionsAsync(int sponsorId, int tierId, int quantity, decimal amount, string paymentReference);
+        Task<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>> PurchaseBulkSubscriptionsAsync(int sponsorId, int tierId, int quantity, decimal amount, string paymentReference);
         Task<IDataResult<List<SponsorshipCode>>> GenerateCodesForPurchaseAsync(int purchaseId);
         Task<IDataResult<UserSubscription>> RedeemSponsorshipCodeAsync(string code, int userId);
         Task<IDataResult<SponsorshipCode>> ValidateCodeAsync(string code);

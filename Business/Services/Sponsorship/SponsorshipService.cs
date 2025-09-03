@@ -31,7 +31,7 @@ namespace Business.Services.Sponsorship
             _userRepository = userRepository;
         }
 
-        public async Task<IDataResult<SponsorshipPurchase>> PurchaseBulkSubscriptionsAsync(
+        public async Task<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>> PurchaseBulkSubscriptionsAsync(
             int sponsorId, int tierId, int quantity, decimal amount, string paymentReference)
         {
             try
@@ -39,12 +39,12 @@ namespace Business.Services.Sponsorship
                 // Get sponsor information
                 var sponsor = await _userRepository.GetAsync(u => u.UserId == sponsorId);
                 if (sponsor == null)
-                    return new ErrorDataResult<SponsorshipPurchase>("Sponsor not found");
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>("Sponsor not found");
 
                 // Get subscription tier
                 var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == tierId);
                 if (tier == null)
-                    return new ErrorDataResult<SponsorshipPurchase>("Subscription tier not found");
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>("Subscription tier not found");
 
                 // Create purchase record
                 var purchase = new SponsorshipPurchase
@@ -81,12 +81,70 @@ namespace Business.Services.Sponsorship
                 _sponsorshipPurchaseRepository.Update(purchase);
                 await _sponsorshipPurchaseRepository.SaveChangesAsync();
 
-                return new SuccessDataResult<SponsorshipPurchase>(purchase, 
+                // Create response DTO with codes
+                var response = new Entities.Dtos.SponsorshipPurchaseResponseDto
+                {
+                    Id = purchase.Id,
+                    SponsorId = purchase.SponsorId,
+                    SubscriptionTierId = purchase.SubscriptionTierId,
+                    Quantity = purchase.Quantity,
+                    UnitPrice = purchase.UnitPrice,
+                    TotalAmount = purchase.TotalAmount,
+                    Currency = purchase.Currency,
+                    PurchaseDate = purchase.PurchaseDate,
+                    PaymentMethod = purchase.PaymentMethod,
+                    PaymentReference = purchase.PaymentReference,
+                    PaymentStatus = purchase.PaymentStatus,
+                    PaymentCompletedDate = purchase.PaymentCompletedDate,
+                    CompanyName = purchase.CompanyName,
+                    CodesGenerated = purchase.CodesGenerated,
+                    CodesUsed = purchase.CodesUsed,
+                    CodePrefix = purchase.CodePrefix,
+                    ValidityDays = purchase.ValidityDays,
+                    Status = purchase.Status,
+                    CreatedDate = purchase.CreatedDate,
+                    GeneratedCodes = codes.Select(c => new Entities.Dtos.SponsorshipCodeDto
+                    {
+                        Id = c.Id,
+                        Code = c.Code,
+                        TierName = tier.TierName,
+                        IsUsed = c.IsUsed,
+                        IsActive = c.IsActive,
+                        ExpiryDate = c.ExpiryDate,
+                        UsedDate = c.UsedDate,
+                        UsedByUserId = c.UsedByUserId,
+                        UsedByUserName = null, // Navigation property removed - fetch separately if needed
+                        Notes = c.Notes
+                    }).ToList()
+                };
+
+                return new SuccessDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(response, 
                     $"{quantity} sponsorship codes generated successfully");
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<SponsorshipPurchase>($"Error creating sponsorship purchase: {ex.Message}");
+                Console.WriteLine($"[SponsorshipService] ERROR creating sponsorship purchase: {ex.Message}");
+                Console.WriteLine($"[SponsorshipService] Stack trace: {ex.StackTrace}");
+                
+                // Log inner exception details
+                var innerEx = ex.InnerException;
+                var level = 1;
+                while (innerEx != null)
+                {
+                    Console.WriteLine($"[SponsorshipService] Inner Exception {level}: {innerEx.Message}");
+                    if (innerEx.Data?.Count > 0)
+                    {
+                        Console.WriteLine($"[SponsorshipService] Inner Exception {level} Data:");
+                        foreach (var key in innerEx.Data.Keys)
+                        {
+                            Console.WriteLine($"[SponsorshipService]   {key}: {innerEx.Data[key]}");
+                        }
+                    }
+                    innerEx = innerEx.InnerException;
+                    level++;
+                }
+                
+                return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>($"Error creating sponsorship purchase: {ex.Message}");
             }
         }
 
@@ -288,17 +346,34 @@ namespace Business.Services.Sponsorship
             {
                 var usedCodes = await _sponsorshipCodeRepository.GetUsedCodesBySponsorAsync(sponsorId);
                 
-                var farmers = usedCodes.Select(code => new
+                // Create result list
+                var farmers = new List<object>();
+                
+                foreach (var code in usedCodes)
                 {
-                    FarmerId = code.UsedByUserId,
-                    FarmerName = code.UsedByUser?.FullName,
-                    FarmerEmail = code.UsedByUser?.Email,
-                    Code = code.Code,
-                    SubscriptionTier = code.SubscriptionTier?.DisplayName,
-                    RedeemedDate = code.UsedDate,
-                    DistributedTo = code.DistributedTo,
-                    Notes = code.Notes
-                }).ToList<object>();
+                    // Fetch user and tier information separately since navigation properties are removed
+                    Core.Entities.Concrete.User farmer = null;
+                    SubscriptionTier tier = null;
+                    
+                    if (code.UsedByUserId.HasValue)
+                    {
+                        farmer = await _userRepository.GetAsync(u => u.UserId == code.UsedByUserId.Value);
+                    }
+                    
+                    tier = await _subscriptionTierRepository.GetAsync(t => t.Id == code.SubscriptionTierId);
+                    
+                    farmers.Add(new
+                    {
+                        FarmerId = code.UsedByUserId,
+                        FarmerName = farmer?.FullName,
+                        FarmerEmail = farmer?.Email,
+                        Code = code.Code,
+                        SubscriptionTier = tier?.DisplayName,
+                        RedeemedDate = code.UsedDate,
+                        DistributedTo = code.DistributedTo,
+                        Notes = code.Notes
+                    });
+                }
 
                 return new SuccessDataResult<List<object>>(farmers);
             }

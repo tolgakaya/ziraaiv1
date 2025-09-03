@@ -1,0 +1,571 @@
+using Core.Utilities.Results;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace Business.Services.ABTesting
+{
+    /// <summary>
+    /// Advanced A/B testing service for message template optimization
+    /// Provides statistical analysis, automated winner selection, and performance insights
+    /// </summary>
+    public interface IABTestingService
+    {
+        Task<IDataResult<ABTestCampaign>> CreateABTestAsync(CreateABTestRequest request);
+        Task<IDataResult<ABTestCampaign>> GetABTestAsync(string testId);
+        Task<IDataResult<List<ABTestCampaign>>> GetABTestsAsync(int sponsorId, ABTestStatus? status = null);
+        Task<IResult> UpdateABTestAsync(string testId, UpdateABTestRequest request);
+        Task<IResult> StartABTestAsync(string testId);
+        Task<IResult> PauseABTestAsync(string testId);
+        Task<IResult> StopABTestAsync(string testId);
+        Task<IDataResult<ABTestResults>> GetABTestResultsAsync(string testId);
+        Task<IResult> RecordABTestEventAsync(string testId, ABTestEvent testEvent);
+        Task<IDataResult<ABTestInsights>> GetABTestInsightsAsync(string testId);
+        Task<IDataResult<List<ABTestTemplate>>> GetTemplateVariationsAsync(string testId);
+        Task<IResult> DeclareWinnerAsync(string testId, string variantId);
+        Task<IDataResult<ABTestRecommendations>> GetOptimizationRecommendationsAsync(int sponsorId);
+        Task<IDataResult<ABTestStatistics>> GetTestStatisticsAsync(string testId);
+    }
+
+    #region A/B Testing Data Models
+
+    public class CreateABTestRequest
+    {
+        public string TestName { get; set; }
+        public string Description { get; set; }
+        public int SponsorId { get; set; }
+        public ABTestType TestType { get; set; } = ABTestType.MessageTemplate;
+        public List<ABTestVariant> Variants { get; set; } = new();
+        public ABTestConfiguration Configuration { get; set; } = new();
+        public ABTestTargeting Targeting { get; set; } = new();
+        public List<string> SuccessMetrics { get; set; } = new();
+        public DateTime? ScheduledStartDate { get; set; }
+        public DateTime? ScheduledEndDate { get; set; }
+    }
+
+    public class UpdateABTestRequest
+    {
+        public string TestName { get; set; }
+        public string Description { get; set; }
+        public ABTestConfiguration Configuration { get; set; }
+        public ABTestTargeting Targeting { get; set; }
+        public List<string> SuccessMetrics { get; set; }
+        public DateTime? ScheduledEndDate { get; set; }
+    }
+
+    public class ABTestCampaign
+    {
+        public string TestId { get; set; }
+        public string TestName { get; set; }
+        public string Description { get; set; }
+        public int SponsorId { get; set; }
+        public ABTestType TestType { get; set; }
+        public ABTestStatus Status { get; set; }
+        public List<ABTestVariant> Variants { get; set; } = new();
+        public ABTestConfiguration Configuration { get; set; }
+        public ABTestTargeting Targeting { get; set; }
+        public List<string> SuccessMetrics { get; set; } = new();
+        public DateTime CreatedAt { get; set; }
+        public DateTime? StartedAt { get; set; }
+        public DateTime? EndedAt { get; set; }
+        public DateTime? ScheduledStartDate { get; set; }
+        public DateTime? ScheduledEndDate { get; set; }
+        public string CreatedBy { get; set; }
+        public ABTestMetrics Metrics { get; set; } = new();
+        public string WinnerVariantId { get; set; }
+        public double? Confidence { get; set; }
+        public Dictionary<string, object> Metadata { get; set; } = new();
+    }
+
+    public enum ABTestType
+    {
+        MessageTemplate,
+        SubjectLine,
+        CallToAction,
+        SendingTime,
+        Channel,
+        Personalization,
+        ImageContent,
+        LinkPlacement
+    }
+
+    public enum ABTestStatus
+    {
+        Draft,
+        Scheduled,
+        Running,
+        Paused,
+        Completed,
+        Stopped,
+        Cancelled
+    }
+
+    public class ABTestVariant
+    {
+        public string VariantId { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public bool IsControl { get; set; }
+        public double TrafficPercentage { get; set; }
+        public ABTestContent Content { get; set; }
+        public ABTestVariantMetrics Metrics { get; set; } = new();
+        public bool IsWinner { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public Dictionary<string, object> Properties { get; set; } = new();
+    }
+
+    public class ABTestContent
+    {
+        public string MessageTemplate { get; set; }
+        public string Subject { get; set; }
+        public string CallToAction { get; set; }
+        public string Channel { get; set; } // SMS, WhatsApp, Email
+        public PersonalizationSettings Personalization { get; set; }
+        public Dictionary<string, string> Variables { get; set; } = new();
+        public string ImageUrl { get; set; }
+        public string LinkText { get; set; }
+        public string LinkPlacement { get; set; }
+        public Dictionary<string, object> CustomProperties { get; set; } = new();
+    }
+
+    public class PersonalizationSettings
+    {
+        public bool UseRecipientName { get; set; } = true;
+        public bool UseLocationData { get; set; }
+        public bool UseCropTypeData { get; set; }
+        public bool UseTimeOfDay { get; set; }
+        public string PersonalizationLevel { get; set; } = "basic"; // basic, intermediate, advanced
+        public Dictionary<string, string> CustomPersonalization { get; set; } = new();
+    }
+
+    public class ABTestConfiguration
+    {
+        public int MinimumSampleSize { get; set; } = 100;
+        public double SignificanceLevel { get; set; } = 0.05;
+        public double MinimumDetectableEffect { get; set; } = 0.1; // 10%
+        public int MaxDurationDays { get; set; } = 30;
+        public bool AutoDeclareWinner { get; set; } = true;
+        public double AutoWinnerConfidence { get; set; } = 0.95;
+        public ABTestDistribution Distribution { get; set; } = ABTestDistribution.Equal;
+        public bool EnableEarlyTermination { get; set; } = true;
+        public int MinimumTestDurationHours { get; set; } = 24;
+        public Dictionary<string, object> AdvancedSettings { get; set; } = new();
+    }
+
+    public enum ABTestDistribution
+    {
+        Equal,
+        Custom,
+        Adaptive,
+        ControlBiased
+    }
+
+    public class ABTestTargeting
+    {
+        public List<string> IncludedRegions { get; set; } = new();
+        public List<string> ExcludedRegions { get; set; } = new();
+        public List<string> IncludedCropTypes { get; set; } = new();
+        public List<string> ExcludedCropTypes { get; set; } = new();
+        public AudienceSegment AudienceSegment { get; set; }
+        public List<string> CustomFilters { get; set; } = new();
+        public int? MaxParticipants { get; set; }
+        public double SamplePercentage { get; set; } = 100.0;
+    }
+
+    public class AudienceSegment
+    {
+        public string SegmentId { get; set; }
+        public string SegmentName { get; set; }
+        public List<SegmentCriteria> Criteria { get; set; } = new();
+        public int EstimatedSize { get; set; }
+    }
+
+    public class SegmentCriteria
+    {
+        public string Field { get; set; }
+        public string Operator { get; set; } // equals, contains, greater_than, etc.
+        public object Value { get; set; }
+        public string LogicalOperator { get; set; } = "AND"; // AND, OR
+    }
+
+    public class ABTestMetrics
+    {
+        public int TotalParticipants { get; set; }
+        public int TotalConversions { get; set; }
+        public double OverallConversionRate { get; set; }
+        public double StatisticalSignificance { get; set; }
+        public DateTime LastUpdated { get; set; }
+        public Dictionary<string, ABTestVariantMetrics> VariantMetrics { get; set; } = new();
+    }
+
+    public class ABTestVariantMetrics
+    {
+        public int Participants { get; set; }
+        public int Conversions { get; set; }
+        public double ConversionRate { get; set; }
+        public double Clicks { get; set; }
+        public double ClickThroughRate { get; set; }
+        public double EngagementRate { get; set; }
+        public double Revenue { get; set; }
+        public double CostPerAcquisition { get; set; }
+        public double ConfidenceInterval { get; set; }
+        public double PValueVsControl { get; set; }
+        public double LiftVsControl { get; set; }
+        public bool IsStatisticallySignificant { get; set; }
+        public Dictionary<string, double> CustomMetrics { get; set; } = new();
+    }
+
+    public class ABTestResults
+    {
+        public string TestId { get; set; }
+        public string TestName { get; set; }
+        public ABTestStatus Status { get; set; }
+        public ABTestSummary Summary { get; set; }
+        public List<ABTestVariantResult> VariantResults { get; set; } = new();
+        public ABTestStatisticalAnalysis StatisticalAnalysis { get; set; }
+        public ABTestConclusion Conclusion { get; set; }
+        public List<ABTestRecommendation> Recommendations { get; set; } = new();
+        public DateTime GeneratedAt { get; set; }
+    }
+
+    public class ABTestSummary
+    {
+        public DateTime TestPeriod { get; set; }
+        public int TotalDays { get; set; }
+        public int TotalParticipants { get; set; }
+        public int TotalVariants { get; set; }
+        public string WinnerVariant { get; set; }
+        public double WinnerLift { get; set; }
+        public double WinnerConfidence { get; set; }
+        public bool HasSignificantResult { get; set; }
+        public string TestOutcome { get; set; } // winner_found, inconclusive, no_difference
+    }
+
+    public class ABTestVariantResult
+    {
+        public string VariantId { get; set; }
+        public string VariantName { get; set; }
+        public bool IsControl { get; set; }
+        public bool IsWinner { get; set; }
+        public ABTestVariantMetrics Metrics { get; set; }
+        public ABTestVariantPerformance Performance { get; set; }
+        public List<string> KeyInsights { get; set; } = new();
+    }
+
+    public class ABTestVariantPerformance
+    {
+        public string PerformanceGrade { get; set; } // A, B, C, D, F
+        public double PerformanceScore { get; set; } // 0-100
+        public List<string> Strengths { get; set; } = new();
+        public List<string> Weaknesses { get; set; } = new();
+        public string OverallAssessment { get; set; }
+    }
+
+    public class ABTestStatisticalAnalysis
+    {
+        public double PowerAnalysis { get; set; }
+        public double EffectSize { get; set; }
+        public bool SampleSizeAdequate { get; set; }
+        public string ConfidenceLevel { get; set; }
+        public Dictionary<string, double> PValues { get; set; } = new();
+        public Dictionary<string, double> ConfidenceIntervals { get; set; } = new();
+        public string StatisticalMethod { get; set; } = "chi_square"; // chi_square, t_test, bayesian
+        public bool HasPowerForDetection { get; set; }
+        public List<string> StatisticalNotes { get; set; } = new();
+    }
+
+    public class ABTestConclusion
+    {
+        public string Result { get; set; } // clear_winner, no_clear_winner, inconclusive
+        public string WinnerVariantId { get; set; }
+        public string Recommendation { get; set; }
+        public double Confidence { get; set; }
+        public string BusinessImpact { get; set; }
+        public string NextSteps { get; set; }
+        public List<string> KeyLearnings { get; set; } = new();
+    }
+
+    public class ABTestRecommendation
+    {
+        public string RecommendationId { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Type { get; set; } // implementation, optimization, caution
+        public string Priority { get; set; } // high, medium, low
+        public string Impact { get; set; } // high, medium, low
+        public List<string> ActionItems { get; set; } = new();
+        public string EstimatedImpact { get; set; }
+        public string Timeline { get; set; }
+    }
+
+    public class ABTestEvent
+    {
+        public string EventId { get; set; }
+        public string TestId { get; set; }
+        public string VariantId { get; set; }
+        public string UserId { get; set; }
+        public string EventType { get; set; } // impression, click, conversion, bounce
+        public DateTime Timestamp { get; set; }
+        public string SessionId { get; set; }
+        public Dictionary<string, object> Properties { get; set; } = new();
+        public string Channel { get; set; }
+        public string UserAgent { get; set; }
+        public string IpAddress { get; set; }
+        public double? Revenue { get; set; }
+    }
+
+    public class ABTestInsights
+    {
+        public string TestId { get; set; }
+        public List<PerformanceInsight> Insights { get; set; } = new();
+        public TrendAnalysis TrendAnalysis { get; set; }
+        public AudienceInsights AudienceInsights { get; set; }
+        public ChannelPerformance ChannelPerformance { get; set; }
+        public TimingInsights TimingInsights { get; set; }
+        public List<OptimizationOpportunity> OptimizationOpportunities { get; set; } = new();
+    }
+
+    public class PerformanceInsight
+    {
+        public string InsightId { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Type { get; set; } // positive, negative, neutral, warning
+        public double Impact { get; set; }
+        public string Evidence { get; set; }
+        public List<string> SupportingData { get; set; } = new();
+    }
+
+    public class TrendAnalysis
+    {
+        public List<DailyTrend> DailyTrends { get; set; } = new();
+        public List<HourlyTrend> HourlyTrends { get; set; } = new();
+        public string OverallTrend { get; set; } // improving, declining, stable
+        public double TrendStrength { get; set; }
+        public string TrendDescription { get; set; }
+    }
+
+    public class DailyTrend
+    {
+        public DateTime Date { get; set; }
+        public Dictionary<string, double> VariantPerformance { get; set; } = new();
+        public double OverallPerformance { get; set; }
+    }
+
+    public class HourlyTrend
+    {
+        public int Hour { get; set; }
+        public Dictionary<string, double> VariantPerformance { get; set; } = new();
+        public double OverallPerformance { get; set; }
+        public string Recommendation { get; set; }
+    }
+
+    public class AudienceInsights
+    {
+        public Dictionary<string, SegmentPerformance> SegmentPerformance { get; set; } = new();
+        public List<string> HighPerformingSegments { get; set; } = new();
+        public List<string> LowPerformingSegments { get; set; } = new();
+        public string AudienceRecommendation { get; set; }
+    }
+
+    public class SegmentPerformance
+    {
+        public string SegmentName { get; set; }
+        public int Participants { get; set; }
+        public double ConversionRate { get; set; }
+        public double EngagementRate { get; set; }
+        public string BestPerformingVariant { get; set; }
+        public double VariantLift { get; set; }
+    }
+
+    public class ChannelPerformance
+    {
+        public Dictionary<string, ChannelMetrics> ChannelMetrics { get; set; } = new();
+        public string BestPerformingChannel { get; set; }
+        public string ChannelRecommendation { get; set; }
+    }
+
+    public class ChannelMetrics
+    {
+        public string Channel { get; set; }
+        public int Messages { get; set; }
+        public double DeliveryRate { get; set; }
+        public double OpenRate { get; set; }
+        public double ClickRate { get; set; }
+        public double ConversionRate { get; set; }
+        public string BestVariant { get; set; }
+    }
+
+    public class TimingInsights
+    {
+        public List<BestSendingTime> BestSendingTimes { get; set; } = new();
+        public List<WorstSendingTime> WorstSendingTimes { get; set; } = new();
+        public string TimingRecommendation { get; set; }
+        public Dictionary<string, double> DayOfWeekPerformance { get; set; } = new();
+    }
+
+    public class BestSendingTime
+    {
+        public string TimeSlot { get; set; }
+        public double PerformanceScore { get; set; }
+        public double ConversionRate { get; set; }
+        public string Reason { get; set; }
+    }
+
+    public class WorstSendingTime
+    {
+        public string TimeSlot { get; set; }
+        public double PerformanceScore { get; set; }
+        public double ConversionRate { get; set; }
+        public string Reason { get; set; }
+    }
+
+    public class OptimizationOpportunity
+    {
+        public string OpportunityId { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public double PotentialLift { get; set; }
+        public string Effort { get; set; } // low, medium, high
+        public string Priority { get; set; } // high, medium, low
+        public List<string> ActionSteps { get; set; } = new();
+        public string ExpectedOutcome { get; set; }
+    }
+
+    public class ABTestTemplate
+    {
+        public string TemplateId { get; set; }
+        public string Name { get; set; }
+        public string Category { get; set; }
+        public string Description { get; set; }
+        public ABTestContent Content { get; set; }
+        public TemplatePerformanceHistory PerformanceHistory { get; set; }
+        public bool IsRecommended { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime LastUsed { get; set; }
+        public int UsageCount { get; set; }
+    }
+
+    public class TemplatePerformanceHistory
+    {
+        public double AverageConversionRate { get; set; }
+        public double AverageClickThroughRate { get; set; }
+        public double AverageEngagementRate { get; set; }
+        public int TestsUsedIn { get; set; }
+        public int TimesWon { get; set; }
+        public double WinRate { get; set; }
+        public string PerformanceGrade { get; set; }
+    }
+
+    public class ABTestRecommendations
+    {
+        public int SponsorId { get; set; }
+        public List<TestRecommendation> RecommendedTests { get; set; } = new();
+        public List<TemplateRecommendation> RecommendedTemplates { get; set; } = new();
+        public List<OptimizationSuggestion> OptimizationSuggestions { get; set; } = new();
+        public IndustryBenchmarks IndustryBenchmarks { get; set; }
+        public DateTime GeneratedAt { get; set; }
+    }
+
+    public class TestRecommendation
+    {
+        public string TestType { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Rationale { get; set; }
+        public double ExpectedImpact { get; set; }
+        public string Effort { get; set; }
+        public string Priority { get; set; }
+        public List<string> SuggestedVariants { get; set; } = new();
+    }
+
+    public class TemplateRecommendation
+    {
+        public string TemplateId { get; set; }
+        public string TemplateName { get; set; }
+        public string Reason { get; set; }
+        public double PerformanceScore { get; set; }
+        public string SuitabilityReason { get; set; }
+    }
+
+    public class OptimizationSuggestion
+    {
+        public string Element { get; set; }
+        public string CurrentValue { get; set; }
+        public string SuggestedValue { get; set; }
+        public string Reason { get; set; }
+        public double ExpectedLift { get; set; }
+        public string Confidence { get; set; }
+    }
+
+    public class IndustryBenchmarks
+    {
+        public string Industry { get; set; } = "Agriculture Technology";
+        public double AverageConversionRate { get; set; }
+        public double AverageClickThroughRate { get; set; }
+        public double AverageEngagementRate { get; set; }
+        public Dictionary<string, double> ChannelBenchmarks { get; set; } = new();
+        public string CompetitivePosition { get; set; }
+    }
+
+    public class ABTestStatistics
+    {
+        public string TestId { get; set; }
+        public StatisticalPower Power { get; set; }
+        public EffectSizeAnalysis EffectSize { get; set; }
+        public SampleSizeAnalysis SampleSize { get; set; }
+        public ConfidenceAnalysis Confidence { get; set; }
+        public BayesianAnalysis Bayesian { get; set; }
+        public List<StatisticalNote> Notes { get; set; } = new();
+    }
+
+    public class StatisticalPower
+    {
+        public double CurrentPower { get; set; }
+        public double TargetPower { get; set; } = 0.8;
+        public bool IsAdequate { get; set; }
+        public string Recommendation { get; set; }
+    }
+
+    public class EffectSizeAnalysis
+    {
+        public double ObservedEffectSize { get; set; }
+        public double MinimumDetectableEffect { get; set; }
+        public string EffectSizeCategory { get; set; } // small, medium, large
+        public bool IsPracticallySignificant { get; set; }
+    }
+
+    public class SampleSizeAnalysis
+    {
+        public int CurrentSampleSize { get; set; }
+        public int RecommendedSampleSize { get; set; }
+        public bool IsAdequate { get; set; }
+        public string SampleSizeNote { get; set; }
+    }
+
+    public class ConfidenceAnalysis
+    {
+        public double ConfidenceLevel { get; set; }
+        public Dictionary<string, double> ConfidenceIntervals { get; set; } = new();
+        public bool IsSignificant { get; set; }
+        public string Interpretation { get; set; }
+    }
+
+    public class BayesianAnalysis
+    {
+        public double ProbabilityToBeBest { get; set; }
+        public double ExpectedLoss { get; set; }
+        public double CredibleInterval { get; set; }
+        public string BayesianConclusion { get; set; }
+    }
+
+    public class StatisticalNote
+    {
+        public string Type { get; set; } // warning, info, caution
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Recommendation { get; set; }
+    }
+
+    #endregion
+}

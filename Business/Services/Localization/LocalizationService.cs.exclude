@@ -1,0 +1,1142 @@
+using Business.Services.Localization;
+using Core.Utilities.Results;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+namespace Business.Services.Localization
+{
+    /// <summary>
+    /// Advanced multi-language support service for international sponsorship system
+    /// Provides dynamic translation, cultural adaptation, and regional customization
+    /// </summary>
+    public class LocalizationService : ILocalizationService
+    {
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<LocalizationService> _logger;
+
+        // In-memory storage for demo (in production, use database)
+        private readonly Dictionary<string, Dictionary<string, Dictionary<string, string>>> _translations = new();
+        private readonly Dictionary<int, string> _userLanguages = new();
+        private readonly Dictionary<string, SupportedLanguage> _supportedLanguages = new();
+        private readonly object _cacheLock = new object();
+
+        public LocalizationService(
+            IConfiguration configuration,
+            ILogger<LocalizationService> logger)
+        {
+            _configuration = configuration;
+            _logger = logger;
+            InitializeDefaultTranslations();
+            InitializeSupportedLanguages();
+        }
+
+        public async Task<IDataResult<string>> GetTranslationAsync(string key, string language = "tr", object parameters = null)
+        {
+            try
+            {
+                lock (_cacheLock)
+                {
+                    // Try to get translation
+                    var translation = GetTranslationFromCache(key, language);
+                    
+                    if (string.IsNullOrEmpty(translation))
+                    {
+                        // Fallback to default language (Turkish)
+                        translation = GetTranslationFromCache(key, "tr");
+                        
+                        if (string.IsNullOrEmpty(translation))
+                        {
+                            // Return key if no translation found
+                            translation = key;
+                            _logger.LogWarning("Translation not found for key {Key} in language {Language}", key, language);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("Using fallback translation for key {Key} from Turkish", key);
+                        }
+                    }
+
+                    // Apply parameters if provided
+                    if (parameters != null)
+                    {
+                        translation = ApplyParameters(translation, parameters);
+                    }
+
+                    return new SuccessDataResult<string>(translation);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting translation for key {Key} in language {Language}", key, language);
+                return new ErrorDataResult<string>(key); // Return key as fallback
+            }
+        }
+
+        public async Task<IDataResult<Dictionary<string, string>>> GetTranslationsAsync(List<string> keys, string language = "tr")
+        {
+            try
+            {
+                var result = new Dictionary<string, string>();
+
+                foreach (var key in keys)
+                {
+                    var translationResult = await GetTranslationAsync(key, language);
+                    result[key] = translationResult.Data;
+                }
+
+                return new SuccessDataResult<Dictionary<string, string>>(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting bulk translations for language {Language}", language);
+                return new ErrorDataResult<Dictionary<string, string>>("Çeviriler alınamadı");
+            }
+        }
+
+        public async Task<IDataResult<LanguagePack>> GetLanguagePackAsync(string language, string module = "all")
+        {
+            try
+            {
+                lock (_cacheLock)
+                {
+                    if (!_translations.ContainsKey(language))
+                    {
+                        return new ErrorDataResult<LanguagePack>($"Dil paketi bulunamadı: {language}");
+                    }
+
+                    var languageData = _translations[language];
+                    var modules = new Dictionary<string, ModuleTranslations>();
+
+                    foreach (var moduleKv in languageData)
+                    {
+                        if (module == "all" || moduleKv.Key == module)
+                        {
+                            modules[moduleKv.Key] = new ModuleTranslations
+                            {
+                                ModuleName = moduleKv.Key,
+                                Description = GetModuleDescription(moduleKv.Key),
+                                Translations = moduleKv.Value,
+                                Categories = GetModuleCategories(moduleKv.Key),
+                                LastUpdated = DateTime.Now,
+                                Maintainer = "ZiraAI Team",
+                                CompletionPercentage = CalculateModuleCompletion(moduleKv.Key, language)
+                            };
+                        }
+                    }
+
+                    var languagePack = new LanguagePack
+                    {
+                        Language = language,
+                        Version = "1.0.0",
+                        GeneratedAt = DateTime.Now,
+                        Modules = modules,
+                        Metadata = new PackageMetadata
+                        {
+                            PackageName = $"ZiraAI Language Pack - {GetLanguageName(language)}",
+                            Description = $"Comprehensive translation package for {GetLanguageName(language)}",
+                            Author = "ZiraAI Localization Team",
+                            AuthorEmail = "localization@ziraai.com",
+                            License = "MIT",
+                            Keywords = new List<string> { "agriculture", "sponsorship", "localization", language },
+                            Homepage = "https://ziraai.com/localization"
+                        },
+                        Statistics = GenerateTranslationStatistics(language)
+                    };
+
+                    return new SuccessDataResult<LanguagePack>(languagePack);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting language pack for {Language}", language);
+                return new ErrorDataResult<LanguagePack>($"Dil paketi alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> SetUserLanguageAsync(int userId, string language)
+        {
+            try
+            {
+                if (!_supportedLanguages.ContainsKey(language))
+                {
+                    return new ErrorResult($"Desteklenmeyen dil: {language}");
+                }
+
+                lock (_cacheLock)
+                {
+                    _userLanguages[userId] = language;
+                }
+
+                _logger.LogInformation("User {UserId} language set to {Language}", userId, language);
+                return new SuccessResult($"Dil başarıyla {GetLanguageName(language)} olarak ayarlandı");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error setting language for user {UserId}", userId);
+                return new ErrorResult($"Dil ayarlanamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<string>> GetUserLanguageAsync(int userId)
+        {
+            try
+            {
+                lock (_cacheLock)
+                {
+                    if (_userLanguages.TryGetValue(userId, out var language))
+                    {
+                        return new SuccessDataResult<string>(language);
+                    }
+                }
+
+                // Return default language if not set
+                return new SuccessDataResult<string>("tr");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting language for user {UserId}", userId);
+                return new ErrorDataResult<string>("tr"); // Fallback to Turkish
+            }
+        }
+
+        public async Task<IDataResult<List<SupportedLanguage>>> GetSupportedLanguagesAsync()
+        {
+            try
+            {
+                var languages = _supportedLanguages.Values.OrderBy(l => l.Name).ToList();
+                return new SuccessDataResult<List<SupportedLanguage>>(languages);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting supported languages");
+                return new ErrorDataResult<List<SupportedLanguage>>("Desteklenen diller alınamadı");
+            }
+        }
+
+        public async Task<IResult> AddTranslationAsync(string key, string language, string value, string module = "general")
+        {
+            try
+            {
+                lock (_cacheLock)
+                {
+                    if (!_translations.ContainsKey(language))
+                    {
+                        _translations[language] = new Dictionary<string, Dictionary<string, string>>();
+                    }
+
+                    if (!_translations[language].ContainsKey(module))
+                    {
+                        _translations[language][module] = new Dictionary<string, string>();
+                    }
+
+                    _translations[language][module][key] = value;
+                }
+
+                _logger.LogInformation("Translation added: {Key} = {Value} ({Language}, {Module})", key, value, language, module);
+                return new SuccessResult("Çeviri başarıyla eklendi");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding translation for key {Key}", key);
+                return new ErrorResult($"Çeviri eklenemedi: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> UpdateTranslationAsync(string key, string language, string value)
+        {
+            try
+            {
+                var module = GetModuleFromKey(key);
+                return await AddTranslationAsync(key, language, value, module);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating translation for key {Key}", key);
+                return new ErrorResult($"Çeviri güncellenemedi: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> DeleteTranslationAsync(string key, string language)
+        {
+            try
+            {
+                lock (_cacheLock)
+                {
+                    if (_translations.ContainsKey(language))
+                    {
+                        foreach (var module in _translations[language].Values)
+                        {
+                            if (module.ContainsKey(key))
+                            {
+                                module.Remove(key);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                _logger.LogInformation("Translation deleted: {Key} ({Language})", key, language);
+                return new SuccessResult("Çeviri başarıyla silindi");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting translation for key {Key}", key);
+                return new ErrorResult($"Çeviri silinemedi: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<TranslationValidationResult>> ValidateTranslationsAsync(string language)
+        {
+            try
+            {
+                var issues = new List<ValidationIssue>();
+                var totalKeys = 0;
+                var translatedKeys = 0;
+
+                // Get reference language (Turkish) for comparison
+                var referenceLanguage = "tr";
+                
+                lock (_cacheLock)
+                {
+                    if (_translations.ContainsKey(referenceLanguage))
+                    {
+                        foreach (var moduleKv in _translations[referenceLanguage])
+                        {
+                            var moduleName = moduleKv.Key;
+                            var referenceTranslations = moduleKv.Value;
+
+                            foreach (var keyKv in referenceTranslations)
+                            {
+                                var key = keyKv.Key;
+                                var referenceValue = keyKv.Value;
+                                totalKeys++;
+
+                                // Check if translation exists in target language
+                                var targetValue = GetTranslationFromCache(key, language, moduleName);
+
+                                if (string.IsNullOrEmpty(targetValue))
+                                {
+                                    issues.Add(new ValidationIssue
+                                    {
+                                        IssueType = "missing",
+                                        Severity = "error",
+                                        Key = key,
+                                        Module = moduleName,
+                                        Description = $"Çeviri eksik: {key}",
+                                        SuggestedValue = referenceValue,
+                                        Context = $"Referans değer: {referenceValue}"
+                                    });
+                                }
+                                else
+                                {
+                                    translatedKeys++;
+                                    
+                                    // Check for potential issues
+                                    if (targetValue.Length > referenceValue.Length * 2)
+                                    {
+                                        issues.Add(new ValidationIssue
+                                        {
+                                            IssueType = "length_mismatch",
+                                            Severity = "warning",
+                                            Key = key,
+                                            Module = moduleName,
+                                            Description = "Çeviri çok uzun (referans metnin 2 katından fazla)",
+                                            CurrentValue = targetValue,
+                                            Context = $"Referans uzunluk: {referenceValue.Length}, Çeviri uzunluk: {targetValue.Length}"
+                                        });
+                                    }
+
+                                    // Check for missing parameters
+                                    var referenceParams = ExtractParameters(referenceValue);
+                                    var translationParams = ExtractParameters(targetValue);
+                                    
+                                    var missingParams = referenceParams.Except(translationParams).ToList();
+                                    if (missingParams.Any())
+                                    {
+                                        issues.Add(new ValidationIssue
+                                        {
+                                            IssueType = "missing_parameters",
+                                            Severity = "error",
+                                            Key = key,
+                                            Module = moduleName,
+                                            Description = $"Eksik parametreler: {string.Join(", ", missingParams)}",
+                                            CurrentValue = targetValue,
+                                            Context = $"Beklenen parametreler: {string.Join(", ", referenceParams)}"
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                var completionPercentage = totalKeys > 0 ? (double)translatedKeys / totalKeys * 100 : 0;
+                var qualityScore = CalculateQualityScore(issues, totalKeys);
+
+                var result = new TranslationValidationResult
+                {
+                    Language = language,
+                    IsValid = issues.Count(i => i.Severity == "error") == 0,
+                    Issues = issues,
+                    Summary = new ValidationSummary
+                    {
+                        TotalIssues = issues.Count,
+                        Errors = issues.Count(i => i.Severity == "error"),
+                        Warnings = issues.Count(i => i.Severity == "warning"),
+                        InfoItems = issues.Count(i => i.Severity == "info"),
+                        QualityScore = qualityScore,
+                        QualityGrade = GetQualityGrade(qualityScore),
+                        IsProductionReady = qualityScore >= 85 && issues.Count(i => i.Severity == "error") == 0
+                    },
+                    Suggestions = GenerateValidationSuggestions(issues, completionPercentage),
+                    ValidatedAt = DateTime.Now
+                };
+
+                return new SuccessDataResult<TranslationValidationResult>(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating translations for language {Language}", language);
+                return new ErrorDataResult<TranslationValidationResult>($"Çeviri doğrulaması yapılamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<CulturalAdaptation>> GetCulturalAdaptationAsync(string country)
+        {
+            try
+            {
+                var adaptation = GenerateCulturalAdaptation(country);
+                return new SuccessDataResult<CulturalAdaptation>(adaptation);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting cultural adaptation for country {Country}", country);
+                return new ErrorDataResult<CulturalAdaptation>($"Kültürel uyarlama bilgileri alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<LocalizedContent>> GetLocalizedContentAsync(string contentType, string language)
+        {
+            try
+            {
+                var content = GenerateLocalizedContent(contentType, language);
+                return new SuccessDataResult<LocalizedContent>(content);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting localized content for type {ContentType} in language {Language}", contentType, language);
+                return new ErrorDataResult<LocalizedContent>($"Yerelleştirilmiş içerik alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> ImportLanguagePackAsync(string language, LanguagePackImport languagePack)
+        {
+            try
+            {
+                var importedCount = 0;
+                var skippedCount = 0;
+
+                lock (_cacheLock)
+                {
+                    foreach (var moduleKv in languagePack.Translations)
+                    {
+                        var moduleName = moduleKv.Key;
+                        var translations = moduleKv.Value;
+
+                        // Check if module should be included/excluded
+                        if (languagePack.Options.IncludeModules.Any() && !languagePack.Options.IncludeModules.Contains(moduleName))
+                            continue;
+
+                        if (languagePack.Options.ExcludeModules.Contains(moduleName))
+                            continue;
+
+                        if (!_translations.ContainsKey(language))
+                            _translations[language] = new Dictionary<string, Dictionary<string, string>>();
+
+                        if (!_translations[language].ContainsKey(moduleName))
+                            _translations[language][moduleName] = new Dictionary<string, string>();
+
+                        foreach (var translationKv in translations)
+                        {
+                            var key = translationKv.Key;
+                            var value = translationKv.Value;
+
+                            var existsAlready = _translations[language][moduleName].ContainsKey(key);
+
+                            if (existsAlready && !languagePack.Options.OverwriteExisting)
+                            {
+                                skippedCount++;
+                                continue;
+                            }
+
+                            _translations[language][moduleName][key] = value;
+                            importedCount++;
+                        }
+                    }
+                }
+
+                _logger.LogInformation("Language pack imported for {Language}: {ImportedCount} translations imported, {SkippedCount} skipped", 
+                    language, importedCount, skippedCount);
+
+                return new SuccessResult($"Dil paketi başarıyla içe aktarıldı: {importedCount} çeviri eklendi, {skippedCount} atlandı");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error importing language pack for {Language}", language);
+                return new ErrorResult($"Dil paketi içe aktarılamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<LanguagePackExport>> ExportLanguagePackAsync(string language, string module = "all")
+        {
+            try
+            {
+                var exportId = Guid.NewGuid().ToString("N")[..12];
+                var downloadUrl = $"/api/v1/localization/download/{exportId}";
+
+                var statistics = new ExportStatistics();
+                var includedModules = new List<string>();
+
+                lock (_cacheLock)
+                {
+                    if (_translations.ContainsKey(language))
+                    {
+                        foreach (var moduleKv in _translations[language])
+                        {
+                            if (module == "all" || moduleKv.Key == module)
+                            {
+                                includedModules.Add(moduleKv.Key);
+                                statistics.ModuleBreakdown[moduleKv.Key] = moduleKv.Value.Count;
+                                statistics.ExportedKeys += moduleKv.Value.Count;
+                            }
+                        }
+                    }
+                }
+
+                statistics.TotalModules = includedModules.Count;
+                statistics.TotalKeys = statistics.ExportedKeys;
+                statistics.IncludedModules = includedModules;
+
+                var export = new LanguagePackExport
+                {
+                    Language = language,
+                    Version = "1.0.0",
+                    Format = "json",
+                    DownloadUrl = downloadUrl,
+                    GeneratedAt = DateTime.Now,
+                    ExpiresAt = DateTime.Now.AddDays(7),
+                    FileSizeBytes = EstimateFileSize(statistics.ExportedKeys),
+                    Statistics = statistics,
+                    Metadata = new ExportMetadata
+                    {
+                        ExportedBy = "System",
+                        ExportPurpose = "Language pack distribution",
+                        TargetSystem = "ZiraAI Platform",
+                        Options = new ExportOptions
+                        {
+                            Format = "json",
+                            IncludeMetadata = true,
+                            IncludeStatistics = true,
+                            IncludeModules = module == "all" ? new List<string>() : new List<string> { module }
+                        }
+                    }
+                };
+
+                return new SuccessDataResult<LanguagePackExport>(export);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting language pack for {Language}", language);
+                return new ErrorDataResult<LanguagePackExport>($"Dil paketi dışa aktarılamadı: {ex.Message}");
+            }
+        }
+
+        #region Private Methods
+
+        private void InitializeDefaultTranslations()
+        {
+            // Initialize Turkish translations
+            InitializeTurkishTranslations();
+            
+            // Initialize English translations
+            InitializeEnglishTranslations();
+            
+            // Initialize Arabic translations
+            InitializeArabicTranslations();
+            
+            // Add more languages as needed
+        }
+
+        private void InitializeTurkishTranslations()
+        {
+            var tr = new Dictionary<string, Dictionary<string, string>>
+            {
+                ["general"] = new Dictionary<string, string>
+                {
+                    ["welcome"] = "Hoş geldiniz",
+                    ["save"] = "Kaydet",
+                    ["cancel"] = "İptal",
+                    ["delete"] = "Sil",
+                    ["edit"] = "Düzenle",
+                    ["create"] = "Oluştur",
+                    ["update"] = "Güncelle",
+                    ["submit"] = "Gönder",
+                    ["loading"] = "Yükleniyor...",
+                    ["success"] = "Başarılı",
+                    ["error"] = "Hata",
+                    ["warning"] = "Uyarı",
+                    ["info"] = "Bilgi",
+                    ["yes"] = "Evet",
+                    ["no"] = "Hayır",
+                    ["close"] = "Kapat",
+                    ["back"] = "Geri",
+                    ["next"] = "İleri",
+                    ["previous"] = "Önceki"
+                },
+                ["dashboard"] = new Dictionary<string, string>
+                {
+                    ["title"] = "Dashboard",
+                    ["overview_card"] = "Genel Bakış",
+                    ["performance_metrics"] = "Performans Metrikleri",
+                    ["recent_activity"] = "Son Aktiviteler",
+                    ["quick_actions"] = "Hızlı İşlemler",
+                    ["analytics"] = "Analitikler",
+                    ["notifications"] = "Bildirimler"
+                },
+                ["sponsorship"] = new Dictionary<string, string>
+                {
+                    ["invite_message"] = "Merhaba {name}! Tarımsal sponsorluk programımıza katılmak için bu linki kullanın: {link}",
+                    ["welcome_message"] = "Tarımsal sponsorluk programına hoş geldiniz!",
+                    ["code_redemption"] = "Sponsorluk kodu başarıyla kullanıldı",
+                    ["benefit_description"] = "Bu sponsorluk ile ücretsiz tarım analizi hizmetinden faydalanabilirsiniz",
+                    ["tier_s"] = "Küçük Paket",
+                    ["tier_m"] = "Orta Paket",
+                    ["tier_l"] = "Büyük Paket",
+                    ["tier_xl"] = "Ekstra Büyük Paket"
+                },
+                ["plant_analysis"] = new Dictionary<string, string>
+                {
+                    ["title"] = "Bitki Analizi",
+                    ["upload_image"] = "Fotoğraf Yükle",
+                    ["analyzing"] = "Analiz ediliyor...",
+                    ["results"] = "Sonuçlar",
+                    ["health_score"] = "Sağlık Skoru",
+                    ["recommendations"] = "Öneriler",
+                    ["disease_detected"] = "Hastalık tespit edildi",
+                    ["healthy_plant"] = "Sağlıklı bitki"
+                },
+                ["errors"] = new Dictionary<string, string>
+                {
+                    ["validation_error"] = "Doğrulama hatası",
+                    ["network_error"] = "Ağ bağlantı hatası",
+                    ["authentication_error"] = "Kimlik doğrulama hatası",
+                    ["permission_error"] = "Yetki hatası",
+                    ["file_too_large"] = "Dosya çok büyük",
+                    ["invalid_format"] = "Geçersiz format"
+                }
+            };
+
+            _translations["tr"] = tr;
+        }
+
+        private void InitializeEnglishTranslations()
+        {
+            var en = new Dictionary<string, Dictionary<string, string>>
+            {
+                ["general"] = new Dictionary<string, string>
+                {
+                    ["welcome"] = "Welcome",
+                    ["save"] = "Save",
+                    ["cancel"] = "Cancel",
+                    ["delete"] = "Delete",
+                    ["edit"] = "Edit",
+                    ["create"] = "Create",
+                    ["update"] = "Update",
+                    ["submit"] = "Submit",
+                    ["loading"] = "Loading...",
+                    ["success"] = "Success",
+                    ["error"] = "Error",
+                    ["warning"] = "Warning",
+                    ["info"] = "Information",
+                    ["yes"] = "Yes",
+                    ["no"] = "No",
+                    ["close"] = "Close",
+                    ["back"] = "Back",
+                    ["next"] = "Next",
+                    ["previous"] = "Previous"
+                },
+                ["dashboard"] = new Dictionary<string, string>
+                {
+                    ["title"] = "Dashboard",
+                    ["overview_card"] = "Overview",
+                    ["performance_metrics"] = "Performance Metrics",
+                    ["recent_activity"] = "Recent Activity",
+                    ["quick_actions"] = "Quick Actions",
+                    ["analytics"] = "Analytics",
+                    ["notifications"] = "Notifications"
+                },
+                ["sponsorship"] = new Dictionary<string, string>
+                {
+                    ["invite_message"] = "Hello {name}! Use this link to join our agricultural sponsorship program: {link}",
+                    ["welcome_message"] = "Welcome to the agricultural sponsorship program!",
+                    ["code_redemption"] = "Sponsorship code successfully redeemed",
+                    ["benefit_description"] = "With this sponsorship, you can benefit from free agricultural analysis services",
+                    ["tier_s"] = "Small Package",
+                    ["tier_m"] = "Medium Package",
+                    ["tier_l"] = "Large Package",
+                    ["tier_xl"] = "Extra Large Package"
+                },
+                ["plant_analysis"] = new Dictionary<string, string>
+                {
+                    ["title"] = "Plant Analysis",
+                    ["upload_image"] = "Upload Image",
+                    ["analyzing"] = "Analyzing...",
+                    ["results"] = "Results",
+                    ["health_score"] = "Health Score",
+                    ["recommendations"] = "Recommendations",
+                    ["disease_detected"] = "Disease detected",
+                    ["healthy_plant"] = "Healthy plant"
+                },
+                ["errors"] = new Dictionary<string, string>
+                {
+                    ["validation_error"] = "Validation error",
+                    ["network_error"] = "Network connection error",
+                    ["authentication_error"] = "Authentication error",
+                    ["permission_error"] = "Permission error",
+                    ["file_too_large"] = "File too large",
+                    ["invalid_format"] = "Invalid format"
+                }
+            };
+
+            _translations["en"] = en;
+        }
+
+        private void InitializeArabicTranslations()
+        {
+            var ar = new Dictionary<string, Dictionary<string, string>>
+            {
+                ["general"] = new Dictionary<string, string>
+                {
+                    ["welcome"] = "أهلاً وسهلاً",
+                    ["save"] = "حفظ",
+                    ["cancel"] = "إلغاء",
+                    ["delete"] = "حذف",
+                    ["edit"] = "تحرير",
+                    ["create"] = "إنشاء",
+                    ["update"] = "تحديث",
+                    ["submit"] = "إرسال",
+                    ["loading"] = "جاري التحميل...",
+                    ["success"] = "نجح",
+                    ["error"] = "خطأ",
+                    ["warning"] = "تحذير",
+                    ["info"] = "معلومات",
+                    ["yes"] = "نعم",
+                    ["no"] = "لا",
+                    ["close"] = "إغلاق",
+                    ["back"] = "رجوع",
+                    ["next"] = "التالي",
+                    ["previous"] = "السابق"
+                },
+                ["dashboard"] = new Dictionary<string, string>
+                {
+                    ["title"] = "لوحة المعلومات",
+                    ["overview_card"] = "نظرة عامة",
+                    ["performance_metrics"] = "مقاييس الأداء",
+                    ["recent_activity"] = "النشاط الحديث",
+                    ["quick_actions"] = "إجراءات سريعة",
+                    ["analytics"] = "التحليلات",
+                    ["notifications"] = "الإشعارات"
+                },
+                ["sponsorship"] = new Dictionary<string, string>
+                {
+                    ["invite_message"] = "مرحباً {name}! استخدم هذا الرابط للانضمام إلى برنامج الرعاية الزراعية: {link}",
+                    ["welcome_message"] = "مرحباً بكم في برنامج الرعاية الزراعية!",
+                    ["code_redemption"] = "تم استخدام رمز الرعاية بنجاح",
+                    ["benefit_description"] = "مع هذه الرعاية، يمكنكم الاستفادة من خدمات التحليل الزراعي المجانية",
+                    ["tier_s"] = "الحزمة الصغيرة",
+                    ["tier_m"] = "الحزمة المتوسطة",
+                    ["tier_l"] = "الحزمة الكبيرة",
+                    ["tier_xl"] = "الحزمة الكبيرة جداً"
+                },
+                ["plant_analysis"] = new Dictionary<string, string>
+                {
+                    ["title"] = "تحليل النباتات",
+                    ["upload_image"] = "رفع صورة",
+                    ["analyzing"] = "جاري التحليل...",
+                    ["results"] = "النتائج",
+                    ["health_score"] = "نقاط الصحة",
+                    ["recommendations"] = "التوصيات",
+                    ["disease_detected"] = "تم اكتشاف مرض",
+                    ["healthy_plant"] = "نبات صحي"
+                },
+                ["errors"] = new Dictionary<string, string>
+                {
+                    ["validation_error"] = "خطأ في التحقق",
+                    ["network_error"] = "خطأ في الاتصال بالشبكة",
+                    ["authentication_error"] = "خطأ في المصادقة",
+                    ["permission_error"] = "خطأ في الصلاحية",
+                    ["file_too_large"] = "الملف كبير جداً",
+                    ["invalid_format"] = "تنسيق غير صحيح"
+                }
+            };
+
+            _translations["ar"] = ar;
+        }
+
+        private void InitializeSupportedLanguages()
+        {
+            _supportedLanguages["tr"] = new SupportedLanguage
+            {
+                Code = "tr",
+                Name = "Türkçe",
+                NativeName = "Türkçe",
+                Direction = "ltr",
+                Country = "TR",
+                Flag = "🇹🇷",
+                IsActive = true,
+                IsDefault = true,
+                CompletionPercentage = 100.0,
+                Culture = new CultureInfo
+                {
+                    DateFormat = "dd/MM/yyyy",
+                    TimeFormat = "HH:mm",
+                    DateTimeFormat = "dd/MM/yyyy HH:mm",
+                    NumberFormat = "#,##0.00",
+                    CurrencyFormat = "#,##0.00 ₺",
+                    CurrencySymbol = "₺",
+                    DecimalSeparator = ",",
+                    ThousandsSeparator = ".",
+                    WeekDays = new List<string> { "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar" },
+                    Months = new List<string> { "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık" }
+                },
+                Regional = new RegionalSettings
+                {
+                    TimeZone = "Europe/Istanbul",
+                    PhoneFormat = "+90 (###) ### ## ##",
+                    PreferredChannels = new List<string> { "WhatsApp", "SMS", "Email" },
+                    LocalizedTerms = new Dictionary<string, string> { ["farmer"] = "çiftçi", ["sponsor"] = "sponsor" }
+                },
+                LastUpdated = DateTime.Now,
+                Maintainer = "ZiraAI Team"
+            };
+
+            _supportedLanguages["en"] = new SupportedLanguage
+            {
+                Code = "en",
+                Name = "English",
+                NativeName = "English",
+                Direction = "ltr",
+                Country = "US",
+                Flag = "🇺🇸",
+                IsActive = true,
+                CompletionPercentage = 95.0,
+                Culture = new CultureInfo
+                {
+                    DateFormat = "MM/dd/yyyy",
+                    TimeFormat = "h:mm tt",
+                    DateTimeFormat = "MM/dd/yyyy h:mm tt",
+                    NumberFormat = "#,##0.00",
+                    CurrencyFormat = "$#,##0.00",
+                    CurrencySymbol = "$",
+                    DecimalSeparator = ".",
+                    ThousandsSeparator = ",",
+                    WeekDays = new List<string> { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" },
+                    Months = new List<string> { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" }
+                },
+                Regional = new RegionalSettings
+                {
+                    TimeZone = "America/New_York",
+                    PhoneFormat = "+1 (###) ###-####",
+                    PreferredChannels = new List<string> { "Email", "SMS", "WhatsApp" }
+                },
+                LastUpdated = DateTime.Now,
+                Maintainer = "ZiraAI Team"
+            };
+
+            _supportedLanguages["ar"] = new SupportedLanguage
+            {
+                Code = "ar",
+                Name = "العربية",
+                NativeName = "العربية",
+                Direction = "rtl",
+                Country = "SA",
+                Flag = "🇸🇦",
+                IsActive = true,
+                CompletionPercentage = 80.0,
+                Culture = new CultureInfo
+                {
+                    DateFormat = "dd/MM/yyyy",
+                    TimeFormat = "HH:mm",
+                    DateTimeFormat = "dd/MM/yyyy HH:mm",
+                    NumberFormat = "#,##0.00",
+                    CurrencyFormat = "#,##0.00 ر.س",
+                    CurrencySymbol = "ر.س",
+                    DecimalSeparator = ".",
+                    ThousandsSeparator = ",",
+                    WeekDays = new List<string> { "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد" },
+                    Months = new List<string> { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" }
+                },
+                Regional = new RegionalSettings
+                {
+                    TimeZone = "Asia/Riyadh",
+                    PhoneFormat = "+966 ## ### ####",
+                    PreferredChannels = new List<string> { "WhatsApp", "SMS", "Email" }
+                },
+                LastUpdated = DateTime.Now,
+                Maintainer = "ZiraAI Team"
+            };
+        }
+
+        private string GetTranslationFromCache(string key, string language, string module = null)
+        {
+            if (!_translations.ContainsKey(language))
+                return null;
+
+            if (module != null)
+            {
+                if (_translations[language].ContainsKey(module) && _translations[language][module].ContainsKey(key))
+                {
+                    return _translations[language][module][key];
+                }
+            }
+            else
+            {
+                // Search all modules for the key
+                foreach (var moduleTranslations in _translations[language].Values)
+                {
+                    if (moduleTranslations.ContainsKey(key))
+                    {
+                        return moduleTranslations[key];
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private string ApplyParameters(string template, object parameters)
+        {
+            if (string.IsNullOrEmpty(template) || parameters == null)
+                return template;
+
+            var result = template;
+            
+            // Handle dictionary parameters
+            if (parameters is Dictionary<string, object> dict)
+            {
+                foreach (var kvp in dict)
+                {
+                    result = result.Replace($"{{{kvp.Key}}}", kvp.Value?.ToString() ?? "");
+                }
+            }
+            // Handle anonymous object parameters
+            else
+            {
+                var properties = parameters.GetType().GetProperties();
+                foreach (var prop in properties)
+                {
+                    var value = prop.GetValue(parameters)?.ToString() ?? "";
+                    result = result.Replace($"{{{prop.Name}}}", value);
+                }
+            }
+
+            return result;
+        }
+
+        private List<string> ExtractParameters(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return new List<string>();
+
+            var regex = new Regex(@"\{(\w+)\}");
+            var matches = regex.Matches(text);
+            
+            return matches.Select(m => m.Groups[1].Value).Distinct().ToList();
+        }
+
+        private string GetModuleFromKey(string key)
+        {
+            if (key.Contains("."))
+            {
+                return key.Split('.')[0];
+            }
+            return "general";
+        }
+
+        private string GetLanguageName(string code)
+        {
+            return _supportedLanguages.TryGetValue(code, out var lang) ? lang.Name : code.ToUpper();
+        }
+
+        private string GetModuleDescription(string module) => module switch
+        {
+            "general" => "Genel kullanım çevirileri",
+            "dashboard" => "Dashboard ve ana sayfa çevirileri",
+            "sponsorship" => "Sponsorluk sistemi çevirileri",
+            "plant_analysis" => "Bitki analizi çevirileri",
+            "errors" => "Hata mesajları",
+            _ => $"{module} modülü çevirileri"
+        };
+
+        private List<string> GetModuleCategories(string module) => module switch
+        {
+            "general" => new List<string> { "buttons", "labels", "messages" },
+            "dashboard" => new List<string> { "widgets", "charts", "navigation" },
+            "sponsorship" => new List<string> { "messages", "tiers", "benefits" },
+            _ => new List<string> { "general" }
+        };
+
+        private double CalculateModuleCompletion(string module, string language)
+        {
+            // Mock calculation - in production, compare with reference language
+            return new Random().NextDouble() * 30 + 70; // 70-100%
+        }
+
+        private TranslationStatistics GenerateTranslationStatistics(string language)
+        {
+            var totalKeys = 0;
+            var translatedKeys = 0;
+
+            lock (_cacheLock)
+            {
+                if (_translations.ContainsKey(language))
+                {
+                    foreach (var module in _translations[language].Values)
+                    {
+                        totalKeys += module.Count;
+                        translatedKeys += module.Values.Count(v => !string.IsNullOrEmpty(v));
+                    }
+                }
+            }
+
+            return new TranslationStatistics
+            {
+                TotalKeys = totalKeys,
+                TranslatedKeys = translatedKeys,
+                MissingKeys = totalKeys - translatedKeys,
+                CompletionPercentage = totalKeys > 0 ? (double)translatedKeys / totalKeys * 100 : 0,
+                LastUpdateDate = DateTime.Now
+            };
+        }
+
+        private double CalculateQualityScore(List<ValidationIssue> issues, int totalKeys)
+        {
+            if (totalKeys == 0) return 100;
+
+            var errorPenalty = issues.Count(i => i.Severity == "error") * 10;
+            var warningPenalty = issues.Count(i => i.Severity == "warning") * 5;
+            var totalPenalty = errorPenalty + warningPenalty;
+
+            return Math.Max(0, 100 - (totalPenalty * 100.0 / totalKeys));
+        }
+
+        private string GetQualityGrade(double score) => score switch
+        {
+            >= 90 => "A",
+            >= 80 => "B",
+            >= 70 => "C",
+            >= 60 => "D",
+            _ => "F"
+        };
+
+        private List<string> GenerateValidationSuggestions(List<ValidationIssue> issues, double completionPercentage)
+        {
+            var suggestions = new List<string>();
+
+            if (completionPercentage < 100)
+                suggestions.Add($"Çeviri tamamlama oranını artırın (mevcut: %{completionPercentage:F1})");
+
+            if (issues.Any(i => i.IssueType == "missing_parameters"))
+                suggestions.Add("Eksik parametreleri ekleyin");
+
+            if (issues.Any(i => i.IssueType == "length_mismatch"))
+                suggestions.Add("Çok uzun çevirileri gözden geçirin");
+
+            if (!suggestions.Any())
+                suggestions.Add("Çeviriler iyi durumda görünüyor");
+
+            return suggestions;
+        }
+
+        private CulturalAdaptation GenerateCulturalAdaptation(string country)
+        {
+            // Mock implementation - in production, use real cultural data
+            return country.ToUpper() switch
+            {
+                "TR" => new CulturalAdaptation
+                {
+                    Country = "TR",
+                    Language = "tr",
+                    Agriculture = new AgricultureContext
+                    {
+                        CommonCrops = new List<string> { "buğday", "arpa", "mısır", "pamuk", "domates", "biber" },
+                        SeasonalPatterns = new List<string> { "kış ekimi", "bahar ekimi", "hasat dönemi" },
+                        ClimateType = "Akdeniz ve karasal iklim"
+                    },
+                    Communication = new CommunicationPreferences
+                    {
+                        PreferredChannels = new List<string> { "WhatsApp", "SMS", "yüz yüze" },
+                        PreferredTone = "saygılı ve samimi",
+                        PreferredTimeOfDay = "sabah erken saatler"
+                    }
+                },
+                "SA" => new CulturalAdaptation
+                {
+                    Country = "SA",
+                    Language = "ar",
+                    Agriculture = new AgricultureContext
+                    {
+                        CommonCrops = new List<string> { "التمر", "القمح", "الشعير", "الأرز" },
+                        ClimateType = "صحراوي"
+                    },
+                    Communication = new CommunicationPreferences
+                    {
+                        PreferredChannels = new List<string> { "WhatsApp", "SMS" },
+                        PreferredTone = "formal and respectful"
+                    }
+                },
+                _ => new CulturalAdaptation
+                {
+                    Country = country,
+                    Language = "en"
+                }
+            };
+        }
+
+        private LocalizedContent GenerateLocalizedContent(string contentType, string language)
+        {
+            // Mock implementation
+            return new LocalizedContent
+            {
+                ContentType = contentType,
+                Language = language,
+                Items = new Dictionary<string, LocalizedItem>
+                {
+                    ["welcome_email"] = new LocalizedItem
+                    {
+                        Key = "welcome_email",
+                        Title = language == "tr" ? "Hoş Geldiniz" : "Welcome",
+                        Content = language == "tr" ? "ZiraAI platformuna hoş geldiniz!" : "Welcome to the ZiraAI platform!",
+                        Category = "email_templates"
+                    }
+                },
+                LastUpdated = DateTime.Now
+            };
+        }
+
+        private long EstimateFileSize(int keyCount)
+        {
+            // Rough estimate: 50 bytes per key on average
+            return keyCount * 50;
+        }
+
+        #endregion
+    }
+}

@@ -1,0 +1,570 @@
+using Business.Services.Localization;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using System.Threading.Tasks;
+
+namespace WebAPI.Controllers
+{
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [ApiController]
+    [ApiVersion("1.0")]
+    public class LocalizationController : BaseApiController
+    {
+        private readonly ILocalizationService _localizationService;
+
+        public LocalizationController(ILocalizationService localizationService)
+        {
+            _localizationService = localizationService;
+        }
+
+        /// <summary>
+        /// Get translation for a specific key
+        /// Supports parameter substitution and fallback to default language
+        /// </summary>
+        [HttpGet("translate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTranslation([FromQuery] string key, [FromQuery] string language = "tr", [FromQuery] string parameters = null)
+        {
+            try
+            {
+                object parsedParameters = null;
+                if (!string.IsNullOrEmpty(parameters))
+                {
+                    try
+                    {
+                        parsedParameters = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(parameters);
+                    }
+                    catch
+                    {
+                        // Invalid JSON parameters, continue without parameters
+                    }
+                }
+
+                var result = await _localizationService.GetTranslationAsync(key, language, parsedParameters);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Çeviri alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get multiple translations in bulk
+        /// Optimized for reducing API calls when loading multiple strings
+        /// </summary>
+        [HttpPost("bulk-translate")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetBulkTranslations([FromBody] BulkTranslationRequest request)
+        {
+            try
+            {
+                var result = await _localizationService.GetTranslationsAsync(request.Keys, request.Language ?? "tr");
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Toplu çeviriler alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get complete language pack for a specific language and module
+        /// Used for offline language pack downloads and mobile applications
+        /// </summary>
+        [HttpGet("language-pack/{language}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLanguagePack(string language, [FromQuery] string module = "all")
+        {
+            try
+            {
+                var result = await _localizationService.GetLanguagePackAsync(language, module);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Dil paketi alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Set user's preferred language
+        /// Requires authentication
+        /// </summary>
+        [HttpPost("set-language")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> SetUserLanguage([FromBody] SetLanguageRequest request)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Forbid("Kullanıcı ID bulunamadı");
+                }
+
+                var result = await _localizationService.SetUserLanguageAsync(userId.Value, request.Language);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Dil ayarlanamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get user's current language preference
+        /// Requires authentication
+        /// </summary>
+        [HttpGet("my-language")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetUserLanguage()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (!userId.HasValue)
+                {
+                    return Forbid("Kullanıcı ID bulunamadı");
+                }
+
+                var result = await _localizationService.GetUserLanguageAsync(userId.Value);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Kullanıcı dili alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get list of all supported languages with completion statistics
+        /// Public endpoint for language selector components
+        /// </summary>
+        [HttpGet("supported-languages")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetSupportedLanguages()
+        {
+            try
+            {
+                var result = await _localizationService.GetSupportedLanguagesAsync();
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Desteklenen diller alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Add new translation (Admin only)
+        /// For content management and translation updates
+        /// </summary>
+        [HttpPost("translations")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> AddTranslation([FromBody] AddTranslationRequest request)
+        {
+            try
+            {
+                var result = await _localizationService.AddTranslationAsync(request.Key, request.Language, request.Value, request.Module ?? "general");
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Çeviri eklenemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Update existing translation (Admin only)
+        /// </summary>
+        [HttpPut("translations")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateTranslation([FromBody] UpdateTranslationRequest request)
+        {
+            try
+            {
+                var result = await _localizationService.UpdateTranslationAsync(request.Key, request.Language, request.Value);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Çeviri güncellenemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Delete translation (Admin only)
+        /// </summary>
+        [HttpDelete("translations")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> DeleteTranslation([FromQuery] string key, [FromQuery] string language)
+        {
+            try
+            {
+                var result = await _localizationService.DeleteTranslationAsync(key, language);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Çeviri silinemedi: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Validate translations for a specific language
+        /// Checks for missing translations, parameter mismatches, and quality issues
+        /// </summary>
+        [HttpGet("validate/{language}")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> ValidateTranslations(string language)
+        {
+            try
+            {
+                var result = await _localizationService.ValidateTranslationsAsync(language);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Çeviri doğrulaması yapılamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get cultural adaptation guidelines for a specific country
+        /// Helps with culturally appropriate content creation
+        /// </summary>
+        [HttpGet("cultural-adaptation/{country}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetCulturalAdaptation(string country)
+        {
+            try
+            {
+                var result = await _localizationService.GetCulturalAdaptationAsync(country.ToUpper());
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Kültürel uyarlama bilgileri alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get localized content templates (emails, notifications, etc.)
+        /// </summary>
+        [HttpGet("content/{contentType}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLocalizedContent(string contentType, [FromQuery] string language = "tr")
+        {
+            try
+            {
+                var result = await _localizationService.GetLocalizedContentAsync(contentType, language);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Yerelleştirilmiş içerik alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Import language pack from file or external source (Admin only)
+        /// </summary>
+        [HttpPost("import/{language}")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> ImportLanguagePack(string language, [FromBody] LanguagePackImport languagePack)
+        {
+            try
+            {
+                var result = await _localizationService.ImportLanguagePackAsync(language, languagePack);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Dil paketi içe aktarılamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Export language pack for external use or backup (Admin only)
+        /// </summary>
+        [HttpGet("export/{language}")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> ExportLanguagePack(string language, [FromQuery] string module = "all")
+        {
+            try
+            {
+                var result = await _localizationService.ExportLanguagePackAsync(language, module);
+                return result.Success ? Ok(result) : NotFound(result);
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Dil paketi dışa aktarılamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get localization dashboard with statistics and management tools (Admin only)
+        /// </summary>
+        [HttpGet("dashboard")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetLocalizationDashboard()
+        {
+            try
+            {
+                var supportedLanguagesResult = await _localizationService.GetSupportedLanguagesAsync();
+                
+                if (!supportedLanguagesResult.Success)
+                    return BadRequest(supportedLanguagesResult);
+
+                var dashboard = new
+                {
+                    overview = new
+                    {
+                        total_languages = supportedLanguagesResult.Data.Count,
+                        active_languages = supportedLanguagesResult.Data.Count(l => l.IsActive),
+                        avg_completion = supportedLanguagesResult.Data.Average(l => l.CompletionPercentage),
+                        default_language = supportedLanguagesResult.Data.FirstOrDefault(l => l.IsDefault)?.Code ?? "tr"
+                    },
+                    languages = supportedLanguagesResult.Data.Select(lang => new
+                    {
+                        lang.Code,
+                        lang.Name,
+                        lang.NativeName,
+                        lang.Flag,
+                        lang.IsActive,
+                        lang.CompletionPercentage,
+                        lang.LastUpdated,
+                        lang.Maintainer,
+                        status = GetLanguageStatus(lang.CompletionPercentage),
+                        priority = GetLanguagePriority(lang.Code)
+                    }).ToList(),
+                    modules = new[]
+                    {
+                        new { name = "general", completion = 100.0, priority = "high", description = "Genel kullanım çevirileri" },
+                        new { name = "dashboard", completion = 95.0, priority = "high", description = "Dashboard çevirileri" },
+                        new { name = "sponsorship", completion = 90.0, priority = "high", description = "Sponsorluk sistemi" },
+                        new { name = "plant_analysis", completion = 85.0, priority = "medium", description = "Bitki analizi" },
+                        new { name = "errors", completion = 98.0, priority = "high", description = "Hata mesajları" },
+                        new { name = "ab_testing", completion = 75.0, priority = "low", description = "A/B test sistemi" }
+                    },
+                    recent_activity = new[]
+                    {
+                        new { action = "translation_added", language = "ar", key = "sponsorship.welcome_message", timestamp = DateTime.Now.AddHours(-2) },
+                        new { action = "language_pack_imported", language = "fr", count = 125, timestamp = DateTime.Now.AddDays(-1) },
+                        new { action = "validation_completed", language = "en", issues = 3, timestamp = DateTime.Now.AddDays(-2) }
+                    },
+                    quality_metrics = new
+                    {
+                        overall_quality_score = 87.5,
+                        total_translation_keys = 450,
+                        translated_keys = 395,
+                        missing_keys = 55,
+                        validation_issues = 12,
+                        production_ready_languages = supportedLanguagesResult.Data.Count(l => l.CompletionPercentage >= 90)
+                    },
+                    recommendations = new[]
+                    {
+                        new { priority = "high", title = "Arapça çevirileri tamamlayın", description = "Arapça dil paketi %80 tamamlanmış, eksik çeviriler var" },
+                        new { priority = "medium", title = "A/B test modülü çevirileri", description = "A/B test modülü için çeviri tamamlama oranı düşük" },
+                        new { priority = "low", title = "Yeni dil desteği", description = "Fransızca ve Almanca dil desteği eklemeyi düşünün" }
+                    ]
+                };
+
+                return Ok(new { success = true, data = dashboard });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Lokalizasyon dashboard'u alınamadı: {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Get translation tools and utilities for translators
+        /// </summary>
+        [HttpGet("tools")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTranslationTools()
+        {
+            try
+            {
+                var tools = new
+                {
+                    translation_helpers = new
+                    {
+                        parameter_syntax = new
+                        {
+                            description = "Çevirilerde parametre kullanımı",
+                            examples = new[]
+                            {
+                                new { template = "Merhaba {name}!", usage = "name parametresi ile kişiselleştirme" },
+                                new { template = "{count} adet ürün bulundu", usage = "count parametresi ile sayı gösterimi" },
+                                new { template = "Son güncelleme: {date}", usage = "date parametresi ile tarih gösterimi" }
+                            },
+                            rules = new[]
+                            {
+                                "Parametreler süslü parantez içinde yazılır: {parameter}",
+                                "Parametre isimleri İngilizce olmalıdır",
+                                "Tüm parametreler çeviride korunmalıdır",
+                                "Parametre sırası değiştirilebilir"
+                            }
+                        },
+                        cultural_guidelines = new
+                        {
+                            description = "Kültürel uyarlama rehberi",
+                            guidelines = new[]
+                            {
+                                new { culture = "Türk", tip = "Saygılı ve samimi ton kullanın", example = "'Sayın' yerine 'Değerli' kelimesini tercih edin" },
+                                new { culture = "Arap", tip = "Formal ve saygılı yaklaşım", example = "Dini hassasiyetleri göz önünde bulundurun" },
+                                new { culture = "Batı", tip = "Doğrudan ve açık iletişim", example = "Net ve anlaşılır ifadeler kullanın" }
+                            ]
+                        },
+                        technical_terms = new
+                        {
+                            description = "Tarım teknolojisi terimleri sözlüğü",
+                            terms = new Dictionary<string, Dictionary<string, string>>
+                            {
+                                ["farmer"] = new Dictionary<string, string> { ["tr"] = "çiftçi", ["en"] = "farmer", ["ar"] = "مزارع" },
+                                ["crop"] = new Dictionary<string, string> { ["tr"] = "ürün/mahsul", ["en"] = "crop", ["ar"] = "محصول" },
+                                ["analysis"] = new Dictionary<string, string> { ["tr"] = "analiz", ["en"] = "analysis", ["ar"] = "تحليل" },
+                                ["sponsorship"] = new Dictionary<string, string> { ["tr"] = "sponsorluk", ["en"] = "sponsorship", ["ar"] = "رعاية" }
+                            }
+                        }
+                    },
+                    quality_checklist = new
+                    {
+                        description = "Çeviri kalite kontrol listesi",
+                        checks = new[]
+                        {
+                            new { category = "Doğruluk", items = new[] { "Anlamın korunmuş olması", "Teknik terimlerin doğru çevrilmesi", "Sayısal verilerin korunması" } },
+                            new { category = "Akıcılık", items = new[] { "Doğal Türkçe ifadeler", "Dilbilgisi kurallarına uygunluk", "Anlaşılır ve basit dil" } },
+                            new { category = "Tutarlılık", items = new[] { "Terminoloji tutarlılığı", "Ton ve üslup tutarlılığı", "Parametre kullanımının doğruluğu" } },
+                            new { category = "Kültürel Uyum", items = new[] { "Hedef kültüre uygunluk", "Yerel ifadelerin kullanımı", "Hassas konularda dikkat" } }
+                        ]
+                    },
+                    validation_rules = new
+                    {
+                        description = "Otomatik doğrulama kuralları",
+                        rules = new[]
+                        {
+                            new { rule = "parameter_check", description = "Tüm parametrelerin korunmuş olması gerekir" },
+                            new { rule = "length_check", description = "Çeviri referans metnin 2 katından uzun olmamalı" },
+                            new { rule = "encoding_check", description = "Özel karakterlerin doğru kodlanması" },
+                            new { rule = "format_check", description = "HTML/Markdown formatının korunması" }
+                        ]
+                    },
+                    useful_resources = new
+                    {
+                        dictionaries = new[]
+                        {
+                            new { name = "TDK Sözlük", url = "https://sozluk.gov.tr", description = "Türk Dil Kurumu resmi sözlük" },
+                            new { name = "Tarım Terimleri", url = "#", description = "Tarımsal terimler sözlüğü" }
+                        },
+                        style_guides = new[]
+                        {
+                            new { name = "Türkçe Yazım Kılavuzu", description = "Resmi yazım kuralları" },
+                            new { name = "ZiraAI Stil Rehberi", description = "Platform özel yazım standartları" }
+                        }
+                    }
+                };
+
+                return Ok(new { success = true, data = tools });
+            }
+            catch (System.Exception ex)
+            {
+                return BadRequest(new { success = false, message = $"Çeviri araçları alınamadı: {ex.Message}" });
+            }
+        }
+
+        #region Private Helper Methods
+
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdClaim?.Value, out int userId))
+            {
+                return userId;
+            }
+            return null;
+        }
+
+        private string GetLanguageStatus(double completionPercentage) => completionPercentage switch
+        {
+            >= 95 => "complete",
+            >= 80 => "good",
+            >= 60 => "partial",
+            _ => "incomplete"
+        };
+
+        private string GetLanguagePriority(string languageCode) => languageCode switch
+        {
+            "tr" => "critical",
+            "en" => "high",
+            "ar" => "medium",
+            _ => "low"
+        };
+
+        #endregion
+    }
+
+    #region Request/Response Models
+
+    public class BulkTranslationRequest
+    {
+        public List<string> Keys { get; set; } = new();
+        public string Language { get; set; } = "tr";
+    }
+
+    public class SetLanguageRequest
+    {
+        public string Language { get; set; }
+    }
+
+    public class AddTranslationRequest
+    {
+        public string Key { get; set; }
+        public string Language { get; set; }
+        public string Value { get; set; }
+        public string Module { get; set; }
+    }
+
+    public class UpdateTranslationRequest
+    {
+        public string Key { get; set; }
+        public string Language { get; set; }
+        public string Value { get; set; }
+    }
+
+    #endregion
+}

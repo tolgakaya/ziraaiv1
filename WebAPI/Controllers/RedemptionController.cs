@@ -9,9 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace WebAPI.Controllers
 {
-    [Route("api/v{version:apiVersion}/redeem")]
     [ApiController]
-    [ApiVersion("1.0")]
     [AllowAnonymous]
     public class RedemptionController : ControllerBase
     {
@@ -34,6 +32,7 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="code">The sponsorship code to redeem</param>
         /// <returns>HTML page with redemption result and auto-login if successful</returns>
+
         [HttpGet("~/redeem/{code}")] // Direct access without /api/v1/ prefix for easier link sharing
         public async Task<IActionResult> RedeemSponsorshipCode(string code)
         {
@@ -44,11 +43,17 @@ namespace WebAPI.Controllers
                 // Get client IP for tracking
                 var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
                 
+                // Log user agent and authorization header for debugging
+                var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+                var authHeader = HttpContext.Request.Headers["Authorization"].ToString();
+                _logger.LogInformation("User-Agent: {UserAgent}, Auth Header Present: {HasAuth}", 
+                    userAgent, !string.IsNullOrEmpty(authHeader));
+                
                 // Track link click
                 await _redemptionService.TrackLinkClickAsync(code, clientIp);
                 
-                // Validate code
-                var validationResult = await _redemptionService.ValidateCodeAsync(code);
+                // Validate code (including sponsor self-redemption check)
+                var validationResult = await _redemptionService.ValidateCodeWithUserAsync(code, HttpContext);
                 if (!validationResult.Success)
                 {
                     _logger.LogWarning("Code validation failed for {Code}: {Message}", 
@@ -100,14 +105,24 @@ namespace WebAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error redeeming sponsorship code: {Code}", code);
-                return RedirectToAction("Error", new { message = "Beklenmeyen bir hata oluştu." });
+                var errorMessage = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    errorMessage += " Inner: " + ex.InnerException.Message;
+                    _logger.LogError("Inner Exception: {InnerException}", ex.InnerException.Message);
+                }
+                return RedirectToAction("Error", new { message = $"Beklenmeyen bir hata oluştu: {errorMessage}" });
             }
         }
 
         /// <summary>
         /// Display success page after successful redemption
         /// </summary>
-        [HttpGet("success")]
+        [HttpGet]
+        [Route("~/redeem/success")]
+        [Route("~/api/v{version:apiVersion}/redeem/success")]
+        [ApiVersion("1.0")]
+        [ApiVersionNeutral]
         public IActionResult Success([FromQuery] string token, [FromQuery] string subscription)
         {
             // Return a simple HTML page with auto-login script
@@ -223,7 +238,11 @@ namespace WebAPI.Controllers
         /// <summary>
         /// Display error page when redemption fails
         /// </summary>
-        [HttpGet("error")]
+        [HttpGet]
+        [Route("~/redeem/error")]
+        [Route("~/api/v{version:apiVersion}/redeem/error")]
+        [ApiVersion("1.0")]
+        [ApiVersionNeutral]
         public IActionResult Error([FromQuery] string message)
         {
             // Return a simple HTML error page

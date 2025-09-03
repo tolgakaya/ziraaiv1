@@ -18,6 +18,11 @@ namespace Business.Services.Redemption
         Task<IResult> ValidateCodeAsync(string code);
 
         /// <summary>
+        /// Validate if a sponsorship code is valid and can be redeemed, with user context check
+        /// </summary>
+        Task<IResult> ValidateCodeWithUserAsync(string code, Microsoft.AspNetCore.Http.HttpContext httpContext);
+
+        /// <summary>
         /// Find existing user by sponsorship code (using phone number)
         /// </summary>
         Task<User> FindUserByCodeAsync(string code);
