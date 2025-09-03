@@ -42,10 +42,7 @@ namespace WebAPI.Controllers
         /// <returns>Plant analysis result</returns>
         [HttpPost("analyze")]
         [Authorize(Roles = "Farmer,Admin")] // Require authentication + role
-        [ProducesResponseType(typeof(IDataResult<PlantAnalysisResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        
         public async Task<IActionResult> Analyze([FromBody] PlantAnalysisRequestDto request)
         {
             // Validate model
@@ -169,11 +166,7 @@ namespace WebAPI.Controllers
         /// <returns>Analysis ID for tracking</returns>
         [HttpPost("analyze-async")]
         [Authorize(Roles = "Farmer,Admin")] // Require authentication + role
-        [ProducesResponseType(typeof(object), StatusCodes.Status202Accepted)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        
         public async Task<IActionResult> AnalyzeAsync([FromBody] PlantAnalysisRequestDto request)
         {
             try
@@ -302,10 +295,6 @@ namespace WebAPI.Controllers
         /// <returns>Plant analysis details</returns>
         [HttpGet("{id}")]
         [Authorize] // Require authentication
-        [ProducesResponseType(typeof(IDataResult<PlantAnalysisResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetById(int id)
         {
             var query = new GetPlantAnalysisQuery { Id = id };

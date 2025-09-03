@@ -14,6 +14,7 @@ using Hangfire;
 using HangfireBasicAuthenticationFilter;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
@@ -100,20 +101,7 @@ namespace WebAPI
                         ClockSkew = TimeSpan.Zero
                     };
                 });
-            services.AddSwaggerGen(c =>
-            {
-                c.IncludeXmlComments(Path.ChangeExtension(typeof(Startup).Assembly.Location, ".xml"));
-                
-                // Ignore concrete entities to prevent circular reference issues
-                c.IgnoreObsoleteActions();
-                c.IgnoreObsoleteProperties();
-                
-                // Configure JSON options for Swagger
-                c.CustomSchemaIds(type => type.FullName);
-                
-                // Ignore complex DTOs that might cause circular references
-                c.SchemaFilter<ExcludeComplexTypesSchemaFilter>();
-            });
+            services.AddSwaggerGen();
 
             services.AddTransient<FileLogger>();
             services.AddTransient<PostgreSqlLogger>();
@@ -164,6 +152,32 @@ namespace WebAPI
             
             if (!env.IsProduction())
             {
+                // Add try-catch to capture Swagger generation errors
+                app.Use(async (context, next) =>
+                {
+                    try
+                    {
+                        await next();
+                    }
+                    catch (Exception ex) when (context.Request.Path.StartsWithSegments("/swagger"))
+                    {
+                        context.Response.StatusCode = 500;
+                        context.Response.ContentType = "application/json";
+                        
+                        var errorDetails = new
+                        {
+                            error = "Swagger generation failed",
+                            message = ex.Message,
+                            type = ex.GetType().Name,
+                            innerMessage = ex.InnerException?.Message,
+                            innerType = ex.InnerException?.GetType().Name,
+                            stackTrace = ex.StackTrace
+                        };
+                        
+                        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(errorDetails));
+                    }
+                });
+                
                 app.UseSwagger();
 
                 app.UseSwaggerUI(c =>

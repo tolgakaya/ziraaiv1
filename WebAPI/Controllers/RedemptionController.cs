@@ -32,9 +32,8 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="code">The sponsorship code to redeem</param>
         /// <returns>HTML page with redemption result and auto-login if successful</returns>
-        [HttpGet]
-        [Route("~/redeem/{code}")] // Direct access without /api/v1/ prefix for easier link sharing
-        [ApiVersionNeutral] // This endpoint should work regardless of API version
+
+        [HttpGet("~/redeem/{code}")] // Direct access without /api/v1/ prefix for easier link sharing
         public async Task<IActionResult> RedeemSponsorshipCode(string code)
         {
             try
