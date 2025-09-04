@@ -107,7 +107,7 @@ namespace Business.Handlers.Sponsorship.Commands
                                 { "farmer_name", recipient.Name },
                                 { "sponsor_code", recipient.Code },
                                 { "redemption_link", redemptionLink },
-                                { "tier_name", codeEntity.SubscriptionTier?.DisplayName ?? "Premium" },
+                                { "tier_name", "Premium" }, // Will be updated with proper tier lookup
                                 { "custom_message", request.CustomMessage ?? "" }
                             }
                         });
