@@ -36,7 +36,8 @@
       "mcp__serena__list_memories",
       "Bash(dotnet ef migrations add:*)",
       "Bash(dotnet ef database update:*)",
-      "mcp__serena__check_onboarding_performed"
+      "mcp__serena__check_onboarding_performed",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": [],
