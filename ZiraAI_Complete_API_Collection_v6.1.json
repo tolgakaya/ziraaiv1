@@ -1,0 +1,2192 @@
+{
+  "info": {
+    "name": "ZiraAI Complete API Collection",
+    "description": "Complete API collection for ZiraAI Plant Analysis system with authentication, authorization, subscription management, sponsorship features, and WhatsApp notifications. Updated with comprehensive endpoint coverage including all 120+ endpoints across 18 controllers. Version 6.1 includes new WhatsApp notification system integration.",
+    "version": "6.1.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "lastAnalysisId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sponsorshipCode",
+      "value": "AGRI-2025-XXXX",
+      "type": "string"
+    },
+    {
+      "key": "purchaseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "asyncAnalysisId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "farmerPhone",
+      "value": "+905551234567",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "User Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer@test.com\",\n  \"password\": \"Test123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Auth", "login"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set('accessToken', response.data.token);",
+                  "        pm.collectionVariables.set('refreshToken', response.data.refreshToken);",
+                  "        pm.collectionVariables.set('userId', response.data.userId);",
+                  "        console.log('✅ Login successful, tokens saved');",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Auth", "refresh-token"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Registration",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test Farmer\",\n  \"email\": \"farmer@test.com\",\n  \"password\": \"Test123456\",\n  \"phone\": \"+905551234567\",\n  \"address\": \"Test Address\",\n  \"farmSize\": 10.5,\n  \"primaryCrop\": \"Wheat\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer@test.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Auth", "forgot-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"Test123456\",\n  \"newPassword\": \"NewTest123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Auth/user-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Auth", "user-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Mobile",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"verificationCode\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Auth/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Auth", "verify"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test JWT Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Auth/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Auth", "test"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🌱 Plant Analysis",
+      "item": [
+        {
+          "name": "Analyze Plant (Sync)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "cropType",
+                  "value": "Wheat",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Farm Location",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Plant showing yellowing leaves",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/PlantAnalyses/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "PlantAnalyses", "analyze"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set('lastAnalysisId', response.data.id);",
+                  "        console.log('✅ Analysis completed, ID saved:', response.data.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Analyze Plant (Async)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "cropType",
+                  "value": "Wheat",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Farm Location",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Plant analysis for async processing",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/PlantAnalyses/analyze-async",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "PlantAnalyses", "analyze-async"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set('asyncAnalysisId', response.data.id);",
+                  "        console.log('✅ Async analysis queued, ID saved:', response.data.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Analysis by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/PlantAnalyses/{{lastAnalysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "PlantAnalyses", "{{lastAnalysisId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Analyses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/PlantAnalyses/my-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "PlantAnalyses", "my-analyses"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Analyses List (Mobile)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/PlantAnalyses/list?page=1&pageSize=10&status=completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "PlantAnalyses", "list"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "completed"
+                },
+                {
+                  "key": "cropType",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "fromDate",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "toDate",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sponsored Analyses (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/PlantAnalyses/sponsored-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "PlantAnalyses", "sponsored-analyses"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Analyses (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/PlantAnalyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "PlantAnalyses"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Analysis Image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/PlantAnalyses/{{lastAnalysisId}}/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "PlantAnalyses", "{{lastAnalysisId}}", "image"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "💳 Subscriptions",
+      "item": [
+        {
+          "name": "Get Subscription Tiers",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Subscriptions/tiers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Subscriptions", "tiers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Subscriptions/my-subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Subscriptions", "my-subscription"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Usage Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Subscriptions/usage-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Subscriptions", "usage-status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe to Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"duration\": 30,\n  \"paymentMethod\": \"credit_card\",\n  \"paymentDetails\": {\n    \"cardNumber\": \"4111111111111111\",\n    \"expiryMonth\": \"12\",\n    \"expiryYear\": \"2025\",\n    \"cvv\": \"123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Subscriptions/subscribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Subscriptions", "subscribe"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionId\": 1,\n  \"reason\": \"No longer needed\",\n  \"immediate\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Subscriptions/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Subscriptions", "cancel"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Subscriptions/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Subscriptions", "history"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Usage Logs (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Subscriptions/usage-logs?userId={{userId}}&startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Subscriptions", "usage-logs"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{userId}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Subscription Tier (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"name\": \"Premium Plus\",\n  \"displayName\": \"Premium Plus\",\n  \"description\": \"Enhanced premium features\",\n  \"price\": 199.99,\n  \"dailyRequestLimit\": 100,\n  \"monthlyRequestLimit\": 2500,\n  \"features\": [\"AI Analysis\", \"Priority Support\", \"Advanced Reports\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Subscriptions/tiers/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Subscriptions", "tiers", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🤝 Sponsorship",
+      "item": [
+        {
+          "name": "Purchase Bulk Subscriptions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"quantity\": 10,\n  \"expiryDays\": 90,\n  \"paymentMethod\": \"corporate_account\",\n  \"notes\": \"For local farmers initiative\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/purchase-bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "purchase-bulk"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data && response.data.codes && response.data.codes.length > 0) {",
+                  "        pm.collectionVariables.set('sponsorshipCode', response.data.codes[0]);",
+                  "        pm.collectionVariables.set('purchaseId', response.data.id);",
+                  "        console.log('✅ Bulk purchase completed, first code saved:', response.data.codes[0]);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Send Sponsorship Links (WhatsApp)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\n    {\n      \"code\": \"{{sponsorshipCode}}\",\n      \"phone\": \"{{farmerPhone}}\",\n      \"name\": \"Ahmet Çiftçi\"\n    },\n    {\n      \"code\": \"SPONSOR-TEST-002\",\n      \"phone\": \"+905551234568\",\n      \"name\": \"Mehmet Üretici\"\n    }\n  ],\n  \"channel\": \"whatsapp\",\n  \"customMessage\": \"ZiraAI premium üyeliğinizi aktifleştirmek için linke tıklayın!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/send-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "send-link"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Sponsorship Links (SMS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\n    {\n      \"code\": \"{{sponsorshipCode}}\",\n      \"phone\": \"{{farmerPhone}}\",\n      \"name\": \"Ahmet Çiftçi\"\n    }\n  ],\n  \"channel\": \"SMS\",\n  \"customMessage\": \"ZiraAI ücretsiz üyeliği için kodu kullanın.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/send-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "send-link"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Redeem Sponsorship Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{sponsorshipCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/redeem",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "redeem"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Sponsorship Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"expiryDays\": 30,\n  \"customCode\": \"CUSTOM-2025-001\",\n  \"notes\": \"Special code for VIP farmer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/codes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "codes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sponsorship Codes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/codes?onlyUnused=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "codes"],
+              "query": [
+                {
+                  "key": "onlyUnused",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Purchase History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/purchases",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "purchases"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sponsored Farmers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/farmers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "farmers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sponsorship Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "statistics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Link Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/link-statistics?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "link-statistics"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Sponsorship Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/validate/{{sponsorshipCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "validate", "{{sponsorshipCode}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Sponsor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Sponsorship/my-sponsor",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Sponsorship", "my-sponsor"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔗 Redemption (Public Links)",
+      "item": [
+        {
+          "name": "Redeem Code (Public Link)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redeem/{{sponsorshipCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["redeem", "{{sponsorshipCode}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Redemption Success Page",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/redeem/success?token=sample-token&subscription=Premium",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "redeem", "success"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "sample-token"
+                },
+                {
+                  "key": "subscription",
+                  "value": "Premium"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Redemption Error Page",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/redeem/error?message=Code expired",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "redeem", "error"],
+              "query": [
+                {
+                  "key": "message",
+                  "value": "Code expired"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📱 WhatsApp Notifications",
+      "item": [
+        {
+          "name": "Send WhatsApp Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"phoneNumber\": \"{{farmerPhone}}\",\n  \"templateName\": \"analysis_complete\",\n  \"parameters\": {\n    \"farmer_name\": \"Ahmet Çiftçi\",\n    \"crop_type\": \"Wheat\",\n    \"health_score\": \"85\",\n    \"primary_concern\": \"Possible nitrogen deficiency\",\n    \"analysis_link\": \"https://ziraai.com/dashboard/analysis/123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/whatsapp/send-template",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "whatsapp", "send-template"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Bulk WhatsApp Templates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"templateName\": \"sponsorship_invitation\",\n  \"recipients\": [\n    {\n      \"userId\": 0,\n      \"phoneNumber\": \"{{farmerPhone}}\",\n      \"name\": \"Ahmet Çiftçi\",\n      \"parameters\": {\n        \"farmer_name\": \"Ahmet Çiftçi\",\n        \"sponsor_code\": \"AGRI-2025-001\",\n        \"redemption_link\": \"https://ziraai.com/redeem/AGRI-2025-001\",\n        \"tier_name\": \"Premium\"\n      }\n    },\n    {\n      \"userId\": 0,\n      \"phoneNumber\": \"+905551234568\",\n      \"name\": \"Mehmet Üretici\",\n      \"parameters\": {\n        \"farmer_name\": \"Mehmet Üretici\",\n        \"sponsor_code\": \"AGRI-2025-002\",\n        \"redemption_link\": \"https://ziraai.com/redeem/AGRI-2025-002\",\n        \"tier_name\": \"Premium\"\n      }\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/whatsapp/send-bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "whatsapp", "send-bulk"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Test WhatsApp (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"{{farmerPhone}}\",\n  \"testMessage\": \"This is a test message from ZiraAI WhatsApp service.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/whatsapp/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "whatsapp", "test"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Notify Analysis Completed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"analysisId\": \"{{lastAnalysisId}}\",\n  \"farmerId\": \"{{userId}}\",\n  \"cropType\": \"Wheat\",\n  \"healthScore\": 85,\n  \"primaryConcern\": \"Possible nitrogen deficiency\",\n  \"urgencyLevel\": \"Medium\",\n  \"contactEmail\": \"farmer@test.com\",\n  \"contactPhone\": \"{{farmerPhone}}\",\n  \"completedAt\": \"2024-01-15T10:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/plant-analysis-completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "plant-analysis-completed"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Urgent Health Alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"phoneNumber\": \"{{farmerPhone}}\",\n  \"cropType\": \"Wheat\",\n  \"urgentIssue\": \"Severe blight detected\",\n  \"recommendedAction\": \"Apply fungicide within 24 hours\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/urgent-health-alert",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "urgent-health-alert"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Usage Alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"phoneNumber\": \"{{farmerPhone}}\",\n  \"usagePercentage\": 80,\n  \"limitType\": \"monthly\",\n  \"resetDate\": \"2024-02-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/usage-alert",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "usage-alert"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Notification Health (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Notification Preferences",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/preferences/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "preferences", "{{userId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Notification Preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"phoneNumber\": \"{{farmerPhone}}\",\n  \"preferredChannel\": \"WhatsApp\",\n  \"enableAnalysisNotifications\": true,\n  \"enableSubscriptionNotifications\": true,\n  \"enableSponsorshipNotifications\": true,\n  \"enableUrgentAlerts\": true,\n  \"quietHoursStart\": \"22:00\",\n  \"quietHoursEnd\": \"08:00\",\n  \"timeZone\": \"Europe/Istanbul\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Notification/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Notification", "preferences"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔧 WhatsApp Webhook",
+      "item": [
+        {
+          "name": "WhatsApp Webhook (POST)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entry\": [\n    {\n      \"id\": \"PHONE_NUMBER_ID\",\n      \"changes\": [\n        {\n          \"value\": {\n            \"messaging_product\": \"whatsapp\",\n            \"metadata\": {\n              \"display_phone_number\": \"15550559999\",\n              \"phone_number_id\": \"PHONE_NUMBER_ID\"\n            },\n            \"statuses\": [\n              {\n                \"id\": \"wamid.MESSAGE_ID\",\n                \"status\": \"delivered\",\n                \"timestamp\": \"1640995200\",\n                \"recipient_id\": \"905551234567\"\n              }\n            ]\n          },\n          \"field\": \"messages\"\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/webhooks/whatsapp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "webhooks", "whatsapp"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "WhatsApp Webhook Verification (GET)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=ziraai_webhook_verification_token&hub.challenge=1234567890",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "webhooks", "whatsapp"],
+              "query": [
+                {
+                  "key": "hub.mode",
+                  "value": "subscribe"
+                },
+                {
+                  "key": "hub.verify_token",
+                  "value": "ziraai_webhook_verification_token"
+                },
+                {
+                  "key": "hub.challenge",
+                  "value": "1234567890"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👤 User Management",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Lookups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Users/lookups",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Users", "lookups"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Users", "{{userId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"New User\",\n  \"email\": \"newuser@test.com\",\n  \"password\": \"Password123\",\n  \"phone\": \"+905551234569\",\n  \"address\": \"User Address\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{userId}},\n  \"fullName\": \"Updated User Name\",\n  \"email\": \"updated@test.com\",\n  \"phone\": \"+905551234567\",\n  \"address\": \"Updated Address\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Users", "{{userId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👥 Groups & Permissions",
+      "item": [
+        {
+          "name": "Groups",
+          "item": [
+            {
+              "name": "Get All Groups",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Groups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Group by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Groups/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Groups", "1"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Group Lookups",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Groups/lookups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Groups", "lookups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Group",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"groupName\": \"Premium Sponsors\",\n  \"description\": \"Premium tier sponsors with advanced features\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Groups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Group",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"groupName\": \"Updated Group Name\",\n  \"description\": \"Updated description\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Groups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Group",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Groups/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Groups", "1"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User Groups",
+          "item": [
+            {
+              "name": "Get All User Groups",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-groups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get User Groups by User ID",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-groups/users/{{userId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-groups", "users", "{{userId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Group Claims by User ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-groups/users/{{userId}}/groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-groups", "users", "{{userId}}", "groups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Users in Group",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-groups/groups/1/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-groups", "groups", "1", "users"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add User to Group",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": {{userId}},\n  \"groupId\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-groups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update User Group",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"userId\": {{userId}},\n  \"groupId\": 2\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-groups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Users in Group",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"groupId\": 1,\n  \"userIds\": [{{userId}}, 2, 3]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-groups/groups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-groups", "groups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove User from Group",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-groups/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-groups", "1"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Group Claims",
+          "item": [
+            {
+              "name": "Get All Group Claims",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/group-claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "group-claims"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Group Claim by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/group-claims/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "group-claims", "1"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Claims by Group ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/group-claims/groups/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "group-claims", "groups", "1"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Claim to Group",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"groupId\": 1,\n  \"operationClaimId\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/group-claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "group-claims"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Group Claims",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"groupId\": 1,\n  \"operationClaimId\": 2\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/group-claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "group-claims"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Claim from Group",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/group-claims/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "group-claims", "1"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User Claims",
+          "item": [
+            {
+              "name": "Get All User Claims",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-claims"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get User Claims by User ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-claims/{{userId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-claims", "{{userId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Operation Claims by User ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-claims/users/{{userId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-claims", "users", "{{userId}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add Claim to User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": {{userId}},\n  \"operationClaimId\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-claims"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update User Claims",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"userId\": {{userId}},\n  \"operationClaimId\": 2\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-claims"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Claim from User",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/user-claims/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "user-claims", "1"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Operation Claims",
+          "item": [
+            {
+              "name": "Get All Operation Claims",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/operation-claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "operation-claims"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Operation Claim by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/operation-claims/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "operation-claims", "1"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Operation Claim Lookups",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/operation-claims/lookups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "operation-claims", "lookups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Operation Claim",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"name\": \"UpdatedClaimName\",\n  \"description\": \"Updated claim description\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/operation-claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "operation-claims"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get User Claims from Cache",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/operation-claims/cache",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "operation-claims", "cache"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🌐 Localization",
+      "item": [
+        {
+          "name": "Languages",
+          "item": [
+            {
+              "name": "Get Language Codes",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Languages/codes",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Languages", "codes"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Language Lookups",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Languages/lookups",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Languages", "lookups"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Languages",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Languages",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Languages"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Language by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Languages/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Languages", "1"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Language",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Français\",\n  \"code\": \"fr\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Languages",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Languages"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Language",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"name\": \"Updated Language\",\n  \"code\": \"ul\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Languages",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Languages"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Language",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Languages/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Languages", "1"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Translations",
+          "item": [
+            {
+              "name": "Get Translations by Language",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Translates/languages/tr",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Translates", "languages", "tr"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Translations",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Translates",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Translates"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Translation DTOs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Translates/dtos",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Translates", "dtos"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Translation by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Translates/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Translates", "1"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Translation",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"languageId\": 1,\n  \"code\": \"welcome.message\",\n  \"value\": \"Welcome to ZiraAI Plant Analysis\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Translates",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Translates"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Translation",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": 1,\n  \"languageId\": 1,\n  \"code\": \"welcome.message\",\n  \"value\": \"Updated Welcome Message\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Translates",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Translates"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Translation",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/Translates/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "v1", "Translates", "1"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🧪 Testing & Development",
+      "item": [
+        {
+          "name": "Test Mock N8N Response",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"analysisId\": {{asyncAnalysisId}},\n  \"cropType\": \"Wheat\",\n  \"healthScore\": 85,\n  \"disease\": \"Leaf rust\",\n  \"severity\": \"Moderate\",\n  \"treatment\": \"Apply fungicide within 48 hours\",\n  \"confidence\": 0.92\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Test/mock-n8n-response",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Test", "mock-n8n-response"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check RabbitMQ Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Test/rabbitmq-health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Test", "rabbitmq-health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recent Analyses (Test DB)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/TestDatabase/recent-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "TestDatabase", "recent-analyses"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription Debug Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/TestDatabase/subscription-debug",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "TestDatabase", "subscription-debug"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check User Subscription (Test)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/TestDatabase/user-subscription/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "TestDatabase", "user-subscription", "{{userId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Trial Tier (Test Setup)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/TestDatabase/add-trial-tier",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "TestDatabase", "add-trial-tier"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📊 System & Logging",
+      "item": [
+        {
+          "name": "Get System Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/Logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "Logs"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh token if expired",
+          "if (pm.collectionVariables.get('accessToken')) {",
+          "    console.log('🔑 Using stored access token');",
+          "} else {",
+          "    console.log('⚠️ No access token found - please login first');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global response logging",
+          "if (pm.response.code >= 400) {",
+          "    console.log('❌ Request failed:', pm.response.status, pm.response.json());",
+          "} else {",
+          "    console.log('✅ Request successful:', pm.response.status);",
+          "}"
+        ]
+      }
+    }
+  ]
+}

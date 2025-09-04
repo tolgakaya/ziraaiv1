@@ -20,5 +20,10 @@
   <ItemGroup>
     <Folder Include="UI\src\assets\i18n\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" Version="13.0.0" />
+    <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="12.2.0" />
+  </ItemGroup>
 	
 </Project>

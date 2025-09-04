@@ -9,6 +9,8 @@ using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Business.Services.Sponsorship;
 using Business.Services.Redemption;
+using Business.Services.Notification;
+using Business.Services.SponsorRequest;
 using Microsoft.Extensions.Configuration;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
@@ -95,6 +97,17 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<RedemptionService>().As<IRedemptionService>()
+                .InstancePerLifetimeScope();
+            
+            // Notification Services
+            builder.RegisterType<WhatsAppService>().As<IWhatsAppService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<NotificationService>().As<INotificationService>()
+                .InstancePerLifetimeScope();
+            
+            // Sponsor Request Services
+            builder.RegisterType<SponsorRequestService>().As<ISponsorRequestService>()
                 .InstancePerLifetimeScope();
             
             
