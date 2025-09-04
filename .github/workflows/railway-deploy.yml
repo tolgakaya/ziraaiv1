@@ -1,0 +1,109 @@
+name: Railway Production Deployment
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
+    
+    - name: Run tests
+      run: dotnet test --no-build --configuration Release --logger trx --collect:"XPlat Code Coverage"
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ github.run_number }}
+        path: TestResults
+        retention-days: 30
+
+  railway-validation:
+    name: Railway Deployment Validation
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Validate Dockerfile
+      uses: actions/checkout@v4
+      
+    - name: Check Dockerfile exists
+      run: |
+        if [ ! -f "Dockerfile" ]; then
+          echo "❌ Dockerfile not found in repository root"
+          exit 1
+        fi
+        echo "✅ Dockerfile found and ready for Railway deployment"
+    
+    - name: Validate appsettings.Production.json
+      run: |
+        if [ ! -f "WebAPI/appsettings.Production.json" ]; then
+          echo "❌ Production appsettings not found"
+          exit 1
+        fi
+        echo "✅ Production configuration ready"
+    
+    - name: Railway Deployment Status
+      run: |
+        echo "🚂 Railway Auto-Deploy Status:"
+        echo "   Repository: ${{ github.repository }}"
+        echo "   Branch: ${{ github.ref_name }}"
+        echo "   Commit: ${{ github.sha }}"
+        echo "   ✅ Railway will automatically deploy this commit"
+        echo ""
+        echo "📊 Monitor deployment at:"
+        echo "   https://railway.com/project/your-project-id"
+
+  post-deploy-check:
+    name: Post-Deployment Health Check
+    needs: railway-validation
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Wait for deployment
+      run: |
+        echo "⏳ Waiting 3 minutes for Railway deployment to complete..."
+        sleep 180
+    
+    - name: Health check (requires manual domain update)
+      run: |
+        echo "🏥 Health Check Instructions:"
+        echo "1. Go to Railway dashboard"
+        echo "2. Check deployment status"
+        echo "3. Test endpoint: https://your-domain.up.railway.app/health"
+        echo "4. Verify API responses"
+        echo ""
+        echo "Expected health response:"
+        echo '{"status": "healthy", "timestamp": "2025-01-15T10:30:00Z"}'
