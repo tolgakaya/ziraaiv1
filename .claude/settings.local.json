@@ -37,7 +37,10 @@
       "Bash(dotnet ef migrations add:*)",
       "Bash(dotnet ef database update:*)",
       "mcp__serena__check_onboarding_performed",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git clean:*)",
+      "Bash(git revert:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": [],

@@ -28,9 +28,9 @@ Build succeeded.
 ``> dotnet dev-certs https --trust``
 ``> dotnet watch run --project ./WebAPI/WebAPI.csproj``
 
-# ZiraAI - Plant Analysis System
+# ZiraAI - Enterprise Plant Analysis & Sponsorship Platform
 
-This project extends DevArchitecture with a comprehensive plant analysis system featuring:
+This project extends DevArchitecture with a comprehensive plant analysis system featuring advanced AI processing, subscription management, and a sophisticated tier-based sponsorship system.
 
 ## 🌱 Core Features
 
@@ -42,6 +42,27 @@ This project extends DevArchitecture with a comprehensive plant analysis system 
 - **Image Processing**: Automatic image resizing, format conversion, and validation
 - **Multi-format Support**: JPEG, PNG, GIF, WebP, BMP, SVG, TIFF
 - **Smart Storage**: Physical file storage with URL generation for AI processing
+- **Mobile Optimization**: Dedicated list endpoint for mobile applications
+
+### Subscription System
+- **Four-Tier Structure**: Trial, S, M, L, XL subscription levels
+- **Usage-Based Billing**: Daily and monthly request limits with automatic tracking
+- **Real-Time Validation**: Quota enforcement with graceful error handling
+- **Auto-Renewal Support**: Configurable subscription renewal management
+- **Trial System**: 7-day trial subscriptions for new users
+- **Comprehensive Analytics**: Detailed usage reporting and billing audit trails
+
+### Tier-Based Sponsorship System ⭐ NEW
+- **B2B2C Business Model**: Agricultural companies sponsor farmer analysis services
+- **Four Sponsorship Tiers**: S (₺99.99), M (₺299.99), L (₺599.99), XL (₺1,499.99)
+- **Feature Correlation**: Messaging capability correlates with farmer profile visibility
+- **Data Access Control**: Percentage-based data access (S/M: 30%, L: 60%, XL: 100%)
+- **Direct Farmer Messaging**: L/XL tiers can communicate directly with farmers
+- **Profile Visibility**: Tier-based farmer profile access (None/Anonymous/Full)
+- **Smart Linking**: Custom marketing links for sponsor engagement
+- **Logo Visibility**: Sponsor branding on analysis results
+- **Bulk Code Generation**: Package-based sponsorship code distribution
+- **Analytics Dashboard**: Comprehensive sponsor insights and farmer engagement metrics
 
 ### Configuration System
 - **Dynamic Settings**: Runtime-configurable application settings
@@ -157,6 +178,70 @@ Response:
 }
 ```
 
+### Subscription Management
+```http
+# Get available subscription tiers
+GET /api/subscriptions/tiers
+
+# Subscribe to a plan
+POST /api/subscriptions/subscribe
+{
+  "subscriptionTierId": 2,
+  "durationMonths": 1,
+  "autoRenew": true,
+  "paymentMethod": "CreditCard"
+}
+
+# Get current usage status
+GET /api/subscriptions/usage-status
+
+# Redeem sponsorship code
+POST /api/subscriptions/redeem-code
+{
+  "sponsorshipCode": "SPT001-ABC123"
+}
+```
+
+### Sponsorship System (Tier-Based)
+```http
+# Create company profile (Required first step)
+POST /api/sponsorships/create-profile
+{
+  "companyName": "AgriTech Solutions",
+  "companyType": "Private",
+  "businessModel": "B2B"
+}
+
+# Purchase sponsorship package (Generates bulk codes)
+POST /api/sponsorships/purchase-package
+{
+  "subscriptionTierId": 3,
+  "quantity": 50,
+  "amount": 29999.50,
+  "validityDays": 365
+}
+
+# Send message to farmer (L/XL tiers only)
+POST /api/sponsorship/messages
+{
+  "farmerId": 123,
+  "subject": "Plant Analysis Follow-up",
+  "message": "Your tomato plants show excellent growth..."
+}
+
+# Get farmer profile (Tier-dependent visibility)
+GET /api/sponsorship/farmer-profile/{farmerId}
+# S tier: 403 Forbidden
+# M tier: Anonymous profile data
+# L/XL tier: Full profile with contact details
+
+# Get sponsored analyses (Data limited by tier)
+GET /api/sponsorships/sponsored-analyses
+# S/M tier: 30% data access
+# L tier: 60% data access  
+# XL tier: 100% data access
+```
+
 ### Configuration Management
 ```http
 GET /api/configurations
@@ -167,9 +252,20 @@ PUT /api/configurations/{id}
 
 ## 📖 Documentation
 
+### Core System Documentation
 - **[Configuration System Documentation](./CONFIGURATION_SYSTEM.md)** - Comprehensive guide to configuration and image processing features
 - **[API Reference](./WebAPI/Controllers/)** - Controller documentation and endpoints
 - **[Architecture Overview](./Business/)** - Business logic and service patterns
+
+### Sponsorship System Documentation ⭐ NEW
+- **[Sponsorship Integration Guide](./SPONSORSHIP_INTEGRATION_GUIDE.md)** - Complete implementation guide with workflows and examples
+- **[API Documentation - Tier System](./API_DOCUMENTATION_TIER_SYSTEM.md)** - Comprehensive API reference with tier-based access control
+- **[Business Logic Documentation](./SPONSORSHIP_BUSINESS_LOGIC.md)** - Revenue model, decision algorithms, and business rules
+- **[Sponsor Tier User Guides](./SPONSOR_TIER_USER_GUIDES.md)** - Step-by-step guides for S, M, L, and XL tier sponsors
+
+### Testing & Development
+- **[Postman Collection v3.0](./ZiraAI_Tier_Based_Sponsorship_Collection_v3.0.json)** - Complete tier-based API testing suite
+- **[CLAUDE.md](./CLAUDE.md)** - Development guide and system architecture reference
 
 ## 🔒 Security Features
 

@@ -1,0 +1,2993 @@
+{
+	"info": {
+		"_postman_id": "ziraai-sponsorship-complete-v6",
+		"name": "ZiraAI Sponsorship System - Complete v6.0",
+		"description": "Complete Sponsorship Link Distribution System API Collection\n\n**Implementation Date**: August 19, 2025\n**Version**: 6.0.0\n**Features**: 50+ endpoints across 9 major service areas\n\n## Major Service Areas:\n1. **Core Sponsorship Management** (18 endpoints)\n2. **SMS & WhatsApp Integration** (8 endpoints)\n3. **Mobile Deep Linking** (6 endpoints)\n4. **Analytics & Dashboard** (12 endpoints)\n5. **A/B Testing System** (15 endpoints)\n6. **Multi-Language Support** (16 endpoints)\n7. **Advanced Customization** (14 endpoints)\n8. **Security & Fraud Detection** (8 endpoints)\n9. **Bulk Operations** (6 endpoints)\n\n## Authentication:\n- **Type**: Bearer Token (JWT)\n- **Roles**: Sponsor, Admin, Farmer\n- **Variable**: {{token}}\n\n## Environment Variables:\n- `{{baseUrl}}`: API base URL (e.g., https://api.ziraai.com/api/v1)\n- `{{token}}`: JWT authentication token\n- `{{sponsorId}}`: Current sponsor ID\n- `{{linkId}}`: Sponsorship link ID\n- `{{testId}}`: A/B test ID\n- `{{analysisId}}`: Plant analysis ID",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Core Sponsorship Management",
+			"description": "Core sponsorship operations including link creation, management, and tracking",
+			"item": [
+				{
+					"name": "Create Sponsorship Profile",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyName\": \"Green Valley Agriculture\",\n  \"companyType\": \"Cooperative\",\n  \"businessModel\": \"B2B\",\n  \"contactEmail\": \"info@greenvalley.com\",\n  \"contactPhone\": \"+90 532 123 4567\",\n  \"website\": \"https://greenvalley.com\",\n  \"description\": \"Leading agricultural cooperative specializing in sustainable farming solutions\",\n  \"targetRegions\": [\"Marmara\", \"Ege\", \"Akdeniz\"],\n  \"primaryCrops\": [\"tomato\", \"pepper\", \"cucumber\"],\n  \"businessScale\": \"large\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/create-profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "create-profile"]
+						},
+						"description": "Create a new sponsor company profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Sponsor Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/my-profile",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "my-profile"]
+						},
+						"description": "Get current sponsor's profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Sponsor Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyName\": \"Green Valley Agriculture Corp\",\n  \"description\": \"Updated description with new services\",\n  \"website\": \"https://greenvalley.com\",\n  \"contactEmail\": \"contact@greenvalley.com\",\n  \"targetRegions\": [\"Marmara\", \"Ege\", \"Akdeniz\", \"İç Anadolu\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/update-profile/{{sponsorId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "update-profile", "{{sponsorId}}"]
+						},
+						"description": "Update sponsor profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Purchase Sponsorship Package",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subscriptionTierId\": 3,\n  \"quantity\": 50,\n  \"amount\": 2999.50,\n  \"paymentReference\": \"TXN_20250819_001\",\n  \"validityDays\": 90,\n  \"customization\": {\n    \"codePrefix\": \"GVA\",\n    \"welcomeMessage\": \"Green Valley Agriculture ile tarımsal verimliliğinizi artırın!\",\n    \"brandColors\": {\n      \"primary\": \"#2E7D32\",\n      \"secondary\": \"#4CAF50\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/purchase-package",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "purchase-package"]
+						},
+						"description": "Purchase bulk sponsorship codes for distribution"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Sponsorship Codes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/my-codes?status=active&page=1&pageSize=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "my-codes"],
+							"query": [
+								{
+									"key": "status",
+									"value": "active"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get list of sponsorship codes with filtering options"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Purchases",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/my-purchases",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "my-purchases"]
+						},
+						"description": "Get sponsor's purchase history"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Sponsorship Link",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Summer Crop Analysis Campaign\",\n  \"description\": \"Free plant analysis for summer crops\",\n  \"targetAudience\": \"Tomato and pepper farmers\",\n  \"campaignType\": \"seasonal\",\n  \"customMessage\": \"Yaz dönemi ürünlerinizin analizini ücretsiz yaptırın! 🍅🌶️\",\n  \"expiryDate\": \"2025-09-30T23:59:59Z\",\n  \"maxUsage\": 100,\n  \"regions\": [\"Antalya\", \"Mersin\", \"Adana\"],\n  \"customFields\": [\n    {\n      \"fieldName\": \"crop_variety\",\n      \"fieldLabel\": \"Ürün Çeşidi\",\n      \"fieldType\": \"select\",\n      \"options\": [\"Cherry Domates\", \"Beef Domates\", \"Sivri Biber\", \"Dolmalık Biber\"],\n      \"isRequired\": true\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/create-link",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "create-link"]
+						},
+						"description": "Create a new sponsorship link with customization"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Sponsorship Links",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/my-links?status=active&page=1&pageSize=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "my-links"],
+							"query": [
+								{
+									"key": "status",
+									"value": "active"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get sponsor's sponsorship links"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Sponsorship Link",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Summer Crop Analysis\",\n  \"description\": \"Extended campaign for summer crop analysis\",\n  \"customMessage\": \"Güncellenmiş kampanya! Yaz ürünleri için ücretsiz analiz. 🌱\",\n  \"expiryDate\": \"2025-10-15T23:59:59Z\",\n  \"maxUsage\": 150\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/links/{{linkId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "links", "{{linkId}}"]
+						},
+						"description": "Update sponsorship link details"
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Sponsorship Code",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/deactivate-code/{{codeId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "deactivate-code", "{{codeId}}"]
+						},
+						"description": "Deactivate a specific sponsorship code"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sponsored Analyses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/sponsored-analyses?fromDate=2025-08-01&toDate=2025-08-31&status=completed",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "sponsored-analyses"],
+							"query": [
+								{
+									"key": "fromDate",
+									"value": "2025-08-01"
+								},
+								{
+									"key": "toDate",
+									"value": "2025-08-31"
+								},
+								{
+									"key": "status",
+									"value": "completed"
+								}
+							]
+						},
+						"description": "Get analyses sponsored by current sponsor"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Usage Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/usage-analytics?period=monthly&includeProjections=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "usage-analytics"],
+							"query": [
+								{
+									"key": "period",
+									"value": "monthly"
+								},
+								{
+									"key": "includeProjections",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get detailed usage analytics and projections"
+					},
+					"response": []
+				},
+				{
+					"name": "Send Message to Farmer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"farmerId\": 123,\n  \"subject\": \"Bitki Analizi Sonuçlarınız Hakkında\",\n  \"message\": \"Merhaba! Gönderdiğiniz bitki analizi sonuçları hazır. Detaylı raporunuzu incelemek ister misiniz?\",\n  \"messageType\": \"analysis_follow_up\",\n  \"includeAnalysisLink\": true,\n  \"scheduledSendTime\": null\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "messages"]
+						},
+						"description": "Send personalized message to farmer (L/XL tiers only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Message Conversation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/messages/conversation/{{farmerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "messages", "conversation", "{{farmerId}}"]
+						},
+						"description": "Get conversation history with specific farmer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/messages?page=1&pageSize=20&status=all",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "messages"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "all"
+								}
+							]
+						},
+						"description": "Get all messages sent by sponsor"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Farmer Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/farmer-profile/{{farmerId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "farmer-profile", "{{farmerId}}"]
+						},
+						"description": "Get farmer profile (visibility based on sponsor tier)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Smart Link",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"linkTitle\": \"Smart Crop Analysis Link\",\n  \"targetUrl\": \"https://ziraai.com/analysis\",\n  \"description\": \"Intelligent link with tracking and optimization\",\n  \"enableGeolocation\": true,\n  \"enableDeviceDetection\": true,\n  \"customParameters\": {\n    \"utm_source\": \"sponsorship\",\n    \"utm_medium\": \"smart_link\",\n    \"utm_campaign\": \"summer_2025\"\n  },\n  \"expiryDate\": \"2025-12-31T23:59:59Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/smart-links",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "smart-links"]
+						},
+						"description": "Create intelligent tracking link"
+					},
+					"response": []
+				},
+				{
+					"name": "Display Info for Analysis",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorships/display-info/analysis/{{analysisId}}?screen=profiles",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorships", "display-info", "analysis", "{{analysisId}}"],
+							"query": [
+								{
+									"key": "screen",
+									"value": "profiles"
+								}
+							]
+						},
+						"description": "Get display information for analysis screen (legacy endpoint from v4/v5)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. SMS & WhatsApp Integration",
+			"description": "Communication services for SMS and WhatsApp messaging",
+			"item": [
+				{
+					"name": "Send SMS Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+90 532 123 4567\",\n  \"message\": \"Merhaba! Bitki analizi için özel linkiniz: https://ziraai.com/link/ABC123. Ücretsiz analizinizi hemen başlatın!\",\n  \"campaignId\": \"summer_campaign_2025\",\n  \"personalizedData\": {\n    \"farmerName\": \"Mehmet Bey\",\n    \"cropType\": \"domates\",\n    \"region\": \"Antalya\"\n  },\n  \"scheduledSendTime\": null,\n  \"priority\": \"normal\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/communications/sms/send",
+							"host": ["{{baseUrl}}"],
+							"path": ["communications", "sms", "send"]
+						},
+						"description": "Send individual SMS message with personalization"
+					},
+					"response": []
+				},
+				{
+					"name": "Send Bulk SMS",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipients\": [\n    {\n      \"phoneNumber\": \"+90 532 123 4567\",\n      \"personalizedData\": {\n        \"farmerName\": \"Mehmet Bey\",\n        \"cropType\": \"domates\"\n      }\n    },\n    {\n      \"phoneNumber\": \"+90 533 987 6543\",\n      \"personalizedData\": {\n        \"farmerName\": \"Ayşe Hanım\",\n        \"cropType\": \"biber\"\n      }\n    }\n  ],\n  \"messageTemplate\": \"Merhaba {farmerName}! {cropType} ürününüz için ücretsiz analiz: {link}\",\n  \"campaignId\": \"bulk_summer_2025\",\n  \"batchSize\": 100,\n  \"scheduledSendTime\": \"2025-08-20T09:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/communications/sms/bulk-send",
+							"host": ["{{baseUrl}}"],
+							"path": ["communications", "sms", "bulk-send"]
+						},
+						"description": "Send bulk SMS messages with batch processing"
+					},
+					"response": []
+				},
+				{
+					"name": "Get SMS Delivery Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/communications/sms/status/{{messageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["communications", "sms", "status", "{{messageId}}"]
+						},
+						"description": "Get delivery status for SMS message"
+					},
+					"response": []
+				},
+				{
+					"name": "Send WhatsApp Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+90 532 123 4567\",\n  \"messageType\": \"template\",\n  \"templateName\": \"plant_analysis_invitation\",\n  \"templateLanguage\": \"tr\",\n  \"templateComponents\": [\n    {\n      \"type\": \"header\",\n      \"parameters\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Green Valley Agriculture\"\n        }\n      ]\n    },\n    {\n      \"type\": \"body\",\n      \"parameters\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Mehmet Bey\"\n        },\n        {\n          \"type\": \"text\",\n          \"text\": \"domates\"\n        }\n      ]\n    },\n    {\n      \"type\": \"button\",\n      \"sub_type\": \"url\",\n      \"index\": \"0\",\n      \"parameters\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"ABC123\"\n        }\n      ]\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/communications/whatsapp/send",
+							"host": ["{{baseUrl}}"],
+							"path": ["communications", "whatsapp", "send"]
+						},
+						"description": "Send WhatsApp template message"
+					},
+					"response": []
+				},
+				{
+					"name": "Send WhatsApp Media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+90 532 123 4567\",\n  \"mediaType\": \"image\",\n  \"mediaUrl\": \"https://ziraai.com/images/analysis-results.jpg\",\n  \"caption\": \"Bitki analizi sonuçlarınız hazır! 🌱 Detaylar için linke tıklayın.\",\n  \"mimeType\": \"image/jpeg\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/communications/whatsapp/send-media",
+							"host": ["{{baseUrl}}"],
+							"path": ["communications", "whatsapp", "send-media"]
+						},
+						"description": "Send WhatsApp message with media (image, document, etc.)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get WhatsApp Templates",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/communications/whatsapp/templates?language=tr&category=agriculture",
+							"host": ["{{baseUrl}}"],
+							"path": ["communications", "whatsapp", "templates"],
+							"query": [
+								{
+									"key": "language",
+									"value": "tr"
+								},
+								{
+									"key": "category",
+									"value": "agriculture"
+								}
+							]
+						},
+						"description": "Get available WhatsApp message templates"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Communication History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/communications/history?channel=all&fromDate=2025-08-01&toDate=2025-08-31&status=delivered",
+							"host": ["{{baseUrl}}"],
+							"path": ["communications", "history"],
+							"query": [
+								{
+									"key": "channel",
+									"value": "all"
+								},
+								{
+									"key": "fromDate",
+									"value": "2025-08-01"
+								},
+								{
+									"key": "toDate",
+									"value": "2025-08-31"
+								},
+								{
+									"key": "status",
+									"value": "delivered"
+								}
+							]
+						},
+						"description": "Get communication history across all channels"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Communication Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/communications/analytics?period=weekly&includeChannelBreakdown=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["communications", "analytics"],
+							"query": [
+								{
+									"key": "period",
+									"value": "weekly"
+								},
+								{
+									"key": "includeChannelBreakdown",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get communication performance analytics"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Mobile Deep Linking",
+			"description": "Mobile deep linking and QR code generation services",
+			"item": [
+				{
+					"name": "Create Deep Link",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetUrl\": \"https://ziraai.com/analysis/start\",\n  \"linkType\": \"sponsorship\",\n  \"title\": \"Summer Crop Analysis\",\n  \"description\": \"Ücretsiz bitki analizi için tıklayın\",\n  \"sponsorId\": \"{{sponsorId}}\",\n  \"campaignId\": \"summer_2025\",\n  \"customParameters\": {\n    \"utm_source\": \"sponsor\",\n    \"utm_medium\": \"deep_link\",\n    \"utm_campaign\": \"summer_crops\",\n    \"sponsor_tier\": \"premium\"\n  },\n  \"expiryDate\": \"2025-09-30T23:59:59Z\",\n  \"maxClicks\": 1000,\n  \"enableAnalytics\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/deep-links/create",
+							"host": ["{{baseUrl}}"],
+							"path": ["deep-links", "create"]
+						},
+						"description": "Create a new deep link with tracking"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate QR Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"linkId\": \"{{linkId}}\",\n  \"size\": 300,\n  \"errorCorrectionLevel\": \"M\",\n  \"format\": \"PNG\",\n  \"includeTitle\": true,\n  \"customization\": {\n    \"foregroundColor\": \"#2E7D32\",\n    \"backgroundColor\": \"#FFFFFF\",\n    \"logoUrl\": \"https://ziraai.com/logo-small.png\",\n    \"borderSize\": 2\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/deep-links/qr-code",
+							"host": ["{{baseUrl}}"],
+							"path": ["deep-links", "qr-code"]
+						},
+						"description": "Generate QR code for deep link"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Deep Link Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/deep-links/{{linkId}}/analytics?period=7days&includeGeoData=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["deep-links", "{{linkId}}", "analytics"],
+							"query": [
+								{
+									"key": "period",
+									"value": "7days"
+								},
+								{
+									"key": "includeGeoData",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get analytics for specific deep link"
+					},
+					"response": []
+				},
+				{
+					"name": "Configure Universal Links",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"domain\": \"ziraai.com\",\n  \"iosAppId\": \"1234567890\",\n  \"iosAppScheme\": \"ziraai://\",\n  \"androidPackageName\": \"com.ziraai.app\",\n  \"androidAppScheme\": \"ziraai://\",\n  \"webFallbackUrl\": \"https://ziraai.com/download\",\n  \"enableSmartBanner\": true,\n  \"customRedirectDelay\": 1500\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/deep-links/universal-config",
+							"host": ["{{baseUrl}}"],
+							"path": ["deep-links", "universal-config"]
+						},
+						"description": "Configure universal links for iOS and Android"
+					},
+					"response": []
+				},
+				{
+					"name": "Track Link Click",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"linkId\": \"{{linkId}}\",\n  \"userAgent\": \"Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X)\",\n  \"ipAddress\": \"192.168.1.100\",\n  \"referrer\": \"https://whatsapp.com\",\n  \"deviceInfo\": {\n    \"platform\": \"iOS\",\n    \"version\": \"15.0\",\n    \"deviceType\": \"mobile\"\n  },\n  \"geolocation\": {\n    \"latitude\": 36.8969,\n    \"longitude\": 30.7133,\n    \"city\": \"Antalya\",\n    \"country\": \"TR\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/deep-links/track-click",
+							"host": ["{{baseUrl}}"],
+							"path": ["deep-links", "track-click"]
+						},
+						"description": "Track deep link click event (public endpoint)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Deep Links",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/deep-links/my-links?page=1&pageSize=20&status=active",
+							"host": ["{{baseUrl}}"],
+							"path": ["deep-links", "my-links"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "active"
+								}
+							]
+						},
+						"description": "Get user's deep links with pagination"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Analytics & Dashboard",
+			"description": "Comprehensive analytics and dashboard services",
+			"item": [
+				{
+					"name": "Get Dashboard Overview",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/dashboard?period=30days&includeProjections=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "dashboard"],
+							"query": [
+								{
+									"key": "period",
+									"value": "30days"
+								},
+								{
+									"key": "includeProjections",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get comprehensive dashboard overview with KPIs"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Performance Metrics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/performance?metric=conversion_rate&groupBy=day&fromDate=2025-08-01&toDate=2025-08-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "performance"],
+							"query": [
+								{
+									"key": "metric",
+									"value": "conversion_rate"
+								},
+								{
+									"key": "groupBy",
+									"value": "day"
+								},
+								{
+									"key": "fromDate",
+									"value": "2025-08-01"
+								},
+								{
+									"key": "toDate",
+									"value": "2025-08-31"
+								}
+							]
+						},
+						"description": "Get detailed performance metrics with time grouping"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Conversion Funnel",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/conversion-funnel/{{linkId}}?includeDropOffAnalysis=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "conversion-funnel", "{{linkId}}"],
+							"query": [
+								{
+									"key": "includeDropOffAnalysis",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get conversion funnel analysis for specific link"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Geographic Distribution",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/geographic?level=city&country=TR&includeHeatmap=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "geographic"],
+							"query": [
+								{
+									"key": "level",
+									"value": "city"
+								},
+								{
+									"key": "country",
+									"value": "TR"
+								},
+								{
+									"key": "includeHeatmap",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get geographic distribution of users and activities"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Fraud Detection Results",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/fraud-detection/{{linkId}}?timeWindow=24hours&includeDetails=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "fraud-detection", "{{linkId}}"],
+							"query": [
+								{
+									"key": "timeWindow",
+									"value": "24hours"
+								},
+								{
+									"key": "includeDetails",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get fraud detection analysis for link"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Real-Time Metrics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/real-time?metrics=clicks,conversions,active_users",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "real-time"],
+							"query": [
+								{
+									"key": "metrics",
+									"value": "clicks,conversions,active_users"
+								}
+							]
+						},
+						"description": "Get real-time metrics for live monitoring"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Campaign Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/campaigns/{{campaignId}}?includeROI=true&includeComparison=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "campaigns", "{{campaignId}}"],
+							"query": [
+								{
+									"key": "includeROI",
+									"value": "true"
+								},
+								{
+									"key": "includeComparison",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get detailed analytics for specific campaign"
+					},
+					"response": []
+				},
+				{
+					"name": "Export Analytics Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"exportType\": \"campaign_performance\",\n  \"format\": \"excel\",\n  \"dateRange\": {\n    \"fromDate\": \"2025-08-01\",\n    \"toDate\": \"2025-08-31\"\n  },\n  \"includeCharts\": true,\n  \"metrics\": [\n    \"clicks\",\n    \"conversions\",\n    \"conversion_rate\",\n    \"cost_per_conversion\",\n    \"roi\"\n  ],\n  \"groupBy\": \"day\",\n  \"filters\": {\n    \"campaigns\": [\"summer_2025\"],\n    \"regions\": [\"Antalya\", \"Mersin\"]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/analytics/export",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "export"]
+						},
+						"description": "Export analytics data in various formats"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Dashboard Widgets",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/dashboard/widgets?layout=sponsor_standard&customizable=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "dashboard", "widgets"],
+							"query": [
+								{
+									"key": "layout",
+									"value": "sponsor_standard"
+								},
+								{
+									"key": "customizable",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get dashboard widgets configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Dashboard Layout",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"layoutName\": \"my_custom_layout\",\n  \"widgets\": [\n    {\n      \"widgetType\": \"conversion_chart\",\n      \"position\": { \"x\": 0, \"y\": 0, \"width\": 6, \"height\": 4 },\n      \"configuration\": {\n        \"timeRange\": \"30days\",\n        \"chartType\": \"line\",\n        \"showTrend\": true\n      }\n    },\n    {\n      \"widgetType\": \"geographic_map\",\n      \"position\": { \"x\": 6, \"y\": 0, \"width\": 6, \"height\": 4 },\n      \"configuration\": {\n        \"mapType\": \"turkey_regions\",\n        \"showHeatmap\": true\n      }\n    }\n  ],\n  \"isDefault\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/analytics/dashboard/layout",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "dashboard", "layout"]
+						},
+						"description": "Update personalized dashboard layout"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Insights and Recommendations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/insights?category=optimization&includeActionItems=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "insights"],
+							"query": [
+								{
+									"key": "category",
+									"value": "optimization"
+								},
+								{
+									"key": "includeActionItems",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get AI-powered insights and optimization recommendations"
+					},
+					"response": []
+				},
+				{
+					"name": "Subscribe to Real-Time Events",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "text/event-stream"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/analytics/real-time/stream?events=clicks,conversions,fraud_alerts",
+							"host": ["{{baseUrl}}"],
+							"path": ["analytics", "real-time", "stream"],
+							"query": [
+								{
+									"key": "events",
+									"value": "clicks,conversions,fraud_alerts"
+								}
+							]
+						},
+						"description": "Subscribe to real-time analytics events via Server-Sent Events"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. A/B Testing System",
+			"description": "A/B testing for message optimization and campaign performance",
+			"item": [
+				{
+					"name": "Create A/B Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"testName\": \"Summer Crop Message Optimization\",\n  \"description\": \"Testing different message tones for summer crop campaigns\",\n  \"testType\": \"message_optimization\",\n  \"targetAudience\": \"summer_crop_farmers\",\n  \"variants\": [\n    {\n      \"variantName\": \"Friendly Casual\",\n      \"messageTemplate\": \"Merhaba {name}! 🌱 Yaz ürünleriniz için ücretsiz analiz fırsatı. Hemen başlayın: {link}\",\n      \"trafficPercentage\": 50,\n      \"metadata\": {\n        \"tone\": \"casual\",\n        \"emoji_usage\": \"high\",\n        \"urgency_level\": \"low\"\n      }\n    },\n    {\n      \"variantName\": \"Professional Formal\",\n      \"messageTemplate\": \"Sayın {name}, yaz dönemi ürünlerinizin analizi için özel linkiniz: {link}. Detaylı rapor için tıklayın.\",\n      \"trafficPercentage\": 50,\n      \"metadata\": {\n        \"tone\": \"formal\",\n        \"emoji_usage\": \"none\",\n        \"urgency_level\": \"medium\"\n      }\n    }\n  ],\n  \"primaryMetric\": \"conversion_rate\",\n  \"secondaryMetrics\": [\"click_rate\", \"engagement_time\"],\n  \"minimumSampleSize\": 200,\n  \"confidenceLevel\": 0.95,\n  \"testDuration\": 14,\n  \"autoWinnerSelection\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/create",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "create"]
+						},
+						"description": "Create new A/B test for message optimization"
+					},
+					"response": []
+				},
+				{
+					"name": "Get A/B Test Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}"]
+						},
+						"description": "Get detailed information about specific A/B test"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My A/B Tests",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting?status=running&page=1&pageSize=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting"],
+							"query": [
+								{
+									"key": "status",
+									"value": "running"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get list of A/B tests with status filtering"
+					},
+					"response": []
+				},
+				{
+					"name": "Update A/B Test",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"testName\": \"Updated Summer Crop Message Test\",\n  \"description\": \"Extended testing period for better statistical significance\",\n  \"testDuration\": 21,\n  \"minimumSampleSize\": 300,\n  \"notes\": \"Extended due to initial low sample size\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}"]
+						},
+						"description": "Update A/B test configuration (draft/scheduled only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Start A/B Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "start"]
+						},
+						"description": "Start A/B test campaign"
+					},
+					"response": []
+				},
+				{
+					"name": "Pause A/B Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/pause",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "pause"]
+						},
+						"description": "Pause running A/B test"
+					},
+					"response": []
+				},
+				{
+					"name": "Stop A/B Test",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/stop",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "stop"]
+						},
+						"description": "Stop A/B test permanently"
+					},
+					"response": []
+				},
+				{
+					"name": "Get A/B Test Results",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/results?includeStatistics=true&includeSegmentation=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "results"],
+							"query": [
+								{
+									"key": "includeStatistics",
+									"value": "true"
+								},
+								{
+									"key": "includeSegmentation",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get comprehensive A/B test results with statistical analysis"
+					},
+					"response": []
+				},
+				{
+					"name": "Record A/B Test Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventType\": \"conversion\",\n  \"variantId\": \"variant_A\",\n  \"userId\": \"farmer_12345\",\n  \"sessionId\": \"session_abcd1234\",\n  \"eventValue\": 1,\n  \"metadata\": {\n    \"conversion_type\": \"analysis_completion\",\n    \"time_to_conversion\": 320,\n    \"device_type\": \"mobile\",\n    \"referrer\": \"whatsapp\"\n  },\n  \"timestamp\": \"2025-08-19T14:30:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/events",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "events"]
+						},
+						"description": "Record A/B test event (impression, click, conversion)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get A/B Test Insights",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/insights?includeRecommendations=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "insights"],
+							"query": [
+								{
+									"key": "includeRecommendations",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get insights and optimization recommendations"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Template Variations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/templates",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "templates"]
+						},
+						"description": "Get template variations and performance"
+					},
+					"response": []
+				},
+				{
+					"name": "Declare Winner Manually",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"variantId\": \"variant_A\",\n  \"reason\": \"Business decision - aligns better with brand voice\",\n  \"overrideStatistics\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/declare-winner",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "declare-winner"]
+						},
+						"description": "Manually declare winner for A/B test"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Optimization Recommendations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/recommendations?category=message_optimization&includeTemplates=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "recommendations"],
+							"query": [
+								{
+									"key": "category",
+									"value": "message_optimization"
+								},
+								{
+									"key": "includeTemplates",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get personalized optimization recommendations"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Test Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/{{testId}}/statistics?includeConfidenceIntervals=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "{{testId}}", "statistics"],
+							"query": [
+								{
+									"key": "includeConfidenceIntervals",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get detailed statistical analysis"
+					},
+					"response": []
+				},
+				{
+					"name": "Get A/B Testing Best Practices",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/best-practices",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "best-practices"]
+						},
+						"description": "Get A/B testing guidelines and best practices"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Template Library",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/abtesting/template-library?category=agriculture&language=tr",
+							"host": ["{{baseUrl}}"],
+							"path": ["abtesting", "template-library"],
+							"query": [
+								{
+									"key": "category",
+									"value": "agriculture"
+								},
+								{
+									"key": "language",
+									"value": "tr"
+								}
+							]
+						},
+						"description": "Get pre-built message templates for testing"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Multi-Language Support",
+			"description": "Localization and multi-language support services",
+			"item": [
+				{
+					"name": "Get Translation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/localization/translate?key=sponsorship.welcome_message&language=tr&parameters={\"name\":\"Mehmet Bey\",\"crop\":\"domates\"}",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "translate"],
+							"query": [
+								{
+									"key": "key",
+									"value": "sponsorship.welcome_message"
+								},
+								{
+									"key": "language",
+									"value": "tr"
+								},
+								{
+									"key": "parameters",
+									"value": "{\"name\":\"Mehmet Bey\",\"crop\":\"domates\"}"
+								}
+							]
+						},
+						"description": "Get single translation with parameter substitution"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Bulk Translations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"keys\": [\n    \"general.welcome\",\n    \"general.save\",\n    \"general.cancel\",\n    \"sponsorship.invite_message\",\n    \"sponsorship.welcome_message\",\n    \"errors.validation_error\"\n  ],\n  \"language\": \"tr\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/localization/bulk-translate",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "bulk-translate"]
+						},
+						"description": "Get multiple translations in single request"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Language Pack",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/localization/language-pack/tr?module=sponsorship",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "language-pack", "tr"],
+							"query": [
+								{
+									"key": "module",
+									"value": "sponsorship"
+								}
+							]
+						},
+						"description": "Get complete language pack for specific language and module"
+					},
+					"response": []
+				},
+				{
+					"name": "Set User Language",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"language\": \"tr\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/localization/set-language",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "set-language"]
+						},
+						"description": "Set user's preferred language"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Language",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/localization/my-language",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "my-language"]
+						},
+						"description": "Get user's current language preference"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Supported Languages",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/localization/supported-languages",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "supported-languages"]
+						},
+						"description": "Get list of supported languages with completion statistics"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Translation (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key\": \"sponsorship.new_feature_message\",\n  \"language\": \"tr\",\n  \"value\": \"Yeni özellik: {feature_name} artık kullanılabilir!\",\n  \"module\": \"sponsorship\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/localization/translations",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "translations"]
+						},
+						"description": "Add new translation (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Translation (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key\": \"sponsorship.welcome_message\",\n  \"language\": \"tr\",\n  \"value\": \"Güncellenmiş hoş geldin mesajı: Merhaba {name}!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/localization/translations",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "translations"]
+						},
+						"description": "Update existing translation (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Translation (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/localization/translations?key=sponsorship.old_message&language=tr",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "translations"],
+							"query": [
+								{
+									"key": "key",
+									"value": "sponsorship.old_message"
+								},
+								{
+									"key": "language",
+									"value": "tr"
+								}
+							]
+						},
+						"description": "Delete translation (Admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Translations (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/localization/validate/tr",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "validate", "tr"]
+						},
+						"description": "Validate translations for quality and completeness"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Cultural Adaptation",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/localization/cultural-adaptation/TR",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "cultural-adaptation", "TR"]
+						},
+						"description": "Get cultural adaptation guidelines for specific country"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Localized Content",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/localization/content/email_templates?language=tr",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "content", "email_templates"],
+							"query": [
+								{
+									"key": "language",
+									"value": "tr"
+								}
+							]
+						},
+						"description": "Get localized content templates"
+					},
+					"response": []
+				},
+				{
+					"name": "Import Language Pack (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"language\": \"fr\",\n  \"version\": \"1.0.0\",\n  \"source\": \"file\",\n  \"translations\": {\n    \"general\": {\n      \"welcome\": \"Bienvenue\",\n      \"save\": \"Enregistrer\",\n      \"cancel\": \"Annuler\"\n    },\n    \"sponsorship\": {\n      \"welcome_message\": \"Bonjour {name}! Bienvenue dans notre système de parrainage.\"\n    }\n  },\n  \"options\": {\n    \"overwriteExisting\": false,\n    \"validateBeforeImport\": true,\n    \"backupExisting\": true\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/localization/import/fr",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "import", "fr"]
+						},
+						"description": "Import language pack from external source"
+					},
+					"response": []
+				},
+				{
+					"name": "Export Language Pack (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/localization/export/tr?module=sponsorship&format=json",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "export", "tr"],
+							"query": [
+								{
+									"key": "module",
+									"value": "sponsorship"
+								},
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						},
+						"description": "Export language pack for backup or external use"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Localization Dashboard (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/localization/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "dashboard"]
+						},
+						"description": "Get localization management dashboard"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Translation Tools",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/localization/tools",
+							"host": ["{{baseUrl}}"],
+							"path": ["localization", "tools"]
+						},
+						"description": "Get translation tools and guidelines"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "7. Advanced Customization",
+			"description": "Brand customization, themes, and white-label solutions",
+			"item": [
+				{
+					"name": "Get My Customization",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customization/my-customization",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "my-customization"]
+						},
+						"description": "Get complete customization configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Update My Customization",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"brandingConfiguration\": {\n    \"companyName\": \"Green Valley Agriculture\",\n    \"logoUrl\": \"https://greenvalley.com/logo.png\",\n    \"brandColors\": {\n      \"primary\": \"#2E7D32\",\n      \"secondary\": \"#4CAF50\",\n      \"accent\": \"#8BC34A\",\n      \"background\": \"#F1F8E9\",\n      \"text\": \"#1B5E20\"\n    },\n    \"typography\": {\n      \"primaryFont\": \"Inter\",\n      \"secondaryFont\": \"Roboto\",\n      \"headingFont\": \"Poppins\"\n    }\n  },\n  \"themeConfiguration\": {\n    \"themeId\": \"modern_agriculture\",\n    \"themeName\": \"Modern Tarım\",\n    \"isDarkMode\": false\n  },\n  \"workflowConfiguration\": {\n    \"defaultWorkflow\": \"advanced_sponsorship\",\n    \"enabledWorkflows\": [\"advanced_sponsorship\", \"bulk_outreach\", \"seasonal_campaign\"]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customization/my-customization",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "my-customization"]
+						},
+						"description": "Update sponsor's customization configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Branding Configuration",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customization/branding",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "branding"]
+						},
+						"description": "Get branding configuration (logos, colors, typography)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Branding Configuration",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"companyName\": \"Green Valley Agriculture Corp\",\n  \"logoUrl\": \"https://greenvalley.com/new-logo.png\",\n  \"faviconUrl\": \"https://greenvalley.com/favicon.ico\",\n  \"brandColors\": {\n    \"primary\": \"#2E7D32\",\n    \"secondary\": \"#4CAF50\",\n    \"accent\": \"#8BC34A\",\n    \"background\": \"#F1F8E9\",\n    \"text\": \"#1B5E20\",\n    \"success\": \"#4CAF50\",\n    \"warning\": \"#FF9800\",\n    \"error\": \"#F44336\",\n    \"info\": \"#2196F3\"\n  },\n  \"typography\": {\n    \"primaryFont\": \"Inter\",\n    \"secondaryFont\": \"Roboto\",\n    \"headingFont\": \"Poppins\",\n    \"fontSizes\": {\n      \"small\": \"12px\",\n      \"medium\": \"14px\",\n      \"large\": \"16px\",\n      \"xlarge\": \"18px\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customization/branding",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "branding"]
+						},
+						"description": "Update branding configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Available Themes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customization/themes",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "themes"]
+						},
+						"description": "Get list of available themes"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Custom Theme",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Green Valley Custom Theme\",\n  \"description\": \"Custom theme for Green Valley Agriculture\",\n  \"category\": \"agriculture\",\n  \"colorPalette\": {\n    \"primary\": \"#2E7D32\",\n    \"secondary\": \"#4CAF50\",\n    \"accent\": \"#8BC34A\",\n    \"background\": \"#F1F8E9\",\n    \"surface\": \"#FFFFFF\",\n    \"text\": \"#1B5E20\"\n  },\n  \"componentStyles\": {\n    \"button\": {\n      \"borderRadius\": \"8px\",\n      \"padding\": \"12px 24px\",\n      \"fontWeight\": \"600\"\n    },\n    \"card\": {\n      \"borderRadius\": \"12px\",\n      \"boxShadow\": \"0 4px 6px rgba(0,0,0,0.1)\",\n      \"padding\": \"20px\"\n    }\n  },\n  \"customCss\": \".custom-header { background: linear-gradient(135deg, #2E7D32, #4CAF50); }\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customization/themes",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "themes"]
+						},
+						"description": "Create custom theme"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Workflow Templates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customization/workflows?category=outreach",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "workflows"],
+							"query": [
+								{
+									"key": "category",
+									"value": "outreach"
+								}
+							]
+						},
+						"description": "Get workflow templates by category"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Workflow Template",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Seasonal Campaign Workflow\",\n  \"description\": \"Automated workflow for seasonal agricultural campaigns\",\n  \"category\": \"seasonal\",\n  \"steps\": [\n    {\n      \"stepId\": \"1\",\n      \"stepName\": \"Season Planning\",\n      \"stepType\": \"planning\",\n      \"isRequired\": true,\n      \"estimatedDuration\": 60,\n      \"configuration\": {\n        \"requiresApproval\": true,\n        \"autoAdvance\": false\n      }\n    },\n    {\n      \"stepId\": \"2\",\n      \"stepName\": \"Target Audience Selection\",\n      \"stepType\": \"targeting\",\n      \"isRequired\": true,\n      \"estimatedDuration\": 30,\n      \"configuration\": {\n        \"allowCustomSegments\": true,\n        \"minimumAudienceSize\": 100\n      }\n    },\n    {\n      \"stepId\": \"3\",\n      \"stepName\": \"Message Composition\",\n      \"stepType\": \"content_creation\",\n      \"isRequired\": true,\n      \"estimatedDuration\": 45,\n      \"configuration\": {\n        \"allowABTesting\": true,\n        \"requiresReview\": false\n      }\n    },\n    {\n      \"stepId\": \"4\",\n      \"stepName\": \"Scheduled Deployment\",\n      \"stepType\": \"deployment\",\n      \"isRequired\": true,\n      \"estimatedDuration\": 15,\n      \"configuration\": {\n        \"allowFutureScheduling\": true,\n        \"enableAutoRetry\": true\n      }\n    }\n  ],\n  \"estimatedTotalDuration\": 150,\n  \"targetAudience\": \"seasonal_farmers\",\n  \"tags\": [\"seasonal\", \"agriculture\", \"automated\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customization/workflows",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "workflows"]
+						},
+						"description": "Create custom workflow template"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Custom Fields",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customization/custom-fields",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "custom-fields"]
+						},
+						"description": "Get custom fields for sponsor"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Custom Field",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fieldName\": \"irrigation_method\",\n  \"fieldLabel\": \"Sulama Yöntemi\",\n  \"fieldType\": \"select\",\n  \"description\": \"Çiftlikte kullanılan sulama yöntemi\",\n  \"isRequired\": false,\n  \"isGlobal\": false,\n  \"options\": [\n    \"Damla Sulama\",\n    \"Yağmurlama\",\n    \"Flood Sulama\",\n    \"Mikro Sprey\",\n    \"Diğer\"\n  ],\n  \"validation\": {\n    \"minLength\": null,\n    \"maxLength\": null,\n    \"pattern\": null,\n    \"customValidation\": null\n  },\n  \"placeholder\": \"Sulama yöntemini seçin\",\n  \"helpText\": \"Tarlanızda kullandığınız ana sulama yöntemini seçin\",\n  \"category\": \"farming_methods\",\n  \"displayOrder\": 1,\n  \"conditionalLogic\": {\n    \"showIf\": null,\n    \"hideIf\": null\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customization/custom-fields",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "custom-fields"]
+						},
+						"description": "Create new custom field"
+					},
+					"response": []
+				},
+				{
+					"name": "Get White-Label Configuration",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customization/white-label",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "white-label"]
+						},
+						"description": "Get white-label configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Update White-Label Configuration",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"isEnabled\": true,\n  \"customDomain\": \"analysis.greenvalley.com\",\n  \"customAppName\": \"Green Valley Plant Analysis\",\n  \"hidePoweredBy\": true,\n  \"customFooter\": \"© 2025 Green Valley Agriculture. All rights reserved.\",\n  \"customTermsUrl\": \"https://greenvalley.com/terms\",\n  \"customPrivacyUrl\": \"https://greenvalley.com/privacy\",\n  \"customSupportUrl\": \"https://greenvalley.com/support\",\n  \"emailConfiguration\": {\n    \"senderName\": \"Green Valley Support\",\n    \"senderEmail\": \"support@greenvalley.com\",\n    \"customEmailTemplate\": \"<!DOCTYPE html><html>...</html>\",\n    \"emailFooter\": \"Green Valley Agriculture - Leading the Future of Farming\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customization/white-label",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "white-label"]
+						},
+						"description": "Update white-label configuration (Enterprise only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Preview Customization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"brandingConfiguration\": {\n    \"companyName\": \"Preview Company\",\n    \"logoUrl\": \"https://example.com/preview-logo.png\",\n    \"brandColors\": {\n      \"primary\": \"#FF5722\",\n      \"secondary\": \"#FF7043\"\n    }\n  },\n  \"themeConfiguration\": {\n    \"themeId\": \"modern_tech\",\n    \"isDarkMode\": true\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/customization/preview",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "preview"]
+						},
+						"description": "Preview customization changes before applying"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customization Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/customization/analytics?fromDate=2025-07-01&toDate=2025-08-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "analytics"],
+							"query": [
+								{
+									"key": "fromDate",
+									"value": "2025-07-01"
+								},
+								{
+									"key": "toDate",
+									"value": "2025-08-31"
+								}
+							]
+						},
+						"description": "Get customization performance analytics"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customization Guidelines",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customization/guidelines",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "guidelines"]
+						},
+						"description": "Get customization best practices and guidelines"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customization Templates",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/customization/templates",
+							"host": ["{{baseUrl}}"],
+							"path": ["customization", "templates"]
+						},
+						"description": "Get pre-built customization templates"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "8. Security & Fraud Detection",
+			"description": "Security services and fraud prevention",
+			"item": [
+				{
+					"name": "Assess Fraud Risk",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user_12345\",\n  \"ipAddress\": \"192.168.1.100\",\n  \"userAgent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\",\n  \"actions\": [\n    {\n      \"actionType\": \"link_click\",\n      \"timestamp\": \"2025-08-19T14:30:00Z\",\n      \"metadata\": {\n        \"linkId\": \"link_abc123\",\n        \"referrer\": \"https://whatsapp.com\"\n      }\n    }\n  ],\n  \"timeWindow\": \"1hour\",\n  \"sessionData\": {\n    \"sessionId\": \"session_xyz789\",\n    \"sessionDuration\": 120,\n    \"pageViews\": 3\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/security/assess-fraud-risk",
+							"host": ["{{baseUrl}}"],
+							"path": ["security", "assess-fraud-risk"]
+						},
+						"description": "Assess fraud risk for user actions"
+					},
+					"response": []
+				},
+				{
+					"name": "Check IP Reputation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/security/ip-reputation/192.168.1.100",
+							"host": ["{{baseUrl}}"],
+							"path": ["security", "ip-reputation", "192.168.1.100"]
+						},
+						"description": "Check IP address reputation and threat level"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Rate Limit Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/security/rate-limit/user_12345?resource=api_calls",
+							"host": ["{{baseUrl}}"],
+							"path": ["security", "rate-limit", "user_12345"],
+							"query": [
+								{
+									"key": "resource",
+									"value": "api_calls"
+								}
+							]
+						},
+						"description": "Get current rate limit status for user"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Rate Limits",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user_12345\",\n  \"resource\": \"sms_sending\",\n  \"limits\": {\n    \"requestsPerMinute\": 10,\n    \"requestsPerHour\": 100,\n    \"requestsPerDay\": 1000\n  },\n  \"customRules\": [\n    {\n      \"condition\": \"user_tier = premium\",\n      \"multiplier\": 2.0\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/security/rate-limits",
+							"host": ["{{baseUrl}}"],
+							"path": ["security", "rate-limits"]
+						},
+						"description": "Update rate limits for user and resource"
+					},
+					"response": []
+				},
+				{
+					"name": "Analyze Behavioral Patterns",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user_12345\",\n  \"timeWindow\": \"24hours\",\n  \"analysisTypes\": [\n    \"click_patterns\",\n    \"velocity_analysis\",\n    \"session_behavior\",\n    \"geographic_anomalies\"\n  ],\n  \"includeHistoricalData\": true,\n  \"sensitivityLevel\": \"medium\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/security/behavioral-analysis",
+							"host": ["{{baseUrl}}"],
+							"path": ["security", "behavioral-analysis"]
+						},
+						"description": "Analyze user behavioral patterns for anomalies"
+					},
+					"response": []
+				},
+				{
+					"name": "Block Suspicious IP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ipAddress\": \"192.168.1.100\",\n  \"blockType\": \"temporary\",\n  \"duration\": \"24hours\",\n  \"reason\": \"Suspicious click patterns detected\",\n  \"severity\": \"medium\",\n  \"autoUnblock\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/security/block-ip",
+							"host": ["{{baseUrl}}"],
+							"path": ["security", "block-ip"]
+						},
+						"description": "Block suspicious IP address"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Security Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/security/dashboard?period=7days&includeAlerts=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["security", "dashboard"],
+							"query": [
+								{
+									"key": "period",
+									"value": "7days"
+								},
+								{
+									"key": "includeAlerts",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get security monitoring dashboard"
+					},
+					"response": []
+				},
+				{
+					"name": "Configure Security Rules",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ruleName\": \"High Volume Click Detection\",\n  \"description\": \"Detect users with unusually high click volumes\",\n  \"ruleType\": \"velocity_detection\",\n  \"conditions\": [\n    {\n      \"metric\": \"clicks_per_hour\",\n      \"operator\": \"greater_than\",\n      \"threshold\": 50\n    },\n    {\n      \"metric\": \"unique_links_clicked\",\n      \"operator\": \"greater_than\",\n      \"threshold\": 10\n    }\n  ],\n  \"actions\": [\n    {\n      \"actionType\": \"alert\",\n      \"severity\": \"medium\",\n      \"notifyAdmins\": true\n    },\n    {\n      \"actionType\": \"rate_limit\",\n      \"parameters\": {\n        \"newLimit\": 10,\n        \"duration\": \"1hour\"\n      }\n    }\n  ],\n  \"isEnabled\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/security/rules",
+							"host": ["{{baseUrl}}"],
+							"path": ["security", "rules"]
+						},
+						"description": "Configure custom security rules"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "9. Bulk Operations",
+			"description": "Bulk processing and queue management services",
+			"item": [
+				{
+					"name": "Create Bulk Links",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"campaignName\": \"Summer 2025 Bulk Campaign\",\n  \"farmerList\": [\n    {\n      \"farmerId\": \"F001\",\n      \"name\": \"Mehmet Yılmaz\",\n      \"phone\": \"+90 532 123 4567\",\n      \"email\": \"mehmet@example.com\",\n      \"cropType\": \"tomato\",\n      \"region\": \"Antalya\",\n      \"customData\": {\n        \"farmSize\": \"5 dekar\",\n        \"experienceYears\": 15\n      }\n    },\n    {\n      \"farmerId\": \"F002\",\n      \"name\": \"Ayşe Kaya\",\n      \"phone\": \"+90 533 987 6543\",\n      \"email\": \"ayse@example.com\",\n      \"cropType\": \"pepper\",\n      \"region\": \"Mersin\",\n      \"customData\": {\n        \"farmSize\": \"8 dekar\",\n        \"experienceYears\": 12\n      }\n    }\n  ],\n  \"linkTemplate\": {\n    \"title\": \"Ücretsiz Bitki Analizi - {cropType}\",\n    \"description\": \"{name} için özel analiz fırsatı\",\n    \"expiryDays\": 30,\n    \"customMessage\": \"Merhaba {name}! {cropType} ürününüz için ücretsiz analiz.\"\n  },\n  \"batchSize\": 50,\n  \"processingOptions\": {\n    \"validatePhoneNumbers\": true,\n    \"deduplicateContacts\": true,\n    \"skipInvalidEntries\": true\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bulk-operations/create-links",
+							"host": ["{{baseUrl}}"],
+							"path": ["bulk-operations", "create-links"]
+						},
+						"description": "Create multiple sponsorship links in bulk"
+					},
+					"response": []
+				},
+				{
+					"name": "Send Bulk Messages",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"campaignName\": \"Autumn Campaign Messages\",\n  \"messageTemplate\": \"Merhaba {name}! Sonbahar dönemi {cropType} analiziniz için özel linkiniz: {link}\",\n  \"channel\": \"sms\",\n  \"recipients\": [\n    {\n      \"farmerId\": \"F001\",\n      \"name\": \"Mehmet Yılmaz\",\n      \"phone\": \"+90 532 123 4567\",\n      \"linkId\": \"link_abc123\",\n      \"personalizedData\": {\n        \"cropType\": \"domates\",\n        \"region\": \"Antalya\"\n      }\n    },\n    {\n      \"farmerId\": \"F002\",\n      \"name\": \"Ayşe Kaya\",\n      \"phone\": \"+90 533 987 6543\",\n      \"linkId\": \"link_def456\",\n      \"personalizedData\": {\n        \"cropType\": \"biber\",\n        \"region\": \"Mersin\"\n      }\n    }\n  ],\n  \"schedulingOptions\": {\n    \"sendImmediately\": false,\n    \"scheduledTime\": \"2025-08-20T09:00:00Z\",\n    \"timezone\": \"Europe/Istanbul\",\n    \"respectQuietHours\": true\n  },\n  \"batchOptions\": {\n    \"batchSize\": 100,\n    \"delayBetweenBatches\": 30,\n    \"maxRetriesPerMessage\": 3\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/bulk-operations/send-messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["bulk-operations", "send-messages"]
+						},
+						"description": "Send bulk messages with scheduling and personalization"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Operation Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bulk-operations/{{operationId}}/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["bulk-operations", "{{operationId}}", "status"]
+						},
+						"description": "Get status of bulk operation"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Operations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bulk-operations/my-operations?status=running&page=1&pageSize=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["bulk-operations", "my-operations"],
+							"query": [
+								{
+									"key": "status",
+									"value": "running"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get list of bulk operations with filtering"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Operation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bulk-operations/{{operationId}}/cancel",
+							"host": ["{{baseUrl}}"],
+							"path": ["bulk-operations", "{{operationId}}", "cancel"]
+						},
+						"description": "Cancel running bulk operation"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Operation Results",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/bulk-operations/{{operationId}}/results?format=detailed&includeErrors=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["bulk-operations", "{{operationId}}", "results"],
+							"query": [
+								{
+									"key": "format",
+									"value": "detailed"
+								},
+								{
+									"key": "includeErrors",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get detailed results of completed bulk operation"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-set timestamps for requests",
+					"pm.globals.set('timestamp', new Date().toISOString());",
+					"",
+					"// Auto-generate UUIDs for test purposes",
+					"pm.globals.set('uuid', pm.variables.replaceIn('{{$randomUUID}}'));",
+					"",
+					"// Log request details for debugging",
+					"console.log('🚀 Request:', {",
+					"    method: pm.request.method,",
+					"    url: pm.request.url.toString(),",
+					"    timestamp: pm.globals.get('timestamp')",
+					"});"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global response validation",
+					"pm.test('Response status is successful', function() {",
+					"    pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]);",
+					"});",
+					"",
+					"pm.test('Response time is acceptable', function() {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// JSON response validation",
+					"if (pm.response.headers.get('Content-Type')?.includes('application/json')) {",
+					"    pm.test('Response is valid JSON', function() {",
+					"        pm.response.to.be.json;",
+					"    });",
+					"    ",
+					"    pm.test('Response has success field', function() {",
+					"        const response = pm.response.json();",
+					"        pm.expect(response).to.have.property('success');",
+					"    });",
+					"}",
+					"",
+					"// Auto-extract common IDs for next requests",
+					"try {",
+					"    const response = pm.response.json();",
+					"    ",
+					"    if (response.data) {",
+					"        // Extract various IDs",
+					"        if (response.data.linkId) pm.globals.set('linkId', response.data.linkId);",
+					"        if (response.data.testId) pm.globals.set('testId', response.data.testId);",
+					"        if (response.data.operationId) pm.globals.set('operationId', response.data.operationId);",
+					"        if (response.data.sponsorId) pm.globals.set('sponsorId', response.data.sponsorId);",
+					"        if (response.data.analysisId) pm.globals.set('analysisId', response.data.analysisId);",
+					"        if (response.data.farmerId) pm.globals.set('farmerId', response.data.farmerId);",
+					"        if (response.data.codeId) pm.globals.set('codeId', response.data.codeId);",
+					"        if (response.data.campaignId) pm.globals.set('campaignId', response.data.campaignId);",
+					"        if (response.data.messageId) pm.globals.set('messageId', response.data.messageId);",
+					"    }",
+					"    ",
+					"    // Log successful response",
+					"    console.log('✅ Response:', {",
+					"        status: pm.response.code,",
+					"        success: response.success,",
+					"        message: response.message || 'No message',",
+					"        dataKeys: response.data ? Object.keys(response.data) : 'No data'",
+					"    });",
+					"} catch (e) {",
+					"    console.log('ℹ️ Non-JSON response or parsing error');",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://api.ziraai.com/api/v1",
+			"type": "string",
+			"description": "Base URL for ZiraAI API"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string",
+			"description": "JWT Bearer authentication token"
+		},
+		{
+			"key": "sponsorId",
+			"value": "1",
+			"type": "string",
+			"description": "Current sponsor ID"
+		},
+		{
+			"key": "linkId",
+			"value": "",
+			"type": "string",
+			"description": "Sponsorship link ID"
+		},
+		{
+			"key": "testId",
+			"value": "",
+			"type": "string",
+			"description": "A/B test ID"
+		},
+		{
+			"key": "analysisId",
+			"value": "",
+			"type": "string",
+			"description": "Plant analysis ID"
+		},
+		{
+			"key": "farmerId",
+			"value": "",
+			"type": "string",
+			"description": "Farmer ID"
+		},
+		{
+			"key": "operationId",
+			"value": "",
+			"type": "string",
+			"description": "Bulk operation ID"
+		},
+		{
+			"key": "campaignId",
+			"value": "",
+			"type": "string",
+			"description": "Campaign ID"
+		},
+		{
+			"key": "messageId",
+			"value": "",
+			"type": "string",
+			"description": "Message ID"
+		},
+		{
+			"key": "codeId",
+			"value": "",
+			"type": "string",
+			"description": "Sponsorship code ID"
+		}
+	]
+}

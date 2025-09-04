@@ -1,0 +1,712 @@
+{
+  "info": {
+    "name": "ZiraAI Complete API Collection v2.0",
+    "description": "Complete ZiraAI API collection with ALL endpoints including subscription management, sponsorship system, and plant analysis",
+    "version": "2.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sponsorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "farmerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "plantAnalysisId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sponsorshipCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subscriptionTierId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Sponsor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sponsor{{$timestamp}}@company.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"Sponsor Company {{$timestamp}}\",\n  \"mobilePhones\": \"+90 555 {{$randomInt}}{{$randomInt}} {{$randomInt}}{{$randomInt}}\",\n  \"role\": \"Sponsor\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Farmer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer{{$timestamp}}@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"fullName\": \"Farmer {{$timestamp}}\",\n  \"mobilePhones\": \"+90 555 {{$randomInt}}{{$randomInt}} {{$randomInt}}{{$randomInt}}\",\n  \"role\": \"Farmer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Sponsor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set(\"accessToken\", response.data.token);",
+                  "    pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "    pm.collectionVariables.set(\"sponsorId\", response.data.userId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sponsor1755290952@company.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login Farmer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set(\"accessToken\", response.data.token);",
+                  "    pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "    pm.collectionVariables.set(\"farmerId\", response.data.userId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Subscription Management",
+      "item": [
+        {
+          "name": "Get Subscription Tiers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/tiers",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "tiers"]
+            }
+          }
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/my-subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "my-subscription"]
+            }
+          }
+        },
+        {
+          "name": "Get Usage Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/usage-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "usage-status"]
+            }
+          }
+        },
+        {
+          "name": "Subscribe to Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"durationMonths\": 1,\n  \"autoRenew\": true,\n  \"paymentMethod\": \"CreditCard\",\n  \"paymentReference\": \"txn_123456\",\n  \"isTrialSubscription\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/subscribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "subscribe"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userSubscriptionId\": 123,\n  \"cancellationReason\": \"Too expensive\",\n  \"immediateCancellation\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "history"]
+            }
+          }
+        },
+        {
+          "name": "Get Usage Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/usage-logs?startDate=2025-08-01&endDate=2025-08-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "usage-logs"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-08-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-08-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Sponsorship System",
+      "item": [
+        {
+          "name": "Create Sponsor Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Agricultural Solutions Inc\",\n  \"contactPerson\": \"John Smith\",\n  \"email\": \"contact@agsolutions.com\",\n  \"phone\": \"+90 212 555 0123\",\n  \"address\": \"Istanbul, Turkey\",\n  \"website\": \"https://agsolutions.com\",\n  \"companyType\": \"Agricultural Technology\",\n  \"businessModel\": \"B2B Software Solutions\",\n  \"description\": \"Leading provider of agricultural technology solutions\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sponsorship/create-profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["sponsorship", "create-profile"]
+            }
+          }
+        },
+        {
+          "name": "Purchase Sponsorship Package",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.generatedCodes && response.data.generatedCodes.length > 0) {",
+                  "        pm.collectionVariables.set(\"sponsorshipCode\", response.data.generatedCodes[0].code);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 1,\n  \"quantity\": 10,\n  \"totalAmount\": 999.90,\n  \"paymentMethod\": \"CreditCard\",\n  \"paymentReference\": \"TXN_S_{{$timestamp}}\",\n  \"companyName\": \"Test Company\",\n  \"invoiceAddress\": \"Test Address\",\n  \"taxNumber\": \"1234567890\",\n  \"codePrefix\": \"AGRI\",\n  \"validityDays\": 365,\n  \"notes\": \"Test purchase\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sponsorship/purchase-package",
+              "host": ["{{baseUrl}}"],
+              "path": ["sponsorship", "purchase-package"]
+            }
+          }
+        },
+        {
+          "name": "Get Sponsor Codes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sponsorship/codes?onlyUnused=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["sponsorship", "codes"],
+              "query": [
+                {
+                  "key": "onlyUnused",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unused Sponsor Codes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sponsorship/codes?onlyUnused=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["sponsorship", "codes"],
+              "query": [
+                {
+                  "key": "onlyUnused",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validate Sponsorship Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sponsorship/validate/{{sponsorshipCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["sponsorship", "validate", "{{sponsorshipCode}}"]
+            }
+          }
+        },
+        {
+          "name": "Redeem Sponsorship Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{sponsorshipCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sponsorship/redeem",
+              "host": ["{{baseUrl}}"],
+              "path": ["sponsorship", "redeem"]
+            }
+          }
+        },
+        {
+          "name": "Get Sponsor Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sponsorship/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["sponsorship", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Sponsored Farmers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/sponsorship/sponsored-farmers",
+              "host": ["{{baseUrl}}"],
+              "path": ["sponsorship", "sponsored-farmers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Plant Analysis",
+      "item": [
+        {
+          "name": "Analyze Plant (Sync)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.id) {",
+                  "        pm.collectionVariables.set(\"plantAnalysisId\", response.data.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...\",\n  \"fieldId\": \"FIELD_001\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Greenhouse A\",\n  \"gpsCoordinates\": {\n    \"lat\": 41.0082,\n    \"lng\": 28.9784\n  },\n  \"soilType\": \"clay\",\n  \"temperature\": 25.5,\n  \"humidity\": 65.0,\n  \"weatherConditions\": \"sunny\",\n  \"urgencyLevel\": \"medium\",\n  \"notes\": \"Leaves showing unusual spots\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "analyze"]
+            }
+          }
+        },
+        {
+          "name": "Analyze Plant (Async)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...\",\n  \"fieldId\": \"FIELD_001\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Greenhouse A\",\n  \"gpsCoordinates\": {\n    \"lat\": 41.0082,\n    \"lng\": 28.9784\n  },\n  \"soilType\": \"clay\",\n  \"temperature\": 25.5,\n  \"humidity\": 65.0,\n  \"weatherConditions\": \"sunny\",\n  \"urgencyLevel\": \"medium\",\n  \"notes\": \"Leaves showing unusual spots\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/analyze-async",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "analyze-async"]
+            }
+          }
+        },
+        {
+          "name": "Get Plant Analysis Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/{{plantAnalysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "{{plantAnalysisId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Plant Analysis List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/list?page=1&pageSize=10&status=Completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "list"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "Completed"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Plant Analysis Image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/{{plantAnalysisId}}/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "{{plantAnalysisId}}", "image"]
+            }
+          }
+        },
+        {
+          "name": "Get All Plant Analyses (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses?page=1&size=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sponsored Analyses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/sponsored-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "sponsored-analyses"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Redemption (Public Links)",
+      "item": [
+        {
+          "name": "Redeem Code via Public Link",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/redemption/{{sponsorshipCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["redemption", "{{sponsorshipCode}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

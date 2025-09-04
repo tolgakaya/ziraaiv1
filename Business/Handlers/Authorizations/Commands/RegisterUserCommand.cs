@@ -13,6 +13,7 @@ using Core.Utilities.Results;
 using Core.Utilities.Security.Hashing;
 using DataAccess.Abstract;
 using MediatR;
+using System.Text.Json.Serialization;
 
 namespace Business.Handlers.Authorizations.Commands
 {
@@ -21,6 +22,8 @@ namespace Business.Handlers.Authorizations.Commands
         public string Email { get; set; }
         public string Password { get; set; }
         public string FullName { get; set; }
+        
+        [JsonPropertyName("role")]
         public string UserRole { get; set; } = "Farmer"; // Default to Farmer, but allow override
 
 

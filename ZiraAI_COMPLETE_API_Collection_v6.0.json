@@ -1,0 +1,2555 @@
+{
+  "info": {
+    "name": "ZiraAI COMPLETE API Collection v6.0",
+    "description": "Comprehensive API collection for ZiraAI Plant Analysis Platform with ALL 117 endpoints across 17 controllers. No endpoints missing! Updated August 2025 with all recent fixes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "6.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "analysisId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sponsorshipCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subscriptionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "smartLinkId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set(\"token\", response.data.token);",
+                  "        pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "        pm.collectionVariables.set(\"userId\", response.data.userId);",
+                  "        console.log('✅ Login successful. Token stored.');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set(\"token\", response.data.token);",
+                  "        console.log('✅ Token refreshed successfully');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh-token"]
+            }
+          }
+        },
+        {
+          "name": "Register Farmer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"token\", response.data.token);",
+                  "    pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "    console.log('✅ Farmer registered with trial subscription');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"mobilePhones\": \"+905551234567\",\n  \"role\": \"Farmer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Sponsor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sponsor@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"Green\",\n  \"lastName\": \"Agriculture\",\n  \"mobilePhones\": \"+905559876543\",\n  \"role\": \"Sponsor\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer@example.com\",\n  \"citizenId\": \"12345678901\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/user-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "user-password"]
+            }
+          }
+        },
+        {
+          "name": "Verify Mobile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+905551234567\",\n  \"verificationCode\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Test Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/test",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "test"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Plant Analysis",
+      "item": [
+        {
+          "name": "Synchronous Analysis",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"analysisId\", response.data.id);",
+                  "    console.log('✅ Analysis completed. ID:', response.data.id);",
+                  "    console.log('📊 Health Score:', response.data.overallHealthScore);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...\",\n  \"fieldId\": \"FIELD_001\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Istanbul, Turkey\",\n  \"gpsCoordinates\": {\n    \"lat\": 41.0082,\n    \"lng\": 28.9784\n  },\n  \"altitude\": 100,\n  \"plantingDate\": \"2025-03-15\",\n  \"expectedHarvestDate\": \"2025-08-30\",\n  \"lastFertilization\": \"2025-07-01\",\n  \"lastIrrigation\": \"2025-08-10\",\n  \"previousTreatments\": \"Organic fungicide applied last month\",\n  \"soilType\": \"Loamy\",\n  \"temperature\": 25,\n  \"humidity\": 65,\n  \"weatherConditions\": \"Sunny\",\n  \"urgencyLevel\": \"Medium\",\n  \"notes\": \"Some yellowing on lower leaves noticed yesterday\",\n  \"contactInfo\": \"farmer@example.com\",\n  \"additionalInfo\": \"First year growing tomatoes in this field\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "analyze"]
+            }
+          }
+        },
+        {
+          "name": "Asynchronous Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...\",\n  \"fieldId\": \"FIELD_002\",\n  \"cropType\": \"pepper\",\n  \"location\": \"Antalya, Turkey\",\n  \"gpsCoordinates\": {\n    \"lat\": 36.8969,\n    \"lng\": 30.7133\n  },\n  \"altitude\": 50,\n  \"plantingDate\": \"2025-04-01\",\n  \"expectedHarvestDate\": \"2025-09-15\",\n  \"soilType\": \"Sandy\",\n  \"temperature\": 28,\n  \"humidity\": 70,\n  \"weatherConditions\": \"Partially cloudy\",\n  \"urgencyLevel\": \"High\",\n  \"notes\": \"Possible pest damage on leaves\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/analyze-async",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "analyze-async"]
+            }
+          }
+        },
+        {
+          "name": "Get Analysis by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/{{analysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "{{analysisId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get My Analyses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/my-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "my-analyses"]
+            }
+          }
+        },
+        {
+          "name": "Get Analysis List (Mobile)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    console.log('📋 Total analyses:', response.data.totalCount);",
+                  "    console.log('✅ Completed:', response.data.completedCount);",
+                  "    console.log('💰 Sponsored:', response.data.sponsoredCount);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/list?page=1&pageSize=20&status=Completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "list"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "Completed"
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2025-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "toDate",
+                  "value": "2025-12-31",
+                  "disabled": true
+                },
+                {
+                  "key": "cropType",
+                  "value": "tomato",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sponsored Analyses (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/sponsored-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "sponsored-analyses"]
+            }
+          }
+        },
+        {
+          "name": "Get All Analyses (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses"]
+            }
+          }
+        },
+        {
+          "name": "Get Analysis Image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/{{analysisId}}/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "{{analysisId}}", "image"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Subscriptions",
+      "item": [
+        {
+          "name": "Get Available Tiers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    console.log('Available subscription tiers:');",
+                  "    response.data.forEach(tier => {",
+                  "        console.log(`${tier.tierName}: ${tier.dailyRequestLimit} daily / ${tier.monthlyRequestLimit} monthly - ${tier.monthlyPrice} ${tier.currency}`);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/tiers",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "tiers"]
+            }
+          }
+        },
+        {
+          "name": "Get My Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/my-subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "my-subscription"]
+            }
+          }
+        },
+        {
+          "name": "Get Usage Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/usage-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "usage-status"]
+            }
+          }
+        },
+        {
+          "name": "Subscribe to Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"startDate\": \"2025-08-19\",\n  \"durationMonths\": 1,\n  \"autoRenew\": true,\n  \"paymentMethod\": \"CreditCard\",\n  \"paymentReference\": \"txn_123456\",\n  \"paidAmount\": 299.99,\n  \"currency\": \"TRY\",\n  \"isTrialSubscription\": false,\n  \"trialDays\": 0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/subscribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "subscribe"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userSubscriptionId\": 123,\n  \"cancellationReason\": \"Too expensive\",\n  \"immediateCancellation\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/history",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "history"]
+            }
+          }
+        },
+        {
+          "name": "Get Usage Logs (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/usage-logs?userId=123&startDate=2025-08-01&endDate=2025-08-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "usage-logs"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "123"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-08-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-08-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Tier (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tierName\": \"M\",\n  \"displayName\": \"Updated Medium\",\n  \"description\": \"Updated medium tier description\",\n  \"dailyRequestLimit\": 25,\n  \"monthlyRequestLimit\": 250,\n  \"monthlyPrice\": 349.99,\n  \"yearlyPrice\": 3599.99,\n  \"currency\": \"TRY\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/tiers/2",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "tiers", "2"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Sponsorship",
+      "item": [
+        {
+          "name": "Profile Management",
+          "item": [
+            {
+              "name": "Create Sponsor Profile",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"companyName\": \"Green Agriculture Co.\",\n  \"companyDescription\": \"Leading agricultural technology provider specializing in sustainable farming solutions\",\n  \"sponsorLogoUrl\": \"https://example.com/logo.png\",\n  \"websiteUrl\": \"https://greenagri.com\",\n  \"contactEmail\": \"contact@greenagri.com\",\n  \"contactPhone\": \"+905551234567\",\n  \"contactPerson\": \"John Smith\",\n  \"linkedInUrl\": \"https://linkedin.com/company/greenagri\",\n  \"twitterUrl\": \"https://twitter.com/greenagri\",\n  \"facebookUrl\": \"https://facebook.com/greenagri\",\n  \"instagramUrl\": \"https://instagram.com/greenagri\",\n  \"taxNumber\": \"1234567890\",\n  \"tradeRegistryNumber\": \"TR123456\",\n  \"address\": \"123 Business St\",\n  \"city\": \"Istanbul\",\n  \"country\": \"Turkey\",\n  \"postalCode\": \"34000\",\n  \"companyType\": \"Cooperative\",\n  \"businessModel\": \"B2B\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/create-profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "create-profile"]
+                }
+              }
+            },
+            {
+              "name": "Get Sponsor Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "profile"]
+                }
+              }
+            },
+            {
+              "name": "Update Sponsor Profile",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"companyName\": \"Updated Green Agriculture Co.\",\n  \"companyDescription\": \"Updated description\",\n  \"sponsorLogoUrl\": \"https://example.com/new-logo.png\",\n  \"websiteUrl\": \"https://newgreenagri.com\",\n  \"contactEmail\": \"newcontact@greenagri.com\",\n  \"contactPhone\": \"+905559876543\",\n  \"contactPerson\": \"Jane Doe\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "profile"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Package Purchase & Codes",
+          "item": [
+            {
+              "name": "Purchase Package",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data && response.data.generatedCodes) {",
+                      "    pm.collectionVariables.set(\"sponsorshipCode\", response.data.generatedCodes[0].code);",
+                      "    console.log('✅ Package purchased. Generated codes:', response.data.generatedCodes.length);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subscriptionTierId\": 4,\n  \"quantity\": 5,\n  \"paymentReference\": \"PAY-2025-XL-001\",\n  \"validityDays\": 365,\n  \"notes\": \"XL tier package for 5 premium farmers\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/purchase-package",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "purchase-package"]
+                }
+              }
+            },
+            {
+              "name": "Redeem Sponsorship Code",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sponsorshipCode\": \"{{sponsorshipCode}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/redeem",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "redeem"]
+                }
+              }
+            },
+            {
+              "name": "Create Single Code",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subscriptionTierId\": 3,\n  \"expiryDate\": \"2025-12-31\",\n  \"notes\": \"Special L tier code for VIP farmer\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/codes",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "codes"]
+                }
+              }
+            },
+            {
+              "name": "Get Sponsorship Codes",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/codes?onlyUnused=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "codes"],
+                  "query": [
+                    {
+                      "key": "onlyUnused",
+                      "value": "true"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Purchase History",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/purchases",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "purchases"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Smart Links (XL Tier Only)",
+          "item": [
+            {
+              "name": "Create Smart Link",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200 or 400\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    pm.collectionVariables.set(\"smartLinkId\", response.data.id);",
+                      "    console.log('✅ Smart link created. ID:', response.data.id);",
+                      "} else {",
+                      "    console.log('❌ Smart link creation failed:', response.message);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"linkUrl\": \"https://example.com/products/premium-fertilizer\",\n  \"linkText\": \"Premium Tomato Fertilizer - 30% Higher Yield\",\n  \"linkDescription\": \"Scientifically formulated fertilizer specifically designed for tomato plants. Increases yield by up to 30% and improves fruit quality.\",\n  \"linkType\": \"Product\",\n  \"keywords\": [\"fertilizer\", \"tomato\", \"organic\", \"yield\", \"premium\"],\n  \"productCategory\": \"Fertilizers\",\n  \"targetCropTypes\": [\"tomato\", \"pepper\", \"eggplant\"],\n  \"targetDiseases\": [\"blight\", \"wilt\"],\n  \"targetPests\": [\"aphid\", \"whitefly\"],\n  \"priority\": 85,\n  \"displayPosition\": \"Inline\",\n  \"displayStyle\": \"Button\",\n  \"productName\": \"TomatoBoost Pro Premium\",\n  \"productPrice\": 299.99,\n  \"productCurrency\": \"TRY\",\n  \"isPromotional\": true,\n  \"discountPercentage\": 20\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/smart-links",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "smart-links"]
+                }
+              }
+            },
+            {
+              "name": "Get Smart Links",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/smart-links",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "smart-links"]
+                }
+              }
+            },
+            {
+              "name": "Get Smart Link Performance",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/smart-links/performance",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "smart-links", "performance"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Analysis & Data Access",
+          "item": [
+            {
+              "name": "Get Analysis for Sponsor",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    console.log('✅ Analysis retrieved with tier-based filtering');",
+                      "    console.log('📊 Health Score:', response.data.overallHealthScore);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/analysis/{{analysisId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "analysis", "{{analysisId}}"]
+                }
+              }
+            },
+            {
+              "name": "Get Sponsored Farmers",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/farmers",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "farmers"]
+                }
+              }
+            },
+            {
+              "name": "Get Sponsorship Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/statistics",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "statistics"]
+                }
+              }
+            },
+            {
+              "name": "Get Link Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/link-statistics?startDate=2025-01-01&endDate=2025-12-31",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "link-statistics"],
+                  "query": [
+                    {
+                      "key": "startDate",
+                      "value": "2025-01-01"
+                    },
+                    {
+                      "key": "endDate",
+                      "value": "2025-12-31"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Messaging & Communication",
+          "item": [
+            {
+              "name": "Send Message to Farmer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"toUserId\": 123,\n  \"plantAnalysisId\": {{analysisId}},\n  \"subject\": \"Plant Analysis Follow-up\",\n  \"message\": \"Dear Farmer,\\n\\nI've reviewed your tomato plant analysis results. The yellowing on lower leaves indicates a nitrogen deficiency. I recommend applying our TomatoBoost fertilizer.\\n\\nBest regards,\\nGreen Agriculture Team\",\n  \"messageType\": \"Analysis\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/messages",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "messages"]
+                }
+              }
+            },
+            {
+              "name": "Get Conversation",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/messages/conversation?farmerId=123&plantAnalysisId={{analysisId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "messages", "conversation"],
+                  "query": [
+                    {
+                      "key": "farmerId",
+                      "value": "123"
+                    },
+                    {
+                      "key": "plantAnalysisId",
+                      "value": "{{analysisId}}"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Send Sponsorship Link",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"recipients\": [\n    {\n      \"email\": \"farmer1@example.com\",\n      \"name\": \"John Farmer\",\n      \"phone\": \"+905551111111\"\n    },\n    {\n      \"email\": \"farmer2@example.com\",\n      \"name\": \"Jane Farmer\",\n      \"phone\": \"+905552222222\"\n    }\n  ],\n  \"channel\": \"Email\",\n  \"sponsorshipCodeId\": 123,\n  \"message\": \"Welcome to our sponsorship program! Use this code to get premium plant analysis.\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/send-link",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "send-link"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logo & Display",
+          "item": [
+            {
+              "name": "Get Logo Permissions",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    console.log(`Logo Display: ${response.data.canDisplayLogo ? '✅' : '❌'}`);",
+                      "    console.log(`Tier: ${response.data.tierName}`);",
+                      "    console.log(`Screen: ${response.data.screen}`);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/logo-permissions/analysis/{{analysisId}}?screen=results",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "logo-permissions", "analysis", "{{analysisId}}"],
+                  "query": [
+                    {
+                      "key": "screen",
+                      "value": "results"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Display Info",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/display-info/analysis/{{analysisId}}?screen=results",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "display-info", "analysis", "{{analysisId}}"],
+                  "query": [
+                    {
+                      "key": "screen",
+                      "value": "results"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Validation & Utilities",
+          "item": [
+            {
+              "name": "Validate Sponsorship Code",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/validate/{{sponsorshipCode}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "validate", "{{sponsorshipCode}}"]
+                }
+              }
+            },
+            {
+              "name": "Get My Sponsor",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/my-sponsor",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "my-sponsor"]
+                }
+              }
+            },
+            {
+              "name": "Debug User Info",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/debug/user-info",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "debug", "user-info"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. User Management",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get User Lookups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/lookups",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "lookups"]
+            }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"New\",\n  \"lastName\": \"User\",\n  \"email\": \"newuser@example.com\",\n  \"mobilePhones\": \"+905559999999\",\n  \"status\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 123,\n  \"firstName\": \"Updated\",\n  \"lastName\": \"User\",\n  \"email\": \"updateduser@example.com\",\n  \"mobilePhones\": \"+905559999999\",\n  \"status\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/123",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "123"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Groups Management",
+      "item": [
+        {
+          "name": "List Groups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups"]
+            }
+          }
+        },
+        {
+          "name": "Get Group by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Group Lookups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/lookups",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups", "lookups"]
+            }
+          }
+        },
+        {
+          "name": "Create Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"groupName\": \"Premium Farmers\",\n  \"description\": \"Group for premium tier farmers\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups"]
+            }
+          }
+        },
+        {
+          "name": "Update Group",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"groupName\": \"Updated Premium Farmers\",\n  \"description\": \"Updated group description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups"]
+            }
+          }
+        },
+        {
+          "name": "Delete Group",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/groups/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["groups", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Group Claims",
+      "item": [
+        {
+          "name": "List Group Claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/group-claims",
+              "host": ["{{baseUrl}}"],
+              "path": ["group-claims"]
+            }
+          }
+        },
+        {
+          "name": "Get Group Claim by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/group-claims/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["group-claims", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Claims by Group ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/group-claims/groups/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["group-claims", "groups", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Group Claim",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"groupId\": 1,\n  \"operationClaimId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/group-claims",
+              "host": ["{{baseUrl}}"],
+              "path": ["group-claims"]
+            }
+          }
+        },
+        {
+          "name": "Update Group Claim",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"groupId\": 1,\n  \"operationClaimId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/group-claims",
+              "host": ["{{baseUrl}}"],
+              "path": ["group-claims"]
+            }
+          }
+        },
+        {
+          "name": "Delete Group Claim",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/group-claims/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["group-claims", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. User Groups",
+      "item": [
+        {
+          "name": "List User Groups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-groups"]
+            }
+          }
+        },
+        {
+          "name": "Get User Groups by User ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/user-groups/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-groups", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Groups by User ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-groups/users/{{userId}}/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-groups", "users", "{{userId}}", "groups"]
+            }
+          }
+        },
+        {
+          "name": "Get Users by Group ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-groups/groups/1/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-groups", "groups", "1", "users"]
+            }
+          }
+        },
+        {
+          "name": "Create User Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"groupId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-groups"]
+            }
+          }
+        },
+        {
+          "name": "Update User Group",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"userId\": {{userId}},\n  \"groupId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-groups"]
+            }
+          }
+        },
+        {
+          "name": "Update by Group ID",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"groupId\": 1,\n  \"userIds\": [{{userId}}, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-groups/groups",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-groups", "groups"]
+            }
+          }
+        },
+        {
+          "name": "Delete User Group",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-groups/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-groups", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. User Claims",
+      "item": [
+        {
+          "name": "List User Claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-claims",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-claims"]
+            }
+          }
+        },
+        {
+          "name": "Get User Claim by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-claims/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-claims", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Claims by User ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-claims/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-claims", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Create User Claim",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": {{userId}},\n  \"operationClaimId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-claims",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-claims"]
+            }
+          }
+        },
+        {
+          "name": "Update User Claim",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"userId\": {{userId}},\n  \"operationClaimId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/user-claims",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-claims"]
+            }
+          }
+        },
+        {
+          "name": "Delete User Claim",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user-claims/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user-claims", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Operation Claims",
+      "item": [
+        {
+          "name": "List Operation Claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/operation-claims",
+              "host": ["{{baseUrl}}"],
+              "path": ["operation-claims"]
+            }
+          }
+        },
+        {
+          "name": "Get Operation Claim by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/operation-claims/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["operation-claims", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Operation Claim Lookups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/operation-claims/lookups",
+              "host": ["{{baseUrl}}"],
+              "path": ["operation-claims", "lookups"]
+            }
+          }
+        },
+        {
+          "name": "Update Operation Claim",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"name\": \"UpdatedOperationClaim\",\n  \"alias\": \"Updated Operation Claim Description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/operation-claims",
+              "host": ["{{baseUrl}}"],
+              "path": ["operation-claims"]
+            }
+          }
+        },
+        {
+          "name": "Get Claims from Cache",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/operation-claims/cache",
+              "host": ["{{baseUrl}}"],
+              "path": ["operation-claims", "cache"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Languages",
+      "item": [
+        {
+          "name": "Get Language Codes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/languages/codes",
+              "host": ["{{baseUrl}}"],
+              "path": ["languages", "codes"]
+            }
+          }
+        },
+        {
+          "name": "Get Language Lookups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/languages/lookups",
+              "host": ["{{baseUrl}}"],
+              "path": ["languages", "lookups"]
+            }
+          }
+        },
+        {
+          "name": "List Languages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/languages",
+              "host": ["{{baseUrl}}"],
+              "path": ["languages"]
+            }
+          }
+        },
+        {
+          "name": "Get Language by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/languages/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["languages", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Language",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Español\",\n  \"code\": \"es\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/languages",
+              "host": ["{{baseUrl}}"],
+              "path": ["languages"]
+            }
+          }
+        },
+        {
+          "name": "Update Language",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"name\": \"Updated English\",\n  \"code\": \"en-US\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/languages",
+              "host": ["{{baseUrl}}"],
+              "path": ["languages"]
+            }
+          }
+        },
+        {
+          "name": "Delete Language",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/languages/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["languages", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Translations",
+      "item": [
+        {
+          "name": "Get Translations by Language",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/translates/languages/en",
+              "host": ["{{baseUrl}}"],
+              "path": ["translates", "languages", "en"]
+            }
+          }
+        },
+        {
+          "name": "List Translates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/translates",
+              "host": ["{{baseUrl}}"],
+              "path": ["translates"]
+            }
+          }
+        },
+        {
+          "name": "Get Translate DTOs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/translates/dtos",
+              "host": ["{{baseUrl}}"],
+              "path": ["translates", "dtos"]
+            }
+          }
+        },
+        {
+          "name": "Get Translate by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/translates/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["translates", "1"]
+            }
+          }
+        },
+        {
+          "name": "Create Translate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"HELLO_WORLD\",\n  \"value\": \"Hello World\",\n  \"languageId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/translates",
+              "host": ["{{baseUrl}}"],
+              "path": ["translates"]
+            }
+          }
+        },
+        {
+          "name": "Update Translate",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"code\": \"UPDATED_HELLO\",\n  \"value\": \"Updated Hello\",\n  \"languageId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/translates",
+              "host": ["{{baseUrl}}"],
+              "path": ["translates"]
+            }
+          }
+        },
+        {
+          "name": "Delete Translate",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/translates/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["translates", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Logs",
+      "item": [
+        {
+          "name": "Get Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["logs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Testing & Health",
+      "item": [
+        {
+          "name": "Mock N8N Response",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"analysisId\": \"test_123\",\n  \"healthScore\": 8,\n  \"primaryConcern\": \"Test primary concern\",\n  \"recommendations\": \"Test recommendations\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/test/mock-n8n-response",
+              "host": ["{{baseUrl}}"],
+              "path": ["test", "mock-n8n-response"]
+            }
+          }
+        },
+        {
+          "name": "RabbitMQ Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test/rabbitmq-health",
+              "host": ["{{baseUrl}}"],
+              "path": ["test", "rabbitmq-health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Database Testing",
+      "item": [
+        {
+          "name": "Get Recent Analyses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/testdatabase/recent-analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["testdatabase", "recent-analyses"]
+            }
+          }
+        },
+        {
+          "name": "Debug Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/testdatabase/subscription-debug",
+              "host": ["{{baseUrl}}"],
+              "path": ["testdatabase", "subscription-debug"]
+            }
+          }
+        },
+        {
+          "name": "Check User Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/testdatabase/user-subscription/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["testdatabase", "user-subscription", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Trial Tier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/testdatabase/add-trial-tier",
+              "host": ["{{baseUrl}}"],
+              "path": ["testdatabase", "add-trial-tier"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Notifications",
+      "item": [
+        {
+          "name": "Plant Analysis Completed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"analysisId\": \"{{analysisId}}\",\n  \"farmerId\": \"F001\",\n  \"cropType\": \"tomato\",\n  \"healthScore\": 8,\n  \"primaryConcern\": \"Mild nutrient deficiency\",\n  \"urgencyLevel\": \"Medium\",\n  \"contactEmail\": \"farmer@example.com\",\n  \"contactPhone\": \"+905551234567\",\n  \"completedAt\": \"2025-08-19T10:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notification/plant-analysis-completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["notification", "plant-analysis-completed"]
+            }
+          }
+        },
+        {
+          "name": "Get Analysis Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notification/analysis-status/{{analysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["notification", "analysis-status", "{{analysisId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Redemption",
+      "item": [
+        {
+          "name": "Redeem Sponsorship Code (API)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redeem/{{sponsorshipCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["redeem", "{{sponsorshipCode}}"]
+            }
+          }
+        },
+        {
+          "name": "Direct Redeem Link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl:replace('/api/v1', '')}}/redeem/{{sponsorshipCode}}",
+              "host": ["{{baseUrl:replace('/api/v1', '')}}"],
+              "path": ["redeem", "{{sponsorshipCode}}"]
+            }
+          }
+        },
+        {
+          "name": "Redemption Success Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redeem/success",
+              "host": ["{{baseUrl}}"],
+              "path": ["redeem", "success"]
+            }
+          }
+        },
+        {
+          "name": "Redemption Error Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redeem/error",
+              "host": ["{{baseUrl}}"],
+              "path": ["redeem", "error"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

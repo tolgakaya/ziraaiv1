@@ -2,14 +2,17 @@ using Business.Constants;
 using Business.Services.Configuration;
 using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
+using Core.CrossCuttingConcerns.Logging.Serilog;
 using Core.Utilities.Results;
 using Entities.Constants;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -26,6 +29,7 @@ namespace Business.Services.PlantAnalysis
         private readonly IConfigurationService _configurationService;
         private readonly IFileStorageService _fileStorageService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<PlantAnalysisService> _logger;
         private readonly string _n8nWebhookUrl;
         private readonly bool _useImageUrl;
 
@@ -35,7 +39,8 @@ namespace Business.Services.PlantAnalysis
             IImageProcessingService imageProcessingService,
             IConfigurationService configurationService,
             IFileStorageService fileStorageService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            ILogger<PlantAnalysisService> logger)
         {
             _httpClient = httpClient;
             _configuration = configuration;
@@ -43,27 +48,46 @@ namespace Business.Services.PlantAnalysis
             _configurationService = configurationService;
             _fileStorageService = fileStorageService;
             _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
             _n8nWebhookUrl = _configuration["N8N:WebhookUrl"];
-            _useImageUrl = _configuration.GetValue<bool>("N8N:UseImageUrl", true); // Default to URL method
+            _useImageUrl = _configuration.GetValue<bool>("N8N:UseImageUrl", true);
             
-            // Debug logging to track which file storage service is injected (removed for performance)
+            _logger.LogInformation("PlantAnalysisService initialized with N8N URL: {N8nUrl}, UseImageUrl: {UseImageUrl}, FileStorageService: {FileStorageType}", 
+                _n8nWebhookUrl, _useImageUrl, _fileStorageService?.GetType().Name ?? "Unknown");
         }
 
         public async Task<PlantAnalysisResponseDto> SendToN8nWebhookAsync(PlantAnalysisRequestDto request)
         {
+            var stopwatch = Stopwatch.StartNew();
+            var correlationId = Guid.NewGuid().ToString("N")[..8];
+            
+            _logger.LogInformation("[PLANT_ANALYSIS_START] Starting synchronous plant analysis - CorrelationId: {CorrelationId}, FarmerId: {FarmerId}, CropType: {CropType}, SponsorId: {SponsorId}", 
+                correlationId, request.FarmerId, request.CropType, request.SponsorId);
+
             try
             {
                 // Validate required field
                 if (string.IsNullOrEmpty(request.Image))
                 {
+                    _logger.LogWarning("[PLANT_ANALYSIS_VALIDATION_ERROR] Image field is required - CorrelationId: {CorrelationId}", correlationId);
                     throw new ArgumentException("Image field is required");
                 }
 
+                _logger.LogDebug("[PLANT_ANALYSIS_VALIDATION] Starting image validation - CorrelationId: {CorrelationId}", correlationId);
+                
                 // Validate that the uploaded file is actually an image
                 ValidateImageFile(request.Image);
+                
+                _logger.LogInformation("[PLANT_ANALYSIS_IMAGE_PROCESSING] Starting image processing for AI optimization - CorrelationId: {CorrelationId}", correlationId);
 
                 // Process image for AI (aggressive optimization)
+                var imageProcessingStart = Stopwatch.StartNew();
                 var processedImage = await ProcessImageForAIAsync(request.Image);
+                imageProcessingStart.Stop();
+                
+                _logger.LogInformation("[PLANT_ANALYSIS_IMAGE_PROCESSED] Image processed in {ProcessingTime}ms - CorrelationId: {CorrelationId}, OriginalSize: {OriginalSize}, ProcessedSize: {ProcessedSize}", 
+                    imageProcessingStart.ElapsedMilliseconds, correlationId, 
+                    GetImageSize(request.Image), GetImageSize(processedImage));
                 
                 // Determine whether to use URL or base64
                 object imagePayload;
@@ -71,19 +95,27 @@ namespace Business.Services.PlantAnalysis
                 
                 if (_useImageUrl)
                 {
+                    _logger.LogInformation("[PLANT_ANALYSIS_URL_MODE] Using URL-based image processing for token optimization - CorrelationId: {CorrelationId}", correlationId);
+                    
                     // Generate unique analysis ID
                     var analysisId = $"sync_analysis_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid().ToString("N")[..8]}";
                     
+                    var uploadStart = Stopwatch.StartNew();
                     // Save image using file storage service and get URL
                     imageUrl = await _fileStorageService.UploadImageFromDataUriAsync(
                         processedImage, 
                         analysisId, 
                         "plant-images");
+                    uploadStart.Stop();
+                    
+                    _logger.LogInformation("[PLANT_ANALYSIS_IMAGE_UPLOADED] Image uploaded to storage in {UploadTime}ms - CorrelationId: {CorrelationId}, ImageUrl: {ImageUrl}, StorageService: {StorageService}", 
+                        uploadStart.ElapsedMilliseconds, correlationId, imageUrl, _fileStorageService?.GetType().Name);
                     
                     imagePayload = new { imageUrl = imageUrl };
                 }
                 else
                 {
+                    _logger.LogWarning("[PLANT_ANALYSIS_BASE64_MODE] Using base64 mode (not recommended for AI) - CorrelationId: {CorrelationId}", correlationId);
                     // Fallback to base64 (not recommended for AI)
                     imagePayload = new { image = processedImage };
                 }
@@ -129,42 +161,108 @@ namespace Business.Services.PlantAnalysis
                     } : null
                 };
 
+                _logger.LogInformation("[PLANT_ANALYSIS_N8N_REQUEST] Sending payload to N8N webhook - CorrelationId: {CorrelationId}, PayloadSize: {PayloadSize} bytes, WebhookUrl: {WebhookUrl}", 
+                    correlationId, Encoding.UTF8.GetByteCount(JsonConvert.SerializeObject(n8nPayload)), _n8nWebhookUrl);
+
                 // Send JSON payload to N8N webhook
                 var jsonContent = JsonConvert.SerializeObject(n8nPayload);
                 var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
+                var webhookCallStart = Stopwatch.StartNew();
                 var response = await _httpClient.PostAsync(_n8nWebhookUrl, httpContent);
+                webhookCallStart.Stop();
+
+                _logger.LogInformation("[PLANT_ANALYSIS_N8N_RESPONSE] N8N webhook responded in {ResponseTime}ms - CorrelationId: {CorrelationId}, StatusCode: {StatusCode}, ContentLength: {ContentLength}", 
+                    webhookCallStart.ElapsedMilliseconds, correlationId, response.StatusCode, response.Content.Headers.ContentLength ?? 0);
+
                 response.EnsureSuccessStatusCode();
 
                 var responseContent = await response.Content.ReadAsStringAsync();
                 
                 if (string.IsNullOrEmpty(responseContent))
                 {
+                    _logger.LogError("[PLANT_ANALYSIS_N8N_ERROR] N8N webhook returned empty response - CorrelationId: {CorrelationId}", correlationId);
                     throw new Exception("N8N webhook returned empty response");
                 }
+
+                _logger.LogDebug("[PLANT_ANALYSIS_N8N_RESPONSE_CONTENT] Raw N8N response received - CorrelationId: {CorrelationId}, ResponseLength: {ResponseLength}", 
+                    correlationId, responseContent.Length);
 
                 // Parse N8N response
                 N8nAnalysisResponse analysisResult;
                 
                 try
                 {
+                    var deserializationStart = Stopwatch.StartNew();
                     analysisResult = JsonConvert.DeserializeObject<N8nAnalysisResponse>(responseContent);
+                    deserializationStart.Stop();
                     
                     if (analysisResult == null)
                     {
+                        _logger.LogError("[PLANT_ANALYSIS_DESERIALIZATION_ERROR] Failed to deserialize N8N response - CorrelationId: {CorrelationId}, ResponseContent: {ResponseContent}", 
+                            correlationId, responseContent?.Substring(0, Math.Min(500, responseContent?.Length ?? 0)));
                         throw new Exception($"Failed to deserialize N8N response. Raw response: {responseContent}");
                     }
+
+                    _logger.LogInformation("[PLANT_ANALYSIS_DESERIALIZATION_SUCCESS] N8N response deserialized successfully in {DeserializationTime}ms - CorrelationId: {CorrelationId}, AnalysisId: {AnalysisId}", 
+                        deserializationStart.ElapsedMilliseconds, correlationId, analysisResult.AnalysisId);
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "[PLANT_ANALYSIS_DESERIALIZATION_EXCEPTION] Exception during N8N response parsing - CorrelationId: {CorrelationId}, ExceptionType: {ExceptionType}, ResponseContent: {ResponseContent}", 
+                        correlationId, ex.GetType().Name, responseContent?.Substring(0, Math.Min(500, responseContent?.Length ?? 0)));
                     throw new Exception($"Failed to parse N8N response: {ex.Message}. Raw response: {responseContent}");
                 }
 
+                stopwatch.Stop();
+                _logger.LogInformation("[PLANT_ANALYSIS_COMPLETED] Plant analysis completed successfully - CorrelationId: {CorrelationId}, TotalTime: {TotalTime}ms, AnalysisId: {AnalysisId}, VigorScore: {HealthScore}", 
+                    correlationId, stopwatch.ElapsedMilliseconds, analysisResult.AnalysisId, analysisResult.HealthAssessment?.VigorScore ?? 0);
+
                 return MapToPlantAnalysisResponseDto(analysisResult, responseContent);
+            }
+            catch (HttpRequestException httpEx)
+            {
+                stopwatch.Stop();
+                _logger.LogError(httpEx, "[PLANT_ANALYSIS_HTTP_ERROR] HTTP error during N8N webhook call - CorrelationId: {CorrelationId}, ElapsedTime: {ElapsedTime}ms, Message: {ErrorMessage}", 
+                    correlationId, stopwatch.ElapsedMilliseconds, httpEx.Message);
+                throw new Exception($"N8N webhook HTTP error: {httpEx.Message}", httpEx);
+            }
+            catch (TaskCanceledException timeoutEx)
+            {
+                stopwatch.Stop();
+                _logger.LogError(timeoutEx, "[PLANT_ANALYSIS_TIMEOUT_ERROR] Timeout during N8N webhook call - CorrelationId: {CorrelationId}, ElapsedTime: {ElapsedTime}ms", 
+                    correlationId, stopwatch.ElapsedMilliseconds);
+                throw new Exception($"N8N webhook timeout: {timeoutEx.Message}", timeoutEx);
             }
             catch (Exception ex)
             {
-                throw new Exception($"N8N webhook error: {ex.Message}", ex);
+                stopwatch.Stop();
+                _logger.LogError(ex, "[PLANT_ANALYSIS_GENERAL_ERROR] Unexpected error during plant analysis - CorrelationId: {CorrelationId}, ElapsedTime: {ElapsedTime}ms, ExceptionType: {ExceptionType}, Message: {ErrorMessage}", 
+                    correlationId, stopwatch.ElapsedMilliseconds, ex.GetType().Name, ex.Message);
+                throw new Exception($"Plant analysis error: {ex.Message}", ex);
+            }
+        }
+
+        private string GetImageSize(string dataUri)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(dataUri) || !dataUri.Contains(","))
+                    return "Unknown";
+
+                var base64Data = dataUri.Split(',')[1];
+                var sizeBytes = (base64Data.Length * 3) / 4;
+                
+                if (sizeBytes < 1024)
+                    return $"{sizeBytes} bytes";
+                else if (sizeBytes < 1024 * 1024)
+                    return $"{sizeBytes / 1024:F1} KB";
+                else
+                    return $"{sizeBytes / (1024 * 1024):F2} MB";
+            }
+            catch (Exception)
+            {
+                return "Unknown";
             }
         }
 
