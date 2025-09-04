@@ -1,6 +1,16 @@
 {
   "permissions": {
     "allow": [
+      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\Business\\Handlers\\Sponsorship\\Commands/**)",
+      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\Business\\Handlers\\Sponsorship\\Commands/**)",
+      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\Business\\Handlers\\Sponsorship\\Commands/**)",
+      "Bash(dotnet build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\WebAPI\\Controllers/**)",
+      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\Business\\Handlers\\Logs\\Queries/**)",
+      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\Business/**)"
     ],
     "deny": [],
     "ask": [],
