@@ -19,9 +19,8 @@
 		<PackageReference Include="Hangfire.SqlServer" Version="1.8.17" />
 		<PackageReference Include="Serilog.Sinks.Postgresql.Alternative" Version="4.1.1" />
 		<PackageReference Include="MailKit" Version="4.9.0" />
-		<PackageReference Include="MediatR" Version="12.4.1" />
+		<PackageReference Include="MediatR" Version="13.0.0" />
 		<PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="12.2.0" />
-		<PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">

@@ -41,7 +41,9 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
             : base(options)
         {
             Configuration = configuration;
-           
+            // CRITICAL FIX: Enable legacy timestamp behavior for PostgreSQL timezone compatibility
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            AppContext.SetSwitch("Npgsql.DisableDateTimeInfinityConversions", true);
         }
 
         public DbSet<OperationClaim> OperationClaims { get; set; }
@@ -65,6 +67,24 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         // Sponsorship System
         public DbSet<SponsorshipCode> SponsorshipCodes { get; set; }
         public DbSet<SponsorshipPurchase> SponsorshipPurchases { get; set; }
+        
+        // Sponsor Request System
+        public DbSet<SponsorRequest> SponsorRequests { get; set; }
+        public DbSet<SponsorContact> SponsorContacts { get; set; }
+        
+        // Sponsor Tier-Based Benefits System
+        public DbSet<SponsorProfile> SponsorProfiles { get; set; }
+        public DbSet<SponsorAnalysisAccess> SponsorAnalysisAccess { get; set; }
+        public DbSet<AnalysisMessage> AnalysisMessages { get; set; }
+        public DbSet<SmartLink> SmartLinks { get; set; }
+        
+        // Deep Links System
+        public DbSet<DeepLink> DeepLinks { get; set; }
+        public DbSet<DeepLinkClickRecord> DeepLinkClickRecords { get; set; }
+        
+        // Security System
+        public DbSet<SecurityEvent> SecurityEvents { get; set; }
+        public DbSet<BlockedEntity> BlockedEntities { get; set; }
 
         protected IConfiguration Configuration { get; }
 

@@ -19,23 +19,18 @@ namespace DataAccess.Concrete.EntityFramework
         public async Task<SponsorshipCode> GetByCodeAsync(string code)
         {
             return await Context.SponsorshipCodes
-                .Include(sc => sc.SubscriptionTier)
-                .Include(sc => sc.Sponsor)
                 .FirstOrDefaultAsync(sc => sc.Code == code);
         }
 
         public async Task<SponsorshipCode> GetUnusedCodeAsync(string code)
         {
             return await Context.SponsorshipCodes
-                .Include(sc => sc.SubscriptionTier)
                 .FirstOrDefaultAsync(sc => sc.Code == code && !sc.IsUsed && sc.IsActive && sc.ExpiryDate > DateTime.Now);
         }
 
         public async Task<List<SponsorshipCode>> GetBySponsorIdAsync(int sponsorId)
         {
             return await Context.SponsorshipCodes
-                .Include(sc => sc.SubscriptionTier)
-                .Include(sc => sc.UsedByUser)
                 .Where(sc => sc.SponsorId == sponsorId)
                 .OrderByDescending(sc => sc.CreatedDate)
                 .ToListAsync();
@@ -44,7 +39,6 @@ namespace DataAccess.Concrete.EntityFramework
         public async Task<List<SponsorshipCode>> GetByPurchaseIdAsync(int purchaseId)
         {
             return await Context.SponsorshipCodes
-                .Include(sc => sc.SubscriptionTier)
                 .Where(sc => sc.SponsorshipPurchaseId == purchaseId)
                 .ToListAsync();
         }
@@ -52,7 +46,6 @@ namespace DataAccess.Concrete.EntityFramework
         public async Task<List<SponsorshipCode>> GetUnusedCodesBySponsorAsync(int sponsorId)
         {
             return await Context.SponsorshipCodes
-                .Include(sc => sc.SubscriptionTier)
                 .Where(sc => sc.SponsorId == sponsorId && !sc.IsUsed && sc.IsActive && sc.ExpiryDate > DateTime.Now)
                 .OrderBy(sc => sc.CreatedDate)
                 .ToListAsync();
@@ -61,8 +54,6 @@ namespace DataAccess.Concrete.EntityFramework
         public async Task<List<SponsorshipCode>> GetUsedCodesBySponsorAsync(int sponsorId)
         {
             return await Context.SponsorshipCodes
-                .Include(sc => sc.SubscriptionTier)
-                .Include(sc => sc.UsedByUser)
                 .Where(sc => sc.SponsorId == sponsorId && sc.IsUsed)
                 .OrderByDescending(sc => sc.UsedDate)
                 .ToListAsync();

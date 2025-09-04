@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Business.Handlers.Sponsorship.Commands
 {
-    public class PurchaseBulkSponsorshipCommand : IRequest<IDataResult<SponsorshipPurchase>>
+    public class PurchaseBulkSponsorshipCommand : IRequest<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>>
     {
         public int SponsorId { get; set; }
         public int SubscriptionTierId { get; set; }
@@ -23,7 +23,7 @@ namespace Business.Handlers.Sponsorship.Commands
         public int ValidityDays { get; set; } = 365;
         public string Notes { get; set; }
 
-        public class PurchaseBulkSponsorshipCommandHandler : IRequestHandler<PurchaseBulkSponsorshipCommand, IDataResult<SponsorshipPurchase>>
+        public class PurchaseBulkSponsorshipCommandHandler : IRequestHandler<PurchaseBulkSponsorshipCommand, IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>>
         {
             private readonly ISponsorshipService _sponsorshipService;
 
@@ -32,7 +32,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 _sponsorshipService = sponsorshipService;
             }
 
-            public async Task<IDataResult<SponsorshipPurchase>> Handle(PurchaseBulkSponsorshipCommand request, CancellationToken cancellationToken)
+            public async Task<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>> Handle(PurchaseBulkSponsorshipCommand request, CancellationToken cancellationToken)
             {
                 try
                 {
@@ -53,7 +53,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 {
                     Console.WriteLine($"[PurchaseBulkSponsorship] Error in handler: {ex.Message}");
                     Console.WriteLine($"[PurchaseBulkSponsorship] Stack trace: {ex.StackTrace}");
-                    return new ErrorDataResult<SponsorshipPurchase>($"Error processing bulk purchase: {ex.Message}");
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>($"Error processing bulk purchase: {ex.Message}");
                 }
             }
         }
