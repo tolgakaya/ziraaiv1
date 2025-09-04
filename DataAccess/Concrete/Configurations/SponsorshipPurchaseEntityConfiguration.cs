@@ -62,6 +62,8 @@ namespace DataAccess.Concrete.Configurations
             builder.Property(x => x.PurchaseReason)
                 .HasMaxLength(500);
             
+            // Tier-Based Features removed - now calculated dynamically from SponsorshipCode -> Tier relationship
+            
             builder.Property(x => x.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
             
@@ -79,6 +81,13 @@ namespace DataAccess.Concrete.Configurations
             builder.HasOne(x => x.ApprovedByUser)
                 .WithMany()
                 .HasForeignKey(x => x.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            // Sponsor Profile relationship
+            builder.HasOne(x => x.SponsorProfile)
+                .WithMany(x => x.SponsorshipPurchases)
+                .HasForeignKey(x => x.SponsorId)
+                .HasPrincipalKey(x => x.SponsorId)
                 .OnDelete(DeleteBehavior.Restrict);
             
             // Indexes

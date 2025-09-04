@@ -1,0 +1,1062 @@
+using Business.Services.Customization;
+using Core.Utilities.Results;
+using Entities.Dtos;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Business.Services.Customization
+{
+    /// <summary>
+    /// Advanced customization service for sponsor-specific branding and white-label solutions
+    /// Provides comprehensive customization capabilities including themes, workflows, and enterprise features
+    /// </summary>
+    public class CustomizationService : ICustomizationService
+    {
+        // In-memory storage for demo purposes - in production, this would use a repository
+        private readonly Dictionary<int, SponsorCustomization> _sponsorCustomizations = new();
+        private readonly Dictionary<int, BrandingConfiguration> _brandingConfigurations = new();
+        private readonly Dictionary<string, CustomTheme> _customThemes = new();
+        private readonly Dictionary<string, WorkflowTemplate> _workflowTemplates = new();
+        private readonly Dictionary<string, CustomField> _customFields = new();
+
+        public CustomizationService()
+        {
+            InitializeDefaultData();
+        }
+
+        public async Task<IDataResult<SponsorCustomization>> GetSponsorCustomizationAsync(int sponsorId)
+        {
+            try
+            {
+                if (_sponsorCustomizations.TryGetValue(sponsorId, out var customization))
+                {
+                    return new SuccessDataResult<SponsorCustomization>(customization, "Sponsor özelleştirmeleri başarıyla alındı");
+                }
+
+                // Return default customization if none exists
+                var defaultCustomization = CreateDefaultCustomization(sponsorId);
+                _sponsorCustomizations[sponsorId] = defaultCustomization;
+                
+                return new SuccessDataResult<SponsorCustomization>(defaultCustomization, "Varsayılan özelleştirmeler oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<SponsorCustomization>($"Sponsor özelleştirmeleri alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> UpdateSponsorCustomizationAsync(int sponsorId, SponsorCustomizationUpdate update)
+        {
+            try
+            {
+                if (!_sponsorCustomizations.TryGetValue(sponsorId, out var customization))
+                {
+                    customization = CreateDefaultCustomization(sponsorId);
+                }
+
+                // Update customization properties
+                if (update.BrandingConfiguration != null)
+                    customization.BrandingConfiguration = update.BrandingConfiguration;
+                
+                if (update.ThemeConfiguration != null)
+                    customization.ThemeConfiguration = update.ThemeConfiguration;
+                
+                if (update.WorkflowConfiguration != null)
+                    customization.WorkflowConfiguration = update.WorkflowConfiguration;
+                
+                if (update.CustomFields?.Count > 0)
+                    customization.CustomFields = update.CustomFields;
+                
+                if (update.WhiteLabelConfiguration != null)
+                    customization.WhiteLabelConfiguration = update.WhiteLabelConfiguration;
+
+                customization.LastUpdated = DateTime.Now;
+                _sponsorCustomizations[sponsorId] = customization;
+
+                return new SuccessResult("Sponsor özelleştirmeleri başarıyla güncellendi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Sponsor özelleştirmeleri güncellenemedi: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<BrandingConfiguration>> GetBrandingConfigurationAsync(int sponsorId)
+        {
+            try
+            {
+                if (_brandingConfigurations.TryGetValue(sponsorId, out var branding))
+                {
+                    return new SuccessDataResult<BrandingConfiguration>(branding, "Marka yapılandırması başarıyla alındı");
+                }
+
+                var defaultBranding = CreateDefaultBranding(sponsorId);
+                _brandingConfigurations[sponsorId] = defaultBranding;
+                
+                return new SuccessDataResult<BrandingConfiguration>(defaultBranding, "Varsayılan marka yapılandırması oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<BrandingConfiguration>($"Marka yapılandırması alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> UpdateBrandingConfigurationAsync(int sponsorId, BrandingConfiguration branding)
+        {
+            try
+            {
+                branding.LastUpdated = DateTime.Now;
+                _brandingConfigurations[sponsorId] = branding;
+                
+                return new SuccessResult("Marka yapılandırması başarıyla güncellendi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Marka yapılandırması güncellenemedi: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<List<CustomTheme>>> GetAvailableThemesAsync()
+        {
+            try
+            {
+                var themes = new List<CustomTheme>(_customThemes.Values);
+                return new SuccessDataResult<List<CustomTheme>>(themes, "Mevcut temalar başarıyla alındı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<List<CustomTheme>>($"Temalar alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> CreateCustomThemeAsync(string sponsorId, CustomTheme theme)
+        {
+            try
+            {
+                theme.Id = $"theme_{sponsorId}_{Guid.NewGuid():N}";
+                theme.CreatedAt = DateTime.Now;
+                theme.IsActive = true;
+                
+                _customThemes[theme.Id] = theme;
+                
+                return new SuccessResult("Özel tema başarıyla oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Özel tema oluşturulamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<List<WorkflowTemplate>>> GetWorkflowTemplatesAsync(string category = null)
+        {
+            try
+            {
+                var templates = new List<WorkflowTemplate>();
+                
+                foreach (var template in _workflowTemplates.Values)
+                {
+                    if (string.IsNullOrEmpty(category) || template.Category == category)
+                    {
+                        templates.Add(template);
+                    }
+                }
+                
+                return new SuccessDataResult<List<WorkflowTemplate>>(templates, "İş akışı şablonları başarıyla alındı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<List<WorkflowTemplate>>($"İş akışı şablonları alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> CreateWorkflowTemplateAsync(WorkflowTemplate template)
+        {
+            try
+            {
+                template.Id = Guid.NewGuid().ToString();
+                template.CreatedAt = DateTime.Now;
+                template.IsActive = true;
+                
+                _workflowTemplates[template.Id] = template;
+                
+                return new SuccessResult("İş akışı şablonu başarıyla oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"İş akışı şablonu oluşturulamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<List<CustomField>>> GetCustomFieldsAsync(int sponsorId)
+        {
+            try
+            {
+                var sponsorFields = new List<CustomField>();
+                
+                foreach (var field in _customFields.Values)
+                {
+                    if (field.SponsorId == sponsorId || field.IsGlobal)
+                    {
+                        sponsorFields.Add(field);
+                    }
+                }
+                
+                return new SuccessDataResult<List<CustomField>>(sponsorFields, "Özel alanlar başarıyla alındı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<List<CustomField>>($"Özel alanlar alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> CreateCustomFieldAsync(CustomField field)
+        {
+            try
+            {
+                field.Id = Guid.NewGuid().ToString();
+                field.CreatedAt = DateTime.Now;
+                field.IsActive = true;
+                
+                _customFields[field.Id] = field;
+                
+                return new SuccessResult("Özel alan başarıyla oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Özel alan oluşturulamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<WhiteLabelConfiguration>> GetWhiteLabelConfigurationAsync(int sponsorId)
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success && customization.Data?.WhiteLabelConfiguration != null)
+                {
+                    return new SuccessDataResult<WhiteLabelConfiguration>(
+                        customization.Data.WhiteLabelConfiguration, 
+                        "White-label yapılandırması başarıyla alındı");
+                }
+
+                var defaultWhiteLabel = CreateDefaultWhiteLabel();
+                return new SuccessDataResult<WhiteLabelConfiguration>(defaultWhiteLabel, "Varsayılan white-label yapılandırması oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<WhiteLabelConfiguration>($"White-label yapılandırması alınamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> UpdateWhiteLabelConfigurationAsync(int sponsorId, WhiteLabelConfiguration config)
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success)
+                {
+                    customization.Data.WhiteLabelConfiguration = config;
+                    customization.Data.LastUpdated = DateTime.Now;
+                    
+                    return new SuccessResult("White-label yapılandırması başarıyla güncellendi");
+                }
+                
+                return new ErrorResult("Sponsor özelleştirmeleri bulunamadı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"White-label yapılandırması güncellenemedi: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<CustomizationPreview>> PreviewCustomizationAsync(int sponsorId, SponsorCustomizationUpdate update)
+        {
+            try
+            {
+                var preview = new CustomizationPreview
+                {
+                    SponsorId = sponsorId,
+                    PreviewId = Guid.NewGuid().ToString(),
+                    GeneratedAt = DateTime.Now,
+                    ExpiresAt = DateTime.Now.AddHours(1)
+                };
+
+                // Generate preview based on update
+                preview.PreviewData = new Dictionary<string, object>
+                {
+                    ["branding_preview"] = GenerateBrandingPreview(update.BrandingConfiguration),
+                    ["theme_preview"] = GenerateThemePreview(update.ThemeConfiguration),
+                    ["workflow_preview"] = GenerateWorkflowPreview(update.WorkflowConfiguration),
+                    ["fields_preview"] = GenerateFieldsPreview(update.CustomFields)
+                };
+
+                preview.PreviewUrl = $"https://preview.ziraai.com/customization/{preview.PreviewId}";
+                preview.Changes = GenerateChangesSummary(sponsorId, update);
+
+                return new SuccessDataResult<CustomizationPreview>(preview, "Özelleştirme önizlemesi oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<CustomizationPreview>($"Önizleme oluşturulamadı: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<CustomizationAnalytics>> GetCustomizationAnalyticsAsync(int sponsorId, DateTime fromDate, DateTime toDate)
+        {
+            try
+            {
+                var analytics = new CustomizationAnalytics
+                {
+                    SponsorId = sponsorId,
+                    AnalyticsPeriod = new AnalyticsPeriod
+                    {
+                        StartDate = fromDate,
+                        EndDate = toDate,
+                        PeriodType = "custom"
+                    },
+                    Usage = GenerateUsageMetrics(sponsorId, fromDate, toDate),
+                    Performance = GeneratePerformanceMetrics(sponsorId, fromDate, toDate),
+                    UserEngagement = GenerateEngagementMetrics(sponsorId, fromDate, toDate),
+                    Recommendations = GenerateRecommendations(sponsorId)
+                };
+
+                return new SuccessDataResult<CustomizationAnalytics>(analytics, "Özelleştirme analitiği başarıyla oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<CustomizationAnalytics>($"Analitik verileri alınamadı: {ex.Message}");
+            }
+        }
+
+        #region Private Helper Methods
+
+        private SponsorCustomization CreateDefaultCustomization(int sponsorId)
+        {
+            return new SponsorCustomization
+            {
+                SponsorId = sponsorId,
+                BrandingConfiguration = CreateDefaultBranding(sponsorId),
+                ThemeConfiguration = CreateDefaultTheme(),
+                WorkflowConfiguration = CreateDefaultWorkflow(),
+                CustomFields = new List<CustomField>(),
+                WhiteLabelConfiguration = CreateDefaultWhiteLabel(),
+                CreatedAt = DateTime.Now,
+                LastUpdated = DateTime.Now,
+                IsActive = true
+            };
+        }
+
+        private BrandingConfiguration CreateDefaultBranding(int sponsorId)
+        {
+            return new BrandingConfiguration
+            {
+                CompanyName = $"Sponsor Company {sponsorId}",
+                LogoUrl = "https://via.placeholder.com/200x80?text=Logo",
+                FaviconUrl = "https://via.placeholder.com/32x32?text=F",
+                BrandColors = new BrandColors
+                {
+                    Primary = "#2E7D32",
+                    Secondary = "#4CAF50",
+                    Accent = "#8BC34A",
+                    Background = "#F1F8E9",
+                    Text = "#1B5E20",
+                    Success = "#4CAF50",
+                    Warning = "#FF9800",
+                    Error = "#F44336",
+                    Info = "#2196F3"
+                },
+                Typography = new Typography
+                {
+                    PrimaryFont = "Inter",
+                    SecondaryFont = "Roboto",
+                    HeadingFont = "Poppins",
+                    FontSizes = new Dictionary<string, string>
+                    {
+                        ["small"] = "12px",
+                        ["medium"] = "14px",
+                        ["large"] = "16px",
+                        ["xlarge"] = "18px",
+                        ["h1"] = "32px",
+                        ["h2"] = "28px",
+                        ["h3"] = "24px"
+                    }
+                },
+                CreatedAt = DateTime.Now,
+                LastUpdated = DateTime.Now,
+                IsActive = true
+            };
+        }
+
+        private ThemeConfiguration CreateDefaultTheme()
+        {
+            return new ThemeConfiguration
+            {
+                ThemeId = "default_agriculture",
+                ThemeName = "Tarım Varsayılan",
+                IsDarkMode = false,
+                CustomCss = "",
+                ComponentStyles = new Dictionary<string, ComponentStyle>
+                {
+                    ["button"] = new ComponentStyle
+                    {
+                        ComponentType = "button",
+                        Styles = new Dictionary<string, string>
+                        {
+                            ["border-radius"] = "8px",
+                            ["padding"] = "12px 24px",
+                            ["font-weight"] = "600"
+                        }
+                    },
+                    ["card"] = new ComponentStyle
+                    {
+                        ComponentType = "card",
+                        Styles = new Dictionary<string, string>
+                        {
+                            ["border-radius"] = "12px",
+                            ["box-shadow"] = "0 4px 6px rgba(0,0,0,0.1)",
+                            ["padding"] = "20px"
+                        }
+                    }
+                },
+                ResponsiveBreakpoints = new Dictionary<string, string>
+                {
+                    ["mobile"] = "768px",
+                    ["tablet"] = "1024px",
+                    ["desktop"] = "1200px"
+                }
+            };
+        }
+
+        private WorkflowConfiguration CreateDefaultWorkflow()
+        {
+            return new WorkflowConfiguration
+            {
+                DefaultWorkflow = "standard_sponsorship",
+                EnabledWorkflows = new List<string> { "standard_sponsorship", "bulk_outreach" },
+                WorkflowSteps = new Dictionary<string, List<WorkflowStep>>
+                {
+                    ["standard_sponsorship"] = new List<WorkflowStep>
+                    {
+                        new WorkflowStep
+                        {
+                            StepId = "1",
+                            StepName = "Link Creation",
+                            StepType = "system",
+                            IsRequired = true,
+                            Configuration = new Dictionary<string, object>
+                            {
+                                ["auto_generate"] = true,
+                                ["custom_parameters"] = false
+                            }
+                        },
+                        new WorkflowStep
+                        {
+                            StepId = "2",
+                            StepName = "Message Composition",
+                            StepType = "user_input",
+                            IsRequired = true,
+                            Configuration = new Dictionary<string, object>
+                            {
+                                ["template_required"] = false,
+                                ["personalization"] = true
+                            }
+                        },
+                        new WorkflowStep
+                        {
+                            StepId = "3",
+                            StepName = "Channel Selection",
+                            StepType = "user_choice",
+                            IsRequired = true,
+                            Configuration = new Dictionary<string, object>
+                            {
+                                ["available_channels"] = new[] { "sms", "whatsapp", "email" },
+                                ["multi_channel"] = true
+                            }
+                        }
+                    }
+                },
+                NotificationSettings = new Dictionary<string, bool>
+                {
+                    ["link_created"] = true,
+                    ["message_sent"] = true,
+                    ["farmer_responded"] = true,
+                    ["analysis_completed"] = true
+                },
+                AutomationRules = new List<string>
+                {
+                    "auto_send_welcome",
+                    "auto_follow_up_3days",
+                    "auto_reminder_weekly"
+                }
+            };
+        }
+
+        private WhiteLabelConfiguration CreateDefaultWhiteLabel()
+        {
+            return new WhiteLabelConfiguration
+            {
+                IsEnabled = false,
+                CustomDomain = "",
+                CustomAppName = "ZiraAI Partner",
+                HidePoweredBy = false,
+                CustomFooter = "",
+                CustomTermsUrl = "",
+                CustomPrivacyUrl = "",
+                CustomSupportUrl = "",
+                EmailConfiguration = new EmailBrandingConfiguration
+                {
+                    SenderName = "ZiraAI Support",
+                    SenderEmail = "support@ziraai.com",
+                    CustomEmailTemplate = "",
+                    EmailFooter = "© 2025 ZiraAI. All rights reserved."
+                }
+            };
+        }
+
+        private void InitializeDefaultData()
+        {
+            // Initialize default themes
+            _customThemes["modern_agriculture"] = new CustomTheme
+            {
+                Id = "modern_agriculture",
+                Name = "Modern Tarım",
+                Description = "Güncel ve şık tarım teması",
+                PreviewUrl = "https://preview.ziraai.com/themes/modern_agriculture",
+                Category = "agriculture",
+                ColorPalette = new Dictionary<string, string>
+                {
+                    ["primary"] = "#2E7D32",
+                    ["secondary"] = "#4CAF50",
+                    ["accent"] = "#8BC34A"
+                },
+                IsActive = true,
+                CreatedAt = DateTime.Now
+            };
+
+            // Initialize default workflow templates
+            _workflowTemplates["bulk_outreach"] = new WorkflowTemplate
+            {
+                Id = "bulk_outreach",
+                Name = "Toplu Erişim Kampanyası",
+                Description = "Çoklu çiftçiye aynı anda ulaşım şablonu",
+                Category = "outreach",
+                Steps = new List<WorkflowStep>
+                {
+                    new WorkflowStep
+                    {
+                        StepId = "1",
+                        StepName = "Farmer List Upload",
+                        StepType = "file_upload",
+                        IsRequired = true
+                    },
+                    new WorkflowStep
+                    {
+                        StepId = "2",
+                        StepName = "Message Template",
+                        StepType = "template_selection",
+                        IsRequired = true
+                    },
+                    new WorkflowStep
+                    {
+                        StepId = "3",
+                        StepName = "Bulk Send",
+                        StepType = "system_action",
+                        IsRequired = true
+                    }
+                },
+                IsActive = true,
+                CreatedAt = DateTime.Now
+            };
+        }
+
+        private Dictionary<string, object> GenerateBrandingPreview(BrandingConfiguration branding)
+        {
+            if (branding == null) return new Dictionary<string, object>();
+
+            return new Dictionary<string, object>
+            {
+                ["company_name"] = branding.CompanyName,
+                ["primary_color"] = branding.BrandColors?.Primary,
+                ["logo_preview"] = branding.LogoUrl,
+                ["sample_button"] = new
+                {
+                    background = branding.BrandColors?.Primary,
+                    color = branding.BrandColors?.Text,
+                    text = "Örnek Buton"
+                }
+            };
+        }
+
+        private Dictionary<string, object> GenerateThemePreview(ThemeConfiguration theme)
+        {
+            if (theme == null) return new Dictionary<string, object>();
+
+            return new Dictionary<string, object>
+            {
+                ["theme_name"] = theme.ThemeName,
+                ["dark_mode"] = theme.IsDarkMode,
+                ["component_preview"] = theme.ComponentStyles?.Keys,
+                ["custom_css_length"] = theme.CustomCss?.Length ?? 0
+            };
+        }
+
+        private Dictionary<string, object> GenerateWorkflowPreview(WorkflowConfiguration workflow)
+        {
+            if (workflow == null) return new Dictionary<string, object>();
+
+            return new Dictionary<string, object>
+            {
+                ["default_workflow"] = workflow.DefaultWorkflow,
+                ["enabled_workflows"] = workflow.EnabledWorkflows,
+                ["total_steps"] = workflow.WorkflowSteps?.Values.Sum(steps => steps.Count) ?? 0
+            };
+        }
+
+        private Dictionary<string, object> GenerateFieldsPreview(List<CustomField> fields)
+        {
+            if (fields == null || !fields.Any()) return new Dictionary<string, object>();
+
+            return new Dictionary<string, object>
+            {
+                ["total_fields"] = fields.Count,
+                ["field_types"] = fields.GroupBy(f => f.FieldType).ToDictionary(g => g.Key, g => g.Count()),
+                ["required_fields"] = fields.Count(f => f.IsRequired)
+            };
+        }
+
+        private List<string> GenerateChangesSummary(int sponsorId, SponsorCustomizationUpdate update)
+        {
+            var changes = new List<string>();
+
+            if (update.BrandingConfiguration != null)
+                changes.Add("Marka yapılandırması güncellendi");
+            
+            if (update.ThemeConfiguration != null)
+                changes.Add("Tema yapılandırması güncellendi");
+            
+            if (update.WorkflowConfiguration != null)
+                changes.Add("İş akışı yapılandırması güncellendi");
+            
+            if (update.CustomFields?.Any() == true)
+                changes.Add($"{update.CustomFields.Count} özel alan eklendi/güncellendi");
+            
+            if (update.WhiteLabelConfiguration != null)
+                changes.Add("White-label yapılandırması güncellendi");
+
+            return changes;
+        }
+
+        private UsageMetrics GenerateUsageMetrics(int sponsorId, DateTime fromDate, DateTime toDate)
+        {
+            // Mock data - in production, this would come from actual analytics
+            return new UsageMetrics
+            {
+                TotalCustomizations = 15,
+                ActiveThemes = 3,
+                CustomFieldsUsed = 8,
+                WorkflowsExecuted = 45,
+                BrandingUpdates = 12,
+                LastActivity = DateTime.Now.AddDays(-2),
+                MostUsedFeatures = new Dictionary<string, int>
+                {
+                    ["Custom Branding"] = 25,
+                    ["Theme Customization"] = 18,
+                    ["Workflow Configuration"] = 32,
+                    ["Custom Fields"] = 15,
+                    ["White Label"] = 8
+                }
+            };
+        }
+
+        private PerformanceMetrics GeneratePerformanceMetrics(int sponsorId, DateTime fromDate, DateTime toDate)
+        {
+            return new PerformanceMetrics
+            {
+                LoadTimeImpact = new Dictionary<string, double>
+                {
+                    ["with_customization"] = 2.3,
+                    ["without_customization"] = 1.8,
+                    ["impact_percentage"] = 27.8
+                },
+                UserSatisfactionScore = 4.6,
+                ConversionRate = new Dictionary<string, double>
+                {
+                    ["before_customization"] = 12.5,
+                    ["after_customization"] = 18.3,
+                    ["improvement"] = 46.4
+                },
+                FeatureUsageDistribution = new Dictionary<string, double>
+                {
+                    ["Branding"] = 35.2,
+                    ["Themes"] = 28.7,
+                    ["Workflows"] = 22.1,
+                    ["Custom Fields"] = 14.0
+                }
+            };
+        }
+
+        private UserEngagementMetrics GenerateEngagementMetrics(int sponsorId, DateTime fromDate, DateTime toDate)
+        {
+            return new UserEngagementMetrics
+            {
+                TotalUsers = 156,
+                ActiveUsers = 134,
+                EngagementRate = 85.9,
+                AverageSessionDuration = 12.5,
+                BounceRate = 18.2,
+                ReturnUserRate = 67.3,
+                FeatureAdoptionRates = new Dictionary<string, double>
+                {
+                    ["Custom Branding"] = 89.1,
+                    ["Theme Selection"] = 76.3,
+                    ["Workflow Customization"] = 58.7,
+                    ["Custom Fields"] = 43.2,
+                    ["White Label"] = 28.9
+                }
+            };
+        }
+
+        private List<string> GenerateRecommendations(int sponsorId)
+        {
+            return new List<string>
+            {
+                "Özel alanların kullanımını artırmak için rehber videoları ekleyin",
+                "Tema özelleştirmelerinde daha fazla renk seçeneği sunun",
+                "İş akışı şablonlarını genişletmeyi düşünün",
+                "White-label özelliklerini daha görünür hale getirin",
+                "Mobil cihazlar için özelleştirme seçeneklerini optimize edin"
+            };
+        }
+
+        // Missing interface implementations
+        public async Task<IDataResult<ThemeConfiguration>> GetThemeConfigurationAsync(int sponsorId)
+        {
+            var customization = await GetSponsorCustomizationAsync(sponsorId);
+            if (customization.Success && customization.Data?.Theme != null)
+            {
+                return new SuccessDataResult<ThemeConfiguration>(customization.Data.Theme, "Tema yapılandırması alındı");
+            }
+            return new ErrorDataResult<ThemeConfiguration>("Tema yapılandırması bulunamadı");
+        }
+
+        public async Task<IResult> UpdateThemeConfigurationAsync(int sponsorId, ThemeConfiguration theme)
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success)
+                {
+                    customization.Data.Theme = theme;
+                    customization.Data.UpdatedDate = DateTime.Now;
+                    _sponsorCustomizations[sponsorId] = customization.Data;
+                    return new SuccessResult("Tema yapılandırması güncellendi");
+                }
+                return new ErrorResult("Tema yapılandırması güncellenemedi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Tema güncelleme hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<WorkflowConfiguration>> GetWorkflowConfigurationAsync(int sponsorId)
+        {
+            var customization = await GetSponsorCustomizationAsync(sponsorId);
+            if (customization.Success && customization.Data?.Workflow != null)
+            {
+                return new SuccessDataResult<WorkflowConfiguration>(customization.Data.Workflow, "İş akışı yapılandırması alındı");
+            }
+            return new ErrorDataResult<WorkflowConfiguration>("İş akışı yapılandırması bulunamadı");
+        }
+
+        public async Task<IResult> UpdateWorkflowConfigurationAsync(int sponsorId, WorkflowConfiguration workflow)
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success)
+                {
+                    customization.Data.Workflow = workflow;
+                    customization.Data.UpdatedDate = DateTime.Now;
+                    _sponsorCustomizations[sponsorId] = customization.Data;
+                    return new SuccessResult("İş akışı yapılandırması güncellendi");
+                }
+                return new ErrorResult("İş akışı yapılandırması güncellenemedi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"İş akışı güncelleme hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> AddCustomFieldAsync(int sponsorId, CustomField field)
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success)
+                {
+                    if (customization.Data.CustomFields == null)
+                        customization.Data.CustomFields = new List<CustomField>();
+                    
+                    field.Id = customization.Data.CustomFields.Count + 1;
+                    field.CreatedDate = DateTime.Now;
+                    customization.Data.CustomFields.Add(field);
+                    customization.Data.UpdatedDate = DateTime.Now;
+                    _sponsorCustomizations[sponsorId] = customization.Data;
+                    
+                    return new SuccessResult("Özel alan eklendi");
+                }
+                return new ErrorResult("Özel alan eklenemedi");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Özel alan ekleme hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> UpdateCustomFieldAsync(int sponsorId, string fieldId, CustomField field)
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success && customization.Data.CustomFields != null)
+                {
+                    var existingField = customization.Data.CustomFields.FirstOrDefault(f => f.Name == fieldId);
+                    if (existingField != null)
+                    {
+                        existingField.DisplayName = field.DisplayName;
+                        existingField.Type = field.Type;
+                        existingField.DefaultValue = field.DefaultValue;
+                        existingField.IsRequired = field.IsRequired;
+                        existingField.Validation = field.Validation;
+                        existingField.Options = field.Options;
+                        
+                        customization.Data.UpdatedDate = DateTime.Now;
+                        _sponsorCustomizations[sponsorId] = customization.Data;
+                        
+                        return new SuccessResult("Özel alan güncellendi");
+                    }
+                }
+                return new ErrorResult("Özel alan bulunamadı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Özel alan güncelleme hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> DeleteCustomFieldAsync(int sponsorId, string fieldId)
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success && customization.Data.CustomFields != null)
+                {
+                    var fieldToRemove = customization.Data.CustomFields.FirstOrDefault(f => f.Name == fieldId);
+                    if (fieldToRemove != null)
+                    {
+                        customization.Data.CustomFields.Remove(fieldToRemove);
+                        customization.Data.UpdatedDate = DateTime.Now;
+                        _sponsorCustomizations[sponsorId] = customization.Data;
+                        
+                        return new SuccessResult("Özel alan silindi");
+                    }
+                }
+                return new ErrorResult("Özel alan bulunamadı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Özel alan silme hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<List<CustomizationTemplate>>> GetCustomizationTemplatesAsync(string category)
+        {
+            try
+            {
+                var templates = new List<CustomizationTemplate>
+                {
+                    new CustomizationTemplate
+                    {
+                        Id = 1,
+                        Name = "Standard Sponsorship Template",
+                        Description = "Temel sponsorluk şablonu",
+                        Category = category,
+                        IsBuiltIn = true,
+                        CreatedDate = DateTime.Now,
+                        CustomFields = new List<CustomField>
+                        {
+                            new CustomField
+                            {
+                                Id = 1,
+                                Name = "sponsor_message",
+                                DisplayName = "Sponsor Mesajı",
+                                Type = "textarea",
+                                Category = category,
+                                DefaultValue = "Merhaba, bu sponsored bir analiz sonucudur.",
+                                IsRequired = false,
+                                CreatedDate = DateTime.Now
+                            }
+                        }
+                    }
+                };
+                
+                return new SuccessDataResult<List<CustomizationTemplate>>(templates, "Özelleştirme şablonları alındı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<List<CustomizationTemplate>>($"Şablon alma hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> ApplyCustomizationTemplateAsync(int sponsorId, string templateId)
+        {
+            try
+            {
+                var templates = await GetCustomizationTemplatesAsync("all");
+                if (templates.Success)
+                {
+                    var template = templates.Data.FirstOrDefault(t => t.Id.ToString() == templateId);
+                    if (template != null)
+                    {
+                        await AddCustomFieldAsync(sponsorId, template);
+                        return new SuccessResult("Özelleştirme şablonu uygulandı");
+                    }
+                }
+                return new ErrorResult("Şablon bulunamadı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Şablon uygulama hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<CustomizationPreview>> PreviewCustomizationAsync(int sponsorId, CustomizationPreviewRequest request)
+        {
+            try
+            {
+                var preview = new CustomizationPreview
+                {
+                    BrandingPreview = GenerateBrandingPreview(request.Branding),
+                    ThemePreview = GenerateThemePreview(request.Theme),
+                    PreviewType = request.PreviewType,
+                    SampleData = request.SampleData,
+                    GeneratedAt = DateTime.Now
+                };
+                
+                return new SuccessDataResult<CustomizationPreview>(preview, "Önizleme oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<CustomizationPreview>($"Önizleme hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> ExportCustomizationAsync(int sponsorId, string format)
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success)
+                {
+                    var exportData = System.Text.Json.JsonSerializer.Serialize(customization.Data, new System.Text.Json.JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
+                    
+                    // In a real implementation, this would save to file or return download link
+                    return new SuccessResult("Özelleştirme başarıyla dışa aktarıldı");
+                }
+                return new ErrorResult("Özelleştirme bulunamadı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"Dışa aktarma hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IResult> ImportCustomizationAsync(int sponsorId, CustomizationImport import)
+        {
+            try
+            {
+                var customization = System.Text.Json.JsonSerializer.Deserialize<SponsorCustomization>(import.Data);
+                if (customization != null)
+                {
+                    customization.Id = sponsorId;
+                    customization.UpdatedDate = DateTime.Now;
+                    _sponsorCustomizations[sponsorId] = customization;
+                    
+                    return new SuccessResult("Özelleştirme içe aktarıldı");
+                }
+                return new ErrorResult("Geçersiz veri formatı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResult($"İçe aktarma hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<CustomizationAnalytics>> GetCustomizationAnalyticsAsync(int sponsorId)
+        {
+            try
+            {
+                var analytics = new CustomizationAnalytics
+                {
+                    Usage = GenerateUsageMetrics(sponsorId, DateTime.Now.AddDays(-30), DateTime.Now),
+                    UserEngagement = new List<UserEngagementMetrics> 
+                    { 
+                        GenerateEngagementMetrics(sponsorId, DateTime.Now.AddDays(-30), DateTime.Now) 
+                    },
+                    PopularFeatures = new Dictionary<string, int>
+                    {
+                        ["Branding"] = 89,
+                        ["Themes"] = 76,
+                        ["Workflows"] = 58,
+                        ["Custom Fields"] = 43
+                    },
+                    ThemeDistribution = new Dictionary<string, int>
+                    {
+                        ["Professional"] = 45,
+                        ["Modern"] = 32,
+                        ["Classic"] = 18,
+                        ["Custom"] = 5
+                    },
+                    GeneratedAt = DateTime.Now
+                };
+                
+                return new SuccessDataResult<CustomizationAnalytics>(analytics, "Özelleştirme analitiği oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<CustomizationAnalytics>($"Analitik hatası: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<List<CustomField>>> GetCustomFieldsAsync(int sponsorId, string category = "all")
+        {
+            try
+            {
+                var customization = await GetSponsorCustomizationAsync(sponsorId);
+                if (customization.Success && customization.Data?.CustomFields != null)
+                {
+                    var fields = customization.Data.CustomFields;
+                    if (category != "all")
+                    {
+                        fields = fields.Where(f => f.Category == category).ToList();
+                    }
+                    return new SuccessDataResult<List<CustomField>>(fields, "Özel alanlar alındı");
+                }
+                return new SuccessDataResult<List<CustomField>>(new List<CustomField>(), "Özel alan bulunamadı");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<List<CustomField>>($"Özel alan alma hatası: {ex.Message}");
+            }
+        }
+
+        #endregion
+    }
+}

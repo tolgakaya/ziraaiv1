@@ -1,10 +1,6 @@
 {
   "permissions": {
     "allow": [
-      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\.github\\workflows/**)",
-      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\.github\\workflows/**)",
-      "WebFetch(domain:docs.railway.com)",
-      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\WebAPI/**)"
     ],
     "deny": [],
     "ask": [],

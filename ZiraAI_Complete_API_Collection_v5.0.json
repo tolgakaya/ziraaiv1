@@ -1,0 +1,1207 @@
+{
+  "info": {
+    "name": "ZiraAI Complete API Collection v5.0",
+    "description": "Complete API collection for ZiraAI Plant Analysis Platform with ALL endpoints including recent fixes for smart-links, sponsorship analysis, and logo permissions. Updated August 2025.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "5.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5001/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "analysisId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sponsorshipCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "subscriptionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "smartLinkId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register Farmer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set(\"token\", response.data.token);",
+                  "        pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "        console.log('✅ Farmer registered successfully with trial subscription');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"mobilePhones\": \"+905551234567\",\n  \"role\": \"Farmer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new farmer with automatic trial subscription (30 days, 1 analysis/day)"
+          }
+        },
+        {
+          "name": "Register Sponsor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set(\"token\", response.data.token);",
+                  "        pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "        console.log('✅ Sponsor registered successfully');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sponsor@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"Green\",\n  \"lastName\": \"Agriculture\",\n  \"mobilePhones\": \"+905559876543\",\n  \"role\": \"Sponsor\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new sponsor account"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set(\"token\", response.data.token);",
+                  "        pm.collectionVariables.set(\"refreshToken\", response.data.refreshToken);",
+                  "        pm.collectionVariables.set(\"userId\", response.data.userId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"farmer@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "User login with email and password"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Plant Analysis",
+      "item": [
+        {
+          "name": "Synchronous Analysis",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"analysisId\", response.data.id);",
+                  "    console.log('✅ Analysis completed. ID:', response.data.id);",
+                  "    console.log('📊 Health Score:', response.data.overallHealthScore);",
+                  "    console.log('🌱 Primary Concern:', response.data.primaryConcern);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...\",\n  \"farmerId\": \"F001\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Istanbul, Turkey\",\n  \"latitude\": 41.0082,\n  \"longitude\": 28.9784,\n  \"plantingDate\": \"2025-03-15\",\n  \"growthStage\": \"Flowering\",\n  \"weatherConditions\": \"Sunny\",\n  \"temperature\": 25,\n  \"humidity\": 65,\n  \"soilType\": \"Loamy\",\n  \"lastFertilization\": \"2025-07-01\",\n  \"lastIrrigation\": \"2025-08-10\",\n  \"notes\": \"Some yellowing on lower leaves\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/analyze",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "analyze"]
+            },
+            "description": "Synchronous plant analysis with URL-based AI processing (99.9% cost reduction)"
+          }
+        },
+        {
+          "name": "Asynchronous Analysis",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    console.log('✅ Analysis queued. Tracking ID:', response.data);",
+                  "    console.log('⏳ Check status at /api/plantanalyses/status/' + response.data);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...\",\n  \"farmerId\": \"F001\",\n  \"cropType\": \"tomato\",\n  \"location\": \"Istanbul, Turkey\",\n  \"latitude\": 41.0082,\n  \"longitude\": 28.9784,\n  \"plantingDate\": \"2025-03-15\",\n  \"growthStage\": \"Flowering\",\n  \"weatherConditions\": \"Sunny\",\n  \"temperature\": 25,\n  \"humidity\": 65,\n  \"soilType\": \"Loamy\",\n  \"notes\": \"Some yellowing on lower leaves\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/analyze-async",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "analyze-async"]
+            },
+            "description": "Asynchronous plant analysis with RabbitMQ and worker service"
+          }
+        },
+        {
+          "name": "Get Analysis List",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    console.log('📋 Total analyses:', response.data.totalCount);",
+                  "    console.log('✅ Completed:', response.data.completedCount);",
+                  "    console.log('💰 Sponsored:', response.data.sponsoredCount);",
+                  "    ",
+                  "    if (response.data.analyses && response.data.analyses.length > 0) {",
+                  "        pm.collectionVariables.set(\"analysisId\", response.data.analyses[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/list?page=1&pageSize=20&status=Completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "list"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "Completed"
+                },
+                {
+                  "key": "fromDate",
+                  "value": "2025-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "toDate",
+                  "value": "2025-12-31",
+                  "disabled": true
+                },
+                {
+                  "key": "cropType",
+                  "value": "tomato",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Mobile-optimized list endpoint with pagination and filtering"
+          }
+        },
+        {
+          "name": "Get Analysis Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/{{analysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "{{analysisId}}"]
+            },
+            "description": "Get full plant analysis details"
+          }
+        },
+        {
+          "name": "Get Analysis Image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/plantanalyses/{{analysisId}}/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["plantanalyses", "{{analysisId}}", "image"]
+            },
+            "description": "Get the processed image for an analysis"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Subscriptions",
+      "item": [
+        {
+          "name": "Get Available Tiers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    console.log('Available subscription tiers:');",
+                  "    response.data.forEach(tier => {",
+                  "        console.log(`${tier.tierName}: ${tier.dailyRequestLimit} daily / ${tier.monthlyRequestLimit} monthly - ${tier.monthlyPrice} ${tier.currency}`);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/tiers",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "tiers"]
+            },
+            "description": "Get all available subscription packages (Trial, S, M, L, XL)"
+          }
+        },
+        {
+          "name": "Subscribe to Plan",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    pm.collectionVariables.set(\"subscriptionId\", response.data.id);",
+                  "    console.log('✅ Subscribed successfully. ID:', response.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscriptionTierId\": 2,\n  \"durationMonths\": 1,\n  \"autoRenew\": true,\n  \"paymentMethod\": \"CreditCard\",\n  \"paymentReference\": \"txn_123456\",\n  \"isTrialSubscription\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/subscribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "subscribe"]
+            },
+            "description": "Subscribe to a plan (S=1, M=2, L=3, XL=4)"
+          }
+        },
+        {
+          "name": "Get My Subscription",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.success && response.data) {",
+                  "    console.log('📊 Current subscription:', response.data.tierName);",
+                  "    console.log('📈 Daily usage:', response.data.currentDailyUsage + '/' + response.data.dailyLimit);",
+                  "    console.log('📅 Monthly usage:', response.data.currentMonthlyUsage + '/' + response.data.monthlyLimit);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/my-subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "my-subscription"]
+            },
+            "description": "Get current user's subscription details"
+          }
+        },
+        {
+          "name": "Get Usage Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/subscriptions/usage-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["subscriptions", "usage-status"]
+            },
+            "description": "Get real-time usage status and remaining quotas"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Sponsorship",
+      "item": [
+        {
+          "name": "Sponsor Profile Management",
+          "item": [
+            {
+              "name": "Create Sponsor Profile",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success) {",
+                      "    console.log('✅ Sponsor profile created successfully');",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"companyName\": \"Green Agriculture Co.\",\n  \"companyDescription\": \"Leading agricultural technology provider specializing in sustainable farming solutions\",\n  \"sponsorLogoUrl\": \"https://example.com/logo.png\",\n  \"websiteUrl\": \"https://greenagri.com\",\n  \"contactEmail\": \"contact@greenagri.com\",\n  \"contactPhone\": \"+905551234567\",\n  \"contactPerson\": \"John Smith\",\n  \"linkedInUrl\": \"https://linkedin.com/company/greenagri\",\n  \"twitterUrl\": \"https://twitter.com/greenagri\",\n  \"facebookUrl\": \"https://facebook.com/greenagri\",\n  \"instagramUrl\": \"https://instagram.com/greenagri\",\n  \"taxNumber\": \"1234567890\",\n  \"tradeRegistryNumber\": \"TR123456\",\n  \"address\": \"123 Business St\",\n  \"city\": \"Istanbul\",\n  \"country\": \"Turkey\",\n  \"postalCode\": \"34000\",\n  \"companyType\": \"Cooperative\",\n  \"businessModel\": \"B2B\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/create-profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "create-profile"]
+                },
+                "description": "Create ONE company profile for sponsor (not tier-dependent)"
+              }
+            },
+            {
+              "name": "Get Sponsor Profile",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "profile"]
+                },
+                "description": "Get current sponsor's profile"
+              }
+            },
+            {
+              "name": "Update Sponsor Profile",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"companyName\": \"Updated Green Agriculture Co.\",\n  \"companyDescription\": \"Updated description with new focus areas\",\n  \"sponsorLogoUrl\": \"https://example.com/new-logo.png\",\n  \"websiteUrl\": \"https://newgreenagri.com\",\n  \"contactEmail\": \"newcontact@greenagri.com\",\n  \"contactPhone\": \"+905559876543\",\n  \"contactPerson\": \"Jane Doe\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/profile",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "profile"]
+                },
+                "description": "Update existing sponsor profile"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Package Purchase & Codes",
+          "item": [
+            {
+              "name": "Purchase Package",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    if (response.data.generatedCodes && response.data.generatedCodes.length > 0) {",
+                      "        pm.collectionVariables.set(\"sponsorshipCode\", response.data.generatedCodes[0].code);",
+                      "        console.log('✅ Package purchased. Generated codes:', response.data.generatedCodes.length);",
+                      "        console.log('📋 First code:', response.data.generatedCodes[0].code);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"subscriptionTierId\": 3,\n  \"quantity\": 10,\n  \"paymentReference\": \"PAY-2025-001\",\n  \"validityDays\": 365,\n  \"notes\": \"Q3 2025 farmer sponsorship package - L tier for 10 farmers\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/purchase-package",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "purchase-package"]
+                },
+                "description": "Purchase bulk subscription packages (generates codes for distribution)"
+              }
+            },
+            {
+              "name": "Redeem Sponsorship Code",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success) {",
+                      "    console.log('✅ Code redeemed successfully');",
+                      "    console.log('📊 Subscription tier:', response.data.tierName);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sponsorshipCode\": \"{{sponsorshipCode}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/redeem",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "redeem"]
+                },
+                "description": "Farmer redeems sponsorship code to get subscription"
+              }
+            },
+            {
+              "name": "Get Sponsorship Codes",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/codes?onlyUnused=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "codes"],
+                  "query": [
+                    {
+                      "key": "onlyUnused",
+                      "value": "true"
+                    }
+                  ]
+                },
+                "description": "Get all sponsorship codes (filter by unused)"
+              }
+            },
+            {
+              "name": "Get Purchase History",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/purchases",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "purchases"]
+                },
+                "description": "Get sponsorship purchase history"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Smart Links (XL Tier Only)",
+          "item": [
+            {
+              "name": "Create Smart Link",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200 or 400\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    pm.collectionVariables.set(\"smartLinkId\", response.data.id);",
+                      "    console.log('✅ Smart link created. ID:', response.data.id);",
+                      "} else {",
+                      "    console.log('❌ Smart link creation failed:', response.message);",
+                      "    if (response.message.includes('not allowed')) {",
+                      "        console.log('💡 Smart links require XL tier sponsorship');",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"linkUrl\": \"https://example.com/products/premium-fertilizer\",\n  \"linkText\": \"Premium Tomato Fertilizer - 30% Higher Yield\",\n  \"linkDescription\": \"Scientifically formulated fertilizer specifically designed for tomato plants. Increases yield by up to 30% and improves fruit quality.\",\n  \"linkType\": \"Product\",\n  \"keywords\": [\"fertilizer\", \"tomato\", \"organic\", \"yield\", \"premium\"],\n  \"productCategory\": \"Fertilizers\",\n  \"targetCropTypes\": [\"tomato\", \"pepper\", \"eggplant\"],\n  \"targetDiseases\": [\"blight\", \"wilt\"],\n  \"targetPests\": [],\n  \"priority\": 75,\n  \"displayPosition\": \"Inline\",\n  \"displayStyle\": \"Button\",\n  \"productName\": \"TomatoBoost Pro Premium\",\n  \"productPrice\": 299.99,\n  \"productCurrency\": \"TRY\",\n  \"isPromotional\": true,\n  \"discountPercentage\": 15\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/smart-links",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "smart-links"]
+                },
+                "description": "Create smart link for product promotion (XL tier only, max 50 links)"
+              }
+            },
+            {
+              "name": "Get Smart Links",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    console.log('📊 Total smart links:', response.data.length);",
+                      "    response.data.forEach(link => {",
+                      "        console.log(`- ${link.linkText} (${link.clickCount} clicks, ${link.clickThroughRate}% CTR)`);",
+                      "    });",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/smart-links",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "smart-links"]
+                },
+                "description": "Get all smart links for sponsor"
+              }
+            },
+            {
+              "name": "Get Smart Link Performance",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    console.log('📈 Smart Link Performance Metrics');",
+                      "    console.log('Total clicks:', response.data.totalClicks);",
+                      "    console.log('Average CTR:', response.data.averageCTR + '%');",
+                      "    console.log('Top performing link:', response.data.topPerformingLink);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/smart-links/performance",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "smart-links", "performance"]
+                },
+                "description": "Get smart link performance analytics"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sponsor Analysis Access",
+          "item": [
+            {
+              "name": "Get Analysis for Sponsor",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    console.log('✅ Analysis retrieved with tier-based filtering');",
+                      "    console.log('📊 Health Score:', response.data.overallHealthScore);",
+                      "    ",
+                      "    // Check which fields are accessible based on tier",
+                      "    const hasBasicAccess = response.data.overallHealthScore !== null;",
+                      "    const hasExtendedAccess = response.data.diseaseSymptoms !== null;",
+                      "    const hasFullAccess = response.data.contactPhone !== null;",
+                      "    ",
+                      "    if (hasFullAccess) {",
+                      "        console.log('🎯 Access Level: FULL (XL tier - 100% data)');",
+                      "    } else if (hasExtendedAccess) {",
+                      "        console.log('🎯 Access Level: EXTENDED (L tier - 60% data)');",
+                      "    } else if (hasBasicAccess) {",
+                      "        console.log('🎯 Access Level: BASIC (S/M tier - 30% data)');",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/analysis/{{analysisId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "analysis", "{{analysisId}}"]
+                },
+                "description": "Get filtered plant analysis based on sponsor tier (S/M: 30%, L: 60%, XL: 100%)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Messaging (L/XL Tiers Only)",
+          "item": [
+            {
+              "name": "Send Message to Farmer",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200 or 400\", function () {",
+                      "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success) {",
+                      "    console.log('✅ Message sent successfully');",
+                      "} else {",
+                      "    console.log('❌ Message failed:', response.message);",
+                      "    if (response.message.includes('not allowed')) {",
+                      "        console.log('💡 Messaging requires L or XL tier sponsorship');",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"toUserId\": 123,\n  \"plantAnalysisId\": {{analysisId}},\n  \"subject\": \"Plant Analysis Follow-up\",\n  \"message\": \"Dear Farmer,\\n\\nI've reviewed your tomato plant analysis results. The yellowing on lower leaves indicates a nitrogen deficiency. I recommend applying our TomatoBoost fertilizer at a rate of 2kg per 100m².\\n\\nThe early blight symptoms can be managed with proper fungicide application. Please ensure good air circulation between plants.\\n\\nFeel free to reach out if you have any questions.\\n\\nBest regards,\\nGreen Agriculture Team\",\n  \"messageType\": \"Analysis\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/messages",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "messages"]
+                },
+                "description": "Send message to farmer about their analysis (L/XL tiers only)"
+              }
+            },
+            {
+              "name": "Get Conversation",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/messages/conversation?farmerId=123&plantAnalysisId={{analysisId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "messages", "conversation"],
+                  "query": [
+                    {
+                      "key": "farmerId",
+                      "value": "123"
+                    },
+                    {
+                      "key": "plantAnalysisId",
+                      "value": "{{analysisId}}"
+                    }
+                  ]
+                },
+                "description": "Get message conversation history with farmer"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logo Display Permissions",
+          "item": [
+            {
+              "name": "Get Logo Permissions",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    console.log(`Logo Display: ${response.data.canDisplayLogo ? '✅' : '❌'}`);",
+                      "    console.log(`Tier: ${response.data.tierName}`);",
+                      "    console.log(`Screen: ${response.data.screen}`);",
+                      "    if (response.data.logoUrl) {",
+                      "        console.log(`Logo URL: ${response.data.logoUrl}`);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/logo-permissions/analysis/{{analysisId}}?screen=results",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "logo-permissions", "analysis", "{{analysisId}}"],
+                  "query": [
+                    {
+                      "key": "screen",
+                      "value": "results",
+                      "description": "Screen type: start, result/results, analysis/analyses, profile/profiles"
+                    }
+                  ]
+                },
+                "description": "Check logo display permissions (accessible to all authenticated users)"
+              }
+            },
+            {
+              "name": "Get Sponsor Display Info",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "const response = pm.response.json();",
+                      "if (response.success && response.data) {",
+                      "    console.log(`Can Display: ${response.data.canDisplay ? '✅' : '❌'}`);",
+                      "    if (!response.data.canDisplay) {",
+                      "        console.log(`Reason: ${response.data.reason}`);",
+                      "    }",
+                      "    console.log(`Sponsor ID: ${response.data.sponsorId}`);",
+                      "    console.log(`Tier: ${response.data.tierName}`);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sponsorship/display-info/analysis/{{analysisId}}?screen=results",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sponsorship", "display-info", "analysis", "{{analysisId}}"],
+                  "query": [
+                    {
+                      "key": "screen",
+                      "value": "results",
+                      "description": "Supports plural forms: results, analyses, profiles, starts"
+                    }
+                  ]
+                },
+                "description": "Get sponsor display information with tier validation"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Configuration",
+      "item": [
+        {
+          "name": "Get Configuration Value",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/configurations?key=IMAGE_MAX_SIZE_MB",
+              "host": ["{{baseUrl}}"],
+              "path": ["configurations"],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "IMAGE_MAX_SIZE_MB"
+                }
+              ]
+            },
+            "description": "Get dynamic configuration value"
+          }
+        },
+        {
+          "name": "Update Configuration",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"IMAGE_MAX_SIZE_MB\",\n  \"value\": \"0.25\",\n  \"description\": \"Maximum image size for AI processing (MB)\",\n  \"category\": \"ImageProcessing\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/configurations/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["configurations", "1"]
+            },
+            "description": "Update configuration value (Admin only)"
+          }
+        }
+      ]
+    }
+  ]
+}

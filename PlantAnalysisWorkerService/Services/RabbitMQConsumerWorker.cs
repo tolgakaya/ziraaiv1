@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using PlantAnalysisWorkerService.Jobs;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Diagnostics;
 using System.Text;
 
 namespace PlantAnalysisWorkerService.Services
@@ -31,31 +32,49 @@ namespace PlantAnalysisWorkerService.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Plant Analysis RabbitMQ Consumer Worker starting...");
+            var startupStopwatch = Stopwatch.StartNew();
+            _logger.LogInformation("[RABBITMQ_WORKER_START] Plant Analysis RabbitMQ Consumer Worker starting - QueueName: {QueueName}, ConnectionString: {ConnectionString}", 
+                _rabbitMQOptions.Queues.PlantAnalysisResult, _rabbitMQOptions.ConnectionString);
 
             try
             {
                 await InitializeRabbitMQAsync();
+                startupStopwatch.Stop();
+                
+                _logger.LogInformation("[RABBITMQ_WORKER_INITIALIZED] Worker initialized successfully - InitializationTime: {InitializationTime}ms", 
+                    startupStopwatch.ElapsedMilliseconds);
+                
                 await StartConsumingAsync(stoppingToken);
             }
             catch (OperationCanceledException)
             {
-                _logger.LogInformation("Plant Analysis RabbitMQ Consumer Worker cancellation requested");
+                startupStopwatch.Stop();
+                _logger.LogInformation("[RABBITMQ_WORKER_CANCELLED] Plant Analysis RabbitMQ Consumer Worker cancellation requested - UpTime: {UpTime}ms", 
+                    startupStopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Fatal error in Plant Analysis RabbitMQ Consumer Worker");
+                startupStopwatch.Stop();
+                _logger.LogError(ex, "[RABBITMQ_WORKER_FATAL_ERROR] Fatal error in Plant Analysis RabbitMQ Consumer Worker - UpTime: {UpTime}ms, ExceptionType: {ExceptionType}", 
+                    startupStopwatch.ElapsedMilliseconds, ex.GetType().Name);
                 throw;
             }
             finally
             {
+                startupStopwatch.Stop();
                 await CleanupAsync();
-                _logger.LogInformation("Plant Analysis RabbitMQ Consumer Worker stopping...");
+                _logger.LogInformation("[RABBITMQ_WORKER_STOP] Plant Analysis RabbitMQ Consumer Worker stopping - TotalUpTime: {TotalUpTime}ms", 
+                    startupStopwatch.ElapsedMilliseconds);
             }
         }
 
         private async Task InitializeRabbitMQAsync()
         {
+            var initStopwatch = Stopwatch.StartNew();
+            
+            _logger.LogInformation("[RABBITMQ_INIT_START] Initializing RabbitMQ connection - ConnectionString: {ConnectionString}, Heartbeat: {Heartbeat}s, RecoveryInterval: {RecoveryInterval}s", 
+                _rabbitMQOptions.ConnectionString, _rabbitMQOptions.ConnectionSettings.RequestedHeartbeat, _rabbitMQOptions.ConnectionSettings.NetworkRecoveryInterval);
+
             try
             {
                 var factory = new ConnectionFactory();
@@ -64,23 +83,39 @@ namespace PlantAnalysisWorkerService.Services
                 factory.NetworkRecoveryInterval = TimeSpan.FromSeconds(_rabbitMQOptions.ConnectionSettings.NetworkRecoveryInterval);
                 factory.RequestedHeartbeat = TimeSpan.FromSeconds(_rabbitMQOptions.ConnectionSettings.RequestedHeartbeat);
 
+                var connectionStart = Stopwatch.StartNew();
                 _connection = await factory.CreateConnectionAsync();
+                connectionStart.Stop();
+                
+                _logger.LogInformation("[RABBITMQ_CONNECTION_SUCCESS] RabbitMQ connection established - ConnectionTime: {ConnectionTime}ms", 
+                    connectionStart.ElapsedMilliseconds);
+
+                var channelStart = Stopwatch.StartNew();
                 _channel = await _connection.CreateChannelAsync();
+                channelStart.Stop();
+
+                _logger.LogInformation("[RABBITMQ_CHANNEL_SUCCESS] RabbitMQ channel created - ChannelTime: {ChannelTime}ms", 
+                    channelStart.ElapsedMilliseconds);
 
                 // Declare queue (make sure it exists)
+                var queueDeclareStart = Stopwatch.StartNew();
                 await _channel.QueueDeclareAsync(
                     queue: _rabbitMQOptions.Queues.PlantAnalysisResult,
                     durable: true,
                     exclusive: false,
                     autoDelete: false,
                     arguments: null);
+                queueDeclareStart.Stop();
 
-                _logger.LogInformation($"Connected to RabbitMQ: {_rabbitMQOptions.ConnectionString}");
-                _logger.LogInformation($"Listening on queue: {_rabbitMQOptions.Queues.PlantAnalysisResult}");
+                initStopwatch.Stop();
+                _logger.LogInformation("[RABBITMQ_INIT_SUCCESS] RabbitMQ initialized successfully - QueueName: {QueueName}, QueueDeclareTime: {QueueDeclareTime}ms, TotalInitTime: {TotalInitTime}ms", 
+                    _rabbitMQOptions.Queues.PlantAnalysisResult, queueDeclareStart.ElapsedMilliseconds, initStopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to initialize RabbitMQ connection");
+                initStopwatch.Stop();
+                _logger.LogError(ex, "[RABBITMQ_INIT_ERROR] Failed to initialize RabbitMQ connection - InitAttemptTime: {InitAttemptTime}ms, ExceptionType: {ExceptionType}, Message: {ErrorMessage}", 
+                    initStopwatch.ElapsedMilliseconds, ex.GetType().Name, ex.Message);
                 throw;
             }
         }
@@ -91,46 +126,75 @@ namespace PlantAnalysisWorkerService.Services
             
             consumer.ReceivedAsync += async (model, ea) =>
             {
+                var messageStopwatch = Stopwatch.StartNew();
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
-                var correlationId = ea.BasicProperties?.CorrelationId ?? "unknown";
+                var correlationId = ea.BasicProperties?.CorrelationId ?? Guid.NewGuid().ToString("N")[..8];
+                var deliveryTag = ea.DeliveryTag;
 
-                _logger.LogInformation($"🔴 RAW MESSAGE RECEIVED - Size: {body.Length} bytes, CorrelationId: {correlationId}");
-                _logger.LogInformation($"🔴 MESSAGE CONTENT: {message.Substring(0, Math.Min(500, message.Length))}...");
+                _logger.LogInformation("[RABBITMQ_MESSAGE_RECEIVED] RabbitMQ message received - Size: {MessageSize} bytes, CorrelationId: {CorrelationId}, DeliveryTag: {DeliveryTag}", 
+                    body.Length, correlationId, deliveryTag);
+                
+                _logger.LogDebug("[RABBITMQ_MESSAGE_CONTENT] Message content preview - CorrelationId: {CorrelationId}, Content: {MessageContent}", 
+                    correlationId, message.Substring(0, Math.Min(500, message.Length)) + (message.Length > 500 ? "..." : ""));
 
                 try
                 {
+                    var deserializationStart = Stopwatch.StartNew();
                     // Deserialize message
                     var analysisResult = JsonConvert.DeserializeObject<PlantAnalysisAsyncResponseDto>(message);
+                    deserializationStart.Stop();
                     
                     if (analysisResult == null)
                     {
-                        _logger.LogWarning($"Failed to deserialize message: {message}");
-                        await _channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                        messageStopwatch.Stop();
+                        _logger.LogWarning("[RABBITMQ_DESERIALIZATION_FAILED] Failed to deserialize message - CorrelationId: {CorrelationId}, DeliveryTag: {DeliveryTag}, ProcessingTime: {ProcessingTime}ms, MessageLength: {MessageLength}", 
+                            correlationId, deliveryTag, messageStopwatch.ElapsedMilliseconds, message.Length);
+                        
+                        await _channel.BasicNackAsync(deliveryTag, false, false);
                         return;
                     }
 
+                    _logger.LogInformation("[RABBITMQ_DESERIALIZATION_SUCCESS] Message deserialized successfully - CorrelationId: {CorrelationId}, DeserializationTime: {DeserializationTime}ms, AnalysisId: {AnalysisId}", 
+                        correlationId, deserializationStart.ElapsedMilliseconds, analysisResult.AnalysisId);
+
                     // Enqueue Hangfire job for processing
+                    var jobEnqueueStart = Stopwatch.StartNew();
                     var jobId = BackgroundJob.Enqueue<IPlantAnalysisJobService>(
                         service => service.ProcessPlantAnalysisResultAsync(analysisResult, correlationId));
+                    jobEnqueueStart.Stop();
 
-                    _logger.LogInformation($"Enqueued Hangfire job {jobId} for analysis: {analysisResult.AnalysisId}");
+                    _logger.LogInformation("[RABBITMQ_JOB_ENQUEUED] Hangfire job enqueued successfully - CorrelationId: {CorrelationId}, JobId: {JobId}, AnalysisId: {AnalysisId}, EnqueueTime: {EnqueueTime}ms", 
+                        correlationId, jobId, analysisResult.AnalysisId, jobEnqueueStart.ElapsedMilliseconds);
 
                     // Acknowledge message
-                    await _channel.BasicAckAsync(ea.DeliveryTag, false);
+                    await _channel.BasicAckAsync(deliveryTag, false);
+                    
+                    messageStopwatch.Stop();
+                    _logger.LogInformation("[RABBITMQ_MESSAGE_PROCESSED] Message processed successfully - CorrelationId: {CorrelationId}, TotalProcessingTime: {TotalProcessingTime}ms, DeliveryTag: {DeliveryTag}", 
+                        correlationId, messageStopwatch.ElapsedMilliseconds, deliveryTag);
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogError(ex, $"JSON deserialization error for message: {message}");
-                    await _channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                    messageStopwatch.Stop();
+                    _logger.LogError(ex, "[RABBITMQ_JSON_ERROR] JSON deserialization error - CorrelationId: {CorrelationId}, DeliveryTag: {DeliveryTag}, ProcessingTime: {ProcessingTime}ms, MessageLength: {MessageLength}, ExceptionType: {ExceptionType}", 
+                        correlationId, deliveryTag, messageStopwatch.ElapsedMilliseconds, message.Length, ex.GetType().Name);
+                    
+                    await _channel.BasicNackAsync(deliveryTag, false, false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Error processing message with correlation ID: {correlationId}");
+                    messageStopwatch.Stop();
+                    _logger.LogError(ex, "[RABBITMQ_PROCESSING_ERROR] Error processing message - CorrelationId: {CorrelationId}, DeliveryTag: {DeliveryTag}, ProcessingTime: {ProcessingTime}ms, ExceptionType: {ExceptionType}, Message: {ErrorMessage}", 
+                        correlationId, deliveryTag, messageStopwatch.ElapsedMilliseconds, ex.GetType().Name, ex.Message);
                     
                     // Retry logic - nack with requeue for transient errors
                     var shouldRequeue = ShouldRetryMessage(ea, ex);
-                    await _channel.BasicNackAsync(ea.DeliveryTag, false, shouldRequeue);
+                    
+                    _logger.LogInformation("[RABBITMQ_RETRY_DECISION] Message retry decision - CorrelationId: {CorrelationId}, ShouldRequeue: {ShouldRequeue}, ExceptionType: {ExceptionType}", 
+                        correlationId, shouldRequeue, ex.GetType().Name);
+                    
+                    await _channel.BasicNackAsync(deliveryTag, false, shouldRequeue);
                 }
             };
 

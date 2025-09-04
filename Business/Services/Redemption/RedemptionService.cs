@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Security.Claims;
 using Business.Constants;
 using Business.Services.Authentication;
 using Core.Entities.Concrete;
@@ -11,6 +12,7 @@ using DataAccess.Abstract;
 using Entities.Concrete;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using HttpContext = Microsoft.AspNetCore.Http.HttpContext;
 
 namespace Business.Services.Redemption
 {
@@ -80,13 +82,16 @@ namespace Business.Services.Redemption
         {
             try
             {
-                // Get the sponsorship code
+                // Get the sponsorship code with related data
                 var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
                 
                 if (sponsorshipCode == null)
                 {
                     return new ErrorResult("Geçersiz aktivasyon kodu.");
                 }
+
+                _logger.LogInformation("Code found: {Code}, SponsorId: {SponsorId}, Used: {Used}, Active: {Active}", 
+                    code, sponsorshipCode.SponsorId, sponsorshipCode.IsUsed, sponsorshipCode.IsActive);
 
                 // Check if code is already used
                 if (sponsorshipCode.IsUsed)
@@ -111,7 +116,64 @@ namespace Business.Services.Redemption
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error validating code {Code}", code);
-                return new ErrorResult("Kod doğrulama sırasında bir hata oluştu.");
+                var errorMessage = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    errorMessage += " Inner: " + ex.InnerException.Message;
+                }
+                return new ErrorResult($"Kod doğrulama sırasında bir hata oluştu: {errorMessage}");
+            }
+        }
+
+        public async Task<IResult> ValidateCodeWithUserAsync(string code, HttpContext httpContext)
+        {
+            try
+            {
+                // First, run standard code validation
+                var basicValidation = await ValidateCodeAsync(code);
+                if (!basicValidation.Success)
+                {
+                    return basicValidation;
+                }
+
+                // Get the sponsorship code with related data
+                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                if (sponsorshipCode == null)
+                {
+                    return new ErrorResult("Geçersiz aktivasyon kodu.");
+                }
+
+                // Check if the current user is authenticated and is the sponsor of this code
+                if (httpContext?.User?.Identity?.IsAuthenticated == true)
+                {
+                    var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    if (int.TryParse(userIdClaim, out int currentUserId))
+                    {
+                        _logger.LogInformation("Authenticated user {UserId} attempting to redeem code {Code} created by sponsor {SponsorId}", 
+                            currentUserId, code, sponsorshipCode.SponsorId);
+
+                        // Check if the current user is the sponsor who created this code
+                        if (currentUserId == sponsorshipCode.SponsorId)
+                        {
+                            _logger.LogWarning("Sponsor {SponsorId} attempting to redeem their own code {Code}", 
+                                currentUserId, code);
+                            
+                            return new ErrorResult("Kendi oluşturduğunuz kodu kullanamazsınız. Bu kod çiftçiler için tasarlanmıştır. Lütfen kodu hedeflenen çiftçiye gönderin.");
+                        }
+                    }
+                }
+
+                return new SuccessResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating code {Code} with user context", code);
+                var errorMessage = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    errorMessage += " Inner: " + ex.InnerException.Message;
+                }
+                return new ErrorResult($"Kod doğrulama sırasında bir hata oluştu: {errorMessage}");
             }
         }
 
@@ -226,7 +288,12 @@ namespace Business.Services.Redemption
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating account from code {Code}", code);
-                return new ErrorDataResult<User>("Hesap oluşturulurken hata oluştu");
+                var errorMessage = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    errorMessage += " Inner: " + ex.InnerException.Message;
+                }
+                return new ErrorDataResult<User>($"Hesap oluşturulurken hata oluştu: {errorMessage}");
             }
         }
 
@@ -314,7 +381,12 @@ namespace Business.Services.Redemption
             {
                 _logger.LogError(ex, "Error activating subscription with code {Code} for user {UserId}", 
                     code, userId);
-                return new ErrorDataResult<UserSubscription>("Abonelik aktivasyonu sırasında hata oluştu");
+                var errorMessage = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    errorMessage += " Inner: " + ex.InnerException.Message;
+                }
+                return new ErrorDataResult<UserSubscription>($"Abonelik aktivasyonu sırasında hata oluştu: {errorMessage}");
             }
         }
 
@@ -403,9 +475,10 @@ namespace Business.Services.Redemption
 
                 // Build message
                 var tier = await _tierRepository.GetAsync(t => t.Id == sponsorshipCode.SubscriptionTierId);
+                var sponsor = await _userRepository.GetAsync(u => u.UserId == sponsorshipCode.SponsorId);
                 var message = BuildSponsorshipMessage(
                     recipientName,
-                    sponsorshipCode.Sponsor?.FullName ?? "ZiraAI",
+                    sponsor?.FullName ?? "ZiraAI",
                     tier?.DisplayName ?? "Premium",
                     sponsorshipCode.RedemptionLink,
                     sponsorshipCode.ExpiryDate);

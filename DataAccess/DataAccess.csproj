@@ -11,6 +11,8 @@
 		<Compile Remove="Concrete\EntityFramework\ContextExtensions.cs" />
 	</ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="MediatR" Version="13.0.0" />
+		<PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="12.2.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
