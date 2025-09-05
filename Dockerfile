@@ -45,11 +45,14 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 
-# .NET Core logging configuration for debugging
+# .NET Core logging configuration - force console output
 ENV Logging__LogLevel__Default=Information
-ENV Logging__LogLevel__Microsoft=Warning
-ENV Logging__LogLevel__System=Warning
-ENV Logging__Console__IncludeScopes=false
+ENV Logging__LogLevel__Microsoft=Information
+ENV Logging__LogLevel__System=Information
+ENV Logging__Console__IncludeScopes=true
+ENV Logging__Console__LogLevel__Default=Information
+ENV DOTNET_CONSOLE_ANSI_COLOR=1
+ENV ASPNETCORE_LOGGING__CONSOLE__DISABLECOLORS=false
 
 # Railway service configuration - disable optional services
 ENV UseHangfire=false
@@ -62,5 +65,5 @@ ENV FileStorage__Provider=Local
 # Default Railway database configuration (will be overridden by Railway variables)
 ENV ConnectionStrings__DArchPgContext="Host=localhost;Port=5432;Database=ziraai;Username=postgres;Password=password"
 
-# Enhanced crash analysis with full log capture
-ENTRYPOINT ["sh", "-c", "echo 'Starting .NET application on port 8080...' && echo 'Environment check:' && env | grep -E '(ASPNETCORE|DATABASE|ConnectionStrings|Use)' && echo 'Testing database connectivity...' && timeout 10 nc -z caboose.proxy.rlwy.net 23899 && echo 'Database connection OK' || echo 'Database connection FAILED' && echo 'Starting dotnet with verbose logging...' && dotnet WebAPI.dll --verbose 2>&1 | tee /tmp/app.log & APP_PID=$! && echo 'App started with PID:' $APP_PID && sleep 40 && if kill -0 $APP_PID 2>/dev/null; then echo 'App still running after 40s, killing for analysis'; kill $APP_PID; else echo 'App already terminated'; fi && echo '=== FULL APPLICATION LOGS ===' && cat /tmp/app.log && echo '=== LOG FILE SIZE ===' && ls -la /tmp/app.log && echo 'Container staying alive for debugging...' && sleep 300"]
+# Application health test with forced console logging
+ENTRYPOINT ["sh", "-c", "echo 'Starting .NET application on port 8080...' && echo 'Environment check:' && env | grep -E '(ASPNETCORE|DATABASE|ConnectionStrings|Use|Logging)' && echo 'Testing database connectivity...' && timeout 10 nc -z caboose.proxy.rlwy.net 23899 && echo 'Database connection OK' || echo 'Database connection FAILED' && echo 'Starting dotnet with console logging...' && ASPNETCORE_LOGGING__CONSOLE__LOGLEVEL__DEFAULT=Information dotnet WebAPI.dll 2>&1 | tee /tmp/app.log & APP_PID=$! && echo 'App started with PID:' $APP_PID && sleep 10 && echo 'Testing app health after 10s...' && curl -f http://localhost:8080/health 2>/dev/null && echo 'Health check OK' || echo 'Health check FAILED' && sleep 10 && echo 'Testing Swagger endpoint...' && curl -f http://localhost:8080/swagger 2>/dev/null && echo 'Swagger OK' || echo 'Swagger FAILED' && sleep 20 && if kill -0 $APP_PID 2>/dev/null; then echo 'App running successfully for 40s, stopping for log analysis'; kill $APP_PID; else echo 'App terminated unexpectedly'; fi && echo '=== FULL APPLICATION LOGS ===' && cat /tmp/app.log && echo '=== END OF LOGS ===' && echo 'Container staying alive for debugging...' && sleep 300"]
