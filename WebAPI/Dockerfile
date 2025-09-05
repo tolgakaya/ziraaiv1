@@ -76,4 +76,15 @@ RUN chmod +x /app/startup-debug.sh
 # Cache bust for Railway - force rebuild with diagnostic script
 RUN echo "Diagnostic script v3 - $(date)" > /app/build-info.txt && cat /app/startup-debug.sh
 
-ENTRYPOINT ["/bin/sh", "/app/startup-debug.sh"]
+# Force Railway to show all output - disable buffering
+ENV DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION=1
+ENV DOTNET_CLI_FORCE_UTF8_ENCODING=true
+
+# Create wrapper that forces output to Railway logs
+RUN echo '#!/bin/sh' > /app/railway-wrapper.sh && \
+    echo 'echo "RAILWAY FORCE LOG START - $(date)"' >> /app/railway-wrapper.sh && \
+    echo 'echo "Container starting..."' >> /app/railway-wrapper.sh && \
+    echo '/bin/sh /app/startup-debug.sh 2>&1 | tee /proc/1/fd/1' >> /app/railway-wrapper.sh && \
+    chmod +x /app/railway-wrapper.sh
+
+ENTRYPOINT ["/bin/sh", "/app/railway-wrapper.sh"]
