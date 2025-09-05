@@ -55,22 +55,24 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create diagnostic startup script for Railway debugging
+# Create diagnostic startup script for Railway debugging  
 RUN cat << 'EOF' > /app/startup-debug.sh
-#!/bin/bash
+#!/bin/sh
 echo "=== RAILWAY STARTUP DIAGNOSTICS ==="
 echo "Environment: $ASPNETCORE_ENVIRONMENT"
 echo "URLs: $ASPNETCORE_URLS" 
 echo "Port: $PORT"
 echo "Time: $(date)"
 echo "Working Directory: $(pwd)"
-echo "Files in app: $(ls -la)"
+echo "Files in app:"
+ls -la
 echo "=== ENVIRONMENT VARIABLES ==="
-env | grep -E "(ConnectionStrings|TaskScheduler|ASPNETCORE)" | sort
+env | grep -E "(ConnectionStrings|TaskScheduler|ASPNETCORE)" | sort || echo "No matching env vars"
 echo "=== STARTING APPLICATION ==="
+echo "Executing: dotnet WebAPI.dll"
 exec dotnet WebAPI.dll
 EOF
 
 RUN chmod +x /app/startup-debug.sh
 
-ENTRYPOINT ["/app/startup-debug.sh"]
+ENTRYPOINT ["/bin/sh", "/app/startup-debug.sh"]
