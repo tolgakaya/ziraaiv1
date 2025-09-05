@@ -46,7 +46,13 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:8080/health || exit 1
 
 # Railway deployment optimization
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+# Globalization support enabled for Turkish culture
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENV DOTNET_RUNNING_IN_CONTAINER=true
+
+# Install ICU libraries for globalization support
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["dotnet", "WebAPI.dll"]
