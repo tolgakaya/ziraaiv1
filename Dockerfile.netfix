@@ -1,0 +1,49 @@
+# Railway .NET 9.0 Minimal Working Dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+WORKDIR /app
+EXPOSE 8080
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy project files
+COPY ["WebAPI/WebAPI.csproj", "WebAPI/"]
+COPY ["Business/Business.csproj", "Business/"]
+COPY ["DataAccess/DataAccess.csproj", "DataAccess/"]
+COPY ["Entities/Entities.csproj", "Entities/"]
+COPY ["Core/Core.csproj", "Core/"]
+
+# Restore dependencies
+RUN dotnet restore "WebAPI/WebAPI.csproj"
+
+# Copy all source code
+COPY . .
+
+# Build
+WORKDIR "/src/WebAPI"
+RUN dotnet build "WebAPI.csproj" -c Release -o /app/build
+
+# Publish
+FROM build AS publish
+RUN dotnet publish "WebAPI.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Final stage
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+# Create uploads directory
+RUN mkdir -p /app/wwwroot/uploads/plant-images && \
+    chmod 755 /app/wwwroot/uploads/plant-images
+
+# Install ICU libraries for Turkish culture support
+RUN apt-get update && apt-get install -y libicu-dev && rm -rf /var/lib/apt/lists/*
+
+# Railway environment configuration
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV DOTNET_RUNNING_IN_CONTAINER=true
+
+# Simple startup with logging
+ENTRYPOINT ["sh", "-c", "echo 'Starting .NET application on port 8080...' && exec dotnet WebAPI.dll"]

@@ -41,22 +41,9 @@ namespace Core.DependencyResolvers
 
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc(SwaggerMessages.Version, new OpenApiInfo
-                {
-                    Version = SwaggerMessages.Version,
-                    Title = SwaggerMessages.Title,
-                    Description = SwaggerMessages.Description
-                    // TermsOfService = new Uri(SwaggerMessages.TermsOfService),
-                    // Contact = new OpenApiContact
-                    // {
-                    //    Name = SwaggerMessages.ContactName,
-                    // },
-                    // License = new OpenApiLicense
-                    // {
-                    //    Name = SwaggerMessages.LicenceName,
-                    // },
-                });
-
+                // SwaggerDoc configuration moved to WebAPI/Startup.cs to avoid duplicate key conflicts
+                // Only configure additional Swagger options here that don't conflict with main configuration
+                
                 c.OperationFilter<AddAuthHeaderOperationFilter>();
                 c.AddSecurityDefinition("bearer", new OpenApiSecurityScheme
                 {

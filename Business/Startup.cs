@@ -81,7 +81,7 @@ namespace Business
 
             var taskSchedulerConfig = Configuration.GetSection("TaskSchedulerOptions").Get<TaskSchedulerConfig>();
 
-            if (taskSchedulerConfig.Enabled)
+            if (taskSchedulerConfig != null && taskSchedulerConfig.Enabled)
             {
                 services.AddHangfire(config =>
                 {

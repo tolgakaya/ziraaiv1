@@ -68,6 +68,10 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<SponsorshipCode> SponsorshipCodes { get; set; }
         public DbSet<SponsorshipPurchase> SponsorshipPurchases { get; set; }
         
+        // Sponsor Request System
+        public DbSet<SponsorRequest> SponsorRequests { get; set; }
+        public DbSet<SponsorContact> SponsorContacts { get; set; }
+        
         // Sponsor Tier-Based Benefits System
         public DbSet<SponsorProfile> SponsorProfiles { get; set; }
         public DbSet<SponsorAnalysisAccess> SponsorAnalysisAccess { get; set; }

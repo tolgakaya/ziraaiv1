@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Serialization;
 using Business;
 using Business.Helpers;
@@ -23,6 +25,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using WebAPI.Filters;
 using ConfigurationManager = Business.ConfigurationManager;
@@ -101,7 +104,18 @@ namespace WebAPI
                         ClockSkew = TimeSpan.Zero
                     };
                 });
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo 
+                { 
+                    Title = "ZiraAI API", 
+                    Version = "v1",
+                    Description = "ZiraAI Plant Analysis API"
+                });
+                
+                // CRITICAL FIX: Use full type name including namespace to avoid schema conflicts
+                c.CustomSchemaIds(type => type.FullName);
+            });
 
             services.AddTransient<FileLogger>();
             services.AddTransient<PostgreSqlLogger>();
@@ -171,7 +185,12 @@ namespace WebAPI
                             type = ex.GetType().Name,
                             innerMessage = ex.InnerException?.Message,
                             innerType = ex.InnerException?.GetType().Name,
-                            stackTrace = ex.StackTrace
+                            stackTrace = ex.StackTrace,
+                            // Additional debug info for DI issues
+                            fullInnerException = ex.InnerException?.ToString(),
+                            allInnerExceptions = GetAllInnerExceptions(ex),
+                            requestPath = context.Request.Path.Value,
+                            timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC")
                         };
                         
                         await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(errorDetails));
@@ -229,6 +248,23 @@ namespace WebAPI
             }
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+        }
+        
+        /// <summary>
+        /// Helper method to extract all inner exceptions for debugging
+        /// </summary>
+        private static string[] GetAllInnerExceptions(Exception ex)
+        {
+            var exceptions = new List<string>();
+            var current = ex;
+            
+            while (current != null)
+            {
+                exceptions.Add($"{current.GetType().Name}: {current.Message}");
+                current = current.InnerException;
+            }
+            
+            return exceptions.ToArray();
         }
     }
 }

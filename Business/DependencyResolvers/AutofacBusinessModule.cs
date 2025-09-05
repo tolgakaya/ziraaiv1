@@ -9,6 +9,8 @@ using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Business.Services.Sponsorship;
 using Business.Services.Redemption;
+using Business.Services.Notification;
+using Business.Services.SponsorRequest;
 using Business.Services.MobileIntegration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -115,6 +117,18 @@ namespace Business.DependencyResolvers
             builder.RegisterType<RedemptionService>().As<IRedemptionService>()
                 .InstancePerLifetimeScope();
             
+            // Notification Services
+            builder.RegisterType<WhatsAppService>().As<IWhatsAppService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<NotificationService>().As<INotificationService>()
+                .InstancePerLifetimeScope();
+            
+            // Sponsor Request Services
+            builder.RegisterType<SponsorRequestService>().As<ISponsorRequestService>()
+                .InstancePerLifetimeScope();
+            
+            // Mobile Integration Services
             builder.RegisterType<AnalysisMessagingService>().As<IAnalysisMessagingService>()
                 .InstancePerLifetimeScope();
             
@@ -130,6 +144,7 @@ namespace Business.DependencyResolvers
             // Deep Links services
             builder.RegisterType<Business.Services.MobileIntegration.DeepLinkService>().As<Business.Services.MobileIntegration.IDeepLinkService>()
                 .InstancePerLifetimeScope();
+            
             
             // Register all storage implementations first
             builder.RegisterType<LocalFileStorageService>().InstancePerLifetimeScope();

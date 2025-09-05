@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Business.BusinessAspects;
 using Business.Constants;
 using Business.Services.Redemption;
+using Business.Services.Notification;
+using Business.Services.Notification.Models;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.Aspects.Autofac.Validation;
@@ -35,15 +37,18 @@ namespace Business.Handlers.Sponsorship.Commands
         {
             private readonly IRedemptionService _redemptionService;
             private readonly ISponsorshipCodeRepository _codeRepository;
+            private readonly INotificationService _notificationService;
             private readonly ILogger<SendSponsorshipLinkCommandHandler> _logger;
 
             public SendSponsorshipLinkCommandHandler(
                 IRedemptionService redemptionService,
                 ISponsorshipCodeRepository codeRepository,
+                INotificationService notificationService,
                 ILogger<SendSponsorshipLinkCommandHandler> logger)
             {
                 _redemptionService = redemptionService;
                 _codeRepository = codeRepository;
+                _notificationService = notificationService;
                 _logger = logger;
             }
 
@@ -54,37 +59,142 @@ namespace Business.Handlers.Sponsorship.Commands
             {
                 try
                 {
-                    _logger.LogInformation("📤 MOCK: Sponsor {SponsorId} sending {Count} sponsorship links via {Channel}",
+                    _logger.LogInformation("📤 Sponsor {SponsorId} sending {Count} sponsorship links via {Channel}",
                         request.SponsorId, request.Recipients.Count, request.Channel);
 
-                    // MOCK IMPLEMENTATION - Skip database validation for now
-                    _logger.LogInformation("📋 MOCK: Skipping database validation for codes: {Codes}", 
-                        string.Join(", ", request.Recipients.Select(r => r.Code)));
+                    // Validate codes exist and are available
+                    var codes = request.Recipients.Select(r => r.Code).ToList();
+                    var validCodes = await _codeRepository.GetListAsync(c => 
+                        codes.Contains(c.Code) && 
+                        c.SponsorId == request.SponsorId && 
+                        !c.IsUsed && 
+                        c.ExpiryDate > DateTime.Now);
 
-                    // Mock successful bulk send result
-                    var mockResult = new BulkSendResult
+                    var validCodesList = validCodes.ToList();
+                    _logger.LogInformation("📋 Validated {ValidCount}/{TotalCount} codes", 
+                        validCodesList.Count, codes.Count);
+
+                    // Prepare bulk notification recipients
+                    var recipients = new List<BulkNotificationRecipientDto>();
+                    var results = new List<SendResult>();
+
+                    foreach (var recipient in request.Recipients)
                     {
-                        TotalSent = request.Recipients.Count,
-                        SuccessCount = request.Recipients.Count,
-                        FailureCount = 0,
-                        Results = request.Recipients.Select(r => new SendResult
+                        var codeEntity = validCodesList.FirstOrDefault(c => c.Code == recipient.Code);
+                        if (codeEntity == null)
                         {
-                            Code = r.Code,
-                            Phone = FormatPhoneNumber(r.Phone),
-                            Success = true,
-                            ErrorMessage = null,
-                            DeliveryStatus = "Mock Delivered"
-                        }).ToArray()
+                            results.Add(new SendResult
+                            {
+                                Code = recipient.Code,
+                                Phone = FormatPhoneNumber(recipient.Phone),
+                                Success = false,
+                                ErrorMessage = "Kod bulunamadı veya kullanılamaz durumda",
+                                DeliveryStatus = "Failed - Invalid Code"
+                            });
+                            continue;
+                        }
+
+                        // Generate redemption link
+                        var redemptionLink = $"https://ziraai.com/redeem/{recipient.Code}";
+
+                        recipients.Add(new BulkNotificationRecipientDto
+                        {
+                            UserId = 0, // No user ID for prospects
+                            PhoneNumber = FormatPhoneNumber(recipient.Phone),
+                            Name = recipient.Name,
+                            Parameters = new Dictionary<string, object>
+                            {
+                                { "farmer_name", recipient.Name },
+                                { "sponsor_code", recipient.Code },
+                                { "redemption_link", redemptionLink },
+                                { "tier_name", "Premium" }, // Will be updated with proper tier lookup
+                                { "custom_message", request.CustomMessage ?? "" }
+                            }
+                        });
+                    }
+
+                    // Send notifications based on channel
+                    IDataResult<List<NotificationResultDto>> notificationResult;
+                    
+                    if (request.Channel.ToLower() == "whatsapp")
+                    {
+                        notificationResult = await _notificationService.SendBulkTemplateNotificationsAsync(
+                            recipients, 
+                            "sponsorship_invitation",
+                            NotificationChannel.WhatsApp);
+                    }
+                    else
+                    {
+                        // Default to SMS for now
+                        notificationResult = await _notificationService.SendBulkTemplateNotificationsAsync(
+                            recipients, 
+                            "sponsorship_invitation_sms",
+                            NotificationChannel.SMS);
+                    }
+
+                    // Process notification results
+                    if (notificationResult.Success && notificationResult.Data != null)
+                    {
+                        for (int i = 0; i < recipients.Count; i++)
+                        {
+                            var recipient = recipients[i];
+                            var originalRecipient = request.Recipients.FirstOrDefault(r => 
+                                FormatPhoneNumber(r.Phone) == recipient.PhoneNumber);
+
+                            if (originalRecipient != null)
+                            {
+                                var notificationSuccess = i < notificationResult.Data.Count && 
+                                                        notificationResult.Data[i].Success;
+
+                                results.Add(new SendResult
+                                {
+                                    Code = originalRecipient.Code,
+                                    Phone = recipient.PhoneNumber,
+                                    Success = notificationSuccess,
+                                    ErrorMessage = notificationSuccess ? null : 
+                                        (i < notificationResult.Data.Count ? 
+                                         notificationResult.Data[i].ErrorDetails : 
+                                         "Bildirim gönderimi başarısız"),
+                                    DeliveryStatus = notificationSuccess ? "Sent" : "Failed"
+                                });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // All failed
+                        foreach (var recipient in recipients)
+                        {
+                            var originalRecipient = request.Recipients.FirstOrDefault(r => 
+                                FormatPhoneNumber(r.Phone) == recipient.PhoneNumber);
+
+                            if (originalRecipient != null)
+                            {
+                                results.Add(new SendResult
+                                {
+                                    Code = originalRecipient.Code,
+                                    Phone = recipient.PhoneNumber,
+                                    Success = false,
+                                    ErrorMessage = notificationResult.Message ?? "Bildirim servisi hatası",
+                                    DeliveryStatus = "Failed"
+                                });
+                            }
+                        }
+                    }
+
+                    var bulkResult = new BulkSendResult
+                    {
+                        TotalSent = results.Count,
+                        SuccessCount = results.Count(r => r.Success),
+                        FailureCount = results.Count(r => !r.Success),
+                        Results = results.ToArray()
                     };
 
-                    _logger.LogInformation("📧 MOCK bulk send completed. Success: {Success}, Failed: {Failed}",
-                        mockResult.SuccessCount, mockResult.FailureCount);
+                    _logger.LogInformation("📧 Bulk send completed. Success: {Success}, Failed: {Failed}",
+                        bulkResult.SuccessCount, bulkResult.FailureCount);
 
-                    // Simulate network delay
-                    await Task.Delay(300);
-
-                    return new SuccessDataResult<BulkSendResult>(mockResult, 
-                        $"📱 MOCK: {mockResult.SuccessCount} link başarıyla gönderildi via {request.Channel}");
+                    return new SuccessDataResult<BulkSendResult>(bulkResult, 
+                        $"📱 {bulkResult.SuccessCount} link başarıyla gönderildi via {request.Channel}");
                 }
                 catch (Exception ex)
                 {
