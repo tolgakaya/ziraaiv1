@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Serialization;
 using Business;
 using Business.Helpers;
@@ -183,7 +185,12 @@ namespace WebAPI
                             type = ex.GetType().Name,
                             innerMessage = ex.InnerException?.Message,
                             innerType = ex.InnerException?.GetType().Name,
-                            stackTrace = ex.StackTrace
+                            stackTrace = ex.StackTrace,
+                            // Additional debug info for DI issues
+                            fullInnerException = ex.InnerException?.ToString(),
+                            allInnerExceptions = GetAllInnerExceptions(ex),
+                            requestPath = context.Request.Path.Value,
+                            timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC")
                         };
                         
                         await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(errorDetails));
@@ -241,6 +248,23 @@ namespace WebAPI
             }
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+        }
+        
+        /// <summary>
+        /// Helper method to extract all inner exceptions for debugging
+        /// </summary>
+        private static string[] GetAllInnerExceptions(Exception ex)
+        {
+            var exceptions = new List<string>();
+            var current = ex;
+            
+            while (current != null)
+            {
+                exceptions.Add($"{current.GetType().Name}: {current.Message}");
+                current = current.InnerException;
+            }
+            
+            return exceptions.ToArray();
         }
     }
 }
