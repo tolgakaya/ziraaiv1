@@ -51,8 +51,16 @@ ENV Logging__LogLevel__Microsoft=Warning
 ENV Logging__LogLevel__System=Warning
 ENV Logging__Console__IncludeScopes=false
 
+# Railway service configuration - disable optional services
+ENV UseHangfire=false
+ENV UseRedis=false
+ENV UseRabbitMQ=false
+ENV UseElasticsearch=false
+ENV TaskScheduler__UseTaskScheduler=false
+ENV FileStorage__Provider=Local
+
 # Default Railway database configuration (will be overridden by Railway variables)
 ENV ConnectionStrings__DArchPgContext="Host=localhost;Port=5432;Database=ziraai;Username=postgres;Password=password"
 
-# Enhanced startup with detailed error capture
-ENTRYPOINT ["sh", "-c", "echo 'Starting .NET application on port 8080...' && echo 'Current directory:' && pwd && echo 'Files present:' && ls -la && echo 'Environment check:' && env | grep -E '(ASPNETCORE|DATABASE|ConnectionStrings)' && echo 'Testing database connectivity...' && timeout 10 nc -z caboose.proxy.rlwy.net 23899 && echo 'Database connection OK' || echo 'Database connection FAILED' && echo 'Starting dotnet with detailed logging...' && export ASPNETCORE_ENVIRONMENT=Production && export Logging__LogLevel__Default=Information && export Logging__LogLevel__Microsoft=Information && dotnet WebAPI.dll --verbose 2>&1 | tee /tmp/app.log || (echo 'Application crashed. Exit code:' $? && echo 'Last 50 lines of log:' && tail -50 /tmp/app.log 2>/dev/null && echo 'Keeping container alive for debugging...' && sleep 300)"]
+# Minimal startup test with timeout protection
+ENTRYPOINT ["sh", "-c", "echo 'Starting .NET application on port 8080...' && echo 'Environment check:' && env | grep -E '(ASPNETCORE|DATABASE|ConnectionStrings)' && echo 'Testing database connectivity...' && timeout 10 nc -z caboose.proxy.rlwy.net 23899 && echo 'Database connection OK' || echo 'Database connection FAILED' && echo 'Starting dotnet with 30-second timeout...' && timeout 30 dotnet WebAPI.dll 2>&1 | tee /tmp/app.log & APP_PID=$! && echo 'App started with PID:' $APP_PID && sleep 35 && if kill -0 $APP_PID 2>/dev/null; then echo 'App is running, killing for log analysis'; kill $APP_PID; else echo 'App already terminated'; fi && echo 'Application logs:' && cat /tmp/app.log && echo 'Container staying alive for debugging...' && sleep 300"]

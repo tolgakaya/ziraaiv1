@@ -18,26 +18,31 @@ DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 DOTNET_RUNNING_IN_CONTAINER=true
 ```
 
+## Service Control (CRITICAL - Add these to disable optional services)
+```
+UseHangfire=false
+UseRedis=false
+UseRabbitMQ=false
+UseElasticsearch=false
+TaskScheduler__UseTaskScheduler=false
+FileStorage__Provider=Local
+```
+
 ## Application Settings (optional)
 ```
-JWT__Secret=your-jwt-secret-key-here
+JWT__Secret=your-jwt-secret-key-here-minimum-32-characters-long
 JWT__Issuer=ZiraAI
 JWT__Audience=ZiraAI-Users
 ```
 
-## Redis Configuration (if using Redis)
+## Redis Configuration (only add if you have Redis service on Railway)
 ```
 Redis__ConnectionString=redis://redis.railway.internal:6379
 ```
 
-## RabbitMQ Configuration (if using RabbitMQ)
+## RabbitMQ Configuration (only add if you have RabbitMQ service on Railway)
 ```
 RabbitMQ__ConnectionString=amqp://guest:guest@rabbitmq.railway.internal:5672
-```
-
-## File Storage Configuration
-```
-FileStorage__Provider=FreeImageHost
 ```
 
 ## Notes:
