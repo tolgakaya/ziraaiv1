@@ -45,5 +45,8 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 
-# Simple startup with logging
-ENTRYPOINT ["sh", "-c", "echo 'Starting .NET application on port 8080...' && exec dotnet WebAPI.dll"]
+# Default Railway database configuration (will be overridden by Railway variables)
+ENV ConnectionStrings__DArchPgContext="Host=localhost;Port=5432;Database=ziraai;Username=postgres;Password=password"
+
+# Enhanced startup with error capture
+ENTRYPOINT ["sh", "-c", "echo 'Starting .NET application on port 8080...' && echo 'Current directory:' && pwd && echo 'Files present:' && ls -la && echo 'Environment check:' && env | grep -E '(ASPNETCORE|DATABASE|ConnectionStrings)' && echo 'Starting dotnet...' && dotnet WebAPI.dll 2>&1 || (echo 'Application failed to start. Exit code:' $? && sleep 30)"]
