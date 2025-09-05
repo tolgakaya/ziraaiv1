@@ -23,6 +23,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using WebAPI.Filters;
 using ConfigurationManager = Business.ConfigurationManager;
@@ -101,7 +102,18 @@ namespace WebAPI
                         ClockSkew = TimeSpan.Zero
                     };
                 });
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo 
+                { 
+                    Title = "ZiraAI API", 
+                    Version = "v1",
+                    Description = "ZiraAI Plant Analysis API"
+                });
+                
+                // CRITICAL FIX: Use full type name including namespace to avoid schema conflicts
+                c.CustomSchemaIds(type => type.FullName);
+            });
 
             services.AddTransient<FileLogger>();
             services.AddTransient<PostgreSqlLogger>();
