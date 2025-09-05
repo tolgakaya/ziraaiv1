@@ -1,298 +1,267 @@
 # Swagger JSON Troubleshooting Runbook
 
-## Quick Status: ✅ Configuration Analysis Complete
+## Quick Diagnosis
 
-Based on analysis of your ZiraAI .NET 9.0 WebAPI project, here's the comprehensive troubleshooting guide:
+**Current Status**: ✅ Configuration OK | ❌ SchemaId Conflict | ✅ Controllers OK | ⚠️ Package Mismatch
 
 ---
 
-## 🔧 Configuration Analysis Results
+## 🚨 **CRITICAL ISSUE IDENTIFIED**
 
-### ✅ Swagger Configuration Status
-**Location**: `WebAPI/Startup.cs:103-116`
+### **Problem**: Duplicate Class Names Causing SchemaId Conflicts
+
+**Symptom**: `500 Internal Server Error` on `/swagger/v1/swagger.json`  
+**Error**: `"An item with the same key has already been added. Key: 403"`  
+**Root Cause**: Multiple classes with same name `SponsorshipDashboard` in different namespaces
+
+**Conflicting Classes**:
+1. `Entities.Dtos.SponsorshipDashboard` (Line 6 in AnalyticsDtos.cs)
+2. `Business.Services.Analytics.SponsorshipDashboard` (Line 19 in ISponsorshipAnalyticsService.cs)
+
+---
+
+## 📋 **Step-by-Step Fix Plan**
+
+### **STEP 1: Fix SchemaId Conflicts** ⭐ **PRIORITY 1**
+
+**Check**: Do you have duplicate class names across namespaces?
+```bash
+rg "public class.*Dashboard" . --type cs
+```
+
+**Fix**: Add CustomSchemaIds configuration to `Startup.cs`
+
 ```csharp
-// ✅ CORRECTLY CONFIGURED
+// In ConfigureServices method, modify AddSwaggerGen():
 services.AddSwaggerGen(c =>
 {
-    c.IncludeXmlComments(Path.ChangeExtension(typeof(Startup).Assembly.Location, ".xml"));
-    c.IgnoreObsoleteActions();
-    c.IgnoreObsoleteProperties();
-    c.CustomSchemaIds(type => type.FullName);  // ✅ SchemaId conflicts resolved
-    c.SchemaFilter<ExcludeComplexTypesSchemaFilter>();  // ✅ Custom filter applied
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "ZiraAI API", 
+        Version = "v1" 
+    });
+    
+    // FIX: Use full type name including namespace to avoid conflicts
+    c.CustomSchemaIds(type => type.FullName);
+    
+    // Optional: Include XML documentation
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
 });
 ```
 
-**Runtime Configuration**: `WebAPI/Startup.cs:167-174`
+**Alternative Fix**: Rename one of the conflicting classes
 ```csharp
-// ✅ CORRECTLY CONFIGURED (Development only)
-if (!env.IsProduction())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("v1/swagger.json", "DevArchitecture");
-        c.DocExpansion(DocExpansion.None);
-    });
-}
+// Option 1: Rename in Entities/Dtos/AnalyticsDtos.cs
+public class AdminSponsorshipDashboard  // Instead of SponsorshipDashboard
+
+// Option 2: Rename in Business/Services/Analytics/ISponsorshipAnalyticsService.cs  
+public class SponsorshipDashboardResponse  // Instead of SponsorshipDashboard
 ```
 
-### ✅ Package Version Compatibility
-**Swashbuckle Version**: 7.2.0 (from WebAPI.csproj:55)
-**Target Framework**: .NET 9.0
-**Compatibility**: ✅ **GOOD** - Swashbuckle 7.2.0 supports .NET 9.0
+### **STEP 2: Verify Swagger Configuration** ✅ **STATUS: OK**
 
-### ✅ Controller Method Analysis
-**Result**: All controller methods properly decorated with HTTP attributes (`[HttpGet]`, `[HttpPost]`, etc.)
-**No issues found** with missing HTTP method attributes.
+**Check**: Startup.cs configuration
+```csharp
+// ✅ VERIFIED: These are correctly configured in your project
+services.AddSwaggerGen();  // Line 104 in Startup.cs
+app.UseSwagger();          // Line 181 in Startup.cs  
+app.UseSwaggerUI();        // Lines 183-187 in Startup.cs
+```
+
+### **STEP 3: Check Missing Service Registrations** ⚠️ **ISSUE FOUND**
+
+**Check**: Are all controller dependencies registered in DI?
+```bash
+rg "ISponsorshipAnalyticsService" . --type cs
+```
+
+**Problem Found**: `AnalyticsController` depends on `ISponsorshipAnalyticsService` but implementation is `.exclude`d
+
+**Fix Options**:
+1. **Temporary**: Exclude controller (already done)
+   ```bash
+   mv WebAPI/Controllers/AnalyticsController.cs WebAPI/Controllers/AnalyticsController.cs.exclude
+   ```
+
+2. **Permanent**: Implement and register the service
+   ```csharp
+   // In Business/DependencyResolvers/AutofacBusinessModule.cs
+   builder.RegisterType<SponsorshipAnalyticsService>()
+          .As<ISponsorshipAnalyticsService>()
+          .InstancePerLifetimeScope();
+   ```
+
+### **STEP 4: Package Version Compatibility** ⚠️ **NEEDS UPDATE**
+
+**Current**: Swashbuckle.AspNetCore 7.2.0 + .NET 9.0  
+**Issue**: Version mismatch may cause compatibility issues
+
+**Fix**: Update to compatible version
+```xml
+<!-- In WebAPI/WebAPI.csproj -->
+<PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.0" />
+```
+
+**Update Command**:
+```bash
+dotnet add WebAPI package Swashbuckle.AspNetCore --version 7.3.0
+```
+
+### **STEP 5: Controller Method Attributes** ✅ **STATUS: OK**
+
+**Verified**: All controller methods have proper HTTP attributes (`[HttpGet]`, `[HttpPost]`, etc.)
 
 ---
 
-## 🚨 Step-by-Step Troubleshooting Runbook
+## 🧪 **Smoke Test Checklist**
 
-### Symptom → Check → Fix
-
-#### 1. **500 Internal Server Error on `/swagger/v1/swagger.json`**
-
-**Check 1: Missing Services Configuration**
+### **Test 1: Swagger JSON Generation**
 ```bash
-# Verify these lines exist in Startup.cs ConfigureServices():
-grep -n "AddSwaggerGen\|AddEndpointsApiExplorer" WebAPI/Startup.cs
+curl -f -H "Accept: application/json" \
+  https://localhost:5001/swagger/v1/swagger.json
+
+# Expected: HTTP 200, Content-Type: application/json
+# Body contains: "openapi": "3.0.1"
 ```
 
-**Fix 1: Add Missing Services** (if needed)
+### **Test 2: Swagger UI Access**
+```bash
+curl -f https://localhost:5001/swagger/index.html
+
+# Expected: HTTP 200, Content-Type: text/html
+# Body contains: "Swagger UI"
+```
+
+### **Test 3: API Health Check**
+```bash
+curl -f https://localhost:5001/health
+
+# Expected: HTTP 200, JSON response with status
+```
+
+### **Test 4: Schema Validation**
+```bash
+# Validate the generated schema
+curl -s https://localhost:5001/swagger/v1/swagger.json | \
+  jq '.components.schemas | keys | length'
+
+# Expected: Number > 0 (should return count of schemas)
+```
+
+---
+
+## 🔄 **Implementation Priority**
+
+1. **🔥 IMMEDIATE** (Blocks Swagger): Fix SchemaId conflicts
+2. **📋 HIGH** (Missing functionality): Register Analytics service  
+3. **🔧 MEDIUM** (Compatibility): Update Swashbuckle package
+4. **✅ LOW** (Monitoring): Set up health checks
+
+---
+
+## 📝 **Code Examples**
+
+### **Fixed Startup.cs - ConfigureServices Method**
 ```csharp
 public override void ConfigureServices(IServiceCollection services)
 {
-    // Add this if missing:
-    services.AddEndpointsApiExplorer();  // For minimal APIs
-    services.AddSwaggerGen();
-    // ... rest of configuration
-}
-```
-
-**Check 2: Missing Pipeline Configuration**
-```bash
-# Verify these lines exist in Startup.cs Configure():
-grep -n "UseSwagger\|UseSwaggerUI" WebAPI/Startup.cs
-```
-
-**Fix 2: Add Missing Pipeline** (if needed)
-```csharp
-public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
-{
-    // Add this if missing:
-    if (!env.IsProduction())
+    // ... existing configuration ...
+    
+    services.AddSwaggerGen(c =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
-    // ... rest of pipeline
-}
-```
-
-#### 2. **SchemaId Conflicts (Duplicate Class Names)**
-
-**Symptom**: Error like "Conflicting schemaIds: Multiple types were found with the same schemaId"
-
-**Check**: Look for duplicate class names across namespaces
-```bash
-# Search for potential conflicts:
-find . -name "*.cs" -exec grep -l "public class.*Dto\|public class.*Response" {} \; | head -10
-```
-
-**Fix**: Use FullName for SchemaIds ✅ **ALREADY IMPLEMENTED**
-```csharp
-services.AddSwaggerGen(c =>
-{
-    c.CustomSchemaIds(type => type.FullName);  // ✅ Already configured
-});
-```
-
-#### 3. **Controller Action Method Issues**
-
-**Symptom**: Methods appear in Swagger that shouldn't, or methods missing HTTP attributes
-
-**Check**: Find public methods without HTTP attributes
-```bash
-# Search for problematic methods:
-grep -r "public.*IActionResult\|public.*Task<" WebAPI/Controllers/ | grep -v "\[Http"
-```
-
-**Fix**: Add proper attributes
-```csharp
-// ❌ Wrong - will cause issues:
-public async Task<IActionResult> SomeMethod() { }
-
-// ✅ Correct - add HTTP attribute:
-[HttpGet("some-endpoint")]
-public async Task<IActionResult> SomeMethod() { }
-
-// ✅ Or mark as non-action:
-[NonAction]
-public async Task<IActionResult> HelperMethod() { }
-```
-
-#### 4. **Complex DTO Serialization Issues**
-
-**Symptom**: Swagger fails to serialize complex nested objects
-
-**Check**: Look for circular references in DTOs
-```bash
-# Check for complex DTOs:
-grep -r "DetailedPlantAnalysisDto\|HealthAssessmentDto" Entities/
-```
-
-**Fix**: Use Schema Filter ✅ **ALREADY IMPLEMENTED**
-```csharp
-// ✅ Already configured in your project:
-c.SchemaFilter<ExcludeComplexTypesSchemaFilter>();
-
-// The filter excludes these complex types:
-// - DetailedPlantAnalysisDto
-// - PlantIdentificationDto  
-// - HealthAssessmentDto
-// - NutrientStatusDto
-// ... and others
-```
-
----
-
-## 🧪 Smoke Test Checklist
-
-### Test 1: Swagger JSON Endpoint
-```bash
-# Test Swagger JSON generation
-curl -f -s -o /dev/null -w "%{http_code}" http://localhost:5000/swagger/v1/swagger.json
-# Expected: 200
-
-# Test with headers
-curl -I http://localhost:5000/swagger/v1/swagger.json
-# Expected: Content-Type: application/json
-
-# Test response structure
-curl http://localhost:5000/swagger/v1/swagger.json | head -5
-# Expected: Should contain "openapi": "3.0.1"
-```
-
-### Test 2: Swagger UI Access
-```bash
-# Test Swagger UI page
-curl -f -s -o /dev/null -w "%{http_code}" http://localhost:5000/swagger/index.html
-# Expected: 200
-
-# Alternative endpoint
-curl -f -s -o /dev/null -w "%{http_code}" http://localhost:5000/swagger/
-# Expected: 200
-```
-
-### Test 3: API Endpoint Discovery
-```bash
-# Test if API endpoints are discoverable
-curl http://localhost:5000/swagger/v1/swagger.json | jq '.paths | keys | length'
-# Expected: Number > 0 (should show count of API endpoints)
-
-# Test specific controller endpoints
-curl http://localhost:5000/swagger/v1/swagger.json | jq '.paths | keys' | grep -i "auth\|plant"
-# Expected: Should show auth and plant analysis endpoints
-```
-
----
-
-## 🔧 Your Project Status Summary
-
-| Component | Status | Notes |
-|-----------|--------|-------|
-| **Swagger Services** | ✅ **GOOD** | Properly configured with custom SchemaIds |
-| **Swagger Pipeline** | ✅ **GOOD** | Correctly placed in development environment |
-| **Package Version** | ✅ **GOOD** | Swashbuckle 7.2.0 compatible with .NET 9.0 |
-| **Controller Methods** | ✅ **GOOD** | All methods have proper HTTP attributes |
-| **Complex DTO Handling** | ✅ **EXCELLENT** | Custom filter prevents serialization issues |
-
----
-
-## 🚀 Critical Issues Found: **NONE**
-
-Your Swagger configuration appears to be **production-ready** with several advanced optimizations:
-
-1. **Schema Conflict Prevention**: `c.CustomSchemaIds(type => type.FullName)`
-2. **Complex Type Filtering**: Custom `ExcludeComplexTypesSchemaFilter`
-3. **Environment Safety**: Swagger only enabled in non-production
-4. **Documentation Support**: XML comments integration
-
----
-
-## 🔍 Advanced Debugging Commands
-
-If you encounter Swagger JSON errors despite good configuration:
-
-### Debug 1: Verbose Swagger Generation
-```bash
-# Enable detailed logging for Swagger
-export ASPNETCORE_ENVIRONMENT=Development
-dotnet run --project WebAPI --verbosity detailed 2>&1 | grep -i swagger
-```
-
-### Debug 2: Check for Endpoint Conflicts
-```bash
-# Verify no duplicate routes
-curl http://localhost:5000/swagger/v1/swagger.json | jq '.paths' | grep -o '"/[^"]*"' | sort | uniq -d
-# Expected: No duplicates
-```
-
-### Debug 3: Validate OpenAPI Specification
-```bash
-# Download and validate the generated spec
-curl http://localhost:5000/swagger/v1/swagger.json > swagger.json
-npx @apidevtools/swagger-parser validate swagger.json
-# Expected: "API is valid"
-```
-
----
-
-## 📋 Emergency Fixes
-
-### If Swagger Completely Broken
-
-**Quick Reset Configuration**:
-```csharp
-// Minimal working Swagger configuration:
-services.AddEndpointsApiExplorer();
-services.AddSwaggerGen(c => 
-{
-    c.CustomSchemaIds(type => type.FullName);
-});
-
-// In Configure():
-app.UseSwagger();
-app.UseSwaggerUI();
-```
-
-### If SchemaId Conflicts Persist
-
-**Enhanced SchemaId Configuration**:
-```csharp
-services.AddSwaggerGen(c =>
-{
-    c.CustomSchemaIds(type => 
-    {
-        if (type.IsGenericType)
+        c.SwaggerDoc("v1", new OpenApiInfo 
+        { 
+            Title = "ZiraAI API", 
+            Version = "v1",
+            Description = "ZiraAI Plant Analysis API"
+        });
+        
+        // CRITICAL FIX: Prevent schema conflicts
+        c.CustomSchemaIds(type => type.FullName);
+        
+        // Enhanced error handling
+        c.OperationFilter<SwaggerDefaultValues>();
+        c.DocumentFilter<SwaggerExcludeFilter>();
+        
+        // Include XML documentation if available
+        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
         {
-            var genericTypeName = type.GetGenericTypeDefinition().Name.Replace("`1", "");
-            var genericArgs = string.Join("", type.GetGenericArguments().Select(x => x.Name));
-            return $"{type.Namespace}.{genericTypeName}Of{genericArgs}";
+            c.IncludeXmlComments(xmlPath);
         }
-        return type.FullName?.Replace("+", ".");
     });
-});
+    
+    // ... rest of configuration ...
+}
+```
+
+### **Sample Controller with Proper Attributes**
+```csharp
+[ApiController]
+[Route("api/v{version:apiVersion}/[controller]")]
+[ApiVersion("1.0")]
+[Authorize]
+public class SampleController : BaseApiController
+{
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetData()
+    {
+        // Implementation
+    }
+    
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateData([FromBody] CreateDataRequest request)
+    {
+        // Implementation
+    }
+}
 ```
 
 ---
 
-## ✅ Conclusion
+## 🚀 **Quick Recovery Steps**
 
-Your ZiraAI project has **excellent Swagger configuration** with advanced features for handling complex DTOs. The configuration should work reliably for API documentation generation.
+If Swagger is completely broken:
 
-**Recommended Actions**: 
-1. Run smoke tests to verify current functionality
-2. Monitor logs for any schema generation warnings
-3. Keep the existing configuration as it's well-architected
+1. **Emergency Fix**: Exclude problematic controllers
+   ```bash
+   find WebAPI/Controllers -name "*.cs" -exec mv {} {}.exclude \;
+   # Keep only essential controllers
+   ```
+
+2. **Minimal Configuration**: Strip down to basics
+   ```csharp
+   services.AddSwaggerGen(); // No custom configuration
+   ```
+
+3. **Gradual Restoration**: Add controllers back one by one
+   ```bash
+   mv WebAPI/Controllers/HealthController.cs.exclude WebAPI/Controllers/HealthController.cs
+   # Test, then add next controller
+   ```
+
+---
+
+## 📊 **Success Metrics**
+
+- ✅ `/swagger/v1/swagger.json` returns 200 OK
+- ✅ Swagger UI loads without errors  
+- ✅ All schemas generate without conflicts
+- ✅ API documentation is complete and accurate
+- ✅ No 500 errors in application logs
+
+---
+
+**Last Updated**: 2025-01-24  
+**Environment**: .NET 9.0, Swashbuckle.AspNetCore 7.2.0  
+**Status**: SchemaId conflict identified and fix provided

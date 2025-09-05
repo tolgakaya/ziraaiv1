@@ -12,11 +12,13 @@ DATABASE_URL=postgresql://postgres:password@postgres.railway.internal:5432/railw
 
 ## .NET Core Configuration
 ```
-ASPNETCORE_ENVIRONMENT=Production
+ASPNETCORE_ENVIRONMENT=Development
 ASPNETCORE_URLS=http://0.0.0.0:8080
 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 DOTNET_RUNNING_IN_CONTAINER=true
 ```
+
+**⚠️ CRITICAL**: Railway automatically sets `ASPNETCORE_ENVIRONMENT=Production` which disables Swagger and detailed error logging. You MUST manually override this to `Development` in the Railway dashboard to enable Swagger and see actual error messages.
 
 ## Service Control (CRITICAL - Add these to disable optional services)
 ```
