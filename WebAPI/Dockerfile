@@ -56,22 +56,20 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create diagnostic startup script for Railway debugging  
-RUN cat << 'EOF' > /app/startup-debug.sh
-#!/bin/sh
-echo "=== RAILWAY STARTUP DIAGNOSTICS ==="
-echo "Environment: $ASPNETCORE_ENVIRONMENT"
-echo "URLs: $ASPNETCORE_URLS" 
-echo "Port: $PORT"
-echo "Time: $(date)"
-echo "Working Directory: $(pwd)"
-echo "Files in app:"
-ls -la
-echo "=== ENVIRONMENT VARIABLES ==="
-env | grep -E "(ConnectionStrings|TaskScheduler|ASPNETCORE)" | sort || echo "No matching env vars"
-echo "=== STARTING APPLICATION ==="
-echo "Executing: dotnet WebAPI.dll"
-exec dotnet WebAPI.dll
-EOF
+RUN echo '#!/bin/sh' > /app/startup-debug.sh && \
+    echo 'echo "=== RAILWAY STARTUP DIAGNOSTICS ==="' >> /app/startup-debug.sh && \
+    echo 'echo "Environment: $ASPNETCORE_ENVIRONMENT"' >> /app/startup-debug.sh && \
+    echo 'echo "URLs: $ASPNETCORE_URLS"' >> /app/startup-debug.sh && \
+    echo 'echo "Port: $PORT"' >> /app/startup-debug.sh && \
+    echo 'echo "Time: $(date)"' >> /app/startup-debug.sh && \
+    echo 'echo "Working Directory: $(pwd)"' >> /app/startup-debug.sh && \
+    echo 'echo "Files in app:"' >> /app/startup-debug.sh && \
+    echo 'ls -la' >> /app/startup-debug.sh && \
+    echo 'echo "=== ENVIRONMENT VARIABLES ==="' >> /app/startup-debug.sh && \
+    echo 'env | grep -E "(ConnectionStrings|TaskScheduler|ASPNETCORE)" | sort || echo "No matching env vars"' >> /app/startup-debug.sh && \
+    echo 'echo "=== STARTING APPLICATION ==="' >> /app/startup-debug.sh && \
+    echo 'echo "Executing: dotnet WebAPI.dll"' >> /app/startup-debug.sh && \
+    echo 'exec dotnet WebAPI.dll' >> /app/startup-debug.sh
 
 RUN chmod +x /app/startup-debug.sh
 
