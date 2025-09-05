@@ -73,4 +73,7 @@ RUN echo '#!/bin/sh' > /app/startup-debug.sh && \
 
 RUN chmod +x /app/startup-debug.sh
 
+# Cache bust for Railway - force rebuild with diagnostic script
+RUN echo "Diagnostic script v3 - $(date)" > /app/build-info.txt && cat /app/startup-debug.sh
+
 ENTRYPOINT ["/bin/sh", "/app/startup-debug.sh"]
