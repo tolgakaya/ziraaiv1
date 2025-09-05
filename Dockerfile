@@ -6,6 +6,10 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
+# Install EF Core tools for migrations
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="$PATH:/root/.dotnet/tools"
+
 # Copy project files
 COPY ["WebAPI/WebAPI.csproj", "WebAPI/"]
 COPY ["Business/Business.csproj", "Business/"]
@@ -31,6 +35,13 @@ RUN dotnet publish "WebAPI.csproj" -c Release -o /app/publish /p:UseAppHost=fals
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Install EF Core tools for migrations in final stage
+RUN apt-get update && apt-get install -y curl && \
+    curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0 --install-dir /usr/share/dotnet && \
+    ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet && \
+    dotnet tool install --global dotnet-ef --version 9.0.0
+ENV PATH="$PATH:/root/.dotnet/tools"
 
 # Create uploads directory
 RUN mkdir -p /app/wwwroot/uploads/plant-images && \
@@ -65,5 +76,5 @@ ENV FileStorage__Provider=Local
 # Default Railway database configuration (will be overridden by Railway variables)
 ENV ConnectionStrings__DArchPgContext="Host=localhost;Port=5432;Database=ziraai;Username=postgres;Password=password"
 
-# Application health test with forced console logging
-ENTRYPOINT ["sh", "-c", "echo 'Starting .NET application on port 8080...' && echo 'Environment check:' && env | grep -E '(ASPNETCORE|DATABASE|ConnectionStrings|Use|Logging)' && echo 'Testing database connectivity...' && timeout 10 nc -z caboose.proxy.rlwy.net 23899 && echo 'Database connection OK' || echo 'Database connection FAILED' && echo 'Starting dotnet with console logging...' && ASPNETCORE_LOGGING__CONSOLE__LOGLEVEL__DEFAULT=Information dotnet WebAPI.dll 2>&1 | tee /tmp/app.log & APP_PID=$! && echo 'App started with PID:' $APP_PID && sleep 10 && echo 'Testing app health after 10s...' && curl -f http://localhost:8080/health 2>/dev/null && echo 'Health check OK' || echo 'Health check FAILED' && sleep 10 && echo 'Testing Swagger endpoint...' && curl -f http://localhost:8080/swagger 2>/dev/null && echo 'Swagger OK' || echo 'Swagger FAILED' && sleep 20 && if kill -0 $APP_PID 2>/dev/null; then echo 'App running successfully for 40s, stopping for log analysis'; kill $APP_PID; else echo 'App terminated unexpectedly'; fi && echo '=== FULL APPLICATION LOGS ===' && cat /tmp/app.log && echo '=== END OF LOGS ===' && echo 'Container staying alive for debugging...' && sleep 300"]
+# Railway startup with automatic database migration
+ENTRYPOINT ["sh", "-c", "echo 'Starting ZiraAI deployment on Railway...' && echo 'Database connectivity test...' && timeout 10 nc -z caboose.proxy.rlwy.net 23899 && echo 'Database connection OK' || echo 'Database connection FAILED' && echo 'Running database migrations...' && dotnet ef database update --connection \"$ConnectionStrings__DArchPgContext\" --verbose && echo 'Migrations completed successfully!' && echo 'Starting ZiraAI API server...' && dotnet WebAPI.dll"]
