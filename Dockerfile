@@ -39,9 +39,9 @@ RUN mkdir -p /app/wwwroot/uploads/plant-images && \
 # Install ICU libraries for Turkish culture support and debugging tools
 RUN apt-get update && apt-get install -y libicu-dev netcat-traditional curl && rm -rf /var/lib/apt/lists/*
 
-# Railway environment configuration
+# Railway environment configuration - use Development for Swagger and logging
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
-ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_ENVIRONMENT=Development
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 

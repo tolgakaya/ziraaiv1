@@ -34,8 +34,10 @@ namespace WebAPI
                 .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
                 .ConfigureLogging(logging =>
                 {
-                    logging.ClearProviders();
-                    logging.SetMinimumLevel(LogLevel.Trace);
+                    // RAILWAY FIX: Don't clear providers, keep console logging
+                    // logging.ClearProviders(); 
+                    logging.SetMinimumLevel(LogLevel.Information);
+                    logging.AddConsole();
                 });
     }
 }
