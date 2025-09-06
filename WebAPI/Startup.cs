@@ -31,6 +31,7 @@ using WebAPI.Filters;
 using ConfigurationManager = Business.ConfigurationManager;
 using Business.Services.DatabaseInitializer;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace WebAPI
 {

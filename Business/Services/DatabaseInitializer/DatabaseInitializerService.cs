@@ -3,6 +3,7 @@ using Core.DataAccess;
 using Core.Entities.Concrete;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -14,26 +15,26 @@ namespace Business.Services.DatabaseInitializer
     public class DatabaseInitializerService : IDatabaseInitializerService
     {
         private readonly IUserRepository _userRepository;
-        private readonly IRepository<OperationClaim> _operationClaimRepository;
-        private readonly IRepository<Group> _groupRepository;
-        private readonly IRepository<GroupClaim> _groupClaimRepository;
-        private readonly IRepository<UserGroup> _userGroupRepository;
-        private readonly IRepository<Configuration> _configurationRepository;
-        private readonly IRepository<SubscriptionTier> _subscriptionTierRepository;
-        private readonly IRepository<UserSubscription> _userSubscriptionRepository;
-        private readonly IRepository<SponsorProfile> _sponsorProfileRepository;
+        private readonly IOperationClaimRepository _operationClaimRepository;
+        private readonly IGroupRepository _groupRepository;
+        private readonly IGroupClaimRepository _groupClaimRepository;
+        private readonly IUserGroupRepository _userGroupRepository;
+        private readonly IConfigurationRepository _configurationRepository;
+        private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+        private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+        private readonly ISponsorProfileRepository _sponsorProfileRepository;
         private readonly ILogger<DatabaseInitializerService> _logger;
 
         public DatabaseInitializerService(
             IUserRepository userRepository,
-            IRepository<OperationClaim> operationClaimRepository,
-            IRepository<Group> groupRepository,
-            IRepository<GroupClaim> groupClaimRepository,
-            IRepository<UserGroup> userGroupRepository,
-            IRepository<Configuration> configurationRepository,
-            IRepository<SubscriptionTier> subscriptionTierRepository,
-            IRepository<UserSubscription> userSubscriptionRepository,
-            IRepository<SponsorProfile> sponsorProfileRepository,
+            IOperationClaimRepository operationClaimRepository,
+            IGroupRepository groupRepository,
+            IGroupClaimRepository groupClaimRepository,
+            IUserGroupRepository userGroupRepository,
+            IConfigurationRepository configurationRepository,
+            ISubscriptionTierRepository subscriptionTierRepository,
+            IUserSubscriptionRepository userSubscriptionRepository,
+            ISponsorProfileRepository sponsorProfileRepository,
             ILogger<DatabaseInitializerService> logger)
         {
             _userRepository = userRepository;
@@ -279,7 +280,7 @@ namespace Business.Services.DatabaseInitializer
 
         private async Task SeedSponsorProfileAsync()
         {
-            var existingProfile = await _sponsorProfileRepository.GetAsync(p => p.UserId == 3);
+            var existingProfile = await _sponsorProfileRepository.GetAsync(p => p.SponsorId == 3);
             if (existingProfile == null)
             {
                 _logger.LogInformation("Seeding sponsor profile...");

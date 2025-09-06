@@ -45,7 +45,16 @@
       "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\WebAPI\\Controllers/**)",
       "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\WebAPI\\Controllers/**)",
       "Bash(git checkout:*)",
-      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\Business/**)"
+      "Read(/C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\Business/**)",
+      "mcp__serena__write_memory",
+      "mcp__serena__activate_project",
+      "mcp__serena__list_memories",
+      "mcp__serena__search_for_pattern",
+      "mcp__serena__find_file",
+      "mcp__serena__list_dir",
+      "mcp__serena__read_file",
+      "mcp__serena__create_text_file",
+      "mcp__serena__replace_regex"
     ],
     "deny": [],
     "ask": [],

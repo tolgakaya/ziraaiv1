@@ -1,5 +1,6 @@
 using Core.Entities.Concrete;
 using Core.Utilities.Security.Hashing;
+using Entities.Concrete;
 using System;
 using System.Collections.Generic;
 
@@ -17,7 +18,7 @@ namespace Business.Seeds
             
             users.Add(new User
             {
-                Id = 1,
+                UserId = 1,
                 CitizenId = 0, // System user
                 FullName = "System Administrator",
                 Email = "admin@ziraai.com",
@@ -35,7 +36,7 @@ namespace Business.Seeds
             HashingHelper.CreatePasswordHash("Farmer@123!", out passwordHash, out passwordSalt);
             users.Add(new User
             {
-                Id = 2,
+                UserId = 2,
                 CitizenId = 0,
                 FullName = "Demo Farmer",
                 Email = "farmer@demo.ziraai.com",
@@ -53,7 +54,7 @@ namespace Business.Seeds
             HashingHelper.CreatePasswordHash("Sponsor@123!", out passwordHash, out passwordSalt);
             users.Add(new User
             {
-                Id = 3,
+                UserId = 3,
                 CitizenId = 0,
                 FullName = "Demo Sponsor",
                 Email = "sponsor@demo.ziraai.com",
@@ -93,15 +94,16 @@ namespace Business.Seeds
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddYears(10), // 10 years for admin
                     IsActive = true,
-                    IsTrial = false,
                     AutoRenew = true,
-                    DailyRequestCount = 0,
-                    MonthlyRequestCount = 0,
-                    LastResetDate = DateTime.Now,
-                    CreatedDate = DateTime.Now,
-                    PaymentStatus = "Complimentary",
                     PaymentMethod = "System",
-                    Notes = "System administrator complimentary subscription"
+                    PaidAmount = 0,
+                    Currency = "TRY",
+                    CurrentDailyUsage = 0,
+                    CurrentMonthlyUsage = 0,
+                    Status = "Active",
+                    IsTrialSubscription = false,
+                    IsSponsoredSubscription = false,
+                    CreatedDate = DateTime.Now
                 },
                 
                 // Demo Farmer gets Trial subscription
@@ -113,15 +115,17 @@ namespace Business.Seeds
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddDays(30),
                     IsActive = true,
-                    IsTrial = true,
                     AutoRenew = false,
-                    DailyRequestCount = 0,
-                    MonthlyRequestCount = 0,
-                    LastResetDate = DateTime.Now,
-                    CreatedDate = DateTime.Now,
-                    PaymentStatus = "Trial",
                     PaymentMethod = "Trial",
-                    Notes = "Demo farmer trial subscription"
+                    PaidAmount = 0,
+                    Currency = "TRY",
+                    CurrentDailyUsage = 0,
+                    CurrentMonthlyUsage = 0,
+                    Status = "Active",
+                    IsTrialSubscription = true,
+                    TrialEndDate = DateTime.Now.AddDays(30),
+                    IsSponsoredSubscription = false,
+                    CreatedDate = DateTime.Now
                 },
                 
                 // Demo Sponsor gets L subscription
@@ -133,15 +137,16 @@ namespace Business.Seeds
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddMonths(1),
                     IsActive = true,
-                    IsTrial = false,
                     AutoRenew = true,
-                    DailyRequestCount = 0,
-                    MonthlyRequestCount = 0,
-                    LastResetDate = DateTime.Now,
-                    CreatedDate = DateTime.Now,
-                    PaymentStatus = "Demo",
                     PaymentMethod = "Demo",
-                    Notes = "Demo sponsor subscription"
+                    PaidAmount = 599.99m,
+                    Currency = "TRY",
+                    CurrentDailyUsage = 0,
+                    CurrentMonthlyUsage = 0,
+                    Status = "Active",
+                    IsTrialSubscription = false,
+                    IsSponsoredSubscription = false,
+                    CreatedDate = DateTime.Now
                 }
             };
         }
@@ -151,26 +156,31 @@ namespace Business.Seeds
             return new SponsorProfile
             {
                 Id = 1,
-                UserId = 3, // Demo Sponsor user
+                SponsorId = 3, // Demo Sponsor user
                 CompanyName = "Demo Agricultural Supplies Co.",
                 CompanyDescription = "Leading provider of agricultural supplies and farmer support services",
-                ContactPhone = "+905555555557",
+                SponsorLogoUrl = "/images/demo-sponsor-logo.png",
+                WebsiteUrl = "https://demo.ziraai.com",
                 ContactEmail = "sponsor@demo.ziraai.com",
-                Website = "https://demo.ziraai.com",
+                ContactPhone = "+905555555557",
+                ContactPerson = "Demo Sponsor",
                 Address = "Demo Plaza, Istanbul, Turkey",
-                LogoUrl = "/images/demo-sponsor-logo.png",
+                City = "Istanbul",
+                Country = "Turkey",
+                PostalCode = "34000",
+                CompanyType = "Agriculture",
+                BusinessModel = "B2B",
                 IsVerified = true,
+                IsVerifiedCompany = true,
                 VerificationDate = DateTime.Now,
-                TotalSponsored = 0,
-                ActiveSponsorships = 0,
+                VerificationNotes = "Demo company - pre-verified",
                 IsActive = true,
+                TotalPurchases = 0,
+                TotalCodesGenerated = 0,
+                TotalCodesRedeemed = 0,
+                TotalInvestment = 0,
                 CreatedDate = DateTime.Now,
-                SocialMediaLinks = "{\"twitter\":\"@demosponsor\",\"linkedin\":\"demo-agricultural-supplies\"}",
-                PreferredCategories = "[\"Vegetables\",\"Fruits\",\"Grains\"]",
-                SponsorshipBudget = 100000,
-                Currency = "TRY",
-                Rating = 5.0m,
-                Notes = "Demo sponsor profile for testing purposes"
+                CreatedByUserId = 1
             };
         }
     }
