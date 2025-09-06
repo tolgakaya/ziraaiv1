@@ -23,8 +23,8 @@ namespace Core.Entities.Concrete
         public string RefreshToken { get; set; }
         public string MobilePhones { get; set; }
         public bool Status { get; set; }
-        public DateTime BirthDate { get; set; }
-        public int Gender { get; set; }
+        public DateTime? BirthDate { get; set; }  // Made nullable
+        public int? Gender { get; set; }  // Made nullable
         public DateTime RecordDate { get; set; }
         public string Address { get; set; }
         public string Notes { get; set; }

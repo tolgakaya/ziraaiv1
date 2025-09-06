@@ -50,8 +50,8 @@ namespace Business.Handlers.Authorizations.Queries
                     return new ErrorDataResult<AccessToken>(Messages.PasswordError);
                 }
 
-                var claims = _userRepository.GetClaims(user.UserId);
-                var userGroups = _userRepository.GetUserGroups(user.UserId);
+                var claims = await _userRepository.GetClaimsAsync(user.UserId);
+                var userGroups = await _userRepository.GetUserGroupsAsync(user.UserId);
 
                 var accessToken = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
                 accessToken.Claims = claims.Select(x => x.Name).ToList();

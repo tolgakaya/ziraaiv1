@@ -45,11 +45,11 @@ namespace Tests.Business.Services.Authentication
             _userRepository.Setup(x => x.GetAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .Returns(() => Task.FromResult(user));
 
-            _userRepository.Setup(x => x.GetClaims(It.IsAny<int>()))
-                .Returns(new List<OperationClaim>() { new () { Id = 1, Name = "test" } });
+            _userRepository.Setup(x => x.GetClaimsAsync(It.IsAny<int>()))
+                .Returns(Task.FromResult(new List<OperationClaim>() { new () { Id = 1, Name = "test" } }));
             
-            _userRepository.Setup(x => x.GetUserGroups(It.IsAny<int>()))
-                .Returns(new List<string>() { "Farmer" });
+            _userRepository.Setup(x => x.GetUserGroupsAsync(It.IsAny<int>()))
+                .Returns(Task.FromResult(new List<string>() { "Farmer" }));
 
             _tokenHelper.Setup(x => x.CreateToken<DArchToken>(It.IsAny<User>(), It.IsAny<List<string>>())).Returns(() => new DArchToken()
             {
@@ -87,11 +87,11 @@ namespace Tests.Business.Services.Authentication
             _userRepository.Setup(x => x.GetAsync(It.IsAny<Expression<Func<User, bool>>>()))
                 .Returns(() => Task.FromResult(user));
 
-            _userRepository.Setup(x => x.GetClaims(It.IsAny<int>()))
-                .Returns(new List<OperationClaim>() { new () { Id = 1, Name = "test" } });
+            _userRepository.Setup(x => x.GetClaimsAsync(It.IsAny<int>()))
+                .Returns(Task.FromResult(new List<OperationClaim>() { new () { Id = 1, Name = "test" } }));
             
-            _userRepository.Setup(x => x.GetUserGroups(It.IsAny<int>()))
-                .Returns(new List<string>() { "Farmer" });
+            _userRepository.Setup(x => x.GetUserGroupsAsync(It.IsAny<int>()))
+                .Returns(Task.FromResult(new List<string>() { "Farmer" }));
 
             _tokenHelper.Setup(x => x.CreateToken<DArchToken>(It.IsAny<User>(), It.IsAny<List<string>>())).Returns(() => new DArchToken()
             {

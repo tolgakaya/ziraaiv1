@@ -172,6 +172,7 @@ namespace Business.Services.DatabaseInitializer
                 {
                     _operationClaimRepository.Add(claim);
                 }
+                await _operationClaimRepository.SaveChangesAsync();
                 _logger.LogInformation($"Seeded {claims.Count} operation claims.");
             }
         }
@@ -187,6 +188,7 @@ namespace Business.Services.DatabaseInitializer
                 {
                     _groupRepository.Add(group);
                 }
+                await _groupRepository.SaveChangesAsync();
                 _logger.LogInformation($"Seeded {groups.Count} groups.");
             }
         }
@@ -202,6 +204,7 @@ namespace Business.Services.DatabaseInitializer
                 {
                     _groupClaimRepository.Add(groupClaim);
                 }
+                await _groupClaimRepository.SaveChangesAsync();
                 _logger.LogInformation($"Seeded {groupClaims.Count} group claims.");
             }
         }
@@ -217,6 +220,7 @@ namespace Business.Services.DatabaseInitializer
                 {
                     _configurationRepository.Add(config);
                 }
+                await _configurationRepository.SaveChangesAsync();
                 _logger.LogInformation($"Seeded {configs.Count} configuration entries.");
             }
         }
@@ -243,6 +247,7 @@ namespace Business.Services.DatabaseInitializer
                 {
                     _userRepository.Add(user);
                 }
+                await _userRepository.SaveChangesAsync();
                 _logger.LogInformation($"Seeded {users.Count} users.");
                 _logger.LogWarning("IMPORTANT: Default admin credentials - Email: admin@ziraai.com, Password: Admin@123! - Please change after first login!");
             }
@@ -259,6 +264,7 @@ namespace Business.Services.DatabaseInitializer
                 {
                     _userGroupRepository.Add(userGroup);
                 }
+                await _userGroupRepository.SaveChangesAsync();
                 _logger.LogInformation($"Seeded {userGroups.Count} user group assignments.");
             }
         }
@@ -274,6 +280,7 @@ namespace Business.Services.DatabaseInitializer
                 {
                     _userSubscriptionRepository.Add(subscription);
                 }
+                await _userSubscriptionRepository.SaveChangesAsync();
                 _logger.LogInformation($"Seeded {subscriptions.Count} user subscriptions.");
             }
         }
@@ -286,6 +293,7 @@ namespace Business.Services.DatabaseInitializer
                 _logger.LogInformation("Seeding sponsor profile...");
                 var profile = UserSeeds.GetDefaultSponsorProfile();
                 _sponsorProfileRepository.Add(profile);
+                await _sponsorProfileRepository.SaveChangesAsync();
                 _logger.LogInformation("Seeded demo sponsor profile.");
             }
         }

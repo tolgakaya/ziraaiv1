@@ -13,6 +13,7 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
                 .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../WebAPI"))
                 .AddJsonFile("appsettings.json", optional: false)
                 .AddJsonFile("appsettings.Development.json", optional: true)
+                .AddEnvironmentVariables()
                 .Build();
 
             var builder = new DbContextOptionsBuilder<ProjectDbContext>();

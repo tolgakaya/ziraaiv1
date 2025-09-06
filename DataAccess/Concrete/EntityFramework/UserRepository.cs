@@ -16,7 +16,7 @@ namespace DataAccess.Concrete.EntityFramework
         {
         }
 
-        public List<OperationClaim> GetClaims(int userId)
+        public async Task<List<OperationClaim>> GetClaimsAsync(int userId)
         {
             var result = (from user in Context.Users
                 join userGroup in Context.UserGroups on user.UserId equals userGroup.UserId
@@ -35,11 +35,12 @@ namespace DataAccess.Concrete.EntityFramework
                     operationClaim.Name
                 });
 
-            return result.Select(x => new OperationClaim { Name = x.Name }).Distinct()
-                .ToList();
+            var list = await result.Select(x => new OperationClaim { Name = x.Name }).Distinct()
+                .ToListAsync();
+            return list;
         }
 
-        public List<string> GetUserGroups(int userId)
+        public async Task<List<string>> GetUserGroupsAsync(int userId)
         {
             var result = from user in Context.Users
                          join userGroup in Context.UserGroups on user.UserId equals userGroup.UserId
@@ -47,7 +48,7 @@ namespace DataAccess.Concrete.EntityFramework
                          where user.UserId == userId
                          select grp.GroupName;
 
-            return result.Distinct().ToList();
+            return await result.Distinct().ToListAsync();
         }
 
         public async Task<User> GetByRefreshToken(string refreshToken)

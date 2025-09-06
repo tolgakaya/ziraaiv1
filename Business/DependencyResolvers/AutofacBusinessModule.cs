@@ -18,6 +18,8 @@ using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
+using DataAccess.Concrete.EntityFramework.Contexts;
+using Microsoft.EntityFrameworkCore;
 using FluentValidation;
 using MediatR;
 using Module = Autofac.Module;
@@ -46,6 +48,16 @@ namespace Business.DependencyResolvers
         protected override void Load(ContainerBuilder builder)
         {
             var assembly = Assembly.GetExecutingAssembly();
+            
+            // Register ProjectDbContext with PostgreSQL connection
+            builder.Register(c =>
+            {
+                var config = c.Resolve<IConfiguration>();
+                var connectionString = config.GetConnectionString("DArchPgContext");
+                var optionsBuilder = new DbContextOptionsBuilder<ProjectDbContext>();
+                optionsBuilder.UseNpgsql(connectionString);
+                return new ProjectDbContext(optionsBuilder.Options, config);
+            }).As<ProjectDbContext>().InstancePerLifetimeScope();
 
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
@@ -58,6 +70,9 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<ConfigurationRepository>().As<IConfigurationRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<UserRepository>().As<IUserRepository>()
                 .InstancePerLifetimeScope();
             
             // Subscription repositories

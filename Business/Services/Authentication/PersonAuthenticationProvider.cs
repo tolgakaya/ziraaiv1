@@ -57,8 +57,8 @@ namespace Business.Services.Authentication
             var user = await _users.GetAsync(u => u.CitizenId == citizenId);
             user.AuthenticationProviderType = ProviderType.ToString();
 
-            var claims = _users.GetClaims(user.UserId);
-            var userGroups = _users.GetUserGroups(user.UserId);
+            var claims = await _users.GetClaimsAsync(user.UserId);
+            var userGroups = await _users.GetUserGroupsAsync(user.UserId);
             var accessToken = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
             accessToken.Provider = ProviderType;
             return accessToken;
