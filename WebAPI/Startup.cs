@@ -29,6 +29,8 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerUI;
 using WebAPI.Filters;
 using ConfigurationManager = Business.ConfigurationManager;
+using Business.Services.DatabaseInitializer;
+using System.Threading.Tasks;
 
 namespace WebAPI
 {
@@ -127,6 +129,9 @@ namespace WebAPI
             // Add Background Services
             // PlantAnalysisResultWorker moved to separate PlantAnalysisWorkerService project
 
+            // Add Database Initializer Service
+            services.AddScoped<IDatabaseInitializerService, DatabaseInitializerService>();
+
             base.ConfigureServices(services);
         }
 
@@ -141,6 +146,9 @@ namespace WebAPI
             // VERY IMPORTANT. Since we removed the build from AddDependencyResolvers, let's set the Service provider manually.
             // By the way, we can construct with DI by taking type to avoid calling static methods in aspects.
             ServiceTool.ServiceProvider = app.ApplicationServices;
+
+            // Initialize database with seed data
+            InitializeDatabase(app).GetAwaiter().GetResult();
 
 
             var configurationManager = app.ApplicationServices.GetService<ConfigurationManager>();
@@ -265,6 +273,27 @@ namespace WebAPI
             }
             
             return exceptions.ToArray();
+        }
+        
+        /// <summary>
+        /// Initialize database with seed data
+        /// </summary>
+        private async Task InitializeDatabase(IApplicationBuilder app)
+        {
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var databaseInitializer = services.GetRequiredService<IDatabaseInitializerService>();
+                    await databaseInitializer.InitializeAsync();
+                }
+                catch (Exception ex)
+                {
+                    var logger = services.GetRequiredService<ILogger<Startup>>();
+                    logger.LogError(ex, "An error occurred while initializing the database.");
+                }
+            }
         }
     }
 }
