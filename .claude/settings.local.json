@@ -67,7 +67,11 @@
       "mcp__serena__switch_modes",
       "mcp__serena__find_symbol",
       "Bash(dotnet ef migrations add:*)",
-      "Bash(del fix_datetime_infinity.sql)"
+      "Bash(del fix_datetime_infinity.sql)",
+      "mcp__serena__execute_shell_command",
+      "Bash(start /min powershell:*)",
+      "Bash(timeout:*)",
+      "Bash(dotnet ef migrations remove:*)"
     ],
     "deny": [],
     "ask": [],

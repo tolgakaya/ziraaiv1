@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Core.DataAccess.EntityFramework;
 using Core.Entities.Concrete;
@@ -14,6 +16,39 @@ namespace DataAccess.Concrete.EntityFramework
         public UserRepository(ProjectDbContext context)
             : base(context)
         {
+        }
+
+        public new async Task<User> GetAsync(Expression<Func<User, bool>> filter)
+        {
+            var user = await base.GetAsync(filter);
+            if (user != null)
+            {
+                FixInfinityValues(user);
+            }
+            return user;
+        }
+
+        public new User Update(User entity)
+        {
+            FixInfinityValues(entity);
+            return base.Update(entity);
+        }
+
+        private void FixInfinityValues(User user)
+        {
+            // Handle infinity values that might come from database
+            if (user.BirthDate.HasValue && user.BirthDate.Value == DateTime.MaxValue)
+            {
+                user.BirthDate = null;
+            }
+            if (user.UpdateContactDate == DateTime.MaxValue)
+            {
+                user.UpdateContactDate = DateTime.Now;
+            }
+            if (user.RecordDate == DateTime.MaxValue)
+            {
+                user.RecordDate = DateTime.Now;
+            }
         }
 
         public async Task<List<OperationClaim>> GetClaimsAsync(int userId)

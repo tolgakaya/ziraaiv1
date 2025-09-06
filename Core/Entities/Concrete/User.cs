@@ -8,11 +8,33 @@ namespace Core.Entities.Concrete
     {
         public User()
         {
-            if(UserId==0){
-              RecordDate = DateTime.Now;
+            // Initialize with safe defaults
+            var now = DateTime.Now;
+            
+            if(UserId == 0){
+              RecordDate = now;
+              UpdateContactDate = now;
             }
-            UpdateContactDate = DateTime.Now;
+            
             Status = true;
+            
+            // Fix infinity values that might be read from database
+            // This is only for fixing existing data, not for new records
+            if (UserId > 0) // Only apply fixes for existing records
+            {
+                if (BirthDate.HasValue && (BirthDate.Value == DateTime.MaxValue || BirthDate.Value == DateTime.MinValue))
+                {
+                    BirthDate = null;
+                }
+                if (UpdateContactDate == DateTime.MaxValue || UpdateContactDate == DateTime.MinValue)
+                {
+                    UpdateContactDate = now;
+                }
+                if (RecordDate == DateTime.MaxValue || RecordDate == DateTime.MinValue)
+                {
+                    RecordDate = now;
+                }
+            }
         }
 
         public int UserId { get; set; }

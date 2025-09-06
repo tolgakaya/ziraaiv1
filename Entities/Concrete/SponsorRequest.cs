@@ -17,8 +17,10 @@ namespace Entities.Concrete
         public string Status { get; set; }         // Pending, Approved, Rejected, Expired
         public DateTime? ApprovalDate { get; set; }
         public int? ApprovedSubscriptionTierId { get; set; }
+#nullable enable
         public string? ApprovalNotes { get; set; }
         public string? GeneratedSponsorshipCode { get; set; }
+#nullable restore
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
         

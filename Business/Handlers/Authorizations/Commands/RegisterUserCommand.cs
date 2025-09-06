@@ -22,6 +22,7 @@ namespace Business.Handlers.Authorizations.Commands
         public string Email { get; set; }
         public string Password { get; set; }
         public string FullName { get; set; }
+        public string MobilePhones { get; set; }
         
         [JsonPropertyName("role")]
         public string UserRole { get; set; } = "Farmer"; // Default to Farmer, but allow override
@@ -68,20 +69,76 @@ namespace Business.Handlers.Authorizations.Commands
                 Console.WriteLine($"[RegisterUser] ✅ User email is unique, proceeding with registration...");
 
                 HashingHelper.CreatePasswordHash(request.Password, out var passwordSalt, out var passwordHash);
+                var now = DateTime.Now; // Use local time for PostgreSQL compatibility
                 var user = new User
                 {
+                    CitizenId = 0, // Default for non-citizen users
                     Email = request.Email,
-
                     FullName = request.FullName,
+                    MobilePhones = request.MobilePhones ?? string.Empty,
                     PasswordHash = passwordHash,
                     PasswordSalt = passwordSalt,
-                    Status = true
+                    Status = true,
+                    Address = "Not specified",
+                    Notes = "Registered via API",
+                    AuthenticationProviderType = "Person",
+                    RecordDate = now,
+                    UpdateContactDate = now,
+                    BirthDate = null, // Explicitly set as null
+                    Gender = null // Explicitly set as null
                 };
 
                 Console.WriteLine($"[RegisterUser] 💾 Adding user to database...");
-                _userRepository.Add(user);
-                await _userRepository.SaveChangesAsync();
-                Console.WriteLine($"[RegisterUser] ✅ User saved to database with ID: {user.UserId}");
+                try
+                {
+                    _userRepository.Add(user);
+                    await _userRepository.SaveChangesAsync();
+                    Console.WriteLine($"[RegisterUser] ✅ User saved to database with ID: {user.UserId}");
+                }
+                catch (Exception saveEx)
+                {
+                    Console.WriteLine($"[RegisterUser] ❌ ERROR SAVING USER: {saveEx.Message}");
+                    
+                    // Log inner exception details
+                    var innerEx = saveEx.InnerException;
+                    var level = 1;
+                    while (innerEx != null)
+                    {
+                        Console.WriteLine($"[RegisterUser] 🔴 Inner Exception Level {level}: {innerEx.Message}");
+                        if (innerEx.Data?.Count > 0)
+                        {
+                            Console.WriteLine($"[RegisterUser] 📋 Inner Exception {level} Data:");
+                            foreach (var key in innerEx.Data.Keys)
+                            {
+                                Console.WriteLine($"[RegisterUser]   - {key}: {innerEx.Data[key]}");
+                            }
+                        }
+                        
+                        // PostgreSQL specific error details
+                        if (innerEx.GetType().Name.Contains("Postgres"))
+                        {
+                            Console.WriteLine($"[RegisterUser] 🐘 PostgreSQL Error Details:");
+                            foreach (var prop in innerEx.GetType().GetProperties())
+                            {
+                                try
+                                {
+                                    var value = prop.GetValue(innerEx);
+                                    if (value != null && !string.IsNullOrEmpty(value.ToString()))
+                                    {
+                                        Console.WriteLine($"[RegisterUser]   - {prop.Name}: {value}");
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                        
+                        innerEx = innerEx.InnerException;
+                        level++;
+                    }
+                    
+                    Console.WriteLine($"[RegisterUser] 📍 Stack Trace: {saveEx.StackTrace}");
+                    throw; // Re-throw to maintain original behavior
+                }
 
                 // Assign user role based on registration request (Farmer, Sponsor, etc.)
                 Console.WriteLine($"[RegisterUser] Assigning role: {request.UserRole} to user {user.Email}");
@@ -139,16 +196,16 @@ namespace Business.Handlers.Authorizations.Commands
                     {
                         Console.WriteLine($"[RegisterUser] Creating trial subscription with tier ID {trialTier.Id}...");
                         // Use DateTime.Now instead of DateTime.UtcNow to avoid timezone issues with PostgreSQL
-                        var now = DateTime.Now;
-                        var trialEnd = now.AddDays(30);
+                        var subscriptionStartDate = DateTime.Now;
+                        var trialEnd = subscriptionStartDate.AddDays(30);
                         
-                        Console.WriteLine($"[RegisterUser] Creating subscription with dates: Start={now:yyyy-MM-dd HH:mm:ss}, End={trialEnd:yyyy-MM-dd HH:mm:ss}");
+                        Console.WriteLine($"[RegisterUser] Creating subscription with dates: Start={subscriptionStartDate:yyyy-MM-dd HH:mm:ss}, End={trialEnd:yyyy-MM-dd HH:mm:ss}");
                         
                         var trialSubscription = new Entities.Concrete.UserSubscription
                         {
                             UserId = user.UserId,
                             SubscriptionTierId = trialTier.Id,
-                            StartDate = now,
+                            StartDate = subscriptionStartDate,
                             EndDate = trialEnd,
                             IsActive = true,
                             AutoRenew = false,
@@ -157,12 +214,12 @@ namespace Business.Handlers.Authorizations.Commands
                             Currency = "TRY",
                             CurrentDailyUsage = 0,
                             CurrentMonthlyUsage = 0,
-                            LastUsageResetDate = now,
-                            MonthlyUsageResetDate = now,
+                            LastUsageResetDate = subscriptionStartDate,
+                            MonthlyUsageResetDate = subscriptionStartDate,
                             Status = "Active",
                             IsTrialSubscription = true,
                             TrialEndDate = trialEnd,
-                            CreatedDate = now,
+                            CreatedDate = subscriptionStartDate,
                             CreatedUserId = user.UserId
                         };
                         
