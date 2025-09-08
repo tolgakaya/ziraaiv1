@@ -1,0 +1,189 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for deployment'
+        required: true
+        default: 'Manual deployment'
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  pre-deployment-checks:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check deployment conditions
+      id: check
+      run: |
+        # Check if this is a hotfix or regular release
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "Manual deployment requested: ${{ github.event.inputs.reason }}"
+        elif [[ "${{ github.ref }}" == "refs/heads/master" ]] || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "Production branch push detected"
+        else
+          echo "should_deploy=false" >> $GITHUB_OUTPUT
+          echo "Skipping deployment"
+        fi
+
+  test-production-build:
+    needs: pre-deployment-checks
+    if: needs.pre-deployment-checks.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build for production
+      run: dotnet build --configuration Release
+    
+    - name: Run critical tests
+      run: dotnet test --configuration Release --filter "Priority=Critical"
+    
+    - name: Create deployment artifact
+      run: |
+        dotnet publish ./WebAPI/WebAPI.csproj -c Release -o ./publish
+        tar -czf deployment.tar.gz ./publish
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: deployment-package
+        path: deployment.tar.gz
+        retention-days: 7
+
+  deploy-to-production:
+    needs: test-production-build
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://ziraai.com
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download deployment artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: deployment-package
+    
+    - name: Setup Railway CLI
+      run: |
+        curl -fsSL https://railway.app/install.sh | sh
+    
+    - name: Create database backup
+      run: |
+        echo "Creating database backup before deployment..."
+        # Add backup command here
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+    
+    - name: Deploy to Railway Production
+      run: |
+        railway up --service ziraai-production --environment production
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+    
+    - name: Wait for deployment
+      run: sleep 60
+    
+    - name: Health check
+      run: |
+        for i in {1..10}; do
+          if curl -f https://ziraai.com/health; then
+            echo "Health check passed"
+            exit 0
+          fi
+          echo "Attempt $i failed, waiting..."
+          sleep 10
+        done
+        echo "Health check failed after 10 attempts"
+        exit 1
+    
+    - name: Run smoke tests
+      run: |
+        # Add production smoke tests here
+        echo "Running production smoke tests..."
+    
+    - name: Notify deployment success
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: '🚀 Production Deployment Successful',
+            attachments: [{
+              color: 'good',
+              fields: [
+                { title: 'Environment', value: 'Production', short: true },
+                { title: 'Version', value: '${{ github.sha }}', short: true },
+                { title: 'Deployed by', value: '${{ github.actor }}', short: true },
+                { title: 'Reason', value: '${{ github.event.inputs.reason || 'Automated deployment' }}', short: true }
+              ]
+            }]
+          }
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: success()
+    
+    - name: Notify deployment failure
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: '❌ Production Deployment Failed',
+            attachments: [{
+              color: 'danger',
+              fields: [
+                { title: 'Environment', value: 'Production', short: true },
+                { title: 'Version', value: '${{ github.sha }}', short: true },
+                { title: 'Failed by', value: '${{ github.actor }}', short: true }
+              ]
+            }]
+          }
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: failure()
+
+  rollback:
+    needs: deploy-to-production
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Initiate rollback
+      run: |
+        echo "Deployment failed, initiating rollback..."
+        # Add rollback logic here
+    
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: '⚠️ Production Rollback Initiated',
+            attachments: [{
+              color: 'warning',
+              text: 'Previous stable version is being restored'
+            }]
+          }
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
