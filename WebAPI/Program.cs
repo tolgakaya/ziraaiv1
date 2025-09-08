@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using System;
 using System.IO;
 using DotNetEnv;
 
@@ -37,15 +38,25 @@ namespace WebAPI
                 {
                     var env = hostingContext.HostingEnvironment;
                     
-                    // Load environment-specific .env file
+                    // Load environment-specific .env file (for local development only)
+                    // Railway uses its own environment variable system
                     var envFile = $".env.{env.EnvironmentName.ToLower()}";
                     if (File.Exists(envFile))
                     {
+                        // Local development: Load from .env file
                         Env.Load(envFile);
+                        Console.WriteLine($"Loaded environment variables from {envFile}");
                     }
                     else if (File.Exists(".env"))
                     {
+                        // Fallback to generic .env file
                         Env.Load(".env");
+                        Console.WriteLine("Loaded environment variables from .env");
+                    }
+                    else
+                    {
+                        // Production: Railway provides environment variables directly
+                        Console.WriteLine("Using system environment variables (Railway/Production mode)");
                     }
                     
                     // Add environment variables to configuration

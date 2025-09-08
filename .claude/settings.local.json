@@ -72,7 +72,8 @@
       "Bash(start /min powershell:*)",
       "Bash(timeout:*)",
       "Bash(dotnet ef migrations remove:*)",
-      "Bash(dotnet add:*)"
+      "Bash(dotnet add:*)",
+      "mcp__serena__insert_before_symbol"
     ],
     "deny": [],
     "ask": [],
