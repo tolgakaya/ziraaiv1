@@ -1,0 +1,79 @@
+name: Development CI/CD
+
+on:
+  push:
+    branches: [ development ]
+  pull_request:
+    branches: [ development ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ziraai
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: ziraai_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --no-restore --configuration Debug
+    
+    - name: Run tests
+      run: dotnet test --no-build --verbosity normal --logger "console;verbosity=detailed"
+      env:
+        ConnectionStrings__DArchPgContext: "Host=localhost;Port=5432;Database=ziraai_test;Username=ziraai;Password=testpass"
+    
+    - name: Code Coverage
+      run: dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ./coverage
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Install dotnet format
+      run: dotnet tool install -g dotnet-format
+    
+    - name: Check formatting
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+    
+    - name: Run code analysis
+      run: dotnet build /p:TreatWarningsAsErrors=true

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "dotnet publish ./WebAPI/WebAPI.csproj -c Release -o out"
+  },
+  "deploy": {
+    "runtime": "dotnet",
+    "startCommand": "dotnet ./out/WebAPI.dll",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 30
+  },
+  "environments": {
+    "staging": {
+      "branch": "staging",
+      "autoDeployEnabled": true,
+      "prDeploy": true
+    }
+  }
+}

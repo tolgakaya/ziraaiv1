@@ -1,0 +1,86 @@
+name: Staging Deployment
+
+on:
+  push:
+    branches: [ staging ]
+  pull_request:
+    branches: [ staging ]
+    types: [opened, synchronize, reopened]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: railway_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --configuration Release
+    
+    - name: Run integration tests
+      run: dotnet test --configuration Release --filter "Category=Integration"
+      env:
+        ConnectionStrings__DArchPgContext: "Host=localhost;Port=5432;Database=railway_test;Username=postgres;Password=testpass"
+        ASPNETCORE_ENVIRONMENT: Staging
+    
+    - name: Run E2E tests
+      run: dotnet test --configuration Release --filter "Category=E2E"
+      env:
+        ASPNETCORE_ENVIRONMENT: Staging
+
+  deploy-to-staging:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Railway CLI
+      run: |
+        curl -fsSL https://railway.app/install.sh | sh
+    
+    - name: Deploy to Railway Staging
+      run: |
+        railway up --service ziraai-staging --environment staging
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+    
+    - name: Run smoke tests
+      run: |
+        sleep 30
+        curl -f https://ziraai-staging.railway.app/health || exit 1
+    
+    - name: Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: 'Staging deployment ${{ job.status }}'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+      if: always()

@@ -467,4 +467,10 @@ fabric.properties
 .history/
 .idea/*
 UiPreparation/.DS_Store
+# Environment configuration files
 .env
+.env.development
+.env.staging
+.env.production
+*.env
+!.env.*.template
