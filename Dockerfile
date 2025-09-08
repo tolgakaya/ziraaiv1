@@ -26,13 +26,16 @@ RUN dotnet build "WebAPI.csproj" -c Release -o /app/build
 # Publish
 FROM build AS publish
 RUN dotnet publish "WebAPI.csproj" -c Release -o /app/publish /p:UseAppHost=false
-# Copy appsettings files to publish directory
-RUN cp /src/WebAPI/appsettings*.json /app/publish/
 
 # Final stage
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Copy appsettings files directly from build stage
+COPY --from=build /src/WebAPI/appsettings.json .
+COPY --from=build /src/WebAPI/appsettings.Development.json .
+COPY --from=build /src/WebAPI/appsettings.Staging.json .
+COPY --from=build /src/WebAPI/appsettings.Production.json .
 
 
 # Create uploads directory
