@@ -19,6 +19,9 @@ RUN dotnet restore "WebAPI/WebAPI.csproj"
 # Copy all source code
 COPY . .
 
+# Debug: List files to see what's copied
+RUN ls -la /src/WebAPI/appsettings*
+
 # Build
 WORKDIR "/src/WebAPI"
 RUN dotnet build "WebAPI.csproj" -c Release -o /app/build
