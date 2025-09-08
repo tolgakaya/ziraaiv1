@@ -25,6 +25,9 @@ namespace Core.CrossCuttingConcerns.Caching.Redis
             }
 
             configurationOptions.DefaultDatabase = cacheConfig.Database;
+            configurationOptions.Ssl = cacheConfig.Ssl;
+            configurationOptions.AbortOnConnectFail = false;
+            
             _redis = ConnectionMultiplexer.Connect(configurationOptions);
             _cache = _redis.GetDatabase(cacheConfig.Database);
         }
