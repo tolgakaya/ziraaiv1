@@ -31,9 +31,6 @@ RUN dotnet publish "WebAPI.csproj" -c Release -o /app/publish /p:UseAppHost=fals
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-# Copy appsettings files explicitly to ensure they exist
-COPY --from=build /src/WebAPI/appsettings.json ./
-COPY --from=build /src/WebAPI/appsettings.*.json ./
 
 
 # Create uploads directory
