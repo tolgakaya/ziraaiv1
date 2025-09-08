@@ -31,8 +31,9 @@ RUN dotnet publish "WebAPI.csproj" -c Release -o /app/publish /p:UseAppHost=fals
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-# Copy appsettings files explicitly
-COPY --from=build /src/WebAPI/appsettings*.json ./
+# Copy appsettings files explicitly to ensure they exist
+COPY --from=build /src/WebAPI/appsettings.json ./
+COPY --from=build /src/WebAPI/appsettings.*.json ./
 
 
 # Create uploads directory
@@ -45,7 +46,7 @@ RUN apt-get update && apt-get install -y libicu-dev netcat-traditional curl && r
 # Railway environment configuration
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
 # Environment will be set by Railway (Development, Staging, Production)
-ENV ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Staging}
+ENV ASPNETCORE_ENVIRONMENT=Staging
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 
