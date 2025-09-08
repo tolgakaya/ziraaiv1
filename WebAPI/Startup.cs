@@ -48,6 +48,7 @@ namespace WebAPI
         public Startup(IConfiguration configuration, IHostEnvironment hostEnvironment)
             : base(configuration, hostEnvironment)
         {
+            ConfigureRailwayEnvironment();
         }
 
 
@@ -295,6 +296,64 @@ namespace WebAPI
                     var logger = services.GetRequiredService<ILogger<Startup>>();
                     logger.LogError(ex, "An error occurred while initializing the database.");
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Configure Railway environment variables for .NET Core compatibility
+        /// </summary>
+        private void ConfigureRailwayEnvironment()
+        {
+            // Only configure if running in Railway environment
+            if (!Core.Utilities.Helpers.RailwayConfigurationHelper.IsRailwayEnvironment())
+                return;
+
+            try
+            {
+                // Convert Railway DATABASE_URL to .NET connection string format and set environment variable
+                var databaseConnectionString = Core.Utilities.Helpers.RailwayConfigurationHelper.GetDatabaseConnectionString();
+                if (!string.IsNullOrEmpty(databaseConnectionString))
+                {
+                    Environment.SetEnvironmentVariable("ConnectionStrings__DArchPgContext", databaseConnectionString);
+                    Console.WriteLine($"Railway: Set database connection string from Railway environment");
+                }
+
+                // Convert Railway Redis configuration
+                var redisConnectionString = Core.Utilities.Helpers.RailwayConfigurationHelper.GetRedisConnectionString();
+                if (!string.IsNullOrEmpty(redisConnectionString))
+                {
+                    // Parse Redis connection string for individual components
+                    var parts = redisConnectionString.Split(',');
+                    var hostPort = parts[0].Split(':');
+                    if (hostPort.Length >= 2)
+                    {
+                        Environment.SetEnvironmentVariable("CacheOptions__Host", hostPort[0]);
+                        Environment.SetEnvironmentVariable("CacheOptions__Port", hostPort[1]);
+                        Environment.SetEnvironmentVariable("CacheOptions__Ssl", "true");
+                        
+                        // Extract password if present
+                        var passwordPart = parts.FirstOrDefault(p => p.StartsWith("password="));
+                        if (!string.IsNullOrEmpty(passwordPart))
+                        {
+                            var password = passwordPart.Replace("password=", "");
+                            Environment.SetEnvironmentVariable("CacheOptions__Password", password);
+                        }
+                        
+                        Console.WriteLine($"Railway: Set Redis configuration from Railway environment");
+                    }
+                }
+
+                // Set environment name if not already set
+                var envName = Core.Utilities.Helpers.RailwayConfigurationHelper.GetEnvironmentName();
+                if (!string.IsNullOrEmpty(envName))
+                {
+                    Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", envName);
+                    Console.WriteLine($"Railway: Set environment to {envName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Railway configuration error: {ex.Message}");
             }
         }
     }
