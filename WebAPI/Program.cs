@@ -40,23 +40,23 @@ namespace WebAPI
                     
                     // Load environment-specific .env file (for local development only)
                     // Railway uses its own environment variable system
-                    var envFile = $".env.{env.EnvironmentName.ToLower()}";
+                    var envFile = $"../.env.{env.EnvironmentName.ToLower()}";
                     if (File.Exists(envFile))
                     {
                         // Local development: Load from .env file
                         Env.Load(envFile);
-                        Console.WriteLine($"Loaded environment variables from {envFile}");
+                        Console.WriteLine($"Loaded environment variables from {envFile} (Development mode)");
                     }
-                    else if (File.Exists(".env"))
+                    else if (File.Exists("../.env"))
                     {
                         // Fallback to generic .env file
-                        Env.Load(".env");
-                        Console.WriteLine("Loaded environment variables from .env");
+                        Env.Load("../.env");
+                        Console.WriteLine("Loaded environment variables from .env (Development mode)");
                     }
                     else
                     {
                         // Production: Railway provides environment variables directly
-                        Console.WriteLine("Using system environment variables (Railway/Production mode)");
+                        Console.WriteLine($"Using system environment variables ({env.EnvironmentName} mode)");
                     }
                     
                     // Add environment variables to configuration
