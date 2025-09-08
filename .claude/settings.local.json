@@ -71,7 +71,8 @@
       "mcp__serena__execute_shell_command",
       "Bash(start /min powershell:*)",
       "Bash(timeout:*)",
-      "Bash(dotnet ef migrations remove:*)"
+      "Bash(dotnet ef migrations remove:*)",
+      "Bash(dotnet add:*)"
     ],
     "deny": [],
     "ask": [],
