@@ -31,6 +31,8 @@ RUN dotnet publish "WebAPI.csproj" -c Release -o /app/publish /p:UseAppHost=fals
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Copy appsettings files explicitly
+COPY --from=build /src/WebAPI/appsettings*.json ./
 
 
 # Create uploads directory
@@ -40,9 +42,10 @@ RUN mkdir -p /app/wwwroot/uploads/plant-images && \
 # Install ICU libraries for Turkish culture support and debugging tools
 RUN apt-get update && apt-get install -y libicu-dev netcat-traditional curl && rm -rf /var/lib/apt/lists/*
 
-# Railway environment configuration - use Development for Swagger and logging
+# Railway environment configuration
 ENV ASPNETCORE_URLS=http://0.0.0.0:8080
-ENV ASPNETCORE_ENVIRONMENT=Development
+# Environment will be set by Railway (Development, Staging, Production)
+ENV ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Staging}
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 
@@ -55,9 +58,9 @@ ENV Logging__Console__LogLevel__Default=Information
 ENV DOTNET_CONSOLE_ANSI_COLOR=1
 ENV ASPNETCORE_LOGGING__CONSOLE__DISABLECOLORS=false
 
-# Railway service configuration - disable optional services
+# Railway service configuration - Redis enabled for staging
 ENV UseHangfire=false
-ENV UseRedis=false
+ENV UseRedis=true
 ENV UseRabbitMQ=false
 ENV UseElasticsearch=false
 ENV TaskScheduler__UseTaskScheduler=false
