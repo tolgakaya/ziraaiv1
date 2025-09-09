@@ -18,6 +18,14 @@ namespace Core.CrossCuttingConcerns.Caching.Redis
         public RedisCacheManager(IConfiguration configuration)
         {
             var cacheConfig = configuration.GetSection(nameof(CacheOptions)).Get<CacheOptions>();
+            
+            // DEBUG: Log Redis configuration values
+            Console.WriteLine($"[REDIS] Host from config: {cacheConfig.Host}");
+            Console.WriteLine($"[REDIS] Port from config: {cacheConfig.Port}");
+            Console.WriteLine($"[REDIS] SSL from config: {cacheConfig.Ssl}");
+            Console.WriteLine($"[REDIS] Database from config: {cacheConfig.Database}");
+            Console.WriteLine($"[REDIS] Password set: {!string.IsNullOrEmpty(cacheConfig.Password)}");
+            
             var configurationOptions = ConfigurationOptions.Parse($"{cacheConfig.Host}:{cacheConfig.Port}");
             if (!string.IsNullOrEmpty(cacheConfig.Password))
             {
@@ -27,6 +35,13 @@ namespace Core.CrossCuttingConcerns.Caching.Redis
             configurationOptions.DefaultDatabase = cacheConfig.Database;
             configurationOptions.Ssl = cacheConfig.Ssl;
             configurationOptions.AbortOnConnectFail = false;
+            
+            // Additional SSL configuration for Railway Redis
+            if (cacheConfig.Ssl)
+            {
+                configurationOptions.SslHost = cacheConfig.Host;
+                Console.WriteLine($"[REDIS] SSL enabled with SslHost: {cacheConfig.Host}");
+            }
             
             _redis = ConnectionMultiplexer.Connect(configurationOptions);
             _cache = _redis.GetDatabase(cacheConfig.Database);
