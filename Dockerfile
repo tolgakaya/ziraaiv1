@@ -40,8 +40,8 @@ ARG TARGET_ENVIRONMENT
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# appsettings files are already included in the publish output
-# No need to copy them separately as dotnet publish includes them
+# Copy appsettings files explicitly as they might not be included by dotnet publish in some environments
+COPY --from=build /src/WebAPI/appsettings*.json .
 
 
 # Create uploads directory
