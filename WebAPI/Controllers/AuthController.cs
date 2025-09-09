@@ -18,6 +18,7 @@ namespace WebAPI.Controllers
     /// </summary>
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
     public class AuthController : BaseApiController
     {
 

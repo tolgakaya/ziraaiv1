@@ -54,6 +54,9 @@ namespace Business.DependencyResolvers
             {
                 var config = c.Resolve<IConfiguration>();
                 var connectionString = config.GetConnectionString("DArchPgContext");
+                
+                Console.WriteLine($"[AUTOFAC] ConnectionString from config: {connectionString?.Substring(0, Math.Min(50, connectionString?.Length ?? 0))}...");
+                
                 var optionsBuilder = new DbContextOptionsBuilder<ProjectDbContext>();
                 optionsBuilder.UseNpgsql(connectionString);
                 return new ProjectDbContext(optionsBuilder.Options, config);

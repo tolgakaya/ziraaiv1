@@ -48,7 +48,7 @@ namespace WebAPI
         public Startup(IConfiguration configuration, IHostEnvironment hostEnvironment)
             : base(configuration, hostEnvironment)
         {
-            ConfigureRailwayEnvironment();
+            // Railway environment variables are now configured in Program.cs before configuration is built
         }
 
 
@@ -59,36 +59,6 @@ namespace WebAPI
         /// It is common to all configurations and must be called. Aspnet core does not call this method because there are other methods.
         /// </remarks>
         /// <param name="services"></param>
-        /// <summary>
-        /// Configure Railway environment variables on startup
-        /// </summary>
-        private void ConfigureRailwayEnvironment()
-        {
-            // Apply Railway-specific configuration
-            
-            // Check and convert Railway DATABASE_URL if present
-            var connectionString = Core.Utilities.Helpers.RailwayConfigurationHelper.GetDatabaseConnectionString();
-            if (!string.IsNullOrEmpty(connectionString))
-            {
-                // Override the connection string in configuration
-                Environment.SetEnvironmentVariable("DATABASE_CONNECTION_STRING", connectionString);
-                Console.WriteLine("Using Railway database configuration");
-            }
-            
-            // Check and convert Redis configuration
-            var redisConnection = Core.Utilities.Helpers.RailwayConfigurationHelper.GetRedisConnectionString();
-            if (!string.IsNullOrEmpty(redisConnection))
-            {
-                Environment.SetEnvironmentVariable("REDIS_CONNECTION", redisConnection);
-                Console.WriteLine("Using Railway Redis configuration");
-            }
-            
-            // Log environment detection
-            if (Core.Utilities.Helpers.RailwayConfigurationHelper.IsRailwayEnvironment())
-            {
-                Console.WriteLine($"Running in Railway environment: {Core.Utilities.Helpers.RailwayConfigurationHelper.GetEnvironmentName()}");
-            }
-        }
 
         public override void ConfigureServices(IServiceCollection services)
         {
@@ -328,5 +298,9 @@ namespace WebAPI
                 }
             }
         }
+        
+        /// <summary>
+        /// Configure Railway environment variables for .NET Core compatibility
+        /// </summary>
     }
 }
