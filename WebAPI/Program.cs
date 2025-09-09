@@ -106,12 +106,13 @@ namespace WebAPI
                         Console.WriteLine($"Using system environment variables ({env.EnvironmentName} mode)");
                     }
                     
-                    // Add environment variables to configuration
-                    config.AddEnvironmentVariables();
-                    
-                    // Replace placeholders in configuration with environment variables
+                    // CRITICAL FIX: Load JSON files FIRST, then environment variables LAST
+                    // This ensures environment variables override JSON configuration values
                     config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                           .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
+                    
+                    // Add environment variables LAST to override JSON configuration
+                    config.AddEnvironmentVariables();
                 })
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
                 .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
