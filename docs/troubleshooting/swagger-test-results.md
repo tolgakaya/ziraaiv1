@@ -45,7 +45,7 @@ Security Vulnerability:
 - Advisory: GHSA-rxmq-m78w-7wmc
 
 Missing Code Analysis Rules:
-- File: \shared\DevArchitectureCodeAnalysis.ruleset
+- File: \shared\CodeAnalysis.ruleset
 - Impact: 5 MSB3884 warnings
 ```
 
@@ -74,7 +74,7 @@ Missing Code Analysis Rules:
 - **Fix Required**: Update to patched version
 
 #### 3. **Missing Code Analysis Rules** 📋 **LOW**
-- **File**: DevArchitectureCodeAnalysis.ruleset
+- **File**: CodeAnalysis.ruleset
 - **Impact**: Build warnings but doesn't prevent startup
 - **Fix**: Create missing ruleset file or update project references
 
