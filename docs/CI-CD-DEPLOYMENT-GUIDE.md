@@ -49,8 +49,8 @@ ziraai/
 
 | Service | Railway Name | Root Directory | Dockerfile | Config File |
 |---------|--------------|----------------|------------|-------------|
-| **WebAPI** | `ziraai-api` | `/WebAPI` | `WebAPI/Dockerfile` | `WebAPI/railway.json` |
-| **Worker** | `ziraai-worker` | `/PlantAnalysisWorkerService` | `PlantAnalysisWorkerService/Dockerfile` | `PlantAnalysisWorkerService/railway.json` |
+| **WebAPI** | `ziraai-api` | `/WebAPI` | `WebAPI/WebAPI.Dockerfile` | `WebAPI/railway.json` |
+| **Worker** | `ziraai-worker` | `/PlantAnalysisWorkerService` | `PlantAnalysisWorkerService/PlantAnalysisWorkerService.Dockerfile` | `PlantAnalysisWorkerService/railway.json` |
 
 ### Railway.json Configurations
 
@@ -60,8 +60,8 @@ ziraai/
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile",
-    "buildCommand": "echo 'Building ZiraAI WebAPI'"
+    "dockerfilePath": "WebAPI.Dockerfile",
+    "buildCommand": "echo 'Building ZiraAI WebAPI - REST API Service'"
   },
   "deploy": {
     "startCommand": "dotnet WebAPI.dll",
@@ -69,6 +69,18 @@ ziraai/
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
+  },
+  "environments": {
+    "staging": {
+      "variables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging"
+      }
+    },
+    "production": {
+      "variables": {
+        "ASPNETCORE_ENVIRONMENT": "Production"
+      }
+    }
   },
   "watchPaths": [
     "WebAPI/**",
@@ -86,8 +98,8 @@ ziraai/
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile",
-    "buildCommand": "echo 'Building PlantAnalysisWorkerService'"
+    "dockerfilePath": "PlantAnalysisWorkerService.Dockerfile",
+    "buildCommand": "echo 'Building PlantAnalysisWorkerService - Worker Service'"
   },
   "deploy": {
     "startCommand": "dotnet PlantAnalysisWorkerService.dll",
@@ -95,6 +107,18 @@ ziraai/
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
+  },
+  "environments": {
+    "staging": {
+      "variables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging"
+      }
+    },
+    "production": {
+      "variables": {
+        "ASPNETCORE_ENVIRONMENT": "Production"
+      }
+    }
   },
   "watchPaths": [
     "PlantAnalysisWorkerService/**",
@@ -278,8 +302,8 @@ Source:
 
 Build:
 ├── Builder: Dockerfile
-├── Dockerfile Path: Dockerfile (relative to /WebAPI)
-└── Build Command: echo 'Building ZiraAI WebAPI'
+├── Dockerfile Path: WebAPI.Dockerfile (relative to /WebAPI)
+└── Build Command: echo 'Building ZiraAI WebAPI - REST API Service'
 
 Deploy:
 ├── Start Command: dotnet WebAPI.dll
@@ -298,8 +322,8 @@ Source:
 
 Build:
 ├── Builder: Dockerfile
-├── Dockerfile Path: Dockerfile (relative to /PlantAnalysisWorkerService)
-└── Build Command: echo 'Building PlantAnalysisWorkerService'
+├── Dockerfile Path: PlantAnalysisWorkerService.Dockerfile (relative to /PlantAnalysisWorkerService)
+└── Build Command: echo 'Building PlantAnalysisWorkerService - Worker Service'
 
 Deploy:
 ├── Start Command: dotnet PlantAnalysisWorkerService.dll
@@ -331,7 +355,18 @@ Deploy:
 - Verify dockerfilePath is relative (not absolute)
 - Check watchPaths are service-specific
 
-#### 3. Environment Variable Issues
+#### 3. Railway Dockerfile Auto-Detection Conflicts
+**Error**: Wrong service being built, Railway using incorrect Dockerfile
+
+**Cause**: Railway auto-detection choosing wrong Dockerfile when multiple exist
+
+**Solution**:
+- Use unique Dockerfile names: `WebAPI.Dockerfile`, `PlantAnalysisWorkerService.Dockerfile`
+- Update railway.json `dockerfilePath` to reference unique names
+- Ensure build context is from repository root, not service directory
+- Verify Railway Dashboard service configuration
+
+#### 4. Environment Variable Issues
 **Error**: Service can't connect to database/Redis/RabbitMQ
 
 **Cause**: Missing or incorrect environment variables
@@ -354,6 +389,25 @@ GET https://ziraai-worker-staging.up.railway.app/health
 ```
 
 ## 📝 Change Log
+
+### Version 2.1 - September 9, 2025
+#### 🔧 Railway Dockerfile Detection Fix
+- **Resolved Railway Auto-Detection Conflicts**
+  - Created unique Dockerfile names: `WebAPI.Dockerfile`, `PlantAnalysisWorkerService.Dockerfile` 
+  - Updated railway.json configurations to use service-specific dockerfile paths
+  - Fixed build context issues preventing Railway deployment
+  - Added troubleshooting section for dockerfile detection conflicts
+
+- **Technical Resolution**
+  - Railway was using auto-detection instead of railway.json specifications
+  - Unique dockerfile names prevent Railway confusion between services
+  - Build context optimized for repository root deployment
+  - Both services now deploy independently without conflicts
+
+#### 📚 Documentation Updates
+- Updated service configuration matrix with correct dockerfile paths
+- Enhanced troubleshooting section with Railway-specific solutions
+- Added dockerfile naming convention best practices
 
 ### Version 2.0 - September 9, 2025
 #### 🚀 Major Changes
