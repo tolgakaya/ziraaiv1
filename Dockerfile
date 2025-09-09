@@ -24,8 +24,6 @@ RUN dotnet restore "WebAPI/WebAPI.csproj"
 # Copy all source code
 COPY . .
 
-# Debug: List files to see what's copied
-RUN ls -la /src/WebAPI/appsettings*
 
 # Build
 WORKDIR "/src/WebAPI"
@@ -42,11 +40,24 @@ ARG TARGET_ENVIRONMENT
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Copy all appsettings files
-COPY --from=build /src/WebAPI/appsettings.json .
-COPY --from=build /src/WebAPI/appsettings.Development.json .
-COPY --from=build /src/WebAPI/appsettings.Staging.json .
-COPY --from=build /src/WebAPI/appsettings.Production.json .
+# Create config directory for backup files
+RUN mkdir -p /app/config
+
+# Copy all appsettings files first 
+COPY --from=build /src/WebAPI/appsettings*.json /app/config/
+
+# Copy and rename environment-specific appsettings file as main appsettings.json
+# This ensures .NET Core loads the correct environment configuration
+RUN if [ "$TARGET_ENVIRONMENT" = "Development" ] && [ -f /app/config/appsettings.Development.json ]; then \
+        cp /app/config/appsettings.Development.json /app/appsettings.json; \
+    elif [ "$TARGET_ENVIRONMENT" = "Staging" ] && [ -f /app/config/appsettings.Staging.json ]; then \
+        cp /app/config/appsettings.Staging.json /app/appsettings.json; \
+    elif [ "$TARGET_ENVIRONMENT" = "Production" ] && [ -f /app/config/appsettings.Production.json ]; then \
+        cp /app/config/appsettings.Production.json /app/appsettings.json; \
+    else \
+        echo "Warning: No environment-specific appsettings found, using default"; \
+        cp /app/config/appsettings.json /app/appsettings.json 2>/dev/null || echo "No default appsettings.json found"; \
+    fi
 
 
 # Create uploads directory
