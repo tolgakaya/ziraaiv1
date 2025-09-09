@@ -49,6 +49,19 @@ namespace Business.DependencyResolvers
         {
             var assembly = Assembly.GetExecutingAssembly();
             
+            // Register ProjectDbContext with PostgreSQL connection
+            builder.Register(c =>
+            {
+                var config = c.Resolve<IConfiguration>();
+                var connectionString = config.GetConnectionString("DArchPgContext");
+                
+                Console.WriteLine($"[AUTOFAC] ConnectionString from config: {connectionString?.Substring(0, Math.Min(50, connectionString?.Length ?? 0))}...");
+                
+                var optionsBuilder = new DbContextOptionsBuilder<ProjectDbContext>();
+                optionsBuilder.UseNpgsql(connectionString);
+                return new ProjectDbContext(optionsBuilder.Options, config);
+            }).As<ProjectDbContext>().InstancePerLifetimeScope();
+
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
                 .AsClosedTypesOf(typeof(IRequestHandler<,>));
