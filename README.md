@@ -1,36 +1,6 @@
-# DevArchitecture
-
-DevArchitecture Open Source Rapid Application Framework for .Net 7
-
-For full documentation support [DevArchitecture](https://www.devarchitecture.net)
-
-[DevArchitecture Visual Studio Extensions](https://marketplace.visualstudio.com/search?term=devarchitecture&target=VS&category=All%20categories&vsVersion=&sortBy=Relevance)
-
-![](https://www.devarchitecture.net/assets/images/image1-ce8537e256c57d119ad5559b6217d4c9.png)
-
-# Support the DevArchitecture 
-
-If you liked DevArchitecture Open Source Rapid Application Framework for .Net 7? 
-
-## Please give a star to this repository ⭐
-
-# Build Project with Any Terminal
-
-``> dotnet build``
-
-``
-Build succeeded.
-0 Warning(s)
-0 Error(s)
-``
-
-# Run Api Project with Any Terminal
-``> dotnet dev-certs https --trust``
-``> dotnet watch run --project ./WebAPI/WebAPI.csproj``
-
 # ZiraAI - Enterprise Plant Analysis & Sponsorship Platform
 
-This project extends DevArchitecture with a comprehensive plant analysis system featuring advanced AI processing, subscription management, and a sophisticated tier-based sponsorship system.
+A comprehensive .NET 9.0 plant analysis system featuring advanced AI processing, subscription management, and a sophisticated tier-based sponsorship system.
 
 ## 🌱 Core Features
 
@@ -112,7 +82,7 @@ Built on Clean Architecture principles with:
 1. **Clone and Build**
    ```bash
    git clone <repository>
-   dotnet build
+   dotnet build Ziraai.sln
    ```
 
 2. **Database Migration**
@@ -316,11 +286,11 @@ dotnet test --collect:"XPlat Code Coverage"
 
 ## 📄 License
 
-This project is built on DevArchitecture and follows the same licensing terms.
+This project is licensed under MIT License.
 
 ## 🆘 Support
 
-For issues related to:
-- **DevArchitecture Framework**: Visit [DevArchitecture](https://www.devarchitecture.net)
+For issues and questions:
 - **Plant Analysis Features**: Check the [Configuration System Documentation](./CONFIGURATION_SYSTEM.md)
 - **Bug Reports**: Open an issue in this repository
+- **Feature Requests**: Submit detailed proposals via GitHub Issues

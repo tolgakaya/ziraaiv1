@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Business.Services.Authentication
 {
     /// <summary>
-    /// Provider that logs in using the DevArchitecture database.
+    /// Provider that logs in using the application database.
     /// </summary>
     public class PersonAuthenticationProvider : AuthenticationProviderBase, IAuthenticationProvider
     {
