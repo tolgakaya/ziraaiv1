@@ -40,11 +40,19 @@ namespace Core.CrossCuttingConcerns.Caching.Redis
             if (cacheConfig.Ssl)
             {
                 configurationOptions.SslHost = cacheConfig.Host;
-                // CRITICAL FIX: Skip SSL certificate validation for Railway Redis
-                // Railway uses internal certificates that fail standard validation
-                configurationOptions.CertificateValidation += (sender, certificate, chain, errors) => true;
-                configurationOptions.CertificateSelection += (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => null;
-                Console.WriteLine($"[REDIS] SSL enabled with SslHost: {cacheConfig.Host} (certificate validation bypassed)");
+                // CRITICAL FIX: Complete SSL configuration bypass for Railway Redis
+                configurationOptions.CertificateValidation += (sender, certificate, chain, errors) => {
+                    Console.WriteLine($"[REDIS] Certificate validation called - bypassing all errors");
+                    return true; // Accept all certificates
+                };
+                configurationOptions.CertificateSelection += (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => {
+                    Console.WriteLine($"[REDIS] Certificate selection called - using null");
+                    return null;
+                };
+                // Additional SSL settings
+                configurationOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
+                configurationOptions.CheckCertificateRevocation = false;
+                Console.WriteLine($"[REDIS] SSL enabled with SslHost: {cacheConfig.Host} (certificate validation completely bypassed)");
             }
             
             _redis = ConnectionMultiplexer.Connect(configurationOptions);
