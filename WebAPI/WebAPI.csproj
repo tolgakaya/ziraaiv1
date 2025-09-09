@@ -7,7 +7,7 @@
 		<UserSecretsId>41c001a8-4c94-4c16-8f1a-ddd6e630a542</UserSecretsId>
 	</PropertyGroup>
 	<PropertyGroup>
-		<CodeAnalysisRuleSet>$(SolutionDir)\shared\DevArchitectureCodeAnalysis.ruleset</CodeAnalysisRuleSet>
+		<CodeAnalysisRuleSet>$(SolutionDir)\shared\ZiraaiCodeAnalysis.ruleset</CodeAnalysisRuleSet>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

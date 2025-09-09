@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-ZiraAI is a .NET 9.0 Web API project for AI-powered plant analysis services. It follows Clean Architecture with CQRS pattern using the DevArchitecture framework.
+ZiraAI is a .NET 9.0 Web API project for AI-powered plant analysis services. It follows Clean Architecture with CQRS pattern using the Ziraai framework.
 
 ## Essential Commands
 

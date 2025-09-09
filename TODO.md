@@ -198,7 +198,7 @@ curl -k "https://localhost:5001/redeem/SPONSOR-CODE-HERE" -H "Accept: applicatio
 **Details**:
 - Missing async/await in some async methods
 - CA2200 warning about re-throwing exceptions
-- DevArchitectureCodeAnalysis.ruleset file missing
+- Code analysis ruleset file missing
 
 ### 17. Test Coverage
 **Status**: ⏳ Pending  

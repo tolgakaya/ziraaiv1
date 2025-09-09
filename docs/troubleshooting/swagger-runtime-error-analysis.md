@@ -46,7 +46,7 @@ Installed: MediatR 13.0.0
 
 ### 3. 📋 Build Configuration Issues (LOW)
 
-**Missing File**: `\shared\DevArchitectureCodeAnalysis.ruleset`
+**Missing File**: `\shared\CodeAnalysis.ruleset`
 **Impact**: Build warnings but doesn't prevent compilation
 
 ---
