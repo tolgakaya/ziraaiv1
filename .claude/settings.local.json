@@ -90,7 +90,8 @@
       "Bash(git stash:*)",
       "Bash(gh pr merge:*)",
       "Bash(git fetch:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(dir WebAPI)"
     ],
     "deny": [],
     "ask": [],

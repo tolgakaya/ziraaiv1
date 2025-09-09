@@ -10,18 +10,18 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION
 WORKDIR /src
 
-# Copy project files (using relative paths from PlantAnalysisWorkerService root)
-COPY ["PlantAnalysisWorkerService.csproj", "PlantAnalysisWorkerService/"]
-COPY ["../Business/Business.csproj", "Business/"]
-COPY ["../DataAccess/DataAccess.csproj", "DataAccess/"]
-COPY ["../Entities/Entities.csproj", "Entities/"]
-COPY ["../Core/Core.csproj", "Core/"]
+# Copy project files (using paths from repository root)
+COPY ["PlantAnalysisWorkerService/PlantAnalysisWorkerService.csproj", "PlantAnalysisWorkerService/"]
+COPY ["Business/Business.csproj", "Business/"]
+COPY ["DataAccess/DataAccess.csproj", "DataAccess/"]
+COPY ["Entities/Entities.csproj", "Entities/"]
+COPY ["Core/Core.csproj", "Core/"]
 
 # Restore dependencies
 RUN dotnet restore "PlantAnalysisWorkerService/PlantAnalysisWorkerService.csproj"
 
-# Copy all source code (from parent directory to get all dependencies)
-COPY .. .
+# Copy all source code (from repository root)
+COPY . .
 
 # Build
 WORKDIR "/src/PlantAnalysisWorkerService"
