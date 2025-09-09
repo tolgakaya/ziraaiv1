@@ -1,0 +1,82 @@
+# Production Environment Dockerfile
+# Optimized for production deployment with security and performance focus
+
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+WORKDIR /app
+EXPOSE 8080
+EXPOSE 8443
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy project files
+COPY ["WebAPI/WebAPI.csproj", "WebAPI/"]
+COPY ["Business/Business.csproj", "Business/"]
+COPY ["DataAccess/DataAccess.csproj", "DataAccess/"]
+COPY ["Entities/Entities.csproj", "Entities/"]
+COPY ["Core/Core.csproj", "Core/"]
+
+# Restore dependencies
+RUN dotnet restore "WebAPI/WebAPI.csproj"
+
+# Copy all source code
+COPY . .
+
+# Build for production with optimizations
+WORKDIR "/src/WebAPI"
+RUN dotnet build "WebAPI.csproj" -c Release -o /app/build
+
+# Publish with production optimizations
+FROM build AS publish
+RUN dotnet publish "WebAPI.csproj" -c Release -o /app/publish \
+    /p:UseAppHost=false \
+    /p:PublishTrimmed=false \
+    /p:PublishReadyToRun=true
+
+# Final stage - Production specific
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+
+# Copy configuration files
+COPY --from=build /src/WebAPI/appsettings.json .
+COPY --from=build /src/WebAPI/appsettings.Production.json .
+
+# Create secure uploads directory
+RUN mkdir -p /app/wwwroot/uploads/plant-images && \
+    chmod 750 /app/wwwroot/uploads/plant-images
+
+# Install only essential libraries (minimal attack surface)
+RUN apt-get update && apt-get install -y libicu-dev && rm -rf /var/lib/apt/lists/*
+
+# Production environment
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV DOTNET_RUNNING_IN_CONTAINER=true
+
+# Production logging (reduced verbosity)
+ENV Logging__LogLevel__Default=Warning
+ENV Logging__LogLevel__Microsoft=Error
+ENV Logging__LogLevel__System=Error
+ENV Logging__Console__IncludeScopes=false
+
+# Production service configuration
+ENV UseHangfire=true
+ENV UseRedis=true
+ENV UseRabbitMQ=true
+ENV UseElasticsearch=true
+ENV TaskScheduler__UseTaskScheduler=true
+ENV FileStorage__Provider=S3
+
+# Security headers and HTTPS
+ENV ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+ENV ASPNETCORE_HTTPS_PORT=8443
+
+# Create non-root user for security
+RUN groupadd -r ziraai && useradd --no-log-init -r -g ziraai ziraai
+RUN chown -R ziraai:ziraai /app
+USER ziraai
+
+# Production startup
+ENTRYPOINT ["dotnet", "WebAPI.dll"]

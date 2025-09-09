@@ -83,7 +83,8 @@
       "Bash($env:ASPNETCORE_ENVIRONMENT=\"Staging\")",
       "Bash($env:UseRedis=\"true\")",
       "Bash($env:CacheOptions__Port=\"38265\")",
-      "Bash($env:CacheOptions__Ssl=\"true\")"
+      "Bash($env:CacheOptions__Ssl=\"true\")",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": [],

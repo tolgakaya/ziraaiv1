@@ -15,12 +15,25 @@ namespace WebAPI
     public static class Program
     {
         /// <summary>
-        /// Configures Railway environment variables before configuration is built
+        /// Detects if running in a cloud environment (Railway, Azure, AWS, etc.)
         /// </summary>
-        private static void ConfigureRailwayEnvironmentVariables()
+        private static bool IsCloudEnvironment()
+        {
+            return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT")) ||
+                   !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME")) || // Azure
+                   !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME")) || // AWS
+                   !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")); // Container environments
+        }
+
+        /// <summary>
+        /// Configures cloud environment variables before configuration is built
+        /// </summary>
+        private static void ConfigureCloudEnvironmentVariables()
         {
             try
             {
+                var cloudProvider = DetectCloudProvider();
+                
                 // Check if we have DATABASE_CONNECTION_STRING but not ConnectionStrings__DArchPgContext
                 var databaseConnectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
                 var connectionStringFromConfig = Environment.GetEnvironmentVariable("ConnectionStrings__DArchPgContext");
@@ -28,13 +41,13 @@ namespace WebAPI
                 if (!string.IsNullOrEmpty(databaseConnectionString) && string.IsNullOrEmpty(connectionStringFromConfig))
                 {
                     Environment.SetEnvironmentVariable("ConnectionStrings__DArchPgContext", databaseConnectionString);
-                    Console.WriteLine($"[RAILWAY] Set ConnectionStrings__DArchPgContext from DATABASE_CONNECTION_STRING");
+                    Console.WriteLine($"[{cloudProvider}] Set ConnectionStrings__DArchPgContext from DATABASE_CONNECTION_STRING");
                 }
                 
                 // If ConnectionStrings__DArchPgContext is already set, use it
                 if (!string.IsNullOrEmpty(connectionStringFromConfig))
                 {
-                    Console.WriteLine($"[RAILWAY] Using existing ConnectionStrings__DArchPgContext");
+                    Console.WriteLine($"[{cloudProvider}] Using existing ConnectionStrings__DArchPgContext");
                 }
                 
                 // Log for debugging
@@ -44,13 +57,30 @@ namespace WebAPI
                     var truncated = finalConnectionString.Length > 50 
                         ? finalConnectionString.Substring(0, 50) + "..." 
                         : finalConnectionString;
-                    Console.WriteLine($"[RAILWAY] Final connection string: {truncated}");
+                    Console.WriteLine($"[{cloudProvider}] Final connection string: {truncated}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[RAILWAY] Error configuring environment: {ex.Message}");
+                Console.WriteLine($"[CLOUD] Error configuring environment: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Detects which cloud provider we're running on
+        /// </summary>
+        private static string DetectCloudProvider()
+        {
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT")))
+                return "RAILWAY";
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME")))
+                return "AZURE";
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME")))
+                return "AWS";
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")))
+                return "CONTAINER";
+            
+            return "LOCAL";
         }
 
         /// <summary>
@@ -81,12 +111,15 @@ namespace WebAPI
                 {
                     var env = hostingContext.HostingEnvironment;
                     
-                    // RAILWAY FIX: Set environment variables BEFORE configuration is built
+                    // CLOUD FIX: Set environment variables BEFORE configuration is built
                     // This ensures connection strings are available when the configuration is loaded
-                    ConfigureRailwayEnvironmentVariables();
+                    if (IsCloudEnvironment())
+                    {
+                        ConfigureCloudEnvironmentVariables();
+                    }
                     
                     // Load environment-specific .env file (for local development only)
-                    // Railway uses its own environment variable system
+                    // Cloud platforms provide environment variables directly
                     var envFile = $"../.env.{env.EnvironmentName.ToLower()}";
                     if (File.Exists(envFile))
                     {
@@ -102,8 +135,9 @@ namespace WebAPI
                     }
                     else
                     {
-                        // Production: Railway provides environment variables directly
-                        Console.WriteLine($"Using system environment variables ({env.EnvironmentName} mode)");
+                        // Cloud/Production: Platform provides environment variables directly
+                        var provider = IsCloudEnvironment() ? DetectCloudProvider() : "LOCAL";
+                        Console.WriteLine($"Using system environment variables ({env.EnvironmentName} mode - {provider})");
                     }
                     
                     // CRITICAL FIX: Load JSON files FIRST, then environment variables LAST
@@ -118,7 +152,7 @@ namespace WebAPI
                 .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
                 .ConfigureLogging(logging =>
                 {
-                    // RAILWAY FIX: Don't clear providers, keep console logging
+                    // CLOUD FIX: Don't clear providers, keep console logging for cloud environments
                     // logging.ClearProviders(); 
                     logging.SetMinimumLevel(LogLevel.Information);
                     logging.AddConsole();
