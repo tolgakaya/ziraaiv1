@@ -3,6 +3,7 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "../Dockerfile.webapi",
+    "buildContext": "..",
     "buildCommand": "echo 'Building ZiraAI WebAPI - REST API Service'"
   },
   "deploy": {

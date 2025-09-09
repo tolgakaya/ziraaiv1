@@ -3,6 +3,7 @@
   "build": {
     "builder": "DOCKERFILE",
     "dockerfilePath": "../Dockerfile.worker",
+    "buildContext": "..",
     "buildCommand": "echo 'Building PlantAnalysisWorkerService - Worker Service'"
   },
   "deploy": {
