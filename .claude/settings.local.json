@@ -79,7 +79,11 @@
       "WebFetch(domain:docs.railway.app)",
       "Bash(dotnet script:*)",
       "Bash(del \"C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\debug_config.cs\")",
-      "mcp__serena__replace_symbol_body"
+      "mcp__serena__replace_symbol_body",
+      "Bash($env:ASPNETCORE_ENVIRONMENT=\"Staging\")",
+      "Bash($env:UseRedis=\"true\")",
+      "Bash($env:CacheOptions__Port=\"38265\")",
+      "Bash($env:CacheOptions__Ssl=\"true\")"
     ],
     "deny": [],
     "ask": [],
