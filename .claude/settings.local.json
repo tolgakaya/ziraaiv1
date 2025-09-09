@@ -72,9 +72,14 @@
       "Bash(start /min powershell:*)",
       "Bash(timeout:*)",
       "Bash(dotnet ef migrations remove:*)",
-"Bash(git merge:*)",
+      "Bash(git merge:*)",
       "Bash(dotnet add:*)",
-      "mcp__serena__insert_before_symbol"
+      "mcp__serena__insert_before_symbol",
+      "Bash(dotnet publish:*)",
+      "WebFetch(domain:docs.railway.app)",
+      "Bash(dotnet script:*)",
+      "Bash(del \"C:\\Users\\Asus\\Documents\\Visual Studio 2022\\ziraai\\debug_config.cs\")",
+      "mcp__serena__replace_symbol_body"
     ],
     "deny": [],
     "ask": [],
