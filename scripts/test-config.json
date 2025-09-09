@@ -1,0 +1,119 @@
+{
+  "environments": {
+    "development": {
+      "baseUrl": "https://localhost:5001/api/v1",
+      "name": "Development",
+      "ssl": true,
+      "timeout": 30
+    },
+    "staging": {
+      "baseUrl": "https://ziraai-staging.up.railway.app/api/v1",
+      "name": "Staging",
+      "ssl": true,
+      "timeout": 60
+    },
+    "production": {
+      "baseUrl": "https://ziraai.up.railway.app/api/v1",
+      "name": "Production",
+      "ssl": true,
+      "timeout": 60
+    }
+  },
+  "testUsers": {
+    "admin": {
+      "email": "admin@ziraai.com",
+      "password": "Admin123!@#",
+      "role": "Admin",
+      "description": "System administrator with full access"
+    },
+    "farmer": {
+      "email": "farmer@ziraai.com",
+      "password": "Farmer123!@#",
+      "role": "Farmer",
+      "description": "Regular farmer user with standard access"
+    },
+    "sponsor": {
+      "email": "sponsor@ziraai.com",
+      "password": "Sponsor123!@#",
+      "role": "Sponsor",
+      "description": "Sponsor user with package management access"
+    },
+    "testUser": {
+      "emailPrefix": "test_",
+      "emailDomain": "@ziraai.com",
+      "password": "Test123!@#",
+      "fullName": "Test User",
+      "mobilePhones": "+905551234567",
+      "citizenId": "12345678901"
+    }
+  },
+  "testScenarios": {
+    "registration": {
+      "enabled": true,
+      "tests": [
+        "validRegistration",
+        "duplicateRegistration",
+        "invalidEmail",
+        "weakPassword",
+        "missingFields"
+      ]
+    },
+    "login": {
+      "enabled": true,
+      "tests": [
+        "validLogin",
+        "invalidPassword",
+        "nonExistentUser",
+        "emptyCredentials",
+        "sqlInjection"
+      ]
+    },
+    "tokenManagement": {
+      "enabled": true,
+      "tests": [
+        "tokenRefresh",
+        "tokenExpiry",
+        "invalidToken",
+        "tokenDecoding"
+      ]
+    },
+    "passwordRecovery": {
+      "enabled": true,
+      "tests": [
+        "forgotPassword",
+        "changePassword",
+        "invalidRecoveryEmail"
+      ]
+    },
+    "roleBasedAccess": {
+      "enabled": true,
+      "tests": [
+        "adminAccess",
+        "farmerAccess",
+        "sponsorAccess",
+        "unauthorizedAccess"
+      ]
+    },
+    "security": {
+      "enabled": true,
+      "tests": [
+        "sqlInjection",
+        "xssAttempts",
+        "rateLimiting",
+        "tokenHijacking"
+      ]
+    }
+  },
+  "reporting": {
+    "outputPath": "./test-results",
+    "formats": ["json", "html", "csv"],
+    "emailNotification": false,
+    "slackWebhook": "",
+    "verboseLogging": false
+  },
+  "performance": {
+    "maxResponseTime": 5000,
+    "concurrentUsers": 10,
+    "stressTestEnabled": false
+  }
+}
