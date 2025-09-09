@@ -24,8 +24,6 @@ RUN dotnet restore "WebAPI/WebAPI.csproj"
 # Copy all source code
 COPY . .
 
-# Debug: List files to see what's copied
-RUN ls -la /src/WebAPI/appsettings*
 
 # Build
 WORKDIR "/src/WebAPI"
@@ -42,11 +40,8 @@ ARG TARGET_ENVIRONMENT
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Copy all appsettings files
-COPY --from=build /src/WebAPI/appsettings.json .
-COPY --from=build /src/WebAPI/appsettings.Development.json .
-COPY --from=build /src/WebAPI/appsettings.Staging.json .
-COPY --from=build /src/WebAPI/appsettings.Production.json .
+# appsettings files are already included in the publish output
+# No need to copy them separately as dotnet publish includes them
 
 
 # Create uploads directory
