@@ -53,7 +53,14 @@ namespace Business.DependencyResolvers
             builder.Register(c =>
             {
                 var config = c.Resolve<IConfiguration>();
-                var connectionString = config.GetConnectionString("DArchPgContext");
+                
+                // RAILWAY FIX: Get connection string from environment variable first, then fallback to config
+                var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING") 
+                    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DArchPgContext")
+                    ?? config.GetConnectionString("DArchPgContext");
+                
+                Console.WriteLine($"[AUTOFAC] Using connection string: {connectionString?.Substring(0, Math.Min(50, connectionString?.Length ?? 0))}...");
+                
                 var optionsBuilder = new DbContextOptionsBuilder<ProjectDbContext>();
                 optionsBuilder.UseNpgsql(connectionString);
                 return new ProjectDbContext(optionsBuilder.Options, config);
