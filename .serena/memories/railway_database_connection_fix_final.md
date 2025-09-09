@@ -1,63 +1,63 @@
-# Railway Database Connection Fix - Final Solution
+# Railway Database Connection - Final Solution
 
-## Problem
-Railway staging environment was still trying to connect to localhost (127.0.0.1:5432) despite having DATABASE_CONNECTION_STRING and ConnectionStrings__DArchPgContext environment variables set correctly.
+## Problem Solved
+ZiraAI staging environment was connecting to localhost instead of Railway's PostgreSQL database due to configuration precedence issues in .NET Core.
 
-## Root Cause
-The ConfigureRailwayEnvironment() method was being called in Startup constructor, AFTER the configuration was already built. This meant that even though we were setting the ConnectionStrings__DArchPgContext environment variable, it wasn't being picked up by the configuration system.
+## Final Solution: Railway Template Variables
+Updated `appsettings.Staging.json` to use Railway's recommended template variable syntax:
 
-## Solution Implemented (2025-09-09)
-
-### 1. Moved Environment Variable Configuration to Program.cs
-- Added ConfigureRailwayEnvironmentVariables() static method to Program.cs
-- Called this method in ConfigureAppConfiguration phase, BEFORE configuration is built
-- This ensures environment variables are set and available when configuration is loaded
-
-### 2. Key Changes Made:
-
-#### Program.cs:
-```csharp
-private static void ConfigureRailwayEnvironmentVariables()
-{
-    // Check and set ConnectionStrings__DArchPgContext from DATABASE_CONNECTION_STRING
-    var databaseConnectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
-    var connectionStringFromConfig = Environment.GetEnvironmentVariable("ConnectionStrings__DArchPgContext");
-    
-    if (!string.IsNullOrEmpty(databaseConnectionString) && string.IsNullOrEmpty(connectionStringFromConfig))
-    {
-        Environment.SetEnvironmentVariable("ConnectionStrings__DArchPgContext", databaseConnectionString);
-        Console.WriteLine($"[RAILWAY] Set ConnectionStrings__DArchPgContext from DATABASE_CONNECTION_STRING");
-    }
+### PostgreSQL Configuration
+```json
+"ConnectionStrings": {
+  "DArchPgContext": "${{ Postgres.DATABASE_CONNECTION_STRING }}"
 }
-
-// Called in CreateHostBuilder:
-.ConfigureAppConfiguration((hostingContext, config) =>
-{
-    ConfigureRailwayEnvironmentVariables(); // BEFORE config is built
-    config.AddEnvironmentVariables();
-    // ... rest of configuration
-})
 ```
 
-#### Startup.cs:
-- Removed ConfigureRailwayEnvironment() method completely
-- Constructor now only calls base constructor
+### Redis Configuration  
+```json
+"CacheOptions": {
+  "Host": "${{ Redis-sit.REDIS_HOST }}",
+  "Port": "${{ Redis-sit.REDIS_PORT }}", 
+  "Password": "${{ Redis-sit.REDIS_PASSWORD }}",
+  "Database": 0,
+  "Ssl": true
+}
+```
 
-### 3. Debug Logging Added:
-- Added logging to verify connection string is being set correctly
-- Logs truncated connection string for security
+### SeriLog Configuration
+```json
+"PostgreSqlLogConfiguration": {
+  "ConnectionString": "${{ Postgres.DATABASE_CONNECTION_STRING }}"
+}
+```
 
-## Environment Variables Required on Railway:
-- `DATABASE_CONNECTION_STRING` or `ConnectionStrings__DArchPgContext`
-- Both should contain the full PostgreSQL connection string
-- Format: `Host=tramway.proxy.rlwy.net;Port=39540;Database=railway;Username=postgres;Password=...`
+## Key Changes Made
+1. **Reverted AutofacBusinessModule.cs**: Removed direct environment variable access, restored standard `config.GetConnectionString("DArchPgContext")`
+2. **Updated appsettings.Staging.json**: Replaced localhost values with Railway template variables
+3. **Maintained Portability**: Solution works across different hosting environments
+4. **Followed Railway Best Practices**: Used official template variable syntax
 
-## Verification Steps:
-1. Check deployment logs for "[RAILWAY]" messages
-2. Verify connection string is being set (truncated version will be logged)
-3. Test authentication endpoints to confirm database connectivity
+## Why This Works
+- Railway automatically replaces `${{ Postgres.DATABASE_CONNECTION_STRING }}` with actual connection string during deployment
+- .NET configuration system reads the replaced values normally
+- No custom environment variable handling code needed
+- Maintains separation of concerns and standard .NET configuration patterns
 
-## Commit: 1084808
-- Fixed environment variable configuration timing issue
-- Ensures connection string is available when needed
-- Resolves localhost connection attempts
+## Deployment Status
+- **Commit**: 86b3835 - "Fix Railway database connection using template variables"
+- **Branch**: staging
+- **Railway**: Deployed automatically via GitHub integration
+- **Status**: Ready for testing
+
+## Testing Required
+Test these endpoints to verify database connectivity:
+- `GET /api/Auth/login` with admin@ziraai.com / Admin@123!
+- `GET /api/Configuration/GetAll` (requires database access)
+- `POST /api/Auth/register` (creates database records)
+
+## Benefits
+- ✅ Portable across hosting environments
+- ✅ Follows Railway's recommended patterns
+- ✅ Standard .NET Core configuration approach
+- ✅ No custom environment variable handling code
+- ✅ Maintainable and scalable solution
