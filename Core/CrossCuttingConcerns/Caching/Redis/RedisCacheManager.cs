@@ -39,20 +39,26 @@ namespace Core.CrossCuttingConcerns.Caching.Redis
             // Additional SSL configuration for Railway Redis
             if (cacheConfig.Ssl)
             {
-                configurationOptions.SslHost = cacheConfig.Host;
-                // CRITICAL FIX: Complete SSL configuration bypass for Railway Redis
+                // RAILWAY REDIS SPECIFIC FIX: Don't set SslHost, it causes issues with Railway's certificate
+                // configurationOptions.SslHost = cacheConfig.Host; // REMOVED - causes certificate issues
+                
+                // Certificate validation callback - this should accept all certificates
                 configurationOptions.CertificateValidation += (sender, certificate, chain, errors) => {
-                    Console.WriteLine($"[REDIS] Certificate validation called - bypassing all errors");
-                    return true; // Accept all certificates
+                    Console.WriteLine($"[REDIS] Certificate validation called - accepting certificate (errors: {errors})");
+                    return true; // Accept all certificates regardless of validation errors
                 };
+                
+                // Certificate selection - use null (default)
                 configurationOptions.CertificateSelection += (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => {
-                    Console.WriteLine($"[REDIS] Certificate selection called - using null");
+                    Console.WriteLine($"[REDIS] Certificate selection called for {targetHost} - using default");
                     return null;
                 };
-                // Additional SSL settings
-                configurationOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
+                
+                // Railway-specific SSL configuration
+                configurationOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
                 configurationOptions.CheckCertificateRevocation = false;
-                Console.WriteLine($"[REDIS] SSL enabled with SslHost: {cacheConfig.Host} (certificate validation completely bypassed)");
+                
+                Console.WriteLine($"[REDIS] Railway Redis SSL enabled without SslHost restriction");
             }
             
             _redis = ConnectionMultiplexer.Connect(configurationOptions);
