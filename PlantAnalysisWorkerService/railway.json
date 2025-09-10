@@ -1,8 +1,7 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "./Dockerfile.worker"
+    "builder": "DOCKERFILE"
   },
   "deploy": {
     "startCommand": "dotnet PlantAnalysisWorkerService.dll",
@@ -10,24 +9,5 @@
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
-  },
-  "environments": {
-    "staging": {
-      "variables": {
-        "ASPNETCORE_ENVIRONMENT": "Staging"
-      }
-    },
-    "production": {
-      "variables": {
-        "ASPNETCORE_ENVIRONMENT": "Production"
-      }
-    }
-  },
-  "watchPaths": [
-    "PlantAnalysisWorkerService/**",
-    "Business/**",
-    "Core/**",
-    "DataAccess/**",
-    "Entities/**"
-  ]
+  }
 }
