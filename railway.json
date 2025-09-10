@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "environments": {
+    "production": {
+      "build": {
+        "builder": "DOCKERFILE"
+      }
+    },
+    "staging": {
+      "build": {
+        "builder": "DOCKERFILE"
+      }
+    }
+  }
+}

@@ -1,7 +1,41 @@
 # Railway Deployment Guide for ZiraAI
 
 ## Overview
-This guide explains how to configure and deploy ZiraAI on Railway with proper environment variable management.
+This guide explains how to configure and deploy ZiraAI on Railway with proper environment variable management and Docker build configuration for monorepo structure.
+
+## Docker Configuration for Monorepo
+
+### Build Configuration
+Railway requires specific configuration for building multiple services from a monorepo:
+
+#### Required Environment Variables for Each Service:
+
+**Worker Service:**
+```bash
+RAILWAY_DOCKERFILE_PATH=Dockerfile.worker
+```
+
+**WebAPI Service:**
+```bash
+RAILWAY_DOCKERFILE_PATH=Dockerfile.webapi
+```
+
+### File Structure
+```
+ziraai/
+├── Dockerfile.worker          # Worker service Dockerfile (at root)
+├── Dockerfile.webapi          # WebAPI Dockerfile (at root)
+├── railway.json               # Root Railway config
+├── PlantAnalysisWorkerService/
+│   └── railway.json          # Service-specific deployment config
+└── WebAPI/
+    └── railway.json          # Service-specific deployment config
+```
+
+### Important Notes:
+- **Dockerfiles must be at repository root** for access to all project dependencies
+- **Root Directory in Railway Settings must be empty** (use repository root as build context)
+- **RAILWAY_DOCKERFILE_PATH** tells Railway which Dockerfile to use for each service
 
 ## Railway Environment Variables Setup
 
@@ -161,7 +195,25 @@ Host=host;Port=port;Database=database;Username=user;Password=password;SSL Mode=R
 
 ## Deployment Process
 
-### 1. Initial Setup
+### 1. Configure Docker Build (IMPORTANT - Do this first!)
+
+#### For Worker Service:
+1. Go to Railway Dashboard
+2. Select PlantAnalysisWorkerService
+3. Go to **Variables** tab
+4. Add: `RAILWAY_DOCKERFILE_PATH=Dockerfile.worker`
+5. Go to **Settings** tab
+6. Ensure **Root Directory** is empty (not set)
+
+#### For WebAPI Service:
+1. Go to Railway Dashboard
+2. Select WebAPI service
+3. Go to **Variables** tab
+4. Add: `RAILWAY_DOCKERFILE_PATH=Dockerfile.webapi`
+5. Go to **Settings** tab
+6. Ensure **Root Directory** is empty (not set)
+
+### 2. Initial Setup
 ```bash
 # Link your GitHub repository
 railway login
@@ -169,7 +221,30 @@ railway link
 railway up
 ```
 
-### 2. Set Environment Variables
+### 3. Configure Watch Paths (Optional but Recommended)
+To prevent unnecessary rebuilds when unrelated files change:
+
+**Worker Service Watch Paths:**
+```
+PlantAnalysisWorkerService/**
+Business/**
+Core/**
+DataAccess/**
+Entities/**
+```
+
+**WebAPI Watch Paths:**
+```
+WebAPI/**
+Business/**
+Core/**
+DataAccess/**
+Entities/**
+```
+
+Set these in Railway Dashboard > Service > Settings > Watch Paths
+
+### 4. Set Environment Variables
 ```bash
 # Set all required variables
 railway variables set ASPNETCORE_ENVIRONMENT=Staging
@@ -177,7 +252,7 @@ railway variables set JWT_SECRET_KEY="your-secret-key"
 # ... add all other variables
 ```
 
-### 3. Deploy
+### 5. Deploy
 ```bash
 # Manual deploy
 railway up
@@ -202,17 +277,25 @@ railway logs
 
 ### Common Issues
 
-#### 1. Database Connection Failed
+#### 1. Docker Build Fails - "Core/Core.csproj not found"
+**Cause:** Railway is using wrong build context
+**Solution:**
+- Ensure `RAILWAY_DOCKERFILE_PATH` environment variable is set
+- Verify Root Directory is empty in Railway Settings
+- Dockerfiles must be at repository root
+- Check that all project references use correct paths
+
+#### 2. Database Connection Failed
 - Check `DATABASE_CONNECTION_STRING` format
 - Ensure SSL Mode is set to `Require`
 - Verify Railway PostgreSQL is running
 
-#### 2. Environment Variables Not Loading
+#### 3. Environment Variables Not Loading
 - Check variable names (case-sensitive)
 - Restart service after adding variables
 - Verify in logs: "Using system environment variables"
 
-#### 3. File Upload Issues
+#### 4. File Upload Issues
 - Verify `FILE_STORAGE_PROVIDER` is set
 - Check API keys for storage providers
 - Ensure provider URLs are accessible
@@ -254,8 +337,63 @@ railway open
 railway status
 ```
 
+## Railway-Specific Files
+
+### railway.json (Root)
+```json
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "environments": {
+    "production": {
+      "build": {
+        "builder": "DOCKERFILE"
+      }
+    },
+    "staging": {
+      "build": {
+        "builder": "DOCKERFILE"
+      }
+    }
+  }
+}
+```
+
+### PlantAnalysisWorkerService/railway.json
+```json
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE"
+  },
+  "deploy": {
+    "startCommand": "dotnet PlantAnalysisWorkerService.dll",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
+```
+
+### WebAPI/railway.json
+```json
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE"
+  },
+  "deploy": {
+    "startCommand": "dotnet WebAPI.dll",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
+```
+
 ## Support Resources
 
 - [Railway Documentation](https://docs.railway.app)
 - [Railway Discord](https://discord.gg/railway)
-- [ZiraAI Repository](https://github.com/yourusername/ziraai)
+- [ZiraAI Repository](https://github.com/tolgakaya/ziraaiv1)
