@@ -35,38 +35,58 @@ static void ConfigureCloudEnvironmentVariables()
     {
         var cloudProvider = DetectCloudProvider();
         
-        // Check if we have DATABASE_CONNECTION_STRING but not ConnectionStrings__DArchPgContext
-        var databaseConnectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
+        // Use Railway configuration helper to get proper connection string
+        var databaseConnectionString = Core.Utilities.Helpers.RailwayConfigurationHelper.GetDatabaseConnectionString();
         var connectionStringFromConfig = Environment.GetEnvironmentVariable("ConnectionStrings__DArchPgContext");
         
-        if (!string.IsNullOrEmpty(databaseConnectionString) && string.IsNullOrEmpty(connectionStringFromConfig))
+        // Debug: Log Railway environment variables
+        var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+        var pgHost = Environment.GetEnvironmentVariable("PGHOST");
+        var railwayEnv = Environment.GetEnvironmentVariable("RAILWAY_ENVIRONMENT");
+        
+        Console.WriteLine($"[{cloudProvider}] Debug - DATABASE_URL exists: {!string.IsNullOrEmpty(databaseUrl)}");
+        Console.WriteLine($"[{cloudProvider}] Debug - PGHOST exists: {!string.IsNullOrEmpty(pgHost)}");
+        Console.WriteLine($"[{cloudProvider}] Debug - RAILWAY_ENVIRONMENT: {railwayEnv ?? "not set"}");
+        Console.WriteLine($"[{cloudProvider}] Debug - ASPNETCORE_ENVIRONMENT: {Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "not set"}");
+        
+        if (!string.IsNullOrEmpty(databaseConnectionString))
         {
             Environment.SetEnvironmentVariable("ConnectionStrings__DArchPgContext", databaseConnectionString);
-            Console.WriteLine($"[{cloudProvider}] Set ConnectionStrings__DArchPgContext from DATABASE_CONNECTION_STRING");
-        }
-        
-        // If ConnectionStrings__DArchPgContext is already set, use it
-        if (!string.IsNullOrEmpty(connectionStringFromConfig))
-        {
-            Console.WriteLine($"[{cloudProvider}] Using existing ConnectionStrings__DArchPgContext");
-        }
-        
-        // Also set TaskScheduler connection string
-        var taskSchedulerConnectionString = Environment.GetEnvironmentVariable("TaskSchedulerOptions__ConnectionString");
-        if (!string.IsNullOrEmpty(databaseConnectionString) && string.IsNullOrEmpty(taskSchedulerConnectionString))
-        {
+            Console.WriteLine($"[{cloudProvider}] Set ConnectionStrings__DArchPgContext from Railway helper");
+            
+            // Also set TaskScheduler connection string
             Environment.SetEnvironmentVariable("TaskSchedulerOptions__ConnectionString", databaseConnectionString);
-            Console.WriteLine($"[{cloudProvider}] Set TaskSchedulerOptions__ConnectionString from DATABASE_CONNECTION_STRING");
+            Console.WriteLine($"[{cloudProvider}] Set TaskSchedulerOptions__ConnectionString from Railway helper");
+        }
+        else if (!string.IsNullOrEmpty(connectionStringFromConfig))
+        {
+            Console.WriteLine($"[{cloudProvider}] Using existing ConnectionStrings__DArchPgContext from environment");
+        }
+        else
+        {
+            Console.WriteLine($"[{cloudProvider}] No database connection string available - will use appsettings.json");
         }
         
-        // Log for debugging
+        // Log connection string for debugging (safely)
         var finalConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DArchPgContext");
         if (!string.IsNullOrEmpty(finalConnectionString))
         {
-            var truncated = finalConnectionString.Length > 50 
-                ? finalConnectionString.Substring(0, 50) + "..." 
-                : finalConnectionString;
-            Console.WriteLine($"[{cloudProvider}] Final connection string: {truncated}");
+            // Remove password for logging
+            var safeConnectionString = finalConnectionString;
+            if (safeConnectionString.Contains("Password="))
+            {
+                var parts = safeConnectionString.Split(';');
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    if (parts[i].StartsWith("Password="))
+                    {
+                        parts[i] = "Password=***";
+                        break;
+                    }
+                }
+                safeConnectionString = string.Join(";", parts);
+            }
+            Console.WriteLine($"[{cloudProvider}] Final connection string: {safeConnectionString}");
         }
     }
     catch (Exception ex)

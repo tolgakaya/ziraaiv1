@@ -8,6 +8,25 @@ namespace Core.Utilities.Helpers
     public static class RailwayConfigurationHelper
     {
         /// <summary>
+        /// Cleans connection string by removing line breaks and extra whitespace
+        /// </summary>
+        /// <param name="connectionString">Raw connection string that might contain line breaks</param>
+        /// <returns>Cleaned connection string</returns>
+        private static string CleanConnectionString(string connectionString)
+        {
+            if (string.IsNullOrEmpty(connectionString))
+                return connectionString;
+            
+            // Remove line breaks, carriage returns, and normalize whitespace
+            return connectionString
+                .Replace("\r\n", "")
+                .Replace("\r", "")
+                .Replace("\n", "")
+                .Replace("  ", " ") // Replace multiple spaces with single space
+                .Trim();
+        }
+
+        /// <summary>
         /// Converts Railway DATABASE_URL to .NET connection string format
         /// </summary>
         /// <param name="databaseUrl">Railway DATABASE_URL in format: postgresql://user:pass@host:port/database</param>
@@ -52,7 +71,10 @@ namespace Core.Utilities.Helpers
             
             var directConnectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
             if (!string.IsNullOrEmpty(directConnectionString))
-                return directConnectionString;
+            {
+                // Clean up any line breaks or extra whitespace that might come from Railway environment variables
+                return CleanConnectionString(directConnectionString);
+            }
 
             var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
             if (!string.IsNullOrEmpty(databaseUrl))
