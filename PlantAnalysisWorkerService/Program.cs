@@ -35,14 +35,14 @@ static void ConfigureCloudEnvironmentVariables()
     {
         var cloudProvider = DetectCloudProvider();
         
-        // Check if we have DATABASE_CONNECTION_STRING but not ConnectionStrings__DArchPgContext
-        var databaseConnectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING");
+        // Use Railway configuration helper to get proper connection string
+        var databaseConnectionString = Core.Utilities.Helpers.RailwayConfigurationHelper.GetDatabaseConnectionString();
         var connectionStringFromConfig = Environment.GetEnvironmentVariable("ConnectionStrings__DArchPgContext");
         
         if (!string.IsNullOrEmpty(databaseConnectionString) && string.IsNullOrEmpty(connectionStringFromConfig))
         {
             Environment.SetEnvironmentVariable("ConnectionStrings__DArchPgContext", databaseConnectionString);
-            Console.WriteLine($"[{cloudProvider}] Set ConnectionStrings__DArchPgContext from DATABASE_CONNECTION_STRING");
+            Console.WriteLine($"[{cloudProvider}] Set ConnectionStrings__DArchPgContext from Railway helper");
         }
         
         // If ConnectionStrings__DArchPgContext is already set, use it
@@ -56,7 +56,7 @@ static void ConfigureCloudEnvironmentVariables()
         if (!string.IsNullOrEmpty(databaseConnectionString) && string.IsNullOrEmpty(taskSchedulerConnectionString))
         {
             Environment.SetEnvironmentVariable("TaskSchedulerOptions__ConnectionString", databaseConnectionString);
-            Console.WriteLine($"[{cloudProvider}] Set TaskSchedulerOptions__ConnectionString from DATABASE_CONNECTION_STRING");
+            Console.WriteLine($"[{cloudProvider}] Set TaskSchedulerOptions__ConnectionString from Railway helper");
         }
         
         // Log for debugging
