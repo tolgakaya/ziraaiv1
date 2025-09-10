@@ -85,7 +85,13 @@
       "Bash($env:CacheOptions__Port=\"38265\")",
       "Bash($env:CacheOptions__Ssl=\"true\")",
       "Bash(git pull:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git stash:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(git fetch:*)",
+      "WebSearch",
+      "Bash(dir WebAPI)"
     ],
     "deny": [],
     "ask": [],
