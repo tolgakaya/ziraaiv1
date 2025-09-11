@@ -474,3 +474,7 @@ UiPreparation/.DS_Store
 .env.production
 *.env
 !.env.*.template
+
+# Railway environment configuration files
+.env.railway.*
+!.env.railway.*.template
