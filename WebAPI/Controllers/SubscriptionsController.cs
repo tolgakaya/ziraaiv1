@@ -137,10 +137,28 @@ namespace WebAPI.Controllers
             if (!userId.HasValue)
                 return Unauthorized();
 
-            // Check if user already has an active subscription
+            // Check if user already has an active non-trial subscription
             var existingSubscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId.Value);
             if (existingSubscription != null)
-                return BadRequest(new ErrorResult("You already have an active subscription. Please cancel it first."));
+            {
+                // Allow upgrade from trial to paid subscription
+                if (existingSubscription.IsTrialSubscription && !request.IsTrialSubscription)
+                {
+                    // Cancel the trial subscription
+                    existingSubscription.IsActive = false;
+                    existingSubscription.Status = "Upgraded";
+                    existingSubscription.CancellationDate = DateTime.UtcNow;
+                    existingSubscription.CancellationReason = "Upgraded to paid subscription";
+                    existingSubscription.UpdatedDate = DateTime.UtcNow;
+                    existingSubscription.UpdatedUserId = userId.Value;
+                    
+                    _userSubscriptionRepository.Update(existingSubscription);
+                }
+                else
+                {
+                    return BadRequest(new ErrorResult("You already have an active subscription. Please cancel it first."));
+                }
+            }
 
             // Get the tier
             var tier = await _tierRepository.GetAsync(t => t.Id == request.SubscriptionTierId && t.IsActive);
