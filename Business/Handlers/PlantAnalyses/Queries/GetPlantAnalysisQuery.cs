@@ -30,6 +30,36 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 _fileStorageService = fileStorageService;
             }
 
+            private static List<string> TryDeserializeStringArray(string jsonString)
+            {
+                if (string.IsNullOrEmpty(jsonString))
+                    return null;
+
+                try
+                {
+                    return JsonConvert.DeserializeObject<string[]>(jsonString)?.ToList();
+                }
+                catch (JsonException)
+                {
+                    return null;
+                }
+            }
+
+            private static T TryDeserializeObject<T>(string jsonString) where T : class
+            {
+                if (string.IsNullOrEmpty(jsonString))
+                    return null;
+
+                try
+                {
+                    return JsonConvert.DeserializeObject<T>(jsonString);
+                }
+                catch (JsonException)
+                {
+                    return null;
+                }
+            }
+
             public async Task<IDataResult<PlantAnalysisResponseDto>> Handle(GetPlantAnalysisQuery request, CancellationToken cancellationToken)
             {
                 var plantAnalysis = await _plantAnalysisRepository.GetAsync(p => p.Id == request.Id && p.Status);
@@ -90,12 +120,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         {
                             VigorScore = plantAnalysis.VigorScore.Value,
                             Severity = plantAnalysis.HealthSeverity,
-                            StressIndicators = !string.IsNullOrEmpty(plantAnalysis.StressIndicators)
-                                ? JsonConvert.DeserializeObject<string[]>(plantAnalysis.StressIndicators)?.ToList()
-                                : null,
-                            DiseaseSymptoms = !string.IsNullOrEmpty(plantAnalysis.DiseaseSymptoms)
-                                ? JsonConvert.DeserializeObject<string[]>(plantAnalysis.DiseaseSymptoms)?.ToList()
-                                : null
+                            StressIndicators = TryDeserializeStringArray(plantAnalysis.StressIndicators),
+                            DiseaseSymptoms = TryDeserializeStringArray(plantAnalysis.DiseaseSymptoms)
                         }
                         : null,
                     
@@ -144,39 +170,36 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         : null,
                     
                     // Recommendations
-                    Recommendations = !string.IsNullOrEmpty(plantAnalysis.Recommendations)
-                        ? JsonConvert.DeserializeObject<RecommendationsDto>(plantAnalysis.Recommendations)
-                        : null,
-                    
+                    Recommendations = TryDeserializeObject<RecommendationsDto>(plantAnalysis.Recommendations),
+
                     // Cross Factor Insights
-                    CrossFactorInsights = !string.IsNullOrEmpty(plantAnalysis.CrossFactorInsights)
-                        ? JsonConvert.DeserializeObject<List<CrossFactorInsightDto>>(plantAnalysis.CrossFactorInsights)
-                        : null,
-                    
+                    CrossFactorInsights = TryDeserializeObject<List<CrossFactorInsightDto>>(plantAnalysis.CrossFactorInsights),
+
                     // Detailed analysis data (full JSON for reference)
-                    DetailedAnalysis = !string.IsNullOrEmpty(plantAnalysis.DetailedAnalysisData)
-                        ? JsonConvert.DeserializeObject<DetailedPlantAnalysisDto>(plantAnalysis.DetailedAnalysisData)
-                        : new DetailedPlantAnalysisDto(),
-                    
+                    DetailedAnalysis = TryDeserializeObject<DetailedPlantAnalysisDto>(plantAnalysis.DetailedAnalysisData) ?? new DetailedPlantAnalysisDto(),
+
                     // Legacy fields for backward compatibility
                     PlantType = plantAnalysis.PlantType,
                     GrowthStage = plantAnalysis.GrowthStage,
-                    ElementDeficiencies = !string.IsNullOrEmpty(plantAnalysis.ElementDeficiencies) 
-                        ? JsonConvert.DeserializeObject<List<ElementDeficiencyDto>>(plantAnalysis.ElementDeficiencies) 
-                        : new List<ElementDeficiencyDto>(),
-                    Diseases = !string.IsNullOrEmpty(plantAnalysis.Diseases) 
-                        ? JsonConvert.DeserializeObject<List<DiseaseDto>>(plantAnalysis.Diseases) 
-                        : new List<DiseaseDto>(),
-                    Pests = !string.IsNullOrEmpty(plantAnalysis.Pests) 
-                        ? JsonConvert.DeserializeObject<List<PestDto>>(plantAnalysis.Pests) 
-                        : new List<PestDto>()
+                    ElementDeficiencies = TryDeserializeObject<List<ElementDeficiencyDto>>(plantAnalysis.ElementDeficiencies) ?? new List<ElementDeficiencyDto>(),
+                    Diseases = TryDeserializeObject<List<DiseaseDto>>(plantAnalysis.Diseases) ?? new List<DiseaseDto>(),
+                    Pests = TryDeserializeObject<List<PestDto>>(plantAnalysis.Pests) ?? new List<PestDto>()
                 };
 
                 if (!string.IsNullOrEmpty(plantAnalysis.AnalysisResult))
                 {
-                    var analysisResult = JsonConvert.DeserializeObject<dynamic>(plantAnalysis.AnalysisResult);
-                    response.OverallAnalysis = analysisResult?.OverallAnalysis;
-                    response.Recommendations = analysisResult?.Recommendations;
+                    try
+                    {
+                        var analysisResult = JsonConvert.DeserializeObject<dynamic>(plantAnalysis.AnalysisResult);
+                        response.OverallAnalysis = analysisResult?.OverallAnalysis;
+                        response.Recommendations = analysisResult?.Recommendations;
+                    }
+                    catch (JsonException)
+                    {
+                        // If JSON parsing fails, skip and continue with null values
+                        response.OverallAnalysis = null;
+                        response.Recommendations = null;
+                    }
                 }
 
                 return new SuccessDataResult<PlantAnalysisResponseDto>(response);
