@@ -45,40 +45,108 @@ namespace Entities.Concrete
         public string ContactEmail { get; set; }
         public string AdditionalInfo { get; set; } // JSON object
         
-        // Plant Identification
+        // Plant Identification - Enhanced
         public string PlantSpecies { get; set; }
         public string PlantVariety { get; set; }
         public string GrowthStage { get; set; }
         public decimal? IdentificationConfidence { get; set; }
+        public string IdentifyingFeatures { get; set; } // JSON array - NEW
+        public string VisibleParts { get; set; } // JSON array - NEW
         
-        // Health Assessment
+        // Health Assessment - Enhanced
         public int? VigorScore { get; set; }
+        public string LeafColor { get; set; } // NEW
+        public string LeafTexture { get; set; } // NEW
+        public string GrowthPattern { get; set; } // NEW
+        public string StructuralIntegrity { get; set; } // NEW
         public string HealthSeverity { get; set; }
         public string StressIndicators { get; set; } // JSON array
         public string DiseaseSymptoms { get; set; } // JSON array
         
-        // Nutrient Status
+        // Nutrient Status - Enhanced
+        public string NitrogenStatus { get; set; } // NEW
+        public string PhosphorusStatus { get; set; } // NEW
+        public string PotassiumStatus { get; set; } // NEW
+        public string CalciumStatus { get; set; } // NEW
+        public string MagnesiumStatus { get; set; } // NEW
+        public string IronStatus { get; set; } // NEW
         public string PrimaryDeficiency { get; set; }
-        public string NutrientStatus { get; set; } // JSON object
+        public string SecondaryDeficiencies { get; set; } // JSON array - NEW
+        public string NutrientSeverity { get; set; } // NEW
+        public string NutrientStatus { get; set; } // JSON object - Full details
+        
+        // Pest & Disease - Enhanced
+        public string PestsDetected { get; set; } // JSON array - NEW
+        public string DiseasesDetected { get; set; } // JSON array - NEW
+        public string DamagePattern { get; set; } // NEW
+        public decimal? AffectedAreaPercentage { get; set; } // NEW
+        public string SpreadRisk { get; set; } // NEW
+        public string PrimaryIssue { get; set; } // NEW
+        
+        // Environmental Stress - NEW Section
+        public string WaterStatus { get; set; } // NEW
+        public string TemperatureStress { get; set; } // NEW
+        public string LightStress { get; set; } // NEW
+        public string PhysicalDamage { get; set; } // NEW
+        public string ChemicalDamage { get; set; } // NEW
+        public string SoilIndicators { get; set; } // NEW
+        public string PrimaryStressor { get; set; } // NEW
         
         // Summary
         public int? OverallHealthScore { get; set; }
         public string PrimaryConcern { get; set; }
+        public string SecondaryConcerns { get; set; } // JSON array - NEW
+        public int? CriticalIssuesCount { get; set; } // NEW
         public string Prognosis { get; set; }
         public string EstimatedYieldImpact { get; set; }
         public decimal? ConfidenceLevel { get; set; }
         
-        // Processing Metadata
+        // Cross-Factor Insights - Enhanced
+        public string CrossFactorInsights { get; set; } // JSON array with detailed structure
+        
+        // Recommendations - Enhanced Structure
+        public string ImmediateRecommendations { get; set; } // JSON array - NEW
+        public string ShortTermRecommendations { get; set; } // JSON array - NEW
+        public string PreventiveRecommendations { get; set; } // JSON array - NEW
+        public string MonitoringRecommendations { get; set; } // JSON array - NEW
+        public string Recommendations { get; set; } // JSON object - Full structure
+        
+        // Image Metadata - NEW
+        public string ImageFormat { get; set; } // NEW
+        public string ImageUrl { get; set; } // NEW
+        public long? ImageSizeBytes { get; set; } // NEW
+        public decimal? ImageSizeKb { get; set; }
+        public decimal? ImageSizeMb { get; set; } // NEW
+        public DateTime? ImageUploadTimestamp { get; set; } // NEW
+        
+        // RabbitMQ Metadata - NEW
+        public string CorrelationId { get; set; } // NEW
+        public string ResponseQueue { get; set; } // NEW
+        public string MessagePriority { get; set; } // NEW
+        public int? RetryCount { get; set; } // NEW
+        public DateTime? ReceivedAt { get; set; } // NEW
+        public string MessageId { get; set; } // NEW
+        public string RoutingKey { get; set; } // NEW
+        
+        // Processing Metadata - Enhanced
         public string AiModel { get; set; }
+        public string WorkflowVersion { get; set; } // NEW
+        public DateTime? ProcessingTimestamp { get; set; } // NEW
+        public long? ProcessingTimeMs { get; set; } // NEW
+        public bool? ParseSuccess { get; set; } // NEW
         public decimal? TotalTokens { get; set; }
         public decimal? TotalCostUsd { get; set; }
         public decimal? TotalCostTry { get; set; }
-        public decimal? ImageSizeKb { get; set; }
+        
+        // Response Status - NEW
+        public bool? Success { get; set; } // NEW
+        public string Message { get; set; } // NEW
+        public bool? Error { get; set; } // NEW
+        public string ErrorMessage { get; set; } // NEW
+        public string ErrorType { get; set; } // NEW
         
         // Full Response Storage
         public string DetailedAnalysisData { get; set; } // Full analysis JSON
-        public string Recommendations { get; set; } // JSON object
-        public string CrossFactorInsights { get; set; } // JSON array
         
         // Legacy fields for backward compatibility
         public string PlantType { get; set; }
