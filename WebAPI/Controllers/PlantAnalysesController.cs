@@ -320,7 +320,46 @@ namespace WebAPI.Controllers
             if (result.Data.UserId == userId)
                 return Ok(result);
             
-            return Forbid("You don't have permission to view this analysis");
+            return Forbid();
+        }
+
+        /// <summary>
+        /// Get detailed plant analysis by ID for mobile app
+        /// Returns comprehensive analysis with all AI insights and recommendations
+        /// </summary>
+        /// <param name="id">Analysis ID</param>
+        /// <returns>Detailed plant analysis with structured data</returns>
+        [HttpGet("{id}/detail")]
+        [Authorize] // Require authentication
+        [ProducesResponseType(typeof(IDataResult<PlantAnalysisDetailDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetDetailById(int id)
+        {
+            var query = new GetPlantAnalysisDetailQuery { Id = id };
+            var result = await _mediator.Send(query);
+            
+            if (!result.Success)
+                return NotFound(result);
+
+            // Check authorization: Users can only see their own analyses, unless they're admin
+            var userId = GetUserId();
+            var isAdmin = User.IsInRole("Admin");
+            var isSponsor = User.IsInRole("Sponsor");
+            
+            // Admins can see all analyses
+            if (isAdmin)
+                return Ok(result);
+            
+            // Sponsors can see analyses they sponsor
+            if (isSponsor && result.Data.SponsorId == User.FindFirst("SponsorId")?.Value)
+                return Ok(result);
+            
+            // Farmers can only see their own analyses
+            if (result.Data.UserId == userId)
+                return Ok(result);
+            
+            return Forbid();
         }
 
         /// <summary>
