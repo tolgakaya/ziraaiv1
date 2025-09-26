@@ -216,7 +216,7 @@ namespace PlantAnalysisWorkerService.Jobs
                     existingAnalysis.GrowthStage = result.PlantIdentification?.GrowthStage;
                     existingAnalysis.IdentificationConfidence = result.PlantIdentification?.Confidence;
                     
-                    // Update health assessment results
+                    // Update health assessment results (all fields)
                     existingAnalysis.VigorScore = result.HealthAssessment?.VigorScore;
                     existingAnalysis.HealthSeverity = result.HealthAssessment?.Severity;
                     existingAnalysis.StressIndicators = JsonConvert.SerializeObject(result.HealthAssessment?.StressIndicators ?? new string[0]);
@@ -247,9 +247,16 @@ namespace PlantAnalysisWorkerService.Jobs
                     existingAnalysis.PrimaryIssue = result.PestDisease?.PrimaryIssue;
                     existingAnalysis.PestDisease = JsonConvert.SerializeObject(result.PestDisease);
 
+                    // Debug logging
+                    _logger.LogInformation($"PestDisease JSON: {existingAnalysis.PestDisease}");
+
                     // Update environmental stress data
                     existingAnalysis.PrimaryStressor = result.EnvironmentalStress?.PrimaryStressor;
                     existingAnalysis.EnvironmentalStress = JsonConvert.SerializeObject(result.EnvironmentalStress);
+
+                    // Debug logging
+                    _logger.LogInformation($"EnvironmentalStress JSON: {existingAnalysis.EnvironmentalStress}");
+                    _logger.LogInformation($"RiskAssessment JSON: {JsonConvert.SerializeObject(result.RiskAssessment)}");
 
                     // Update additional JSONB fields
                     existingAnalysis.PlantIdentification = JsonConvert.SerializeObject(result.PlantIdentification);

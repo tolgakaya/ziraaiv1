@@ -278,43 +278,82 @@ namespace Entities.Dtos
 
     public class EnvironmentalStress
     {
+        [JsonProperty("water_status")]
         public string WaterStatus { get; set; }
+
+        [JsonProperty("temperature_stress")]
         public string TemperatureStress { get; set; }
+
+        [JsonProperty("light_stress")]
         public string LightStress { get; set; }
+
+        [JsonProperty("physical_damage")]
         public string PhysicalDamage { get; set; }
+
+        [JsonProperty("chemical_damage")]
         public string ChemicalDamage { get; set; }
+
+        [JsonProperty("soil_indicators")]
         public string SoilIndicators { get; set; }
+
+        [JsonProperty("primary_stressor")]
         public string PrimaryStressor { get; set; }
     }
 
     public class CrossFactorInsight
     {
+        [JsonProperty("insight")]
         public string Insight { get; set; }
+
+        [JsonProperty("confidence")]
         public decimal Confidence { get; set; }
+
+        [JsonProperty("affected_aspects")]
         public string[] AffectedAspects { get; set; }
+
+        [JsonProperty("impact_level")]
         public string ImpactLevel { get; set; }
     }
 
     public class Recommendations
     {
+        [JsonProperty("immediate")]
         public Recommendation[] Immediate { get; set; }
+
+        [JsonProperty("short_term")]
         public Recommendation[] ShortTerm { get; set; }
+
+        [JsonProperty("preventive")]
         public Recommendation[] Preventive { get; set; }
+
+        [JsonProperty("monitoring")]
         public MonitoringParameter[] Monitoring { get; set; }
     }
 
     public class Recommendation
     {
+        [JsonProperty("action")]
         public string Action { get; set; }
+
+        [JsonProperty("details")]
         public string Details { get; set; }
+
+        [JsonProperty("timeline")]
         public string Timeline { get; set; }
+
+        [JsonProperty("priority")]
         public string Priority { get; set; }
     }
 
     public class MonitoringParameter
     {
+        [JsonProperty("parameter")]
         public string Parameter { get; set; }
+
+        [JsonProperty("frequency")]
         public string Frequency { get; set; }
+
+        [JsonProperty("threshold")]
         public string Threshold { get; set; }
     }
 
