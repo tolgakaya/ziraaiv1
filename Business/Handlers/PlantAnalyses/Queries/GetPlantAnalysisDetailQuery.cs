@@ -97,6 +97,21 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     // Processing Information from JSONB
                     ProcessingInfo = TryParseJson<ProcessingDetails>(analysis.ProcessingMetadata) ?? CreateBasicProcessingInfo(analysis),
 
+                    // Risk Assessment
+                    RiskAssessment = TryParseJson<RiskAssessmentDetails>(analysis.RiskAssessment) ?? new RiskAssessmentDetails(),
+
+                    // Confidence Notes
+                    ConfidenceNotes = TryParseJsonArray<ConfidenceNoteDetails>(analysis.ConfidenceNotes),
+
+                    // Farmer Friendly Summary
+                    FarmerFriendlySummary = analysis.FarmerFriendlySummary,
+
+                    // Token Usage
+                    TokenUsage = TryParseJson<TokenUsageDetails>(analysis.TokenUsage) ?? new TokenUsageDetails(),
+
+                    // Request Metadata
+                    RequestMetadata = TryParseJson<RequestMetadataDetails>(analysis.RequestMetadata) ?? new RequestMetadataDetails(),
+
                     // Success Status
                     Success = true,
                     Message = "Success",

@@ -78,7 +78,22 @@ namespace Entities.Dtos
         
         // Processing Information
         public ProcessingDetails ProcessingInfo { get; set; }
-        
+
+        // Risk Assessment
+        public RiskAssessmentDetails RiskAssessment { get; set; }
+
+        // Confidence Notes
+        public List<ConfidenceNoteDetails> ConfidenceNotes { get; set; }
+
+        // Farmer Friendly Summary
+        public string FarmerFriendlySummary { get; set; }
+
+        // Token Usage
+        public TokenUsageDetails TokenUsage { get; set; }
+
+        // Request Metadata
+        public RequestMetadataDetails RequestMetadata { get; set; }
+
         // Success Status
         public bool Success { get; set; }
         public string Message { get; set; }
@@ -229,5 +244,37 @@ namespace Entities.Dtos
         public bool? ParseSuccess { get; set; }
         public string CorrelationId { get; set; }
         public int? RetryCount { get; set; }
+    }
+
+    public class RiskAssessmentDetails
+    {
+        public string YieldLossProbability { get; set; }
+        public string TimelineToWorsen { get; set; }
+        public string SpreadPotential { get; set; }
+    }
+
+    public class ConfidenceNoteDetails
+    {
+        public string Aspect { get; set; }
+        public decimal? Confidence { get; set; }
+        public string Reason { get; set; }
+    }
+
+    public class TokenUsageDetails
+    {
+        public int? TotalTokens { get; set; }
+        public int? PromptTokens { get; set; }
+        public int? CompletionTokens { get; set; }
+        public decimal? CostUsd { get; set; }
+        public decimal? CostTry { get; set; }
+    }
+
+    public class RequestMetadataDetails
+    {
+        public string UserAgent { get; set; }
+        public string IpAddress { get; set; }
+        public DateTime? RequestTimestamp { get; set; }
+        public string RequestId { get; set; }
+        public string ApiVersion { get; set; }
     }
 }

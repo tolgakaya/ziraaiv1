@@ -157,6 +157,7 @@ namespace PlantAnalysisWorkerService.Jobs
                         PlantIdentification = JsonConvert.SerializeObject(result.PlantIdentification),
                         HealthAssessment = JsonConvert.SerializeObject(result.HealthAssessment),
                         Summary = JsonConvert.SerializeObject(result.Summary),
+                        CrossFactorInsights = JsonConvert.SerializeObject(result.CrossFactorInsights),
                         ImageMetadata = JsonConvert.SerializeObject(result.ImageMetadata),
                         RiskAssessment = JsonConvert.SerializeObject(result.RiskAssessment),
                         ConfidenceNotes = JsonConvert.SerializeObject(result.ConfidenceNotes),
@@ -172,7 +173,6 @@ namespace PlantAnalysisWorkerService.Jobs
                         // Store detailed data as JSON
                         DetailedAnalysisData = JsonConvert.SerializeObject(result),
                         Recommendations = JsonConvert.SerializeObject(result.Recommendations),
-                        CrossFactorInsights = JsonConvert.SerializeObject(result.CrossFactorInsights),
                         
                         // Legacy fields for backward compatibility
                         PlantType = result.PlantIdentification?.Species,
@@ -255,6 +255,7 @@ namespace PlantAnalysisWorkerService.Jobs
                     existingAnalysis.PlantIdentification = JsonConvert.SerializeObject(result.PlantIdentification);
                     existingAnalysis.HealthAssessment = JsonConvert.SerializeObject(result.HealthAssessment);
                     existingAnalysis.Summary = JsonConvert.SerializeObject(result.Summary);
+                    existingAnalysis.CrossFactorInsights = JsonConvert.SerializeObject(result.CrossFactorInsights);
                     existingAnalysis.ImageMetadata = JsonConvert.SerializeObject(result.ImageMetadata);
                     existingAnalysis.RiskAssessment = JsonConvert.SerializeObject(result.RiskAssessment);
                     existingAnalysis.ConfidenceNotes = JsonConvert.SerializeObject(result.ConfidenceNotes);
@@ -271,7 +272,6 @@ namespace PlantAnalysisWorkerService.Jobs
                     // Store detailed analysis data
                     existingAnalysis.DetailedAnalysisData = JsonConvert.SerializeObject(result);
                     existingAnalysis.Recommendations = JsonConvert.SerializeObject(result.Recommendations);
-                    existingAnalysis.CrossFactorInsights = JsonConvert.SerializeObject(result.CrossFactorInsights);
                     
                     // Update legacy fields for backward compatibility
                     existingAnalysis.PlantType = result.PlantIdentification?.Species;
