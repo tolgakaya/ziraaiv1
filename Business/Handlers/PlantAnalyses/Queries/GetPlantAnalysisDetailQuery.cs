@@ -85,11 +85,11 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     PlantIdentification = TryParseJson<PlantIdentificationDetails>(analysis.PlantIdentification) ?? CreateBasicPlantIdentification(analysis),
                     HealthAssessment = TryParseJson<HealthAssessmentDetails>(analysis.HealthAssessment) ?? CreateBasicHealthAssessment(analysis),
                     NutrientStatus = TryParseJson<NutrientStatusDetails>(analysis.NutrientStatus) ?? CreateBasicNutrientStatus(analysis),
-                    PestDisease = TryParseJson<PestDiseaseDetails>(analysis.PestDisease) ?? new PestDiseaseDetails(),
-                    EnvironmentalStress = TryParseJson<EnvironmentalStressDetails>(analysis.EnvironmentalStress) ?? new EnvironmentalStressDetails(),
+                    PestDisease = TryParseJson<PestDiseaseDetails>(analysis.PestDisease) ?? CreateBasicPestDisease(analysis),
+                    EnvironmentalStress = TryParseJson<EnvironmentalStressDetails>(analysis.EnvironmentalStress) ?? CreateBasicEnvironmentalStress(analysis),
                     Summary = TryParseJson<AnalysisSummaryDetails>(analysis.Summary) ?? CreateBasicSummary(analysis),
                     CrossFactorInsights = TryParseJsonArray<CrossFactorInsightDetails>(analysis.CrossFactorInsights),
-                    Recommendations = TryParseJson<RecommendationsDetails>(analysis.Recommendations) ?? new RecommendationsDetails(),
+                    Recommendations = TryParseJson<RecommendationsDetails>(analysis.Recommendations) ?? CreateBasicRecommendations(analysis),
 
                     // Image Information from JSONB
                     ImageInfo = TryParseJson<ImageDetails>(analysis.ImageMetadata) ?? new ImageDetails { ImageUrl = analysis.ImageUrl },
@@ -98,7 +98,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     ProcessingInfo = TryParseJson<ProcessingDetails>(analysis.ProcessingMetadata) ?? CreateBasicProcessingInfo(analysis),
 
                     // Risk Assessment
-                    RiskAssessment = TryParseJson<RiskAssessmentDetails>(analysis.RiskAssessment) ?? new RiskAssessmentDetails(),
+                    RiskAssessment = TryParseJson<RiskAssessmentDetails>(analysis.RiskAssessment) ?? CreateBasicRiskAssessment(analysis),
 
                     // Confidence Notes
                     ConfidenceNotes = TryParseJsonArray<ConfidenceNoteDetails>(analysis.ConfidenceNotes),
@@ -311,6 +311,204 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Prognosis = analysis.Prognosis, // Helper field has priority
                     EstimatedYieldImpact = analysis.EstimatedYieldImpact, // Helper field has priority
                     ConfidenceLevel = analysis.ConfidenceLevel // Helper field has priority
+                };
+            }
+
+            private static PestDiseaseDetails CreateBasicPestDisease(Entities.Concrete.PlantAnalysis analysis)
+            {
+                // Try to get pest/disease details from JSONB
+                var pestsDetected = new List<PestDetails>();
+                var diseasesDetected = new List<DiseaseDetails>();
+                string damagePattern = null;
+
+                if (!string.IsNullOrEmpty(analysis.PestDisease))
+                {
+                    try
+                    {
+                        var pestData = JsonConvert.DeserializeObject<dynamic>(analysis.PestDisease);
+                        damagePattern = pestData?.damage_pattern?.ToString();
+
+                        if (pestData?.pests_detected != null)
+                        {
+                            foreach (var pest in pestData.pests_detected)
+                            {
+                                pestsDetected.Add(new PestDetails
+                                {
+                                    Name = pest?.type?.ToString(),
+                                    Category = pest?.category?.ToString(),
+                                    Severity = pest?.severity?.ToString(),
+                                    AffectedParts = pest?.affected_parts != null ?
+                                        TryParseJsonArray(pest.affected_parts.ToString()) :
+                                        new List<string>()
+                                });
+                            }
+                        }
+
+                        if (pestData?.diseases_detected != null)
+                        {
+                            foreach (var disease in pestData.diseases_detected)
+                            {
+                                diseasesDetected.Add(new DiseaseDetails
+                                {
+                                    Type = disease?.type?.ToString(),
+                                    Category = disease?.category?.ToString(),
+                                    Severity = disease?.severity?.ToString(),
+                                    AffectedParts = disease?.affected_parts != null ?
+                                        TryParseJsonArray(disease.affected_parts.ToString()) :
+                                        new List<string>()
+                                });
+                            }
+                        }
+                    }
+                    catch { /* Silent fallback to empty lists */ }
+                }
+
+                return new PestDiseaseDetails
+                {
+                    PestsDetected = pestsDetected,
+                    DiseasesDetected = diseasesDetected,
+                    DamagePattern = damagePattern,
+                    AffectedAreaPercentage = analysis.AffectedAreaPercentage,
+                    SpreadRisk = analysis.SpreadRisk,
+                    PrimaryIssue = analysis.PrimaryIssue
+                };
+            }
+
+            private static EnvironmentalStressDetails CreateBasicEnvironmentalStress(Entities.Concrete.PlantAnalysis analysis)
+            {
+                // Try to get environmental stress details from JSONB
+                string waterStatus = null, temperatureStress = null, lightStress = null, physicalDamage = null, chemicalDamage = null, soilIndicators = null;
+
+                if (!string.IsNullOrEmpty(analysis.EnvironmentalStress))
+                {
+                    try
+                    {
+                        var envData = JsonConvert.DeserializeObject<dynamic>(analysis.EnvironmentalStress);
+                        waterStatus = envData?.water_status?.ToString();
+                        temperatureStress = envData?.temperature_stress?.ToString();
+                        lightStress = envData?.light_stress?.ToString();
+                        physicalDamage = envData?.physical_damage?.ToString();
+                        chemicalDamage = envData?.chemical_damage?.ToString();
+                        soilIndicators = envData?.soil_indicators?.ToString();
+                    }
+                    catch { /* Silent fallback to null values */ }
+                }
+
+                return new EnvironmentalStressDetails
+                {
+                    WaterStatus = waterStatus,
+                    TemperatureStress = temperatureStress,
+                    LightStress = lightStress,
+                    PhysicalDamage = physicalDamage,
+                    ChemicalDamage = chemicalDamage,
+                    SoilIndicators = soilIndicators,
+                    PrimaryStressor = analysis.PrimaryStressor
+                };
+            }
+
+            private static RiskAssessmentDetails CreateBasicRiskAssessment(Entities.Concrete.PlantAnalysis analysis)
+            {
+                // Try to get risk assessment details from JSONB
+                string yieldLossProbability = null, timelineToWorsen = null, spreadPotential = null;
+
+                if (!string.IsNullOrEmpty(analysis.RiskAssessment))
+                {
+                    try
+                    {
+                        var riskData = JsonConvert.DeserializeObject<dynamic>(analysis.RiskAssessment);
+                        yieldLossProbability = riskData?.yield_loss_probability?.ToString();
+                        timelineToWorsen = riskData?.timeline_to_worsen?.ToString();
+                        spreadPotential = riskData?.spread_potential?.ToString();
+                    }
+                    catch { /* Silent fallback to null values */ }
+                }
+
+                return new RiskAssessmentDetails
+                {
+                    YieldLossProbability = yieldLossProbability,
+                    TimelineToWorsen = timelineToWorsen,
+                    SpreadPotential = spreadPotential
+                };
+            }
+
+            private static RecommendationsDetails CreateBasicRecommendations(Entities.Concrete.PlantAnalysis analysis)
+            {
+                // Try to get recommendations from JSONB
+                var immediate = new List<RecommendationItem>();
+                var shortTerm = new List<RecommendationItem>();
+                var preventive = new List<RecommendationItem>();
+                var monitoring = new List<MonitoringItem>();
+
+                if (!string.IsNullOrEmpty(analysis.Recommendations))
+                {
+                    try
+                    {
+                        var recData = JsonConvert.DeserializeObject<dynamic>(analysis.Recommendations);
+
+                        if (recData?.immediate != null)
+                        {
+                            foreach (var item in recData.immediate)
+                            {
+                                immediate.Add(new RecommendationItem
+                                {
+                                    Action = item?.action?.ToString(),
+                                    Details = item?.details?.ToString(),
+                                    Timeline = item?.timeline?.ToString(),
+                                    Priority = item?.priority?.ToString()
+                                });
+                            }
+                        }
+
+                        if (recData?.short_term != null)
+                        {
+                            foreach (var item in recData.short_term)
+                            {
+                                shortTerm.Add(new RecommendationItem
+                                {
+                                    Action = item?.action?.ToString(),
+                                    Details = item?.details?.ToString(),
+                                    Timeline = item?.timeline?.ToString(),
+                                    Priority = item?.priority?.ToString()
+                                });
+                            }
+                        }
+
+                        if (recData?.preventive != null)
+                        {
+                            foreach (var item in recData.preventive)
+                            {
+                                preventive.Add(new RecommendationItem
+                                {
+                                    Action = item?.action?.ToString(),
+                                    Details = item?.details?.ToString(),
+                                    Timeline = item?.timeline?.ToString(),
+                                    Priority = item?.priority?.ToString()
+                                });
+                            }
+                        }
+
+                        if (recData?.monitoring != null)
+                        {
+                            foreach (var item in recData.monitoring)
+                            {
+                                monitoring.Add(new MonitoringItem
+                                {
+                                    Parameter = item?.parameter?.ToString(),
+                                    Frequency = item?.frequency?.ToString(),
+                                    Threshold = item?.threshold?.ToString()
+                                });
+                            }
+                        }
+                    }
+                    catch { /* Silent fallback to empty lists */ }
+                }
+
+                return new RecommendationsDetails
+                {
+                    Immediate = immediate,
+                    ShortTerm = shortTerm,
+                    Preventive = preventive,
+                    Monitoring = monitoring
                 };
             }
 
