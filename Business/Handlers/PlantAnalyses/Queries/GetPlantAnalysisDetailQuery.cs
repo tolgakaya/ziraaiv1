@@ -124,7 +124,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
             private static T TryParseJson<T>(string jsonString) where T : class
             {
-                if (string.IsNullOrEmpty(jsonString) || jsonString == "{}")
+                if (string.IsNullOrEmpty(jsonString))
                     return null;
 
                 try
