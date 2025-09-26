@@ -116,7 +116,15 @@ namespace Entities.Dtos
         public string Potassium { get; set; }
         public string Calcium { get; set; }
         public string Magnesium { get; set; }
+        public string Sulfur { get; set; }
         public string Iron { get; set; }
+        public string Zinc { get; set; }
+        public string Manganese { get; set; }
+        public string Boron { get; set; }
+        public string Copper { get; set; }
+        public string Molybdenum { get; set; }
+        public string Chlorine { get; set; }
+        public string Nickel { get; set; }
         public string PrimaryDeficiency { get; set; }
         public List<string> SecondaryDeficiencies { get; set; }
         public string Severity { get; set; }
