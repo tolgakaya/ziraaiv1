@@ -169,34 +169,96 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
             private static PlantIdentificationDetails CreateBasicPlantIdentification(Entities.Concrete.PlantAnalysis analysis)
             {
+                // Try to get identifying features and visible parts from JSONB first
+                var identifyingFeatures = new List<string>();
+                var visibleParts = new List<string>();
+
+                if (!string.IsNullOrEmpty(analysis.PlantIdentification))
+                {
+                    try
+                    {
+                        var plantId = JsonConvert.DeserializeObject<dynamic>(analysis.PlantIdentification);
+                        if (plantId?.identifying_features != null)
+                        {
+                            foreach (var feature in plantId.identifying_features)
+                            {
+                                identifyingFeatures.Add(feature.ToString());
+                            }
+                        }
+                        if (plantId?.visible_parts != null)
+                        {
+                            foreach (var part in plantId.visible_parts)
+                            {
+                                visibleParts.Add(part.ToString());
+                            }
+                        }
+                    }
+                    catch { /* Silent fallback to empty lists */ }
+                }
+
                 return new PlantIdentificationDetails
                 {
                     Species = analysis.PlantSpecies,
                     Variety = analysis.PlantVariety,
                     GrowthStage = analysis.GrowthStage,
                     Confidence = analysis.IdentificationConfidence,
-                    IdentifyingFeatures = new List<string>(),
-                    VisibleParts = new List<string>()
+                    IdentifyingFeatures = identifyingFeatures,
+                    VisibleParts = visibleParts
                 };
             }
 
             private static HealthAssessmentDetails CreateBasicHealthAssessment(Entities.Concrete.PlantAnalysis analysis)
             {
+                // Try to get additional details from JSONB first
+                string leafColor = null, leafTexture = null, growthPattern = null, structuralIntegrity = null;
+
+                if (!string.IsNullOrEmpty(analysis.HealthAssessment))
+                {
+                    try
+                    {
+                        var healthData = JsonConvert.DeserializeObject<dynamic>(analysis.HealthAssessment);
+                        leafColor = healthData?.leaf_color?.ToString();
+                        leafTexture = healthData?.leaf_texture?.ToString();
+                        growthPattern = healthData?.growth_pattern?.ToString();
+                        structuralIntegrity = healthData?.structural_integrity?.ToString();
+                    }
+                    catch { /* Silent fallback to null values */ }
+                }
+
                 return new HealthAssessmentDetails
                 {
                     VigorScore = analysis.VigorScore,
                     Severity = analysis.HealthSeverity,
                     StressIndicators = TryParseJsonArray(analysis.StressIndicators),
                     DiseaseSymptoms = TryParseJsonArray(analysis.DiseaseSymptoms),
-                    LeafColor = null,
-                    LeafTexture = null,
-                    GrowthPattern = null,
-                    StructuralIntegrity = null
+                    LeafColor = leafColor,
+                    LeafTexture = leafTexture,
+                    GrowthPattern = growthPattern,
+                    StructuralIntegrity = structuralIntegrity
                 };
             }
 
             private static NutrientStatusDetails CreateBasicNutrientStatus(Entities.Concrete.PlantAnalysis analysis)
             {
+                // Try to get secondary deficiencies from JSONB
+                var secondaryDeficiencies = new List<string>();
+
+                if (!string.IsNullOrEmpty(analysis.NutrientStatus))
+                {
+                    try
+                    {
+                        var nutrientData = JsonConvert.DeserializeObject<dynamic>(analysis.NutrientStatus);
+                        if (nutrientData?.secondary_deficiencies != null)
+                        {
+                            foreach (var deficiency in nutrientData.secondary_deficiencies)
+                            {
+                                secondaryDeficiencies.Add(deficiency.ToString());
+                            }
+                        }
+                    }
+                    catch { /* Silent fallback to empty list */ }
+                }
+
                 return new NutrientStatusDetails
                 {
                     Nitrogen = analysis.Nitrogen,
@@ -214,18 +276,37 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Chlorine = analysis.Chlorine,
                     Nickel = analysis.Nickel,
                     PrimaryDeficiency = analysis.PrimaryDeficiency,
-                    SecondaryDeficiencies = new List<string>(),
+                    SecondaryDeficiencies = secondaryDeficiencies,
                     Severity = analysis.NutrientSeverity
                 };
             }
 
             private static AnalysisSummaryDetails CreateBasicSummary(Entities.Concrete.PlantAnalysis analysis)
             {
+                // Try to get secondary concerns from JSONB
+                var secondaryConcerns = new List<string>();
+
+                if (!string.IsNullOrEmpty(analysis.Summary))
+                {
+                    try
+                    {
+                        var summaryData = JsonConvert.DeserializeObject<dynamic>(analysis.Summary);
+                        if (summaryData?.secondary_concerns != null)
+                        {
+                            foreach (var concern in summaryData.secondary_concerns)
+                            {
+                                secondaryConcerns.Add(concern.ToString());
+                            }
+                        }
+                    }
+                    catch { /* Silent fallback to empty list */ }
+                }
+
                 return new AnalysisSummaryDetails
                 {
                     OverallHealthScore = analysis.OverallHealthScore,
                     PrimaryConcern = analysis.PrimaryConcern,
-                    SecondaryConcerns = new List<string>(),
+                    SecondaryConcerns = secondaryConcerns,
                     CriticalIssuesCount = analysis.CriticalIssuesCount,
                     Prognosis = analysis.Prognosis,
                     EstimatedYieldImpact = analysis.EstimatedYieldImpact,
@@ -235,15 +316,34 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
             private static ProcessingDetails CreateBasicProcessingInfo(Entities.Concrete.PlantAnalysis analysis)
             {
+                // Try to get additional processing details from JSONB
+                long? processingTimeMs = null;
+                bool? parseSuccess = true;
+                string correlationId = null;
+                int? retryCount = null;
+
+                if (!string.IsNullOrEmpty(analysis.ProcessingMetadata))
+                {
+                    try
+                    {
+                        var processingData = JsonConvert.DeserializeObject<dynamic>(analysis.ProcessingMetadata);
+                        processingTimeMs = processingData?.processing_time_ms;
+                        parseSuccess = processingData?.parse_success ?? true;
+                        correlationId = processingData?.correlation_id?.ToString();
+                        retryCount = processingData?.retry_count;
+                    }
+                    catch { /* Silent fallback to default values */ }
+                }
+
                 return new ProcessingDetails
                 {
                     AiModel = analysis.AiModel,
                     WorkflowVersion = analysis.WorkflowVersion,
-                    ProcessingTimestamp = analysis.ProcessingTimestamp,
-                    ProcessingTimeMs = null,
-                    ParseSuccess = true,
-                    CorrelationId = null,
-                    RetryCount = null
+                    ProcessingTimestamp = analysis.ProcessingTimestamp != DateTime.MinValue ? analysis.ProcessingTimestamp : analysis.AnalysisDate,
+                    ProcessingTimeMs = processingTimeMs,
+                    ParseSuccess = parseSuccess,
+                    CorrelationId = correlationId,
+                    RetryCount = retryCount
                 };
             }
             
