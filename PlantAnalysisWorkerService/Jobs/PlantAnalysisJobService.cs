@@ -98,10 +98,20 @@ namespace PlantAnalysisWorkerService.Jobs
                         Status = true,
                         CreatedDate = DateTime.Now,
                         AnalysisDate = result.Timestamp.ToLocalTime(),
+                        Timestamp = result.Timestamp.ToLocalTime(),
                         N8nWebhookResponse = JsonConvert.SerializeObject(result),
                         
-                        // Processing metadata
-                        AiModel = result.ProcessingMetadata?.AiModel,
+                        // Processing metadata (complete mapping)
+                        AiModel = result.ProcessingMetadata?.AiModel ?? "",
+                        WorkflowVersion = result.ProcessingMetadata?.WorkflowVersion ?? "",
+                        ProcessingTimestamp = (result.ProcessingMetadata?.ProcessingTimestamp != null && result.ProcessingMetadata.ProcessingTimestamp > DateTime.MinValue)
+                            ? result.ProcessingMetadata.ProcessingTimestamp
+                            : result.Timestamp.ToLocalTime(),
+
+                        // Store full metadata as JSONB
+                        ProcessingMetadata = JsonConvert.SerializeObject(result.ProcessingMetadata),
+                        TokenUsage = JsonConvert.SerializeObject(result.TokenUsage),
+                        RequestMetadata = JsonConvert.SerializeObject(result.RequestMetadata),
                         
                         // Analysis results from response
                         PlantSpecies = result.PlantIdentification?.Species,
@@ -114,14 +124,50 @@ namespace PlantAnalysisWorkerService.Jobs
                         StressIndicators = JsonConvert.SerializeObject(result.HealthAssessment?.StressIndicators ?? new string[0]),
                         DiseaseSymptoms = JsonConvert.SerializeObject(result.HealthAssessment?.DiseaseSymptoms ?? new string[0]),
                         
+                        // Individual nutrients (all 14 elements)
+                        Nitrogen = result.NutrientStatus?.Nitrogen,
+                        Phosphorus = result.NutrientStatus?.Phosphorus,
+                        Potassium = result.NutrientStatus?.Potassium,
+                        Calcium = result.NutrientStatus?.Calcium,
+                        Magnesium = result.NutrientStatus?.Magnesium,
+                        Sulfur = result.NutrientStatus?.Sulfur,
+                        Iron = result.NutrientStatus?.Iron,
+                        Zinc = result.NutrientStatus?.Zinc,
+                        Manganese = result.NutrientStatus?.Manganese,
+                        Boron = result.NutrientStatus?.Boron,
+                        Copper = result.NutrientStatus?.Copper,
+                        Molybdenum = result.NutrientStatus?.Molybdenum,
+                        Chlorine = result.NutrientStatus?.Chlorine,
+                        Nickel = result.NutrientStatus?.Nickel,
                         PrimaryDeficiency = result.NutrientStatus?.PrimaryDeficiency,
+                        NutrientSeverity = result.NutrientStatus?.Severity,
                         NutrientStatus = JsonConvert.SerializeObject(result.NutrientStatus),
-                        
-                        OverallHealthScore = result.Summary?.OverallHealthScore,
+
+                        // Pest and disease data
+                        AffectedAreaPercentage = (int?)(result.PestDisease?.AffectedAreaPercentage ?? 0),
+                        SpreadRisk = result.PestDisease?.SpreadRisk,
+                        PrimaryIssue = result.PestDisease?.PrimaryIssue,
+                        PestDisease = JsonConvert.SerializeObject(result.PestDisease),
+
+                        // Environmental stress data
+                        PrimaryStressor = result.EnvironmentalStress?.PrimaryStressor,
+                        EnvironmentalStress = JsonConvert.SerializeObject(result.EnvironmentalStress),
+
+                        // Additional JSONB fields
+                        PlantIdentification = JsonConvert.SerializeObject(result.PlantIdentification),
+                        HealthAssessment = JsonConvert.SerializeObject(result.HealthAssessment),
+                        Summary = JsonConvert.SerializeObject(result.Summary),
+                        ImageMetadata = JsonConvert.SerializeObject(result.ImageMetadata),
+                        RiskAssessment = JsonConvert.SerializeObject(result.RiskAssessment),
+                        ConfidenceNotes = JsonConvert.SerializeObject(result.ConfidenceNotes),
+
+                        OverallHealthScore = result.Summary?.OverallHealthScore ?? 0,
                         PrimaryConcern = result.Summary?.PrimaryConcern,
+                        CriticalIssuesCount = result.Summary?.CriticalIssuesCount,
                         Prognosis = result.Summary?.Prognosis,
                         EstimatedYieldImpact = result.Summary?.EstimatedYieldImpact,
                         ConfidenceLevel = result.Summary?.ConfidenceLevel,
+                        FarmerFriendlySummary = result.FarmerFriendlySummary ?? "",
                         
                         // Store detailed data as JSON
                         DetailedAnalysisData = JsonConvert.SerializeObject(result),
@@ -146,13 +192,23 @@ namespace PlantAnalysisWorkerService.Jobs
                     existingAnalysis.AnalysisStatus = "Completed";
                     existingAnalysis.UpdatedDate = DateTime.Now;
                     existingAnalysis.AnalysisDate = result.Timestamp.ToLocalTime();
+                    existingAnalysis.Timestamp = result.Timestamp.ToLocalTime();
                     existingAnalysis.N8nWebhookResponse = JsonConvert.SerializeObject(result);
                     
                     // Update ImagePath from image_metadata (critical fix!)
                     existingAnalysis.ImagePath = result.ImageMetadata?.URL ?? ConvertToFullUrlIfNeeded(existingAnalysis.ImagePath);
                     
-                    // Update AI processing results
-                    existingAnalysis.AiModel = result.ProcessingMetadata?.AiModel;
+                    // Update AI processing results (complete metadata mapping)
+                    existingAnalysis.AiModel = result.ProcessingMetadata?.AiModel ?? "";
+                    existingAnalysis.WorkflowVersion = result.ProcessingMetadata?.WorkflowVersion ?? "";
+                    existingAnalysis.ProcessingTimestamp = (result.ProcessingMetadata?.ProcessingTimestamp != null && result.ProcessingMetadata.ProcessingTimestamp > DateTime.MinValue)
+                        ? result.ProcessingMetadata.ProcessingTimestamp
+                        : result.Timestamp.ToLocalTime();
+
+                    // Update full metadata as JSONB
+                    existingAnalysis.ProcessingMetadata = JsonConvert.SerializeObject(result.ProcessingMetadata);
+                    existingAnalysis.TokenUsage = JsonConvert.SerializeObject(result.TokenUsage);
+                    existingAnalysis.RequestMetadata = JsonConvert.SerializeObject(result.RequestMetadata);
                     
                     // Update plant identification results
                     existingAnalysis.PlantSpecies = result.PlantIdentification?.Species;
@@ -166,16 +222,51 @@ namespace PlantAnalysisWorkerService.Jobs
                     existingAnalysis.StressIndicators = JsonConvert.SerializeObject(result.HealthAssessment?.StressIndicators ?? new string[0]);
                     existingAnalysis.DiseaseSymptoms = JsonConvert.SerializeObject(result.HealthAssessment?.DiseaseSymptoms ?? new string[0]);
                     
-                    // Update nutrient status
+                    // Update nutrient status - Individual nutrients (all 14 elements)
+                    existingAnalysis.Nitrogen = result.NutrientStatus?.Nitrogen;
+                    existingAnalysis.Phosphorus = result.NutrientStatus?.Phosphorus;
+                    existingAnalysis.Potassium = result.NutrientStatus?.Potassium;
+                    existingAnalysis.Calcium = result.NutrientStatus?.Calcium;
+                    existingAnalysis.Magnesium = result.NutrientStatus?.Magnesium;
+                    existingAnalysis.Sulfur = result.NutrientStatus?.Sulfur;
+                    existingAnalysis.Iron = result.NutrientStatus?.Iron;
+                    existingAnalysis.Zinc = result.NutrientStatus?.Zinc;
+                    existingAnalysis.Manganese = result.NutrientStatus?.Manganese;
+                    existingAnalysis.Boron = result.NutrientStatus?.Boron;
+                    existingAnalysis.Copper = result.NutrientStatus?.Copper;
+                    existingAnalysis.Molybdenum = result.NutrientStatus?.Molybdenum;
+                    existingAnalysis.Chlorine = result.NutrientStatus?.Chlorine;
+                    existingAnalysis.Nickel = result.NutrientStatus?.Nickel;
                     existingAnalysis.PrimaryDeficiency = result.NutrientStatus?.PrimaryDeficiency;
+                    existingAnalysis.NutrientSeverity = result.NutrientStatus?.Severity;
                     existingAnalysis.NutrientStatus = JsonConvert.SerializeObject(result.NutrientStatus);
-                    
+
+                    // Update pest and disease data
+                    existingAnalysis.AffectedAreaPercentage = (int?)(result.PestDisease?.AffectedAreaPercentage ?? 0);
+                    existingAnalysis.SpreadRisk = result.PestDisease?.SpreadRisk;
+                    existingAnalysis.PrimaryIssue = result.PestDisease?.PrimaryIssue;
+                    existingAnalysis.PestDisease = JsonConvert.SerializeObject(result.PestDisease);
+
+                    // Update environmental stress data
+                    existingAnalysis.PrimaryStressor = result.EnvironmentalStress?.PrimaryStressor;
+                    existingAnalysis.EnvironmentalStress = JsonConvert.SerializeObject(result.EnvironmentalStress);
+
+                    // Update additional JSONB fields
+                    existingAnalysis.PlantIdentification = JsonConvert.SerializeObject(result.PlantIdentification);
+                    existingAnalysis.HealthAssessment = JsonConvert.SerializeObject(result.HealthAssessment);
+                    existingAnalysis.Summary = JsonConvert.SerializeObject(result.Summary);
+                    existingAnalysis.ImageMetadata = JsonConvert.SerializeObject(result.ImageMetadata);
+                    existingAnalysis.RiskAssessment = JsonConvert.SerializeObject(result.RiskAssessment);
+                    existingAnalysis.ConfidenceNotes = JsonConvert.SerializeObject(result.ConfidenceNotes);
+
                     // Update summary results
-                    existingAnalysis.OverallHealthScore = result.Summary?.OverallHealthScore;
+                    existingAnalysis.OverallHealthScore = result.Summary?.OverallHealthScore ?? 0;
                     existingAnalysis.PrimaryConcern = result.Summary?.PrimaryConcern;
+                    existingAnalysis.CriticalIssuesCount = result.Summary?.CriticalIssuesCount;
                     existingAnalysis.Prognosis = result.Summary?.Prognosis;
                     existingAnalysis.EstimatedYieldImpact = result.Summary?.EstimatedYieldImpact;
                     existingAnalysis.ConfidenceLevel = result.Summary?.ConfidenceLevel;
+                    existingAnalysis.FarmerFriendlySummary = result.FarmerFriendlySummary ?? "";
                     
                     // Store detailed analysis data
                     existingAnalysis.DetailedAnalysisData = JsonConvert.SerializeObject(result);
