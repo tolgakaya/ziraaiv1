@@ -200,7 +200,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 {
                     Species = analysis.PlantSpecies,
                     Variety = analysis.PlantVariety,
-                    GrowthStage = analysis.GrowthStage,
+                    GrowthStage = analysis.GrowthStage, // Helper field has priority
                     Confidence = analysis.IdentificationConfidence,
                     IdentifyingFeatures = identifyingFeatures,
                     VisibleParts = visibleParts
@@ -227,10 +227,10 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 return new HealthAssessmentDetails
                 {
-                    VigorScore = analysis.VigorScore,
-                    Severity = analysis.HealthSeverity,
-                    StressIndicators = TryParseJsonArray(analysis.StressIndicators),
-                    DiseaseSymptoms = TryParseJsonArray(analysis.DiseaseSymptoms),
+                    VigorScore = analysis.VigorScore, // Helper field has priority
+                    Severity = analysis.HealthSeverity, // Helper field has priority
+                    StressIndicators = TryParseJsonArray(analysis.StressIndicators), // Helper field
+                    DiseaseSymptoms = TryParseJsonArray(analysis.DiseaseSymptoms), // Helper field
                     LeafColor = leafColor,
                     LeafTexture = leafTexture,
                     GrowthPattern = growthPattern,
@@ -261,7 +261,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 return new NutrientStatusDetails
                 {
-                    Nitrogen = analysis.Nitrogen,
+                    Nitrogen = analysis.Nitrogen, // Helper fields have priority
                     Phosphorus = analysis.Phosphorus,
                     Potassium = analysis.Potassium,
                     Calcium = analysis.Calcium,
@@ -275,9 +275,9 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Molybdenum = analysis.Molybdenum,
                     Chlorine = analysis.Chlorine,
                     Nickel = analysis.Nickel,
-                    PrimaryDeficiency = analysis.PrimaryDeficiency,
+                    PrimaryDeficiency = analysis.PrimaryDeficiency, // Helper field
                     SecondaryDeficiencies = secondaryDeficiencies,
-                    Severity = analysis.NutrientSeverity
+                    Severity = analysis.NutrientSeverity // Helper field
                 };
             }
 
@@ -304,13 +304,13 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 return new AnalysisSummaryDetails
                 {
-                    OverallHealthScore = analysis.OverallHealthScore,
-                    PrimaryConcern = analysis.PrimaryConcern,
+                    OverallHealthScore = analysis.OverallHealthScore, // Helper field has priority
+                    PrimaryConcern = analysis.PrimaryConcern, // Helper field has priority
                     SecondaryConcerns = secondaryConcerns,
-                    CriticalIssuesCount = analysis.CriticalIssuesCount,
-                    Prognosis = analysis.Prognosis,
-                    EstimatedYieldImpact = analysis.EstimatedYieldImpact,
-                    ConfidenceLevel = analysis.ConfidenceLevel
+                    CriticalIssuesCount = analysis.CriticalIssuesCount, // Helper field has priority
+                    Prognosis = analysis.Prognosis, // Helper field has priority
+                    EstimatedYieldImpact = analysis.EstimatedYieldImpact, // Helper field has priority
+                    ConfidenceLevel = analysis.ConfidenceLevel // Helper field has priority
                 };
             }
 
