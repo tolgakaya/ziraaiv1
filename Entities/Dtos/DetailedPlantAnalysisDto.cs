@@ -1,4 +1,5 @@
 using Core.Entities;
+using System;
 using System.Collections.Generic;
 
 namespace Entities.Dtos
@@ -46,6 +47,14 @@ namespace Entities.Dtos
         public string Calcium { get; set; }
         public string Magnesium { get; set; }
         public string Iron { get; set; }
+        public string Sulfur { get; set; }
+        public string Zinc { get; set; }
+        public string Manganese { get; set; }
+        public string Boron { get; set; }
+        public string Copper { get; set; }
+        public string Molybdenum { get; set; }
+        public string Chlorine { get; set; }
+        public string Nickel { get; set; }
         public string PrimaryDeficiency { get; set; }
         public List<string> SecondaryDeficiencies { get; set; }
         public string Severity { get; set; }
@@ -69,6 +78,8 @@ namespace Entities.Dtos
         public string PhysicalDamage { get; set; }
         public string ChemicalDamage { get; set; }
         public string SoilIndicators { get; set; }
+        public List<PhysiologicalDisorderDto> PhysiologicalDisorders { get; set; }
+        public SoilHealthIndicatorsDto SoilHealthIndicators { get; set; }
         public string PrimaryStressor { get; set; }
     }
 
@@ -86,6 +97,8 @@ namespace Entities.Dtos
         public List<RecommendationDto> ShortTerm { get; set; }
         public List<RecommendationDto> Preventive { get; set; }
         public List<MonitoringItemDto> Monitoring { get; set; }
+        public ResourceEstimationDto ResourceEstimation { get; set; }
+        public LocalizedRecommendationsDto LocalizedRecommendations { get; set; }
     }
 
     public class RecommendationDto : IDto
@@ -112,5 +125,68 @@ namespace Entities.Dtos
         public decimal ConfidenceLevel { get; set; }
         public string Prognosis { get; set; }
         public string EstimatedYieldImpact { get; set; }
+    }
+
+    public class RiskAssessmentDto : IDto
+    {
+        public string YieldLossProbability { get; set; }
+        public string TimelineToWorsen { get; set; }
+        public string SpreadPotential { get; set; }
+    }
+
+    public class ConfidenceNoteDto : IDto
+    {
+        public string Aspect { get; set; }
+        public decimal Confidence { get; set; }
+        public string Reason { get; set; }
+    }
+
+    public class ImageMetadataDto : IDto
+    {
+        public string Source { get; set; }
+        public string ImageUrl { get; set; }
+        public bool HasImageExtension { get; set; }
+        public DateTime? UploadTimestamp { get; set; }
+    }
+
+    public class PhysiologicalDisorderDto : IDto
+    {
+        public string Type { get; set; }
+        public string Severity { get; set; }
+        public string Notes { get; set; }
+    }
+
+    public class SoilHealthIndicatorsDto : IDto
+    {
+        public string Salinity { get; set; }
+        public string PhIssue { get; set; }
+        public string OrganicMatter { get; set; }
+    }
+
+    public class ResourceEstimationDto : IDto
+    {
+        public string WaterRequiredLiters { get; set; }
+        public string FertilizerCostEstimateUsd { get; set; }
+        public string LaborHoursEstimate { get; set; }
+    }
+
+    public class LocalizedRecommendationsDto : IDto
+    {
+        public string Region { get; set; }
+        public List<string> PreferredPractices { get; set; }
+        public List<string> RestrictedMethods { get; set; }
+    }
+
+    public class ContactInfoDto : IDto
+    {
+        public string Phone { get; set; }
+        public string Email { get; set; }
+    }
+
+    public class AdditionalInfoDto : IDto
+    {
+        public string IrrigationMethod { get; set; }
+        public bool? Greenhouse { get; set; }
+        public bool? OrganicCertified { get; set; }
     }
 }

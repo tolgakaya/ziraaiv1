@@ -38,6 +38,10 @@ namespace Business.Handlers.PlantAnalyses.Commands
                 {
                     var plantAnalysis = new PlantAnalysis
                     {
+                        // Required fields from database
+                        AnalysisId = Guid.NewGuid().ToString(),
+                        Timestamp = DateTime.UtcNow,
+
                         // Don't store base64 in database for performance reasons
                         // ImageBase64 = request.Image,
                         UserId = request.UserId,
@@ -48,13 +52,17 @@ namespace Business.Handlers.PlantAnalyses.Commands
                         FieldId = request.FieldId,
                         CropType = request.CropType,
                         Location = request.Location,
+
+                        // GPS Coordinates as JSONB and helper fields
+                        GpsCoordinates = request.GpsCoordinates != null ? JsonConvert.SerializeObject(request.GpsCoordinates) : null,
                         Latitude = request.GpsCoordinates?.Lat,
                         Longitude = request.GpsCoordinates?.Lng,
+
                         Altitude = request.Altitude,
-                        PlantingDate = request.PlantingDate?.ToUniversalTime(),
-                        ExpectedHarvestDate = request.ExpectedHarvestDate?.ToUniversalTime(),
-                        LastFertilization = request.LastFertilization?.ToUniversalTime(),
-                        LastIrrigation = request.LastIrrigation?.ToUniversalTime(),
+                        PlantingDate = request.PlantingDate,
+                        ExpectedHarvestDate = request.ExpectedHarvestDate,
+                        LastFertilization = request.LastFertilization,
+                        LastIrrigation = request.LastIrrigation,
                         PreviousTreatments = request.PreviousTreatments != null ? JsonConvert.SerializeObject(request.PreviousTreatments) : null,
                         SoilType = request.SoilType,
                         Temperature = request.Temperature,
@@ -62,13 +70,38 @@ namespace Business.Handlers.PlantAnalyses.Commands
                         WeatherConditions = request.WeatherConditions,
                         UrgencyLevel = request.UrgencyLevel,
                         Notes = request.Notes,
+
+                        // Contact info as text field and helper fields
+                        ContactInfo = request.ContactInfo != null ? JsonConvert.SerializeObject(request.ContactInfo) : null,
                         ContactPhone = request.ContactInfo?.Phone,
                         ContactEmail = request.ContactInfo?.Email,
+
                         AdditionalInfo = request.AdditionalInfo != null ? JsonConvert.SerializeObject(request.AdditionalInfo) : null,
-                        AnalysisDate = DateTime.UtcNow,
-                        AnalysisStatus = "Processing",
+
+                        // Initialize JSONB fields with empty JSON
+                        PlantIdentification = "{}",
+                        HealthAssessment = "{}",
+                        NutrientStatus = "{}",
+                        PestDisease = "{}",
+                        EnvironmentalStress = "{}",
+                        CrossFactorInsights = null,
+                        RiskAssessment = "{}",
+                        Recommendations = "{}",
+                        Summary = "{}",
+                        ConfidenceNotes = null,
+                        FarmerFriendlySummary = "",
+                        ImageMetadata = "{}",
+                        ImageUrl = "",
+                        RequestMetadata = "{}",
+                        TokenUsage = "{}",
+                        ProcessingMetadata = "{}",
+                        DetailedAnalysisData = "{}",
+
+                        AnalysisDate = DateTime.Now,
+                        AnalysisStatus = "pending",
                         Status = true,
-                        CreatedDate = DateTime.UtcNow
+                        CreatedDate = DateTime.Now,
+                        ProcessingTimestamp = DateTime.Now
                     };
 
                     _plantAnalysisRepository.Add(plantAnalysis);
@@ -113,9 +146,27 @@ namespace Business.Handlers.PlantAnalyses.Commands
                         if (!string.IsNullOrEmpty(analysisResponse.Location)) plantAnalysis.Location = analysisResponse.Location;
                         if (analysisResponse.GpsCoordinates != null)
                         {
+                            plantAnalysis.GpsCoordinates = JsonConvert.SerializeObject(analysisResponse.GpsCoordinates);
                             plantAnalysis.Latitude = analysisResponse.GpsCoordinates.Lat;
                             plantAnalysis.Longitude = analysisResponse.GpsCoordinates.Lng;
                         }
+
+                        // Additional metadata from N8N response
+                        if (analysisResponse.LastFertilization.HasValue) plantAnalysis.LastFertilization = analysisResponse.LastFertilization;
+                        if (analysisResponse.LastIrrigation.HasValue) plantAnalysis.LastIrrigation = analysisResponse.LastIrrigation;
+                        if (analysisResponse.PreviousTreatments != null) plantAnalysis.PreviousTreatments = JsonConvert.SerializeObject(analysisResponse.PreviousTreatments);
+                        if (!string.IsNullOrEmpty(analysisResponse.WeatherConditions)) plantAnalysis.WeatherConditions = analysisResponse.WeatherConditions;
+                        if (analysisResponse.Temperature.HasValue) plantAnalysis.Temperature = analysisResponse.Temperature;
+                        if (analysisResponse.Humidity.HasValue) plantAnalysis.Humidity = analysisResponse.Humidity;
+                        if (!string.IsNullOrEmpty(analysisResponse.SoilType)) plantAnalysis.SoilType = analysisResponse.SoilType;
+                        if (analysisResponse.ContactInfo != null)
+                        {
+                            plantAnalysis.ContactInfo = JsonConvert.SerializeObject(analysisResponse.ContactInfo);
+                            plantAnalysis.ContactPhone = analysisResponse.ContactInfo.Phone;
+                            plantAnalysis.ContactEmail = analysisResponse.ContactInfo.Email;
+                        }
+                        if (analysisResponse.AdditionalInfo != null) plantAnalysis.AdditionalInfo = JsonConvert.SerializeObject(analysisResponse.AdditionalInfo);
+                        if (!string.IsNullOrEmpty(analysisResponse.ImageUrl)) plantAnalysis.ImageUrl = analysisResponse.ImageUrl;
                         
                         // Plant identification
                         if (analysisResponse.PlantIdentification != null)
@@ -124,6 +175,7 @@ namespace Business.Handlers.PlantAnalyses.Commands
                             plantAnalysis.PlantVariety = analysisResponse.PlantIdentification.Variety;
                             plantAnalysis.GrowthStage = analysisResponse.PlantIdentification.GrowthStage;
                             plantAnalysis.IdentificationConfidence = analysisResponse.PlantIdentification.Confidence;
+                            plantAnalysis.PlantIdentification = JsonConvert.SerializeObject(analysisResponse.PlantIdentification);
                         }
                         
                         // Health assessment
@@ -133,15 +185,56 @@ namespace Business.Handlers.PlantAnalyses.Commands
                             plantAnalysis.HealthSeverity = analysisResponse.HealthAssessment.Severity;
                             plantAnalysis.StressIndicators = JsonConvert.SerializeObject(analysisResponse.HealthAssessment.StressIndicators);
                             plantAnalysis.DiseaseSymptoms = JsonConvert.SerializeObject(analysisResponse.HealthAssessment.DiseaseSymptoms);
+                            plantAnalysis.HealthAssessment = JsonConvert.SerializeObject(analysisResponse.HealthAssessment);
                         }
                         
-                        // Nutrient status
+                        // Nutrient status - Save all individual nutrients
                         if (analysisResponse.NutrientStatus != null)
                         {
                             plantAnalysis.PrimaryDeficiency = analysisResponse.NutrientStatus.PrimaryDeficiency;
+                            plantAnalysis.NutrientSeverity = analysisResponse.NutrientStatus.Severity;
+
+                            // Save individual nutrient status
+                            plantAnalysis.Nitrogen = analysisResponse.NutrientStatus.Nitrogen;
+                            plantAnalysis.Phosphorus = analysisResponse.NutrientStatus.Phosphorus;
+                            plantAnalysis.Potassium = analysisResponse.NutrientStatus.Potassium;
+                            plantAnalysis.Calcium = analysisResponse.NutrientStatus.Calcium;
+                            plantAnalysis.Magnesium = analysisResponse.NutrientStatus.Magnesium;
+                            plantAnalysis.Sulfur = analysisResponse.NutrientStatus.Sulfur;
+                            plantAnalysis.Iron = analysisResponse.NutrientStatus.Iron;
+                            plantAnalysis.Zinc = analysisResponse.NutrientStatus.Zinc;
+                            plantAnalysis.Manganese = analysisResponse.NutrientStatus.Manganese;
+                            plantAnalysis.Boron = analysisResponse.NutrientStatus.Boron;
+                            plantAnalysis.Copper = analysisResponse.NutrientStatus.Copper;
+                            plantAnalysis.Molybdenum = analysisResponse.NutrientStatus.Molybdenum;
+                            plantAnalysis.Chlorine = analysisResponse.NutrientStatus.Chlorine;
+                            plantAnalysis.Nickel = analysisResponse.NutrientStatus.Nickel;
+
                             plantAnalysis.NutrientStatus = JsonConvert.SerializeObject(analysisResponse.NutrientStatus);
                         }
                         
+                        // Pest & Disease
+                        if (analysisResponse.PestDisease != null)
+                        {
+                            plantAnalysis.AffectedAreaPercentage = (int?)analysisResponse.PestDisease.AffectedAreaPercentage;
+                            plantAnalysis.SpreadRisk = analysisResponse.PestDisease.SpreadRisk;
+                            plantAnalysis.PrimaryIssue = analysisResponse.PestDisease.PrimaryIssue;
+                            plantAnalysis.PestDisease = JsonConvert.SerializeObject(analysisResponse.PestDisease);
+                        }
+
+                        // Environmental Stress
+                        if (analysisResponse.EnvironmentalStress != null)
+                        {
+                            plantAnalysis.PrimaryStressor = analysisResponse.EnvironmentalStress.PrimaryStressor;
+                            plantAnalysis.EnvironmentalStress = JsonConvert.SerializeObject(analysisResponse.EnvironmentalStress);
+                        }
+
+                        // Risk Assessment
+                        if (analysisResponse.RiskAssessment != null)
+                        {
+                            plantAnalysis.RiskAssessment = JsonConvert.SerializeObject(analysisResponse.RiskAssessment);
+                        }
+
                         // Summary
                         if (analysisResponse.Summary != null)
                         {
@@ -150,28 +243,81 @@ namespace Business.Handlers.PlantAnalyses.Commands
                             plantAnalysis.Prognosis = analysisResponse.Summary.Prognosis;
                             plantAnalysis.EstimatedYieldImpact = analysisResponse.Summary.EstimatedYieldImpact;
                             plantAnalysis.ConfidenceLevel = analysisResponse.Summary.ConfidenceLevel;
+                            plantAnalysis.CriticalIssuesCount = analysisResponse.Summary.CriticalIssuesCount;
+                            plantAnalysis.Summary = JsonConvert.SerializeObject(analysisResponse.Summary);
                         }
-                        
-                        // Metadata
-                        if (analysisResponse.ProcessingMetadata != null)
+
+                        // Confidence Notes
+                        if (analysisResponse.ConfidenceNotes != null)
                         {
-                            plantAnalysis.AiModel = analysisResponse.ProcessingMetadata.AiModel;
+                            plantAnalysis.ConfidenceNotes = JsonConvert.SerializeObject(analysisResponse.ConfidenceNotes);
                         }
-                        
-                        if (analysisResponse.TokenUsage?.Summary != null)
+
+                        // Farmer Friendly Summary
+                        if (!string.IsNullOrEmpty(analysisResponse.FarmerFriendlySummary))
                         {
-                            plantAnalysis.TotalTokens = analysisResponse.TokenUsage.Summary.TotalTokens;
-                            // Parse cost strings to decimal
-                            if (decimal.TryParse(analysisResponse.TokenUsage.Summary.TotalCostUsd?.Replace("$", ""), out var costUsd))
-                                plantAnalysis.TotalCostUsd = costUsd;
-                            if (decimal.TryParse(analysisResponse.TokenUsage.Summary.TotalCostTry?.Replace("₺", ""), out var costTry))
-                                plantAnalysis.TotalCostTry = costTry;
-                            plantAnalysis.ImageSizeKb = analysisResponse.TokenUsage.Summary.ImageSizeKb;
+                            plantAnalysis.FarmerFriendlySummary = analysisResponse.FarmerFriendlySummary;
+                        }
+
+                        // Image Metadata
+                        if (analysisResponse.ImageMetadata != null)
+                        {
+                            plantAnalysis.ImageUrl = analysisResponse.ImageMetadata.ImageUrl;
+                            plantAnalysis.ImageMetadata = JsonConvert.SerializeObject(analysisResponse.ImageMetadata);
                         }
                         
-                        // Recommendations and insights
-                        plantAnalysis.Recommendations = JsonConvert.SerializeObject(analysisResponse.Recommendations);
-                        plantAnalysis.CrossFactorInsights = JsonConvert.SerializeObject(analysisResponse.CrossFactorInsights);
+                        // Processing Metadata (saved to DB, but not returned in response)
+                        // Parse metadata from the full N8N response JSON
+                        if (!string.IsNullOrEmpty(analysisResponse.DetailedAnalysis?.FullResponseJson))
+                        {
+                            try
+                            {
+                                var fullN8nResponse = JsonConvert.DeserializeObject<dynamic>(analysisResponse.DetailedAnalysis.FullResponseJson);
+
+                                // Extract processing metadata
+                                if (fullN8nResponse?.processing_metadata != null)
+                                {
+                                    plantAnalysis.AiModel = fullN8nResponse.processing_metadata.ai_model;
+                                    plantAnalysis.WorkflowVersion = fullN8nResponse.processing_metadata.workflow_version;
+                                    plantAnalysis.ProcessingMetadata = JsonConvert.SerializeObject(fullN8nResponse.processing_metadata);
+                                }
+
+                                // Extract token usage
+                                if (fullN8nResponse?.token_usage?.summary != null)
+                                {
+                                    var tokenSummary = fullN8nResponse.token_usage.summary;
+                                    plantAnalysis.TotalTokens = tokenSummary.total_tokens ?? 0;
+                                    if (decimal.TryParse(tokenSummary.total_cost_usd?.ToString()?.Replace("$", ""), out decimal costUsd))
+                                        plantAnalysis.TotalCostUsd = costUsd;
+                                    if (decimal.TryParse(tokenSummary.total_cost_try?.ToString()?.Replace("₺", ""), out decimal costTry))
+                                        plantAnalysis.TotalCostTry = costTry;
+                                    plantAnalysis.ImageSizeKb = tokenSummary.image_size_kb;
+                                    plantAnalysis.TokenUsage = JsonConvert.SerializeObject(fullN8nResponse.token_usage);
+                                }
+
+                                // Extract request metadata
+                                if (fullN8nResponse?.request_metadata != null)
+                                {
+                                    plantAnalysis.RequestMetadata = JsonConvert.SerializeObject(fullN8nResponse.request_metadata);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // Log error but don't fail the entire process
+                                plantAnalysis.N8nWebhookResponse = $"Metadata parsing error: {ex.Message}";
+                            }
+                        }
+
+                        // Recommendations and Cross-Factor Insights
+                        if (analysisResponse.Recommendations != null)
+                        {
+                            plantAnalysis.Recommendations = JsonConvert.SerializeObject(analysisResponse.Recommendations);
+                        }
+
+                        if (analysisResponse.CrossFactorInsights != null)
+                        {
+                            plantAnalysis.CrossFactorInsights = JsonConvert.SerializeObject(analysisResponse.CrossFactorInsights);
+                        }
                         
                         // Legacy fields for backward compatibility
                         plantAnalysis.PlantType = analysisResponse.PlantType;

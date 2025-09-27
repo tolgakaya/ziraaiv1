@@ -100,7 +100,19 @@ namespace Entities.Dtos
         
         [JsonProperty("additional_info")]
         public AdditionalInfoData AdditionalInfo { get; set; }
-        
+
+        // Risk Assessment
+        [JsonProperty("risk_assessment")]
+        public RiskAssessment RiskAssessment { get; set; }
+
+        // Confidence Notes
+        [JsonProperty("confidence_notes")]
+        public List<ConfidenceNote> ConfidenceNotes { get; set; }
+
+        // Farmer Friendly Summary
+        [JsonProperty("farmer_friendly_summary")]
+        public string FarmerFriendlySummary { get; set; }
+
         // Image URL and Path
         [JsonProperty("image_url")]
         public string ImageUrl { get; set; }
@@ -117,7 +129,13 @@ namespace Entities.Dtos
         
         [JsonProperty("processing_metadata")]
         public ProcessingMetadata ProcessingMetadata { get; set; }
-        
+
+        [JsonProperty("token_usage")]
+        public TokenUsage TokenUsage { get; set; }
+
+        [JsonProperty("request_metadata")]
+        public RequestMetadata RequestMetadata { get; set; }
+
         // Response Status
         [JsonProperty("success")]
         public bool Success { get; set; }
@@ -187,81 +205,161 @@ namespace Entities.Dtos
     {
         [JsonProperty("nitrogen")]
         public string Nitrogen { get; set; }
-        
+
         [JsonProperty("phosphorus")]
         public string Phosphorus { get; set; }
-        
+
         [JsonProperty("potassium")]
         public string Potassium { get; set; }
-        
+
         [JsonProperty("calcium")]
         public string Calcium { get; set; }
-        
+
         [JsonProperty("magnesium")]
         public string Magnesium { get; set; }
-        
+
+        [JsonProperty("sulfur")]
+        public string Sulfur { get; set; }
+
         [JsonProperty("iron")]
         public string Iron { get; set; }
-        
+
+        [JsonProperty("zinc")]
+        public string Zinc { get; set; }
+
+        [JsonProperty("manganese")]
+        public string Manganese { get; set; }
+
+        [JsonProperty("boron")]
+        public string Boron { get; set; }
+
+        [JsonProperty("copper")]
+        public string Copper { get; set; }
+
+        [JsonProperty("molybdenum")]
+        public string Molybdenum { get; set; }
+
+        [JsonProperty("chlorine")]
+        public string Chlorine { get; set; }
+
+        [JsonProperty("nickel")]
+        public string Nickel { get; set; }
+
         [JsonProperty("primary_deficiency")]
         public string PrimaryDeficiency { get; set; }
-        
+
         [JsonProperty("secondary_deficiencies")]
         public string[] SecondaryDeficiencies { get; set; }
-        
+
         [JsonProperty("severity")]
         public string Severity { get; set; }
     }
 
     public class PestDisease
     {
-        public string[] PestsDetected { get; set; }
-        public string[] DiseasesDetected { get; set; }
+        [JsonProperty("pests_detected")]
+        public PestDetectedDto[] PestsDetected { get; set; }
+
+        [JsonProperty("diseases_detected")]
+        public DiseaseDetectedDto[] DiseasesDetected { get; set; }
+
+        [JsonProperty("damage_pattern")]
         public string DamagePattern { get; set; }
+
+        [JsonProperty("affected_area_percentage")]
         public int AffectedAreaPercentage { get; set; }
+
+        [JsonProperty("spread_risk")]
         public string SpreadRisk { get; set; }
+
+        [JsonProperty("primary_issue")]
         public string PrimaryIssue { get; set; }
     }
 
     public class EnvironmentalStress
     {
+        [JsonProperty("water_status")]
         public string WaterStatus { get; set; }
+
+        [JsonProperty("temperature_stress")]
         public string TemperatureStress { get; set; }
+
+        [JsonProperty("light_stress")]
         public string LightStress { get; set; }
+
+        [JsonProperty("physical_damage")]
         public string PhysicalDamage { get; set; }
+
+        [JsonProperty("chemical_damage")]
         public string ChemicalDamage { get; set; }
+
+        [JsonProperty("soil_indicators")]
         public string SoilIndicators { get; set; }
+
+        [JsonProperty("primary_stressor")]
         public string PrimaryStressor { get; set; }
     }
 
     public class CrossFactorInsight
     {
+        [JsonProperty("insight")]
         public string Insight { get; set; }
+
+        [JsonProperty("confidence")]
         public decimal Confidence { get; set; }
+
+        [JsonProperty("affected_aspects")]
         public string[] AffectedAspects { get; set; }
+
+        [JsonProperty("impact_level")]
         public string ImpactLevel { get; set; }
     }
 
     public class Recommendations
     {
+        [JsonProperty("immediate")]
         public Recommendation[] Immediate { get; set; }
+
+        [JsonProperty("short_term")]
         public Recommendation[] ShortTerm { get; set; }
+
+        [JsonProperty("preventive")]
         public Recommendation[] Preventive { get; set; }
+
+        [JsonProperty("monitoring")]
         public MonitoringParameter[] Monitoring { get; set; }
+
+        [JsonProperty("resource_estimation")]
+        public ResourceEstimation ResourceEstimation { get; set; }
+
+        [JsonProperty("localized_recommendations")]
+        public LocalizedRecommendations LocalizedRecommendations { get; set; }
     }
 
     public class Recommendation
     {
+        [JsonProperty("action")]
         public string Action { get; set; }
+
+        [JsonProperty("details")]
         public string Details { get; set; }
+
+        [JsonProperty("timeline")]
         public string Timeline { get; set; }
+
+        [JsonProperty("priority")]
         public string Priority { get; set; }
     }
 
     public class MonitoringParameter
     {
+        [JsonProperty("parameter")]
         public string Parameter { get; set; }
+
+        [JsonProperty("frequency")]
         public string Frequency { get; set; }
+
+        [JsonProperty("threshold")]
         public string Threshold { get; set; }
     }
 
@@ -323,4 +421,125 @@ namespace Entities.Dtos
         public int RetryCount { get; set; }
         public string Priority { get; set; }
     }
+
+    public class DiseaseDetectedDto
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("category")]
+        public string Category { get; set; }
+
+        [JsonProperty("severity")]
+        public string Severity { get; set; }
+
+        [JsonProperty("affected_parts")]
+        public string[] AffectedParts { get; set; }
+
+        [JsonProperty("confidence")]
+        public decimal Confidence { get; set; }
+    }
+
+    public class PestDetectedDto
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("category")]
+        public string Category { get; set; }
+
+        [JsonProperty("severity")]
+        public string Severity { get; set; }
+
+        [JsonProperty("affected_parts")]
+        public string[] AffectedParts { get; set; }
+
+        [JsonProperty("confidence")]
+        public decimal Confidence { get; set; }
+    }
+
+    public class TokenUsage
+    {
+        [JsonProperty("total_tokens")]
+        public int TotalTokens { get; set; }
+
+        [JsonProperty("prompt_tokens")]
+        public int PromptTokens { get; set; }
+
+        [JsonProperty("completion_tokens")]
+        public int CompletionTokens { get; set; }
+
+        [JsonProperty("cost_usd")]
+        public decimal CostUsd { get; set; }
+
+        [JsonProperty("cost_try")]
+        public decimal CostTry { get; set; }
+    }
+
+    public class RequestMetadata
+    {
+        [JsonProperty("user_agent")]
+        public string UserAgent { get; set; }
+
+        [JsonProperty("ip_address")]
+        public string IpAddress { get; set; }
+
+        [JsonProperty("request_timestamp")]
+        public DateTime RequestTimestamp { get; set; }
+
+        [JsonProperty("request_id")]
+        public string RequestId { get; set; }
+
+        [JsonProperty("api_version")]
+        public string ApiVersion { get; set; }
+    }
+
+    public class RiskAssessment
+    {
+        [JsonProperty("yield_loss_probability")]
+        public string YieldLossProbability { get; set; }
+
+        [JsonProperty("timeline_to_worsen")]
+        public string TimelineToWorsen { get; set; }
+
+        [JsonProperty("spread_potential")]
+        public string SpreadPotential { get; set; }
+    }
+
+    public class ConfidenceNote
+    {
+        [JsonProperty("aspect")]
+        public string Aspect { get; set; }
+
+        [JsonProperty("confidence")]
+        public decimal Confidence { get; set; }
+
+        [JsonProperty("reason")]
+        public string Reason { get; set; }
+    }
+
+    public class ResourceEstimation
+    {
+        [JsonProperty("water_required_liters")]
+        public string WaterRequiredLiters { get; set; }
+
+        [JsonProperty("fertilizer_cost_estimate_usd")]
+        public string FertilizerCostEstimateUsd { get; set; }
+
+        [JsonProperty("labor_hours_estimate")]
+        public string LaborHoursEstimate { get; set; }
+    }
+
+    public class LocalizedRecommendations
+    {
+        [JsonProperty("region")]
+        public string Region { get; set; }
+
+        [JsonProperty("preferred_practices")]
+        public string[] PreferredPractices { get; set; }
+
+        [JsonProperty("restricted_methods")]
+        public string[] RestrictedMethods { get; set; }
+    }
+
 }
