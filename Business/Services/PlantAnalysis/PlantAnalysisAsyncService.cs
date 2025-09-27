@@ -24,6 +24,7 @@ namespace Business.Services.PlantAnalysis
         private readonly IConfigurationService _configurationService;
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
         private readonly IPlantAnalysisService _plantAnalysisService;
+        private readonly IFileStorageService _fileStorageService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IConfiguration _configuration;
         private readonly RabbitMQOptions _rabbitMQOptions;
@@ -34,6 +35,7 @@ namespace Business.Services.PlantAnalysis
             IConfigurationService configurationService,
             IPlantAnalysisRepository plantAnalysisRepository,
             IPlantAnalysisService plantAnalysisService,
+            IFileStorageService fileStorageService,
             IHttpContextAccessor httpContextAccessor,
             IConfiguration configuration,
             IOptions<RabbitMQOptions> rabbitMQOptions)
@@ -43,6 +45,7 @@ namespace Business.Services.PlantAnalysis
             _configurationService = configurationService;
             _plantAnalysisRepository = plantAnalysisRepository;
             _plantAnalysisService = plantAnalysisService;
+            _fileStorageService = fileStorageService;
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _rabbitMQOptions = rabbitMQOptions.Value;
@@ -58,10 +61,13 @@ namespace Business.Services.PlantAnalysis
 
                 // Process image for AI (aggressive optimization for token reduction)
                 var processedImageDataUri = await ProcessImageForAIAsync(request.Image);
-                
-                // Use PlantAnalysisService for image upload (same as sync endpoint)
-                var imageUrl = await _plantAnalysisService.SaveImageFileAsync(processedImageDataUri, 999999);
-                
+
+                // Use same approach as sync endpoint - direct upload without extra processing
+                var imageUrl = await _fileStorageService.UploadImageFromDataUriAsync(
+                    processedImageDataUri,
+                    analysisId,
+                    "plant-images");
+
                 // Store full URL in database (consistent with sync endpoint)
                 var imagePath = imageUrl;
 
