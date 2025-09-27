@@ -91,7 +91,8 @@
       "Bash(gh pr merge:*)",
       "Bash(git fetch:*)",
       "WebSearch",
-      "Bash(dir WebAPI)"
+      "Bash(dir WebAPI)",
+      "Bash(git revert:*)"
     ],
     "deny": [],
     "ask": [],
