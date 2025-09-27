@@ -309,8 +309,18 @@ namespace Business.Services.PlantAnalysis
                 CropType = n8nResponse.CropType,
                 PlantingDate = ParseDate(n8nResponse.PlantingDate),
                 ExpectedHarvestDate = ParseDate(n8nResponse.ExpectedHarvestDate),
+                LastFertilization = ParseDate(n8nResponse.LastFertilization),
+                LastIrrigation = ParseDate(n8nResponse.LastIrrigation),
+                PreviousTreatments = n8nResponse.PreviousTreatments ?? new List<string>(),
+                WeatherConditions = n8nResponse.WeatherConditions,
+                Temperature = n8nResponse.Temperature,
+                Humidity = n8nResponse.Humidity,
+                SoilType = n8nResponse.SoilType,
                 UrgencyLevel = n8nResponse.UrgencyLevel,
                 Notes = n8nResponse.Notes,
+                ContactInfo = MapContactInfoDto(n8nResponse.ContactInfo),
+                AdditionalInfo = MapAdditionalInfoDto(n8nResponse.AdditionalInfo),
+                ImageUrl = n8nResponse.ImageMetadata?.URL,
                 
                 // Analysis details
                 PlantIdentification = MapPlantIdentificationDto(n8nResponse.PlantIdentification),
@@ -321,11 +331,15 @@ namespace Business.Services.PlantAnalysis
                 Recommendations = MapRecommendationsDto(n8nResponse.Recommendations),
                 CrossFactorInsights = MapCrossFactorInsightsDto(n8nResponse.CrossFactorInsights),
                 Summary = MapSummaryDto(n8nResponse.Summary),
-                
-                // Metadata
-                ProcessingMetadata = MapProcessingMetadataDto(n8nResponse.ProcessingMetadata),
-                TokenUsage = MapTokenUsageDto(n8nResponse.TokenUsage),
-                
+
+                // Additional Analysis Data
+                RiskAssessment = MapRiskAssessmentDto(n8nResponse.RiskAssessment),
+                ConfidenceNotes = MapConfidenceNotesDto(n8nResponse.ConfidenceNotes),
+                FarmerFriendlySummary = n8nResponse.FarmerFriendlySummary,
+
+                // Image Metadata (ProcessingMetadata and TokenUsage are saved to DB but not returned in API response)
+                ImageMetadata = MapImageMetadataDto(n8nResponse.ImageMetadata),
+
                 // Full detailed analysis
                 DetailedAnalysis = detailedAnalysis,
                 
@@ -420,7 +434,7 @@ namespace Business.Services.PlantAnalysis
         private NutrientStatusDto MapNutrientStatusDto(N8nNutrientStatus source)
         {
             if (source == null) return new NutrientStatusDto();
-            
+
             return new NutrientStatusDto
             {
                 Nitrogen = source.Nitrogen,
@@ -429,6 +443,14 @@ namespace Business.Services.PlantAnalysis
                 Calcium = source.Calcium,
                 Magnesium = source.Magnesium,
                 Iron = source.Iron,
+                Sulfur = source.Sulfur,
+                Zinc = source.Zinc,
+                Manganese = source.Manganese,
+                Boron = source.Boron,
+                Copper = source.Copper,
+                Molybdenum = source.Molybdenum,
+                Chlorine = source.Chlorine,
+                Nickel = source.Nickel,
                 PrimaryDeficiency = source.PrimaryDeficiency,
                 SecondaryDeficiencies = source.SecondaryDeficiencies ?? new List<string>(),
                 Severity = source.Severity
@@ -438,7 +460,7 @@ namespace Business.Services.PlantAnalysis
         private NutrientStatusDto MapNutrientStatus(N8nNutrientStatus source)
         {
             if (source == null) return new NutrientStatusDto();
-            
+
             return new NutrientStatusDto
             {
                 Nitrogen = source.Nitrogen,
@@ -447,7 +469,16 @@ namespace Business.Services.PlantAnalysis
                 Calcium = source.Calcium,
                 Magnesium = source.Magnesium,
                 Iron = source.Iron,
+                Sulfur = source.Sulfur,
+                Zinc = source.Zinc,
+                Manganese = source.Manganese,
+                Boron = source.Boron,
+                Copper = source.Copper,
+                Molybdenum = source.Molybdenum,
+                Chlorine = source.Chlorine,
+                Nickel = source.Nickel,
                 PrimaryDeficiency = source.PrimaryDeficiency,
+                SecondaryDeficiencies = source.SecondaryDeficiencies ?? new List<string>(),
                 Severity = source.Severity
             };
         }
@@ -455,11 +486,11 @@ namespace Business.Services.PlantAnalysis
         private PestDiseaseDto MapPestDiseaseDto(N8nPestDisease source)
         {
             if (source == null) return new PestDiseaseDto();
-            
+
             return new PestDiseaseDto
             {
-                PestsDetected = source.PestsDetected ?? new List<string>(),
-                DiseasesDetected = source.DiseasesDetected ?? new List<string>(),
+                PestsDetected = source.PestsDetected?.Select(p => p.Type).ToList() ?? new List<string>(),
+                DiseasesDetected = source.DiseasesDetected?.Select(d => d.Type).ToList() ?? new List<string>(),
                 DamagePattern = source.DamagePattern,
                 AffectedAreaPercentage = source.AffectedAreaPercentage,
                 SpreadRisk = source.SpreadRisk,
@@ -470,11 +501,11 @@ namespace Business.Services.PlantAnalysis
         private PestDiseaseDto MapPestDisease(N8nPestDisease source)
         {
             if (source == null) return new PestDiseaseDto();
-            
+
             return new PestDiseaseDto
             {
-                PestsDetected = source.PestsDetected ?? new List<string>(),
-                DiseasesDetected = source.DiseasesDetected ?? new List<string>(),
+                PestsDetected = source.PestsDetected?.Select(p => p.Type).ToList() ?? new List<string>(),
+                DiseasesDetected = source.DiseasesDetected?.Select(d => d.Type).ToList() ?? new List<string>(),
                 DamagePattern = source.DamagePattern,
                 AffectedAreaPercentage = source.AffectedAreaPercentage,
                 SpreadRisk = source.SpreadRisk,
@@ -485,7 +516,7 @@ namespace Business.Services.PlantAnalysis
         private EnvironmentalStressDto MapEnvironmentalStressDto(N8nEnvironmentalStress source)
         {
             if (source == null) return new EnvironmentalStressDto();
-            
+
             return new EnvironmentalStressDto
             {
                 WaterStatus = source.WaterStatus,
@@ -494,6 +525,8 @@ namespace Business.Services.PlantAnalysis
                 PhysicalDamage = source.PhysicalDamage,
                 ChemicalDamage = source.ChemicalDamage,
                 SoilIndicators = source.SoilIndicators,
+                PhysiologicalDisorders = MapPhysiologicalDisordersDto(source.PhysiologicalDisorders),
+                SoilHealthIndicators = MapSoilHealthIndicatorsDto(source.SoilHealthIndicators),
                 PrimaryStressor = source.PrimaryStressor
             };
         }
@@ -501,7 +534,7 @@ namespace Business.Services.PlantAnalysis
         private EnvironmentalStressDto MapEnvironmentalStress(N8nEnvironmentalStress source)
         {
             if (source == null) return new EnvironmentalStressDto();
-            
+
             return new EnvironmentalStressDto
             {
                 WaterStatus = source.WaterStatus,
@@ -510,6 +543,8 @@ namespace Business.Services.PlantAnalysis
                 PhysicalDamage = source.PhysicalDamage,
                 ChemicalDamage = source.ChemicalDamage,
                 SoilIndicators = source.SoilIndicators,
+                PhysiologicalDisorders = MapPhysiologicalDisordersDto(source.PhysiologicalDisorders),
+                SoilHealthIndicators = MapSoilHealthIndicatorsDto(source.SoilHealthIndicators),
                 PrimaryStressor = source.PrimaryStressor
             };
         }
@@ -542,7 +577,7 @@ namespace Business.Services.PlantAnalysis
         private RecommendationsDto MapRecommendationsDto(N8nRecommendations source)
         {
             if (source == null) return new RecommendationsDto();
-            
+
             return new RecommendationsDto
             {
                 Immediate = source.Immediate?.Select(r => new RecommendationDto
@@ -552,7 +587,7 @@ namespace Business.Services.PlantAnalysis
                     Timeline = r.Timeline,
                     Priority = r.Priority
                 }).ToList() ?? new List<RecommendationDto>(),
-                
+
                 ShortTerm = source.ShortTerm?.Select(r => new RecommendationDto
                 {
                     Action = r.Action,
@@ -560,7 +595,7 @@ namespace Business.Services.PlantAnalysis
                     Timeline = r.Timeline,
                     Priority = r.Priority
                 }).ToList() ?? new List<RecommendationDto>(),
-                
+
                 Preventive = source.Preventive?.Select(r => new RecommendationDto
                 {
                     Action = r.Action,
@@ -568,49 +603,58 @@ namespace Business.Services.PlantAnalysis
                     Timeline = r.Timeline,
                     Priority = r.Priority
                 }).ToList() ?? new List<RecommendationDto>(),
-                
+
                 Monitoring = source.Monitoring?.Select(m => new MonitoringItemDto
                 {
                     Parameter = m.Parameter,
                     Frequency = m.Frequency,
                     Threshold = m.Threshold
-                }).ToList() ?? new List<MonitoringItemDto>()
+                }).ToList() ?? new List<MonitoringItemDto>(),
+
+                ResourceEstimation = MapResourceEstimationDto(source.ResourceEstimation),
+                LocalizedRecommendations = MapLocalizedRecommendationsDto(source.LocalizedRecommendations)
             };
         }
         
         private RecommendationsDto MapRecommendations(N8nRecommendations source)
         {
             if (source == null) return new RecommendationsDto();
-            
+
             return new RecommendationsDto
             {
                 Immediate = source.Immediate?.Select(r => new RecommendationDto
                 {
                     Action = r.Action,
                     Details = r.Details,
-                    Timeline = r.Timeline
+                    Timeline = r.Timeline,
+                    Priority = r.Priority
                 }).ToList() ?? new List<RecommendationDto>(),
-                
+
                 ShortTerm = source.ShortTerm?.Select(r => new RecommendationDto
                 {
                     Action = r.Action,
                     Details = r.Details,
-                    Timeline = r.Timeline
+                    Timeline = r.Timeline,
+                    Priority = r.Priority
                 }).ToList() ?? new List<RecommendationDto>(),
-                
+
                 Preventive = source.Preventive?.Select(r => new RecommendationDto
                 {
                     Action = r.Action,
                     Details = r.Details,
-                    Timeline = r.Timeline
+                    Timeline = r.Timeline,
+                    Priority = r.Priority
                 }).ToList() ?? new List<RecommendationDto>(),
-                
+
                 Monitoring = source.Monitoring?.Select(m => new MonitoringItemDto
                 {
                     Parameter = m.Parameter,
                     Frequency = m.Frequency,
                     Threshold = m.Threshold
-                }).ToList() ?? new List<MonitoringItemDto>()
+                }).ToList() ?? new List<MonitoringItemDto>(),
+
+                ResourceEstimation = MapResourceEstimationDto(source.ResourceEstimation),
+                LocalizedRecommendations = MapLocalizedRecommendationsDto(source.LocalizedRecommendations)
             };
         }
 
@@ -735,32 +779,140 @@ namespace Business.Services.PlantAnalysis
             };
         }
 
-        private List<DiseaseDto> MapLegacyDiseases(List<string> diseases)
+        private List<DiseaseDto> MapLegacyDiseases(List<N8nDiseaseDetected> diseases)
         {
             if (diseases == null) return new List<DiseaseDto>();
-            
+
             return diseases.Select(d => new DiseaseDto
             {
-                Name = d,
-                Type = "Detected",
-                Severity = "Unknown",
-                Description = $"Disease: {d}",
+                Name = d.Type,
+                Type = d.Category,
+                Severity = d.Severity,
+                Description = $"Disease: {d.Type} (Confidence: {d.Confidence:P0})",
                 Treatment = "See detailed recommendations"
             }).ToList();
         }
 
-        private List<PestDto> MapLegacyPests(List<string> pests)
+        private List<PestDto> MapLegacyPests(List<N8nPestDetected> pests)
         {
             if (pests == null) return new List<PestDto>();
-            
+
             return pests.Select(p => new PestDto
             {
-                Name = p,
-                Type = "Detected",
-                Severity = "Unknown",
-                Description = $"Pest: {p}",
+                Name = p.Type,
+                Type = p.Category,
+                Severity = p.Severity,
+                Description = $"Pest: {p.Type} (Confidence: {p.Confidence:P0})",
                 Treatment = "See detailed recommendations"
             }).ToList();
+        }
+
+        private RiskAssessmentDto MapRiskAssessmentDto(N8nRiskAssessment source)
+        {
+            if (source == null) return null;
+
+            return new RiskAssessmentDto
+            {
+                YieldLossProbability = source.YieldLossProbability,
+                TimelineToWorsen = source.TimelineToWorsen,
+                SpreadPotential = source.SpreadPotential
+            };
+        }
+
+        private List<ConfidenceNoteDto> MapConfidenceNotesDto(List<N8nConfidenceNote> source)
+        {
+            if (source == null) return new List<ConfidenceNoteDto>();
+
+            return source.Select(note => new ConfidenceNoteDto
+            {
+                Aspect = note.Aspect,
+                Confidence = note.Confidence,
+                Reason = note.Reason
+            }).ToList();
+        }
+
+        private ImageMetadataDto MapImageMetadataDto(N8nImageMetadata source)
+        {
+            if (source == null) return null;
+
+            return new ImageMetadataDto
+            {
+                Source = source.Source,
+                ImageUrl = source.URL,
+                HasImageExtension = source.HasImageExtension,
+                UploadTimestamp = source.UploadTimestamp
+            };
+        }
+
+        private List<PhysiologicalDisorderDto> MapPhysiologicalDisordersDto(List<N8nPhysiologicalDisorder> source)
+        {
+            if (source == null) return new List<PhysiologicalDisorderDto>();
+
+            return source.Select(disorder => new PhysiologicalDisorderDto
+            {
+                Type = disorder.Type,
+                Severity = disorder.Severity,
+                Notes = disorder.Notes
+            }).ToList();
+        }
+
+        private SoilHealthIndicatorsDto MapSoilHealthIndicatorsDto(N8nSoilHealthIndicators source)
+        {
+            if (source == null) return null;
+
+            return new SoilHealthIndicatorsDto
+            {
+                Salinity = source.Salinity,
+                PhIssue = source.PhIssue,
+                OrganicMatter = source.OrganicMatter
+            };
+        }
+
+        private ResourceEstimationDto MapResourceEstimationDto(N8nResourceEstimation source)
+        {
+            if (source == null) return null;
+
+            return new ResourceEstimationDto
+            {
+                WaterRequiredLiters = source.WaterRequiredLiters,
+                FertilizerCostEstimateUsd = source.FertilizerCostEstimateUsd,
+                LaborHoursEstimate = source.LaborHoursEstimate
+            };
+        }
+
+        private LocalizedRecommendationsDto MapLocalizedRecommendationsDto(N8nLocalizedRecommendations source)
+        {
+            if (source == null) return null;
+
+            return new LocalizedRecommendationsDto
+            {
+                Region = source.Region,
+                PreferredPractices = source.PreferredPractices ?? new List<string>(),
+                RestrictedMethods = source.RestrictedMethods ?? new List<string>()
+            };
+        }
+
+        private ContactInfoDto MapContactInfoDto(N8nContactInfo source)
+        {
+            if (source == null) return null;
+
+            return new ContactInfoDto
+            {
+                Phone = source.Phone,
+                Email = source.Email
+            };
+        }
+
+        private AdditionalInfoDto MapAdditionalInfoDto(N8nAdditionalInfo source)
+        {
+            if (source == null) return null;
+
+            return new AdditionalInfoDto
+            {
+                IrrigationMethod = source.IrrigationMethod,
+                Greenhouse = source.Greenhouse,
+                OrganicCertified = source.OrganicCertified
+            };
         }
 
         public async Task<string> SaveImageFileAsync(string imageBase64, int analysisId)
@@ -1200,6 +1352,15 @@ namespace Business.Services.PlantAnalysis
         
         [JsonProperty("error_type")]
         public string ErrorType { get; set; }
+
+        [JsonProperty("risk_assessment")]
+        public N8nRiskAssessment RiskAssessment { get; set; }
+
+        [JsonProperty("confidence_notes")]
+        public List<N8nConfidenceNote> ConfidenceNotes { get; set; }
+
+        [JsonProperty("farmer_friendly_summary")]
+        public string FarmerFriendlySummary { get; set; }
     }
     
     public class N8nGpsCoordinates
@@ -1284,28 +1445,52 @@ namespace Business.Services.PlantAnalysis
     {
         [JsonProperty("nitrogen")]
         public string Nitrogen { get; set; }
-        
+
         [JsonProperty("phosphorus")]
         public string Phosphorus { get; set; }
-        
+
         [JsonProperty("potassium")]
         public string Potassium { get; set; }
-        
+
         [JsonProperty("calcium")]
         public string Calcium { get; set; }
-        
+
         [JsonProperty("magnesium")]
         public string Magnesium { get; set; }
-        
+
         [JsonProperty("iron")]
         public string Iron { get; set; }
-        
+
+        [JsonProperty("sulfur")]
+        public string Sulfur { get; set; }
+
+        [JsonProperty("zinc")]
+        public string Zinc { get; set; }
+
+        [JsonProperty("manganese")]
+        public string Manganese { get; set; }
+
+        [JsonProperty("boron")]
+        public string Boron { get; set; }
+
+        [JsonProperty("copper")]
+        public string Copper { get; set; }
+
+        [JsonProperty("molybdenum")]
+        public string Molybdenum { get; set; }
+
+        [JsonProperty("chlorine")]
+        public string Chlorine { get; set; }
+
+        [JsonProperty("nickel")]
+        public string Nickel { get; set; }
+
         [JsonProperty("primary_deficiency")]
         public string PrimaryDeficiency { get; set; }
-        
+
         [JsonProperty("secondary_deficiencies")]
         public List<string> SecondaryDeficiencies { get; set; }
-        
+
         [JsonProperty("severity")]
         public string Severity { get; set; }
     }
@@ -1313,22 +1498,58 @@ namespace Business.Services.PlantAnalysis
     public class N8nPestDisease
     {
         [JsonProperty("pests_detected")]
-        public List<string> PestsDetected { get; set; }
-        
+        public List<N8nPestDetected> PestsDetected { get; set; }
+
         [JsonProperty("diseases_detected")]
-        public List<string> DiseasesDetected { get; set; }
-        
+        public List<N8nDiseaseDetected> DiseasesDetected { get; set; }
+
         [JsonProperty("damage_pattern")]
         public string DamagePattern { get; set; }
-        
+
         [JsonProperty("affected_area_percentage")]
         public decimal AffectedAreaPercentage { get; set; }
-        
+
         [JsonProperty("spread_risk")]
         public string SpreadRisk { get; set; }
-        
+
         [JsonProperty("primary_issue")]
         public string PrimaryIssue { get; set; }
+    }
+
+    public class N8nDiseaseDetected
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("category")]
+        public string Category { get; set; }
+
+        [JsonProperty("severity")]
+        public string Severity { get; set; }
+
+        [JsonProperty("affected_parts")]
+        public List<string> AffectedParts { get; set; }
+
+        [JsonProperty("confidence")]
+        public decimal Confidence { get; set; }
+    }
+
+    public class N8nPestDetected
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("category")]
+        public string Category { get; set; }
+
+        [JsonProperty("severity")]
+        public string Severity { get; set; }
+
+        [JsonProperty("affected_parts")]
+        public List<string> AffectedParts { get; set; }
+
+        [JsonProperty("confidence")]
+        public decimal Confidence { get; set; }
     }
 
 
@@ -1336,22 +1557,28 @@ namespace Business.Services.PlantAnalysis
     {
         [JsonProperty("water_status")]
         public string WaterStatus { get; set; }
-        
+
         [JsonProperty("temperature_stress")]
         public string TemperatureStress { get; set; }
-        
+
         [JsonProperty("light_stress")]
         public string LightStress { get; set; }
-        
+
         [JsonProperty("physical_damage")]
         public string PhysicalDamage { get; set; }
-        
+
         [JsonProperty("chemical_damage")]
         public string ChemicalDamage { get; set; }
-        
+
         [JsonProperty("soil_indicators")]
         public string SoilIndicators { get; set; }
-        
+
+        [JsonProperty("physiological_disorders")]
+        public List<N8nPhysiologicalDisorder> PhysiologicalDisorders { get; set; }
+
+        [JsonProperty("soil_health_indicators")]
+        public N8nSoilHealthIndicators SoilHealthIndicators { get; set; }
+
         [JsonProperty("primary_stressor")]
         public string PrimaryStressor { get; set; }
     }
@@ -1375,15 +1602,21 @@ namespace Business.Services.PlantAnalysis
     {
         [JsonProperty("immediate")]
         public List<N8nRecommendation> Immediate { get; set; }
-        
+
         [JsonProperty("short_term")]
         public List<N8nRecommendation> ShortTerm { get; set; }
-        
+
         [JsonProperty("preventive")]
         public List<N8nRecommendation> Preventive { get; set; }
-        
+
         [JsonProperty("monitoring")]
         public List<N8nMonitoringItem> Monitoring { get; set; }
+
+        [JsonProperty("resource_estimation")]
+        public N8nResourceEstimation ResourceEstimation { get; set; }
+
+        [JsonProperty("localized_recommendations")]
+        public N8nLocalizedRecommendations LocalizedRecommendations { get; set; }
     }
 
     public class N8nRecommendation
@@ -1439,23 +1672,32 @@ namespace Business.Services.PlantAnalysis
     
     public class N8nImageMetadata
     {
+        [JsonProperty("source")]
+        public string Source { get; set; }
+
+        [JsonProperty("image_url")]
+        public string URL { get; set; }
+
+        [JsonProperty("has_image_extension")]
+        public bool HasImageExtension { get; set; }
+
         [JsonProperty("format")]
         public string Format { get; set; }
-        
+
         [JsonProperty("size_bytes")]
-        public decimal SizeBytes { get; set; }
-        
+        public decimal? SizeBytes { get; set; }
+
         [JsonProperty("size_kb")]
-        public decimal SizeKb { get; set; }
-        
+        public decimal? SizeKb { get; set; }
+
         [JsonProperty("size_mb")]
-        public decimal SizeMb { get; set; }
-        
+        public decimal? SizeMb { get; set; }
+
         [JsonProperty("base64_length")]
-        public int Base64Length { get; set; }
-        
+        public int? Base64Length { get; set; }
+
         [JsonProperty("upload_timestamp")]
-        public DateTime UploadTimestamp { get; set; }
+        public DateTime? UploadTimestamp { get; set; }
     }
     
     public class N8nProcessingMetadata
@@ -1561,5 +1803,77 @@ namespace Business.Services.PlantAnalysis
         
         [JsonProperty("exchange_rate")]
         public decimal ExchangeRate { get; set; }
+    }
+
+    public class N8nRiskAssessment
+    {
+        [JsonProperty("yield_loss_probability")]
+        public string YieldLossProbability { get; set; }
+
+        [JsonProperty("timeline_to_worsen")]
+        public string TimelineToWorsen { get; set; }
+
+        [JsonProperty("spread_potential")]
+        public string SpreadPotential { get; set; }
+    }
+
+    public class N8nConfidenceNote
+    {
+        [JsonProperty("aspect")]
+        public string Aspect { get; set; }
+
+        [JsonProperty("confidence")]
+        public decimal Confidence { get; set; }
+
+        [JsonProperty("reason")]
+        public string Reason { get; set; }
+    }
+
+    public class N8nPhysiologicalDisorder
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("severity")]
+        public string Severity { get; set; }
+
+        [JsonProperty("notes")]
+        public string Notes { get; set; }
+    }
+
+    public class N8nSoilHealthIndicators
+    {
+        [JsonProperty("salinity")]
+        public string Salinity { get; set; }
+
+        [JsonProperty("pH_issue")]
+        public string PhIssue { get; set; }
+
+        [JsonProperty("organic_matter")]
+        public string OrganicMatter { get; set; }
+    }
+
+    public class N8nResourceEstimation
+    {
+        [JsonProperty("water_required_liters")]
+        public string WaterRequiredLiters { get; set; }
+
+        [JsonProperty("fertilizer_cost_estimate_usd")]
+        public string FertilizerCostEstimateUsd { get; set; }
+
+        [JsonProperty("labor_hours_estimate")]
+        public string LaborHoursEstimate { get; set; }
+    }
+
+    public class N8nLocalizedRecommendations
+    {
+        [JsonProperty("region")]
+        public string Region { get; set; }
+
+        [JsonProperty("preferred_practices")]
+        public List<string> PreferredPractices { get; set; }
+
+        [JsonProperty("restricted_methods")]
+        public List<string> RestrictedMethods { get; set; }
     }
 }

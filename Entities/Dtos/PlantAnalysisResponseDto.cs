@@ -20,56 +20,62 @@ namespace Entities.Dtos
         public int? SponsorUserId { get; set; }        // Actual sponsor user ID
         public int? SponsorshipCodeId { get; set; }    // SponsorshipCode table ID
         public string Location { get; set; }
-        [JsonIgnore]
         public GpsCoordinates GpsCoordinates { get; set; }
         public int? Altitude { get; set; }
         public string FieldId { get; set; }
         public string CropType { get; set; }
         public DateTime? PlantingDate { get; set; }
         public DateTime? ExpectedHarvestDate { get; set; }
+        public DateTime? LastFertilization { get; set; }
+        public DateTime? LastIrrigation { get; set; }
+        public List<string> PreviousTreatments { get; set; }
+        public string WeatherConditions { get; set; }
+        public decimal? Temperature { get; set; }
+        public decimal? Humidity { get; set; }
+        public string SoilType { get; set; }
         public string UrgencyLevel { get; set; }
         public string Notes { get; set; }
+        public ContactInfoDto ContactInfo { get; set; }
+        public AdditionalInfoDto AdditionalInfo { get; set; }
+        public string ImageUrl { get; set; }
         
         // Plant Identification
-        [JsonIgnore]
         public PlantIdentificationDto PlantIdentification { get; set; }
-        
+
         // Health Assessment
-        [JsonIgnore]
         public HealthAssessmentDto HealthAssessment { get; set; }
-        
+
         // Nutrient Status
-        [JsonIgnore]
         public NutrientStatusDto NutrientStatus { get; set; }
-        
+
         // Pest & Disease
-        [JsonIgnore]
         public PestDiseaseDto PestDisease { get; set; }
-        
+
         // Environmental Stress
-        [JsonIgnore]
         public EnvironmentalStressDto EnvironmentalStress { get; set; }
-        
+
         // Recommendations
-        [JsonIgnore]
         public RecommendationsDto Recommendations { get; set; }
-        
+
         // Cross Factor Insights
-        [JsonIgnore]
         public List<CrossFactorInsightDto> CrossFactorInsights { get; set; }
-        
+
         // Summary
-        [JsonIgnore]
         public SummaryDto Summary { get; set; }
-        
-        // Metadata
-        [JsonIgnore]
-        public ProcessingMetadataDto ProcessingMetadata { get; set; }
-        [JsonIgnore]
-        public TokenUsageDto TokenUsage { get; set; }
-        
+
+        // Risk Assessment
+        public RiskAssessmentDto RiskAssessment { get; set; }
+
+        // Confidence Notes
+        public List<ConfidenceNoteDto> ConfidenceNotes { get; set; }
+
+        // Farmer Friendly Summary
+        public string FarmerFriendlySummary { get; set; }
+
+        // Image Metadata
+        public ImageMetadataDto ImageMetadata { get; set; }
+
         // Detailed Analysis Data (full JSON for reference)
-        [JsonIgnore]
         public DetailedPlantAnalysisDto DetailedAnalysis { get; set; }
         
         // Legacy fields for backward compatibility
