@@ -77,7 +77,35 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<UserRepository>().As<IUserRepository>()
                 .InstancePerLifetimeScope();
-            
+
+            // Core repositories
+            builder.RegisterType<UserGroupRepository>().As<IUserGroupRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<GroupRepository>().As<IGroupRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<GroupClaimRepository>().As<IGroupClaimRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<UserClaimRepository>().As<IUserClaimRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<OperationClaimRepository>().As<IOperationClaimRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<LanguageRepository>().As<ILanguageRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<TranslateRepository>().As<ITranslateRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<LogRepository>().As<ILogRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<MobileLoginRepository>().As<IMobileLoginRepository>()
+                .InstancePerLifetimeScope();
+
             // Subscription repositories
             builder.RegisterType<SubscriptionTierRepository>().As<ISubscriptionTierRepository>()
                 .InstancePerLifetimeScope();

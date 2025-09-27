@@ -3,6 +3,7 @@ using Business.Services.Configuration;
 using Core.Configuration;
 using Entities.Constants;
 using Entities.Dtos;
+using DataAccess.Abstract;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -18,15 +19,18 @@ namespace WebAPI.Controllers
     {
         private readonly IMessageQueueService _messageQueueService;
         private readonly IConfigurationService _configurationService;
+        private readonly IPlantAnalysisRepository _plantAnalysisRepository;
         private readonly RabbitMQOptions _rabbitMQOptions;
 
         public TestController(
-            IMessageQueueService messageQueueService, 
+            IMessageQueueService messageQueueService,
             IConfigurationService configurationService,
+            IPlantAnalysisRepository plantAnalysisRepository,
             IOptions<RabbitMQOptions> rabbitMQOptions)
         {
             _messageQueueService = messageQueueService;
             _configurationService = configurationService;
+            _plantAnalysisRepository = plantAnalysisRepository;
             _rabbitMQOptions = rabbitMQOptions.Value;
         }
 
@@ -92,8 +96,8 @@ namespace WebAPI.Controllers
 
                     PestDisease = new PestDisease
                     {
-                        PestsDetected = new string[] { },
-                        DiseasesDetected = new string[] { },
+                        PestsDetected = new PestDetectedDto[] { },
+                        DiseasesDetected = new DiseaseDetectedDto[] { },
                         DamagePattern = "no visible pest or disease damage",
                         AffectedAreaPercentage = 0,
                         SpreadRisk = "none",
@@ -288,6 +292,47 @@ namespace WebAPI.Controllers
                     error = ex.Message,
                     timestamp = DateTime.UtcNow
                 });
+            }
+        }
+
+        [HttpGet("debug/analysis/{id}")]
+        public async Task<IActionResult> DebugAnalysis(int id)
+        {
+            try
+            {
+                var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == id);
+                if (analysis == null)
+                {
+                    return NotFound($"Analysis with ID {id} not found");
+                }
+
+                return Ok(new
+                {
+                    id = analysis.Id,
+                    analysis_id = analysis.AnalysisId,
+                    analysis_status = analysis.AnalysisStatus,
+
+                    // Raw JSONB content
+                    raw_pest_disease = analysis.PestDisease,
+                    raw_environmental_stress = analysis.EnvironmentalStress,
+                    raw_risk_assessment = analysis.RiskAssessment,
+                    raw_recommendations = analysis.Recommendations,
+                    raw_plant_identification = analysis.PlantIdentification,
+                    raw_health_assessment = analysis.HealthAssessment,
+                    raw_cross_factor_insights = analysis.CrossFactorInsights,
+
+                    // Helper fields for comparison
+                    helper_affected_area_percentage = analysis.AffectedAreaPercentage,
+                    helper_spread_risk = analysis.SpreadRisk,
+                    helper_primary_issue = analysis.PrimaryIssue,
+                    helper_primary_stressor = analysis.PrimaryStressor,
+
+                    timestamp = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error: {ex.Message}");
             }
         }
     }
