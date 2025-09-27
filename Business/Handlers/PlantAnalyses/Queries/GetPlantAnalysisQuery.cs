@@ -135,10 +135,10 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         : null,
                     
                     // Summary
-                    Summary = plantAnalysis.OverallHealthScore.HasValue
+                    Summary = plantAnalysis.OverallHealthScore > 0
                         ? new SummaryDto
                         {
-                            OverallHealthScore = plantAnalysis.OverallHealthScore.Value,
+                            OverallHealthScore = plantAnalysis.OverallHealthScore,
                             PrimaryConcern = plantAnalysis.PrimaryConcern,
                             Prognosis = plantAnalysis.Prognosis,
                             EstimatedYieldImpact = plantAnalysis.EstimatedYieldImpact,
@@ -146,28 +146,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         }
                         : null,
                     
-                    // Processing Metadata
-                    ProcessingMetadata = !string.IsNullOrEmpty(plantAnalysis.AiModel)
-                        ? new ProcessingMetadataDto
-                        {
-                            AiModel = plantAnalysis.AiModel,
-                            ProcessingTimestamp = plantAnalysis.UpdatedDate ?? plantAnalysis.CreatedDate
-                        }
-                        : null,
-                    
-                    // Token Usage
-                    TokenUsage = plantAnalysis.TotalTokens.HasValue
-                        ? new TokenUsageDto
-                        {
-                            Summary = new TokenSummaryDto
-                            {
-                                TotalTokens = (int)plantAnalysis.TotalTokens.Value,
-                                TotalCostUsd = plantAnalysis.TotalCostUsd?.ToString("C2"),
-                                TotalCostTry = plantAnalysis.TotalCostTry?.ToString("C2"),
-                                ImageSizeKb = plantAnalysis.ImageSizeKb ?? 0
-                            }
-                        }
-                        : null,
+                    // ProcessingMetadata and TokenUsage are no longer included in response
+                    // They are stored in database but not returned to maintain clean API response
                     
                     // Recommendations
                     Recommendations = TryDeserializeObject<RecommendationsDto>(plantAnalysis.Recommendations),
