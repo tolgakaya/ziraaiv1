@@ -328,6 +328,12 @@ namespace Entities.Dtos
 
         [JsonProperty("monitoring")]
         public MonitoringParameter[] Monitoring { get; set; }
+
+        [JsonProperty("resource_estimation")]
+        public ResourceEstimation ResourceEstimation { get; set; }
+
+        [JsonProperty("localized_recommendations")]
+        public LocalizedRecommendations LocalizedRecommendations { get; set; }
     }
 
     public class Recommendation
@@ -510,6 +516,30 @@ namespace Entities.Dtos
 
         [JsonProperty("reason")]
         public string Reason { get; set; }
+    }
+
+    public class ResourceEstimation
+    {
+        [JsonProperty("water_required_liters")]
+        public string WaterRequiredLiters { get; set; }
+
+        [JsonProperty("fertilizer_cost_estimate_usd")]
+        public string FertilizerCostEstimateUsd { get; set; }
+
+        [JsonProperty("labor_hours_estimate")]
+        public string LaborHoursEstimate { get; set; }
+    }
+
+    public class LocalizedRecommendations
+    {
+        [JsonProperty("region")]
+        public string Region { get; set; }
+
+        [JsonProperty("preferred_practices")]
+        public string[] PreferredPractices { get; set; }
+
+        [JsonProperty("restricted_methods")]
+        public string[] RestrictedMethods { get; set; }
     }
 
 }

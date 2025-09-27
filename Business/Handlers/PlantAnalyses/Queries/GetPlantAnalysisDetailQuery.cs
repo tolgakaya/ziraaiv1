@@ -82,14 +82,14 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     AdditionalInfo = TryParseJson<AdditionalInfoData>(analysis.AdditionalInfo),
 
                     // Parse from JSONB fields
-                    PlantIdentification = TryParseJson<PlantIdentificationDetails>(analysis.PlantIdentification) ?? CreateBasicPlantIdentification(analysis),
+                    PlantIdentification = TryParseJsonForPlantIdentification(analysis),
                     HealthAssessment = TryParseJson<HealthAssessmentDetails>(analysis.HealthAssessment) ?? CreateBasicHealthAssessment(analysis),
                     NutrientStatus = TryParseJson<NutrientStatusDetails>(analysis.NutrientStatus) ?? CreateBasicNutrientStatus(analysis),
                     PestDisease = TryParseJson<PestDiseaseDetails>(analysis.PestDisease) ?? CreateBasicPestDisease(analysis),
                     EnvironmentalStress = TryParseJson<EnvironmentalStressDetails>(analysis.EnvironmentalStress) ?? CreateBasicEnvironmentalStress(analysis),
                     Summary = TryParseJson<AnalysisSummaryDetails>(analysis.Summary) ?? CreateBasicSummary(analysis),
-                    CrossFactorInsights = TryParseJsonArray<CrossFactorInsightDetails>(analysis.CrossFactorInsights),
-                    Recommendations = TryParseJson<RecommendationsDetails>(analysis.Recommendations) ?? CreateBasicRecommendations(analysis),
+                    CrossFactorInsights = TryParseJsonArray<CrossFactorInsightDetails>(analysis.CrossFactorInsights) ?? CreateBasicCrossFactorInsights(analysis),
+                    Recommendations = CreateBasicRecommendations(analysis),
 
                     // Image Information from JSONB
                     ImageInfo = TryParseJson<ImageDetails>(analysis.ImageMetadata) ?? new ImageDetails { ImageUrl = analysis.ImageUrl },
@@ -168,48 +168,135 @@ namespace Business.Handlers.PlantAnalyses.Queries
             }
 
             private static PlantIdentificationDetails CreateBasicPlantIdentification(Entities.Concrete.PlantAnalysis analysis)
-            {
-                // Try to get identifying features and visible parts from JSONB first
-                var identifyingFeatures = new List<string>();
-                var visibleParts = new List<string>();
+        {
+            // Use helper fields first (now populated), then fallback to JSONB if needed
+            string species = analysis.PlantSpecies;
+            string variety = analysis.PlantVariety;
+            string growthStage = analysis.GrowthStage;
+            decimal? confidence = analysis.IdentificationConfidence;
+            var identifyingFeatures = new List<string>();
+            var visibleParts = new List<string>();
 
-                if (!string.IsNullOrEmpty(analysis.PlantIdentification))
+            // Debug logging
+            Console.WriteLine($"[DEBUG] Helper fields - Species: {species}, Variety: {variety}, GrowthStage: {growthStage}, Confidence: {confidence}");
+            Console.WriteLine($"[DEBUG] JSONB PlantIdentification: {analysis.PlantIdentification}");
+
+            // Always parse from JSONB to get arrays and handle missing helper fields
+            if (!string.IsNullOrEmpty(analysis.PlantIdentification))
+            {
+                try
                 {
-                    try
+                    var plantId = JsonConvert.DeserializeObject<dynamic>(analysis.PlantIdentification);
+                    
+                    // Use JSONB as fallback for basic fields if helper fields are still null
+                    if (string.IsNullOrEmpty(species) && plantId?.species != null)
                     {
-                        var plantId = JsonConvert.DeserializeObject<dynamic>(analysis.PlantIdentification);
-                        if (plantId?.identifying_features != null)
+                        species = plantId.species.ToString();
+                    }
+                    
+                    if (string.IsNullOrEmpty(variety) && plantId?.variety != null)
+                    {
+                        variety = plantId.variety.ToString();
+                    }
+                    
+                    if (string.IsNullOrEmpty(growthStage) && plantId?.growth_stage != null)
+                    {
+                        growthStage = plantId.growth_stage.ToString();
+                    }
+                    
+                    if (!confidence.HasValue && plantId?.confidence != null)
+                    {
+                        if (decimal.TryParse(plantId.confidence.ToString(), out decimal parsedConfidence))
                         {
-                            foreach (var feature in plantId.identifying_features)
-                            {
-                                identifyingFeatures.Add(feature.ToString());
-                            }
-                        }
-                        if (plantId?.visible_parts != null)
-                        {
-                            foreach (var part in plantId.visible_parts)
-                            {
-                                visibleParts.Add(part.ToString());
-                            }
+                            confidence = parsedConfidence;
                         }
                     }
-                    catch { /* Silent fallback to empty lists */ }
+                    
+                    // Always parse arrays from JSONB (no helper fields exist for arrays)
+                    if (plantId?.identifying_features != null)
+                    {
+                        foreach (var feature in plantId.identifying_features)
+                        {
+                            identifyingFeatures.Add(feature.ToString());
+                        }
+                    }
+                    
+                    if (plantId?.visible_parts != null)
+                    {
+                        foreach (var part in plantId.visible_parts)
+                        {
+                            visibleParts.Add(part.ToString());
+                        }
+                    }
                 }
-
-                return new PlantIdentificationDetails
+                catch (Exception ex)
                 {
-                    Species = analysis.PlantSpecies,
-                    Variety = analysis.PlantVariety,
-                    GrowthStage = analysis.GrowthStage, // Helper field has priority
-                    Confidence = analysis.IdentificationConfidence,
-                    IdentifyingFeatures = identifyingFeatures,
-                    VisibleParts = visibleParts
-                };
+                    // Log the error for debugging but continue with available data
+                    Console.WriteLine($"[ERROR] Error parsing plant identification JSONB: {ex.Message}");
+                    Console.WriteLine($"[ERROR] JSONB content: {analysis.PlantIdentification}");
+                }
             }
+
+            var result = new PlantIdentificationDetails
+            {
+                Species = species,
+                Variety = variety,
+                GrowthStage = growthStage,
+                Confidence = confidence,
+                IdentifyingFeatures = identifyingFeatures,
+                VisibleParts = visibleParts
+            };
+
+            // Debug final result
+            Console.WriteLine($"[DEBUG] Final result - Species: {result.Species}, Variety: {result.Variety}, GrowthStage: {result.GrowthStage}, Confidence: {result.Confidence}");
+            Console.WriteLine($"[DEBUG] Final arrays - IdentifyingFeatures: [{string.Join(", ", result.IdentifyingFeatures)}], VisibleParts: [{string.Join(", ", result.VisibleParts)}]");
+
+            return result;
+        }
+
+        private static PlantIdentificationDetails TryParseJsonForPlantIdentification(Entities.Concrete.PlantAnalysis analysis)
+        {
+            Console.WriteLine($"[DEBUG] TryParseJsonForPlantIdentification called for analysis ID: {analysis.Id}");
+
+            var tryParseResult = TryParseJson<PlantIdentificationDetails>(analysis.PlantIdentification);
+
+            if (tryParseResult != null)
+            {
+                Console.WriteLine($"[DEBUG] TryParseJson succeeded - Species: {tryParseResult.Species}, GrowthStage: {tryParseResult.GrowthStage}");
+                Console.WriteLine($"[DEBUG] TryParseJson arrays - IdentifyingFeatures: [{string.Join(", ", tryParseResult.IdentifyingFeatures ?? new List<string>())}], VisibleParts: [{string.Join(", ", tryParseResult.VisibleParts ?? new List<string>())}]");
+                return tryParseResult;
+            }
+            else
+            {
+                Console.WriteLine($"[DEBUG] TryParseJson failed, calling CreateBasicPlantIdentification");
+                return CreateBasicPlantIdentification(analysis);
+            }
+        }
 
             private static HealthAssessmentDetails CreateBasicHealthAssessment(Entities.Concrete.PlantAnalysis analysis)
             {
-                // Try to get additional details from JSONB first
+                // First try to parse complete JSONB
+                var healthAssessment = TryParseJson<HealthAssessmentDetails>(analysis.HealthAssessment);
+                if (healthAssessment != null)
+                {
+                    // Override with helper fields if they exist (helper fields have priority)
+                    if (analysis.VigorScore.HasValue)
+                        healthAssessment.VigorScore = analysis.VigorScore;
+                    if (!string.IsNullOrEmpty(analysis.HealthSeverity))
+                        healthAssessment.Severity = analysis.HealthSeverity;
+                    if (!string.IsNullOrEmpty(analysis.StressIndicators))
+                        healthAssessment.StressIndicators = TryParseJsonArray(analysis.StressIndicators);
+                    if (!string.IsNullOrEmpty(analysis.DiseaseSymptoms))
+                        healthAssessment.DiseaseSymptoms = TryParseJsonArray(analysis.DiseaseSymptoms);
+                    
+                    return healthAssessment;
+                }
+
+                // Fallback: construct from helper fields and JSONB parts
+                int? vigorScore = analysis.VigorScore;
+                string severity = analysis.HealthSeverity;
+                var stressIndicators = TryParseJsonArray(analysis.StressIndicators);
+                var diseaseSymptoms = TryParseJsonArray(analysis.DiseaseSymptoms);
                 string leafColor = null, leafTexture = null, growthPattern = null, structuralIntegrity = null;
 
                 if (!string.IsNullOrEmpty(analysis.HealthAssessment))
@@ -217,20 +304,44 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     try
                     {
                         var healthData = JsonConvert.DeserializeObject<dynamic>(analysis.HealthAssessment);
+                        
+                        // Get basic fields
+                        if (!vigorScore.HasValue && healthData?.vigor_score != null)
+                        {
+                            if (int.TryParse(healthData.vigor_score.ToString(), out int parsedVigor))
+                                vigorScore = parsedVigor;
+                        }
+                        
                         leafColor = healthData?.leaf_color?.ToString();
                         leafTexture = healthData?.leaf_texture?.ToString();
                         growthPattern = healthData?.growth_pattern?.ToString();
                         structuralIntegrity = healthData?.structural_integrity?.ToString();
+                        
+                        if (string.IsNullOrEmpty(severity))
+                            severity = healthData?.severity?.ToString();
+                        
+                        // Parse arrays if helper fields are empty
+                        if (stressIndicators.Count == 0 && healthData?.stress_indicators != null)
+                        {
+                            foreach (var indicator in healthData.stress_indicators)
+                                stressIndicators.Add(indicator.ToString());
+                        }
+                        
+                        if (diseaseSymptoms.Count == 0 && healthData?.disease_symptoms != null)
+                        {
+                            foreach (var symptom in healthData.disease_symptoms)
+                                diseaseSymptoms.Add(symptom.ToString());
+                        }
                     }
-                    catch { /* Silent fallback to null values */ }
+                    catch { /* Silent fallback */ }
                 }
 
                 return new HealthAssessmentDetails
                 {
-                    VigorScore = analysis.VigorScore, // Helper field has priority
-                    Severity = analysis.HealthSeverity, // Helper field has priority
-                    StressIndicators = TryParseJsonArray(analysis.StressIndicators), // Helper field
-                    DiseaseSymptoms = TryParseJsonArray(analysis.DiseaseSymptoms), // Helper field
+                    VigorScore = vigorScore,
+                    Severity = severity,
+                    StressIndicators = stressIndicators,
+                    DiseaseSymptoms = diseaseSymptoms,
                     LeafColor = leafColor,
                     LeafTexture = leafTexture,
                     GrowthPattern = growthPattern,
@@ -240,28 +351,74 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
             private static NutrientStatusDetails CreateBasicNutrientStatus(Entities.Concrete.PlantAnalysis analysis)
             {
-                // Try to get secondary deficiencies from JSONB
+                // First try to parse complete JSONB
+                var nutrientStatus = TryParseJson<NutrientStatusDetails>(analysis.NutrientStatus);
+                if (nutrientStatus != null)
+                {
+                    // Override with helper fields if they exist (helper fields have priority)
+                    if (!string.IsNullOrEmpty(analysis.Nitrogen))
+                        nutrientStatus.Nitrogen = analysis.Nitrogen;
+                    if (!string.IsNullOrEmpty(analysis.Phosphorus))
+                        nutrientStatus.Phosphorus = analysis.Phosphorus;
+                    if (!string.IsNullOrEmpty(analysis.Potassium))
+                        nutrientStatus.Potassium = analysis.Potassium;
+                    if (!string.IsNullOrEmpty(analysis.Calcium))
+                        nutrientStatus.Calcium = analysis.Calcium;
+                    if (!string.IsNullOrEmpty(analysis.Magnesium))
+                        nutrientStatus.Magnesium = analysis.Magnesium;
+                    if (!string.IsNullOrEmpty(analysis.Sulfur))
+                        nutrientStatus.Sulfur = analysis.Sulfur;
+                    if (!string.IsNullOrEmpty(analysis.Iron))
+                        nutrientStatus.Iron = analysis.Iron;
+                    if (!string.IsNullOrEmpty(analysis.Zinc))
+                        nutrientStatus.Zinc = analysis.Zinc;
+                    if (!string.IsNullOrEmpty(analysis.Manganese))
+                        nutrientStatus.Manganese = analysis.Manganese;
+                    if (!string.IsNullOrEmpty(analysis.Boron))
+                        nutrientStatus.Boron = analysis.Boron;
+                    if (!string.IsNullOrEmpty(analysis.Copper))
+                        nutrientStatus.Copper = analysis.Copper;
+                    if (!string.IsNullOrEmpty(analysis.Molybdenum))
+                        nutrientStatus.Molybdenum = analysis.Molybdenum;
+                    if (!string.IsNullOrEmpty(analysis.Chlorine))
+                        nutrientStatus.Chlorine = analysis.Chlorine;
+                    if (!string.IsNullOrEmpty(analysis.Nickel))
+                        nutrientStatus.Nickel = analysis.Nickel;
+                    if (!string.IsNullOrEmpty(analysis.PrimaryDeficiency))
+                        nutrientStatus.PrimaryDeficiency = analysis.PrimaryDeficiency;
+                    if (!string.IsNullOrEmpty(analysis.NutrientSeverity))
+                        nutrientStatus.Severity = analysis.NutrientSeverity;
+                    
+                    return nutrientStatus;
+                }
+
+                // Fallback: construct from helper fields and JSONB parts
                 var secondaryDeficiencies = new List<string>();
+                string primaryDeficiency = analysis.PrimaryDeficiency;
 
                 if (!string.IsNullOrEmpty(analysis.NutrientStatus))
                 {
                     try
                     {
                         var nutrientData = JsonConvert.DeserializeObject<dynamic>(analysis.NutrientStatus);
+                        
+                        // Get primary_deficiency if helper field is empty
+                        if (string.IsNullOrEmpty(primaryDeficiency) && nutrientData?.primary_deficiency != null)
+                            primaryDeficiency = nutrientData.primary_deficiency.ToString();
+                        
+                        // Get secondary_deficiencies
                         if (nutrientData?.secondary_deficiencies != null)
                         {
                             foreach (var deficiency in nutrientData.secondary_deficiencies)
-                            {
                                 secondaryDeficiencies.Add(deficiency.ToString());
-                            }
                         }
                     }
-                    catch { /* Silent fallback to empty list */ }
+                    catch { /* Silent fallback */ }
                 }
 
                 return new NutrientStatusDetails
                 {
-                    Nitrogen = analysis.Nitrogen, // Helper fields have priority
+                    Nitrogen = analysis.Nitrogen,
                     Phosphorus = analysis.Phosphorus,
                     Potassium = analysis.Potassium,
                     Calcium = analysis.Calcium,
@@ -275,92 +432,211 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Molybdenum = analysis.Molybdenum,
                     Chlorine = analysis.Chlorine,
                     Nickel = analysis.Nickel,
-                    PrimaryDeficiency = analysis.PrimaryDeficiency, // Helper field
+                    PrimaryDeficiency = primaryDeficiency,
                     SecondaryDeficiencies = secondaryDeficiencies,
-                    Severity = analysis.NutrientSeverity // Helper field
+                    Severity = analysis.NutrientSeverity
                 };
             }
 
             private static AnalysisSummaryDetails CreateBasicSummary(Entities.Concrete.PlantAnalysis analysis)
             {
-                // Try to get secondary concerns from JSONB
+                // First try to parse complete JSONB
+                var summary = TryParseJson<AnalysisSummaryDetails>(analysis.Summary);
+                if (summary != null)
+                {
+                    // Override with helper fields if they exist (helper fields have priority)
+                    if (analysis.OverallHealthScore != 0)
+                        summary.OverallHealthScore = analysis.OverallHealthScore;
+                    if (!string.IsNullOrEmpty(analysis.PrimaryConcern))
+                        summary.PrimaryConcern = analysis.PrimaryConcern;
+                    if (analysis.CriticalIssuesCount != 0)
+                        summary.CriticalIssuesCount = analysis.CriticalIssuesCount;
+                    if (analysis.ConfidenceLevel.HasValue)
+                        summary.ConfidenceLevel = analysis.ConfidenceLevel;
+                    if (!string.IsNullOrEmpty(analysis.Prognosis))
+                        summary.Prognosis = analysis.Prognosis;
+                    if (!string.IsNullOrEmpty(analysis.EstimatedYieldImpact))
+                        summary.EstimatedYieldImpact = analysis.EstimatedYieldImpact;
+                    
+                    return summary;
+                }
+
+                // Fallback: construct from helper fields and JSONB parts
                 var secondaryConcerns = new List<string>();
+                int? overallHealthScore = analysis.OverallHealthScore;
+                string primaryConcern = analysis.PrimaryConcern;
+                int? criticalIssuesCount = analysis.CriticalIssuesCount;
+                decimal? confidenceLevel = analysis.ConfidenceLevel;
+                string prognosis = analysis.Prognosis;
+                string estimatedYieldImpact = analysis.EstimatedYieldImpact;
 
                 if (!string.IsNullOrEmpty(analysis.Summary))
                 {
                     try
                     {
                         var summaryData = JsonConvert.DeserializeObject<dynamic>(analysis.Summary);
+                        
+                        // Get values from JSONB if helper fields are null/empty
+                        if (!overallHealthScore.HasValue && summaryData?.overall_health_score != null)
+                        {
+                            if (int.TryParse(summaryData.overall_health_score.ToString(), out int score))
+                                overallHealthScore = score;
+                        }
+                        
+                        if (string.IsNullOrEmpty(primaryConcern) && summaryData?.primary_concern != null)
+                            primaryConcern = summaryData.primary_concern.ToString();
+                        
+                        if (!criticalIssuesCount.HasValue && summaryData?.critical_issues_count != null)
+                        {
+                            if (int.TryParse(summaryData.critical_issues_count.ToString(), out int count))
+                                criticalIssuesCount = count;
+                        }
+                        
+                        if (!confidenceLevel.HasValue && summaryData?.confidence_level != null)
+                        {
+                            if (decimal.TryParse(summaryData.confidence_level.ToString(), out decimal level))
+                                confidenceLevel = level;
+                        }
+                        
+                        if (string.IsNullOrEmpty(prognosis) && summaryData?.prognosis != null)
+                            prognosis = summaryData.prognosis.ToString();
+                        
+                        if (string.IsNullOrEmpty(estimatedYieldImpact) && summaryData?.estimated_yield_impact != null)
+                            estimatedYieldImpact = summaryData.estimated_yield_impact.ToString();
+                        
+                        // Always parse secondary_concerns array
                         if (summaryData?.secondary_concerns != null)
                         {
                             foreach (var concern in summaryData.secondary_concerns)
-                            {
                                 secondaryConcerns.Add(concern.ToString());
-                            }
                         }
                     }
-                    catch { /* Silent fallback to empty list */ }
+                    catch { /* Silent fallback */ }
                 }
 
                 return new AnalysisSummaryDetails
                 {
-                    OverallHealthScore = analysis.OverallHealthScore, // Helper field has priority
-                    PrimaryConcern = analysis.PrimaryConcern, // Helper field has priority
+                    OverallHealthScore = overallHealthScore,
+                    PrimaryConcern = primaryConcern,
                     SecondaryConcerns = secondaryConcerns,
-                    CriticalIssuesCount = analysis.CriticalIssuesCount, // Helper field has priority
-                    Prognosis = analysis.Prognosis, // Helper field has priority
-                    EstimatedYieldImpact = analysis.EstimatedYieldImpact, // Helper field has priority
-                    ConfidenceLevel = analysis.ConfidenceLevel // Helper field has priority
+                    CriticalIssuesCount = criticalIssuesCount,
+                    ConfidenceLevel = confidenceLevel,
+                    Prognosis = prognosis,
+                    EstimatedYieldImpact = estimatedYieldImpact
                 };
             }
 
             private static PestDiseaseDetails CreateBasicPestDisease(Entities.Concrete.PlantAnalysis analysis)
             {
-                // Try to get pest/disease details from JSONB
+                // First try to parse complete JSONB
+                var pestDisease = TryParseJson<PestDiseaseDetails>(analysis.PestDisease);
+                if (pestDisease != null)
+                {
+                    // Override with helper fields if they exist (helper fields have priority)
+                    if (analysis.AffectedAreaPercentage.HasValue)
+                        pestDisease.AffectedAreaPercentage = analysis.AffectedAreaPercentage;
+                    if (!string.IsNullOrEmpty(analysis.SpreadRisk))
+                        pestDisease.SpreadRisk = analysis.SpreadRisk;
+                    if (!string.IsNullOrEmpty(analysis.PrimaryIssue))
+                        pestDisease.PrimaryIssue = analysis.PrimaryIssue;
+                    
+                    return pestDisease;
+                }
+
+                // Fallback: construct from helper fields and JSONB parts
                 var pestsDetected = new List<PestDetails>();
                 var diseasesDetected = new List<DiseaseDetails>();
                 string damagePattern = null;
+                decimal? affectedAreaPercentage = analysis.AffectedAreaPercentage;
+                string spreadRisk = analysis.SpreadRisk;
+                string primaryIssue = analysis.PrimaryIssue;
 
                 if (!string.IsNullOrEmpty(analysis.PestDisease))
                 {
                     try
                     {
                         var pestData = JsonConvert.DeserializeObject<dynamic>(analysis.PestDisease);
+                        
                         damagePattern = pestData?.damage_pattern?.ToString();
+                        
+                        // Parse affected_area_percentage if helper field is null
+                        if (!affectedAreaPercentage.HasValue && pestData?.affected_area_percentage != null)
+                        {
+                            if (decimal.TryParse(pestData.affected_area_percentage.ToString(), out decimal parsedPercentage))
+                                affectedAreaPercentage = parsedPercentage;
+                        }
+                        
+                        // Parse spread_risk if helper field is empty
+                        if (string.IsNullOrEmpty(spreadRisk) && pestData?.spread_risk != null)
+                            spreadRisk = pestData.spread_risk.ToString();
+                        
+                        // Parse primary_issue if helper field is empty
+                        if (string.IsNullOrEmpty(primaryIssue) && pestData?.primary_issue != null)
+                            primaryIssue = pestData.primary_issue.ToString();
 
+                        // Parse pests_detected array
                         if (pestData?.pests_detected != null)
                         {
                             foreach (var pest in pestData.pests_detected)
                             {
-                                pestsDetected.Add(new PestDetails
+                                var pestDetail = new PestDetails
                                 {
                                     Name = pest?.type?.ToString(),
                                     Category = pest?.category?.ToString(),
                                     Severity = pest?.severity?.ToString(),
-                                    AffectedParts = pest?.affected_parts != null ?
-                                        TryParseJsonArray(pest.affected_parts.ToString()) :
-                                        new List<string>()
-                                });
+                                    AffectedParts = new List<string>()
+                                };
+                                
+                                // Parse confidence if present
+                                if (pest?.confidence != null)
+                                {
+                                    if (decimal.TryParse(pest.confidence.ToString(), out decimal confidence))
+                                        pestDetail.Confidence = confidence;
+                                }
+                                
+                                // Parse affected_parts array
+                                if (pest?.affected_parts != null)
+                                {
+                                    foreach (var part in pest.affected_parts)
+                                        pestDetail.AffectedParts.Add(part.ToString());
+                                }
+                                
+                                pestsDetected.Add(pestDetail);
                             }
                         }
 
+                        // Parse diseases_detected array
                         if (pestData?.diseases_detected != null)
                         {
                             foreach (var disease in pestData.diseases_detected)
                             {
-                                diseasesDetected.Add(new DiseaseDetails
+                                var diseaseDetail = new DiseaseDetails
                                 {
                                     Type = disease?.type?.ToString(),
                                     Category = disease?.category?.ToString(),
                                     Severity = disease?.severity?.ToString(),
-                                    AffectedParts = disease?.affected_parts != null ?
-                                        TryParseJsonArray(disease.affected_parts.ToString()) :
-                                        new List<string>()
-                                });
+                                    AffectedParts = new List<string>()
+                                };
+                                
+                                // Parse confidence if present
+                                if (disease?.confidence != null)
+                                {
+                                    if (decimal.TryParse(disease.confidence.ToString(), out decimal confidence))
+                                        diseaseDetail.Confidence = confidence;
+                                }
+                                
+                                // Parse affected_parts array
+                                if (disease?.affected_parts != null)
+                                {
+                                    foreach (var part in disease.affected_parts)
+                                        diseaseDetail.AffectedParts.Add(part.ToString());
+                                }
+                                
+                                diseasesDetected.Add(diseaseDetail);
                             }
                         }
                     }
-                    catch { /* Silent fallback to empty lists */ }
+                    catch { /* Silent fallback */ }
                 }
 
                 return new PestDiseaseDetails
@@ -368,30 +644,72 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     PestsDetected = pestsDetected,
                     DiseasesDetected = diseasesDetected,
                     DamagePattern = damagePattern,
-                    AffectedAreaPercentage = analysis.AffectedAreaPercentage,
-                    SpreadRisk = analysis.SpreadRisk,
-                    PrimaryIssue = analysis.PrimaryIssue
+                    AffectedAreaPercentage = affectedAreaPercentage,
+                    SpreadRisk = spreadRisk,
+                    PrimaryIssue = primaryIssue
                 };
             }
 
             private static EnvironmentalStressDetails CreateBasicEnvironmentalStress(Entities.Concrete.PlantAnalysis analysis)
             {
-                // Try to get environmental stress details from JSONB
-                string waterStatus = null, temperatureStress = null, lightStress = null, physicalDamage = null, chemicalDamage = null, soilIndicators = null;
+                // First try to parse complete JSONB
+                var environmentalStress = TryParseJson<EnvironmentalStressDetails>(analysis.EnvironmentalStress);
+                if (environmentalStress != null)
+                {
+                    // Override with helper field if it exists
+                    if (!string.IsNullOrEmpty(analysis.PrimaryStressor))
+                        environmentalStress.PrimaryStressor = analysis.PrimaryStressor;
+                    
+                    return environmentalStress;
+                }
+
+                // Fallback: construct from helper fields and JSONB parts
+                string waterStatus = null, temperatureStress = null, lightStress = null;
+                string physicalDamage = null, chemicalDamage = null, primaryStressor = analysis.PrimaryStressor;
+                var physiologicalDisorders = new List<PhysiologicalDisorderDetails>();
+                SoilHealthIndicatorDetails soilHealthIndicators = null;
 
                 if (!string.IsNullOrEmpty(analysis.EnvironmentalStress))
                 {
                     try
                     {
                         var envData = JsonConvert.DeserializeObject<dynamic>(analysis.EnvironmentalStress);
+                        
                         waterStatus = envData?.water_status?.ToString();
                         temperatureStress = envData?.temperature_stress?.ToString();
                         lightStress = envData?.light_stress?.ToString();
                         physicalDamage = envData?.physical_damage?.ToString();
                         chemicalDamage = envData?.chemical_damage?.ToString();
-                        soilIndicators = envData?.soil_indicators?.ToString();
+                        
+                        if (string.IsNullOrEmpty(primaryStressor))
+                            primaryStressor = envData?.primary_stressor?.ToString();
+                        
+                        // Parse physiological_disorders array
+                        if (envData?.physiological_disorders != null)
+                        {
+                            foreach (var disorder in envData.physiological_disorders)
+                            {
+                                physiologicalDisorders.Add(new PhysiologicalDisorderDetails
+                                {
+                                    Type = disorder?.type?.ToString(),
+                                    Severity = disorder?.severity?.ToString(),
+                                    Notes = disorder?.notes?.ToString()
+                                });
+                            }
+                        }
+                        
+                        // Parse soil_health_indicators object
+                        if (envData?.soil_health_indicators != null)
+                        {
+                            soilHealthIndicators = new SoilHealthIndicatorDetails
+                            {
+                                Salinity = envData.soil_health_indicators.salinity?.ToString(),
+                                PhIssue = envData.soil_health_indicators.pH_issue?.ToString(),
+                                OrganicMatter = envData.soil_health_indicators.organic_matter?.ToString()
+                            };
+                        }
                     }
-                    catch { /* Silent fallback to null values */ }
+                    catch { /* Silent fallback */ }
                 }
 
                 return new EnvironmentalStressDetails
@@ -401,14 +719,22 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     LightStress = lightStress,
                     PhysicalDamage = physicalDamage,
                     ChemicalDamage = chemicalDamage,
-                    SoilIndicators = soilIndicators,
-                    PrimaryStressor = analysis.PrimaryStressor
+                    PhysiologicalDisorders = physiologicalDisorders,
+                    SoilHealthIndicators = soilHealthIndicators,
+                    PrimaryStressor = primaryStressor
                 };
             }
 
             private static RiskAssessmentDetails CreateBasicRiskAssessment(Entities.Concrete.PlantAnalysis analysis)
             {
-                // Try to get risk assessment details from JSONB
+                // First try to parse complete JSONB
+                var riskAssessment = TryParseJson<RiskAssessmentDetails>(analysis.RiskAssessment);
+                if (riskAssessment != null)
+                {
+                    return riskAssessment;
+                }
+
+                // Fallback: construct from JSONB parts
                 string yieldLossProbability = null, timelineToWorsen = null, spreadPotential = null;
 
                 if (!string.IsNullOrEmpty(analysis.RiskAssessment))
@@ -420,7 +746,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         timelineToWorsen = riskData?.timeline_to_worsen?.ToString();
                         spreadPotential = riskData?.spread_potential?.ToString();
                     }
-                    catch { /* Silent fallback to null values */ }
+                    catch { /* Silent fallback */ }
                 }
 
                 return new RiskAssessmentDetails
@@ -433,11 +759,20 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
             private static RecommendationsDetails CreateBasicRecommendations(Entities.Concrete.PlantAnalysis analysis)
             {
-                // Try to get recommendations from JSONB
+                // First try to parse complete JSONB
+                var recommendations = TryParseJson<RecommendationsDetails>(analysis.Recommendations);
+                if (recommendations != null)
+                {
+                    return recommendations;
+                }
+
+                // Fallback: construct from JSONB parts
                 var immediate = new List<RecommendationItem>();
                 var shortTerm = new List<RecommendationItem>();
                 var preventive = new List<RecommendationItem>();
                 var monitoring = new List<MonitoringItem>();
+                ResourceEstimationDetails resourceEstimation = null;
+                LocalizedRecommendationsDetails localizedRecommendations = null;
 
                 if (!string.IsNullOrEmpty(analysis.Recommendations))
                 {
@@ -445,6 +780,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     {
                         var recData = JsonConvert.DeserializeObject<dynamic>(analysis.Recommendations);
 
+                        // Parse immediate recommendations
                         if (recData?.immediate != null)
                         {
                             foreach (var item in recData.immediate)
@@ -459,6 +795,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                             }
                         }
 
+                        // Parse short_term recommendations
                         if (recData?.short_term != null)
                         {
                             foreach (var item in recData.short_term)
@@ -473,6 +810,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                             }
                         }
 
+                        // Parse preventive recommendations
                         if (recData?.preventive != null)
                         {
                             foreach (var item in recData.preventive)
@@ -487,6 +825,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                             }
                         }
 
+                        // Parse monitoring recommendations
                         if (recData?.monitoring != null)
                         {
                             foreach (var item in recData.monitoring)
@@ -499,8 +838,45 @@ namespace Business.Handlers.PlantAnalyses.Queries
                                 });
                             }
                         }
+
+                        // Parse resource_estimation
+                        if (recData?.resource_estimation != null)
+                        {
+                            resourceEstimation = new ResourceEstimationDetails
+                            {
+                                WaterRequiredLiters = recData.resource_estimation.water_required_liters?.ToString(),
+                                FertilizerCostEstimateUsd = recData.resource_estimation.fertilizer_cost_estimate_usd?.ToString(),
+                                LaborHoursEstimate = recData.resource_estimation.labor_hours_estimate?.ToString()
+                            };
+                        }
+
+                        // Parse localized_recommendations
+                        if (recData?.localized_recommendations != null)
+                        {
+                            var preferredPractices = new List<string>();
+                            var restrictedMethods = new List<string>();
+
+                            if (recData.localized_recommendations.preferred_practices != null)
+                            {
+                                foreach (var practice in recData.localized_recommendations.preferred_practices)
+                                    preferredPractices.Add(practice.ToString());
+                            }
+
+                            if (recData.localized_recommendations.restricted_methods != null)
+                            {
+                                foreach (var method in recData.localized_recommendations.restricted_methods)
+                                    restrictedMethods.Add(method.ToString());
+                            }
+
+                            localizedRecommendations = new LocalizedRecommendationsDetails
+                            {
+                                Region = recData.localized_recommendations.region?.ToString(),
+                                PreferredPractices = preferredPractices,
+                                RestrictedMethods = restrictedMethods
+                            };
+                        }
                     }
-                    catch { /* Silent fallback to empty lists */ }
+                    catch { /* Silent fallback */ }
                 }
 
                 return new RecommendationsDetails
@@ -508,8 +884,55 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Immediate = immediate,
                     ShortTerm = shortTerm,
                     Preventive = preventive,
-                    Monitoring = monitoring
+                    Monitoring = monitoring,
+                    ResourceEstimation = resourceEstimation,
+                    LocalizedRecommendations = localizedRecommendations
                 };
+            }
+
+            private static List<CrossFactorInsightDetails> CreateBasicCrossFactorInsights(Entities.Concrete.PlantAnalysis analysis)
+            {
+                var insights = new List<CrossFactorInsightDetails>();
+
+                if (!string.IsNullOrEmpty(analysis.CrossFactorInsights))
+                {
+                    try
+                    {
+                        var insightsData = JsonConvert.DeserializeObject<dynamic>(analysis.CrossFactorInsights);
+                        
+                        if (insightsData != null)
+                        {
+                            foreach (var insight in insightsData)
+                            {
+                                var insightDetail = new CrossFactorInsightDetails
+                                {
+                                    Insight = insight?.insight?.ToString(),
+                                    AffectedAspects = new List<string>(),
+                                    ImpactLevel = insight?.impact_level?.ToString()
+                                };
+                                
+                                // Parse confidence
+                                if (insight?.confidence != null)
+                                {
+                                    if (decimal.TryParse(insight.confidence.ToString(), out decimal confidence))
+                                        insightDetail.Confidence = confidence;
+                                }
+                                
+                                // Parse affected_aspects array
+                                if (insight?.affected_aspects != null)
+                                {
+                                    foreach (var aspect in insight.affected_aspects)
+                                        insightDetail.AffectedAspects.Add(aspect.ToString());
+                                }
+                                
+                                insights.Add(insightDetail);
+                            }
+                        }
+                    }
+                    catch { /* Silent fallback */ }
+                }
+
+                return insights;
             }
 
             private static ProcessingDetails CreateBasicProcessingInfo(Entities.Concrete.PlantAnalysis analysis)
