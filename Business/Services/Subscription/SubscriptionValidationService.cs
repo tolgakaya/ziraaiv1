@@ -316,15 +316,29 @@ namespace Business.Services.Subscription
 
         public async Task<IResult> IncrementUsageAsync(int userId, int? plantAnalysisId = null)
         {
+            _logger.LogInformation("[INCREMENT_USAGE_START] Starting usage increment - UserId: {UserId}, PlantAnalysisId: {PlantAnalysisId}",
+                userId, plantAnalysisId);
+
             var subscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
-            
+
             if (subscription == null)
             {
+                _logger.LogWarning("[INCREMENT_USAGE_NO_SUBSCRIPTION] No active subscription found - UserId: {UserId}",
+                    userId);
                 return new ErrorResult("No active subscription found");
             }
 
+            _logger.LogInformation("[INCREMENT_USAGE_SUBSCRIPTION_FOUND] Subscription found - UserId: {UserId}, SubscriptionId: {SubscriptionId}, TierName: {TierName}",
+                userId, subscription.Id, subscription.SubscriptionTier?.TierName);
+
             // Increment usage counters
+            _logger.LogInformation("[INCREMENT_USAGE_COUNTERS] Updating usage counters - UserId: {UserId}, SubscriptionId: {SubscriptionId}",
+                userId, subscription.Id);
+
             await _userSubscriptionRepository.UpdateUsageCountersAsync(subscription.Id, 1, 1);
+
+            _logger.LogInformation("[INCREMENT_USAGE_COUNTERS_UPDATED] Usage counters updated - UserId: {UserId}, SubscriptionId: {SubscriptionId}",
+                userId, subscription.Id);
 
             // Log the usage
             var httpContext = _httpContextAccessor.HttpContext;
@@ -341,37 +355,45 @@ namespace Business.Services.Subscription
             return new SuccessResult("Usage incremented successfully");
         }
 
-        private async Task LogUsageAsync(int userId, string endpoint, string method, bool isSuccessful, 
+        private async Task LogUsageAsync(int userId, string endpoint, string method, bool isSuccessful,
             string responseStatus, int? subscriptionId = null, int? plantAnalysisId = null)
         {
             var correlationId = Guid.NewGuid().ToString("N")[..8];
-            
-            _logger.LogDebug("[USAGE_LOG_START] Starting usage logging - UserId: {UserId}, CorrelationId: {CorrelationId}, Endpoint: {Endpoint}, IsSuccessful: {IsSuccessful}", 
-                userId, correlationId, endpoint, isSuccessful);
 
-            try 
+            _logger.LogInformation("[USAGE_LOG_START] Starting usage logging - UserId: {UserId}, CorrelationId: {CorrelationId}, Endpoint: {Endpoint}, Method: {Method}, IsSuccessful: {IsSuccessful}, SubscriptionId: {SubscriptionId}, PlantAnalysisId: {PlantAnalysisId}",
+                userId, correlationId, endpoint, method, isSuccessful, subscriptionId, plantAnalysisId);
+
+            try
             {
+                _logger.LogInformation("[USAGE_LOG_SUBSCRIPTION_LOOKUP] Looking up subscription - UserId: {UserId}, CorrelationId: {CorrelationId}, SubscriptionId: {SubscriptionId}",
+                    userId, correlationId, subscriptionId);
+
                 var httpContext = _httpContextAccessor.HttpContext;
-                var subscription = subscriptionId.HasValue 
+                var subscription = subscriptionId.HasValue
                     ? await _userSubscriptionRepository.GetAsync(s => s.Id == subscriptionId.Value)
                     : await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
 
-                // Only log if we have a valid subscription to avoid foreign key constraint violations
                 if (subscription == null)
                 {
-                    _logger.LogWarning("[USAGE_LOG_NO_SUBSCRIPTION] No active subscription found, skipping usage log - UserId: {UserId}, CorrelationId: {CorrelationId}", 
+                    _logger.LogWarning("[USAGE_LOG_NO_SUBSCRIPTION] No active subscription found, skipping usage log - UserId: {UserId}, CorrelationId: {CorrelationId}",
                         userId, correlationId);
                     return;
                 }
 
+                _logger.LogInformation("[USAGE_LOG_SUBSCRIPTION_FOUND] Subscription found - UserId: {UserId}, CorrelationId: {CorrelationId}, SubscriptionId: {SubscriptionId}, TierName: {TierName}",
+                    userId, correlationId, subscription.Id, subscription.SubscriptionTier?.TierName);
+
                 // Use DateTime.Now instead of DateTime.UtcNow to avoid timezone issues with PostgreSQL
                 var now = DateTime.Now;
-                
+
+                _logger.LogInformation("[USAGE_LOG_CREATING] Creating usage log object - UserId: {UserId}, CorrelationId: {CorrelationId}, UserSubscriptionId: {UserSubscriptionId}",
+                    userId, correlationId, subscription.Id);
+
                 var usageLog = new SubscriptionUsageLog
                 {
                     UserId = userId,
                     UserSubscriptionId = subscription.Id, // Now guaranteed to be valid
-                    PlantAnalysisId = plantAnalysisId,
+                    PlantAnalysisId = null, // Hotfix: Temporarily disable to avoid foreign key constraint violation
                     UsageType = "PlantAnalysis",
                     UsageDate = now,
                     RequestEndpoint = endpoint,
@@ -386,6 +408,9 @@ namespace Business.Services.Subscription
                     MonthlyQuotaLimit = subscription.SubscriptionTier?.MonthlyRequestLimit ?? 0,
                     CreatedDate = now
                 };
+
+                _logger.LogInformation("[USAGE_LOG_SAVING] About to save usage log - UserId: {UserId}, CorrelationId: {CorrelationId}",
+                    userId, correlationId);
 
                 await _usageLogRepository.LogUsageAsync(usageLog);
                 

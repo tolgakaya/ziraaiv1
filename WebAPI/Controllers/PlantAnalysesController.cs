@@ -8,6 +8,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,15 +25,19 @@ namespace WebAPI.Controllers
         private readonly IMediator _mediator;
         private readonly IPlantAnalysisAsyncService _asyncAnalysisService;
         private readonly ISubscriptionValidationService _subscriptionValidationService;
+        private readonly ILogger<PlantAnalysesController> _logger;
 
         public PlantAnalysesController(
-            IMediator mediator, 
+            IMediator mediator,
             IPlantAnalysisAsyncService asyncAnalysisService,
-            ISubscriptionValidationService subscriptionValidationService)
+            ISubscriptionValidationService subscriptionValidationService,
+            ILogger<PlantAnalysesController> logger)
         {
             _mediator = mediator;
             _asyncAnalysisService = asyncAnalysisService;
             _subscriptionValidationService = subscriptionValidationService;
+            _logger = logger;
+            _logger.LogInformation("[CONTROLLER_CONSTRUCTOR] PlantAnalysesController initialized");
         }
 
         /// <summary>
@@ -45,6 +50,8 @@ namespace WebAPI.Controllers
         
         public async Task<IActionResult> Analyze([FromBody] PlantAnalysisRequestDto request)
         {
+            _logger.LogInformation("[ANALYZE_METHOD_START] Analyze method called");
+
             // Validate model
             if (!ModelState.IsValid)
             {
@@ -147,15 +154,40 @@ namespace WebAPI.Controllers
                 AdditionalInfo = request.AdditionalInfo
             };
 
+            _logger.LogInformation("[CONTROLLER_ANALYSIS_START] Starting plant analysis command - UserId: {UserId}, FarmerId: {FarmerId}",
+                userId.Value, command.FarmerId);
+
             var result = await _mediator.Send(command);
-            
+
+            _logger.LogInformation("[CONTROLLER_ANALYSIS_RESULT] Plant analysis command completed - UserId: {UserId}, Success: {Success}, ResultId: {ResultId}",
+                userId.Value, result.Success, result.Data?.Id);
+
             if (result.Success)
             {
-                // Increment usage counter after successful analysis
-                await _subscriptionValidationService.IncrementUsageAsync(userId.Value, result.Data?.Id);
-                return Ok(result);
+                _logger.LogInformation("[CONTROLLER_INCREMENT_USAGE] Starting usage increment - UserId: {UserId}, PlantAnalysisId: {PlantAnalysisId}",
+                    userId.Value, result.Data?.Id);
+
+                try
+                {
+                    // Increment usage counter after successful analysis
+                    await _subscriptionValidationService.IncrementUsageAsync(userId.Value, result.Data?.Id);
+
+                    _logger.LogInformation("[CONTROLLER_INCREMENT_SUCCESS] Usage increment completed successfully - UserId: {UserId}",
+                        userId.Value);
+
+                    return Ok(result);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[CONTROLLER_INCREMENT_ERROR] Error during usage increment - UserId: {UserId}, ExceptionType: {ExceptionType}, Message: {ErrorMessage}",
+                        userId.Value, ex.GetType().Name, ex.Message);
+                    throw;
+                }
             }
-            
+
+            _logger.LogWarning("[CONTROLLER_ANALYSIS_FAILED] Plant analysis failed - UserId: {UserId}, Message: {Message}",
+                userId.Value, result.Message);
+
             return BadRequest(result);
         }
 

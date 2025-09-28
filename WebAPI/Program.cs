@@ -6,6 +6,8 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
 using DotNetEnv;
+using Serilog;
+using Serilog.Events;
 
 namespace WebAPI
 {
@@ -110,14 +112,14 @@ namespace WebAPI
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     var env = hostingContext.HostingEnvironment;
-                    
+
                     // CLOUD FIX: Set environment variables BEFORE configuration is built
                     // This ensures connection strings are available when the configuration is loaded
                     if (IsCloudEnvironment())
                     {
                         ConfigureCloudEnvironmentVariables();
                     }
-                    
+
                     // Load environment-specific .env file (for local development only)
                     // Cloud platforms provide environment variables directly
                     var envFile = $"../.env.{env.EnvironmentName.ToLower()}";
@@ -139,23 +141,68 @@ namespace WebAPI
                         var provider = IsCloudEnvironment() ? DetectCloudProvider() : "LOCAL";
                         Console.WriteLine($"Using system environment variables ({env.EnvironmentName} mode - {provider})");
                     }
-                    
+
                     // CRITICAL FIX: Load JSON files FIRST, then environment variables LAST
                     // This ensures environment variables override JSON configuration values
                     config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                           .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true);
-                    
+
                     // Add environment variables LAST to override JSON configuration
                     config.AddEnvironmentVariables();
                 })
-                .UseServiceProviderFactory(new AutofacServiceProviderFactory())
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); })
-                .ConfigureLogging(logging =>
+                .UseSerilog((context, configuration) =>
                 {
-                    // CLOUD FIX: Don't clear providers, keep console logging for cloud environments
-                    // logging.ClearProviders(); 
-                    logging.SetMinimumLevel(LogLevel.Information);
-                    logging.AddConsole();
-                });
+                    // Configure SeriLog from appsettings.json
+                    var fileLogConfig = context.Configuration.GetSection("SeriLogConfigurations:FileLogConfiguration");
+
+                    // Base configuration with console output
+                    configuration
+                        .MinimumLevel.Debug()
+                        .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+                        .MinimumLevel.Override("System", LogEventLevel.Information)
+                        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+                        .MinimumLevel.Override("Business", LogEventLevel.Debug)
+                        .MinimumLevel.Override("WebAPI", LogEventLevel.Debug)
+                        .MinimumLevel.Override("PlantAnalysisWorkerService", LogEventLevel.Debug)
+                        .Enrich.FromLogContext()
+                        .WriteTo.Console(outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] {Message:lj} {Properties:j}{NewLine}{Exception}");
+
+                    // Add file logging if configured
+                    if (fileLogConfig.Exists())
+                    {
+                        var folderPath = fileLogConfig["FolderPath"];
+                        var outputTemplate = fileLogConfig["OutputTemplate"];
+
+                        if (!string.IsNullOrEmpty(folderPath))
+                        {
+                            try
+                            {
+                                // Ensure logs directory exists
+                                var logDirectory = Path.Combine(Directory.GetCurrentDirectory(), folderPath);
+                                Directory.CreateDirectory(logDirectory);
+
+                                configuration.WriteTo.File(
+                                    path: Path.Combine(logDirectory, "log-.txt"),
+                                    outputTemplate: outputTemplate ?? "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] {Message:lj} {Properties:j}{NewLine}{Exception}",
+                                    rollingInterval: RollingInterval.Hour,
+                                    retainedFileCountLimit: 24,
+                                    fileSizeLimitBytes: 10485760);
+
+                                Console.WriteLine($"[SERILOG] File logging configured: {logDirectory}");
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"[SERILOG] File logging configuration failed: {ex.Message}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("[SERILOG] No file logging configuration found");
+                    }
+                })
+                .UseServiceProviderFactory(new AutofacServiceProviderFactory())
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
     }
 }
