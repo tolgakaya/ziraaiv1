@@ -91,7 +91,12 @@
       "Bash(gh pr merge:*)",
       "Bash(git fetch:*)",
       "WebSearch",
-      "Bash(dir WebAPI)"
+      "Bash(dir WebAPI)",
+      "Bash(git show-branch:*)",
+      "Bash(git log:*)",
+      "Bash(git restore:*)",
+      "Bash(dir logsdev)",
+      "Bash(dir \"logs\\dev\")"
     ],
     "deny": [],
     "ask": [],
