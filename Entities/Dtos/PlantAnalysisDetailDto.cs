@@ -23,7 +23,7 @@ namespace Entities.Dtos
         [JsonProperty("farmer_id")]
         public string FarmerId { get; set; }
         
-        [JsonProperty("sponsor_id")]
+        [JsonProperty("sponsor_id", NullValueHandling = NullValueHandling.Include)]
         public string SponsorId { get; set; }
         public int? SponsorUserId { get; set; }
         public int? SponsorshipCodeId { get; set; }
