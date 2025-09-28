@@ -970,6 +970,21 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
             private static ImageDetails GetImageInfo(Entities.Concrete.PlantAnalysis analysis)
             {
+                // Try to parse ImageMetadata as ImageMetadataDto first
+                var imageMetadata = TryParseJson<ImageMetadataDto>(analysis.ImageMetadata);
+                
+                if (imageMetadata != null && !string.IsNullOrEmpty(imageMetadata.ImageUrl))
+                {
+                    // ImageMetadata contains the URL, use it
+                    return new ImageDetails 
+                    { 
+                        ImageUrl = imageMetadata.ImageUrl,
+                        Format = "url",
+                        UploadTimestamp = imageMetadata.UploadTimestamp
+                    };
+                }
+                
+                // Fallback to analysis.ImageUrl or try parsing as ImageDetails
                 var imageInfo = TryParseJson<ImageDetails>(analysis.ImageMetadata);
                 
                 if (imageInfo == null)
