@@ -1,6 +1,7 @@
 using Core.Entities;
 using Newtonsoft.Json;
 using System;
+using System.Text.Json.Serialization;
 
 namespace Entities.Dtos
 {
@@ -28,6 +29,7 @@ namespace Entities.Dtos
         public string FarmerId { get; set; }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Include)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public string SponsorId { get; set; }
         public int? SponsorUserId { get; set; }
         public int? SponsorshipCodeId { get; set; }
