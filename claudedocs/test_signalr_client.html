@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZiraAI SignalR Test Client</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .disconnected { background: #e74c3c; color: white; }
+        .connecting { background: #f39c12; color: white; }
+        .connected { background: #27ae60; color: white; }
+        input, button {
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        input {
+            width: calc(100% - 26px);
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 200px;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 8px;
+            border-left: 3px solid #3498db;
+            background: rgba(255,255,255,0.05);
+        }
+        .log-success { border-left-color: #27ae60; }
+        .log-error { border-left-color: #e74c3c; }
+        .log-warning { border-left-color: #f39c12; }
+        .notification {
+            background: #3498db;
+            color: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 5px solid #2980b9;
+        }
+        .notification h3 {
+            margin: 0 0 10px 0;
+        }
+        .config-section {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .button-group button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 ZiraAI SignalR Test Client</h1>
+
+        <div class="config-section">
+            <h3>Configuration</h3>
+            <label>API Base URL:</label>
+            <input type="text" id="apiUrl" value="https://localhost:5001" placeholder="https://localhost:5001">
+
+            <label>JWT Access Token:</label>
+            <input type="text" id="accessToken" placeholder="Paste your JWT token here">
+
+            <p><small>💡 Get your JWT token by logging in to the API first</small></p>
+        </div>
+
+        <div id="status" class="status disconnected">
+            ⚠️ Disconnected
+        </div>
+
+        <div class="button-group">
+            <button id="connectBtn" onclick="connect()">🔌 Connect to Hub</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>🔌 Disconnect</button>
+            <button id="pingBtn" onclick="ping()" disabled>🏓 Ping Server</button>
+        </div>
+
+        <h3>📨 Notifications</h3>
+        <div id="notifications"></div>
+
+        <h3>📋 Event Log</h3>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script>
+        let connection = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            if (type === 'success') entry.classList.add('log-success');
+            if (type === 'error') entry.classList.add('log-error');
+            if (type === 'warning') entry.classList.add('log-warning');
+
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function updateStatus(status, message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = message;
+        }
+
+        function updateButtons(isConnected) {
+            document.getElementById('connectBtn').disabled = isConnected;
+            document.getElementById('disconnectBtn').disabled = !isConnected;
+            document.getElementById('pingBtn').disabled = !isConnected;
+        }
+
+        async function connect() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const accessToken = document.getElementById('accessToken').value;
+
+            if (!apiUrl) {
+                alert('Please enter API Base URL');
+                return;
+            }
+
+            if (!accessToken) {
+                alert('Please enter JWT Access Token');
+                return;
+            }
+
+            try {
+                updateStatus('connecting', '⏳ Connecting...');
+                log('🔄 Connecting to SignalR Hub...');
+
+                const hubUrl = `${apiUrl}/hubs/plantanalysis`;
+                log(`📍 Hub URL: ${hubUrl}`);
+
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl(hubUrl, {
+                        accessTokenFactory: () => accessToken,
+                        skipNegotiation: true,
+                        transport: signalR.HttpTransportType.WebSockets
+                    })
+                    .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+                    .configureLogging(signalR.LogLevel.Information)
+                    .build();
+
+                // Register event handlers
+                connection.on('AnalysisCompleted', (data) => {
+                    log(`✅ Analysis Completed: ${data.analysisId}`, 'success');
+                    showNotification(data);
+                });
+
+                connection.on('AnalysisFailed', (data) => {
+                    log(`❌ Analysis Failed: ${data.analysisId} - ${data.errorMessage}`, 'error');
+                });
+
+                connection.on('AnalysisProgress', (data) => {
+                    log(`📊 Analysis Progress: ${data.analysisId} - ${data.progressPercentage}%`, 'info');
+                });
+
+                connection.on('Pong', (timestamp) => {
+                    log(`🏓 Pong received: ${timestamp}`, 'success');
+                });
+
+                // Connection lifecycle
+                connection.onclose((error) => {
+                    log(`🔴 Connection closed: ${error?.message || 'No error'}`, 'error');
+                    updateStatus('disconnected', '⚠️ Disconnected');
+                    updateButtons(false);
+                });
+
+                connection.onreconnecting((error) => {
+                    log(`🔄 Reconnecting: ${error?.message || 'No error'}`, 'warning');
+                    updateStatus('connecting', '⏳ Reconnecting...');
+                });
+
+                connection.onreconnected((connectionId) => {
+                    log(`✅ Reconnected: ${connectionId}`, 'success');
+                    updateStatus('connected', '✅ Connected');
+                });
+
+                // Start connection
+                await connection.start();
+                log('✅ Connected successfully!', 'success');
+                log(`📡 Connection ID: ${connection.connectionId}`, 'info');
+                updateStatus('connected', '✅ Connected');
+                updateButtons(true);
+
+                // Auto-ping every 30 seconds
+                setInterval(() => {
+                    if (connection.state === signalR.HubConnectionState.Connected) {
+                        ping();
+                    }
+                }, 30000);
+
+            } catch (error) {
+                log(`❌ Connection failed: ${error.message}`, 'error');
+                updateStatus('disconnected', '⚠️ Connection Failed');
+                updateButtons(false);
+                console.error('Connection error:', error);
+            }
+        }
+
+        async function disconnect() {
+            if (connection) {
+                try {
+                    await connection.stop();
+                    log('🔴 Disconnected', 'warning');
+                    updateStatus('disconnected', '⚠️ Disconnected');
+                    updateButtons(false);
+                } catch (error) {
+                    log(`❌ Disconnect error: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function ping() {
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                try {
+                    await connection.invoke('Ping');
+                    log('🏓 Ping sent', 'info');
+                } catch (error) {
+                    log(`❌ Ping failed: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function showNotification(data) {
+            const notificationsDiv = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <h3>🌱 ${data.message || 'Analysis Complete'}</h3>
+                <p><strong>Analysis ID:</strong> ${data.analysisId}</p>
+                <p><strong>Crop Type:</strong> ${data.cropType || 'N/A'}</p>
+                <p><strong>Health Score:</strong> ${data.overallHealthScore || 'N/A'}/100</p>
+                <p><strong>Primary Concern:</strong> ${data.primaryConcern || 'N/A'}</p>
+                <p><strong>Status:</strong> ${data.status}</p>
+                <p><strong>Completed At:</strong> ${new Date(data.completedAt).toLocaleString()}</p>
+                ${data.imageUrl ? `<p><strong>Image:</strong> <a href="${data.imageUrl}" target="_blank">View</a></p>` : ''}
+                ${data.deepLink ? `<p><strong>Deep Link:</strong> ${data.deepLink}</p>` : ''}
+            `;
+            notificationsDiv.insertBefore(notification, notificationsDiv.firstChild);
+        }
+
+        // Initial log
+        log('🚀 SignalR Test Client Ready');
+        log('📝 Please configure API URL and JWT Token above');
+        log('💡 Then click "Connect to Hub" button');
+    </script>
+</body>
+</html>

@@ -32,6 +32,8 @@ using ConfigurationManager = Business.ConfigurationManager;
 using Business.Services.DatabaseInitializer;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Business.Services.Notification;
+using Business.Hubs;
 
 namespace WebAPI
 {
@@ -90,6 +92,21 @@ namespace WebAPI
                 options.AddPolicy(
                     "AllowOrigin",
                     builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
+                // SignalR requires credentials support, so we need a separate policy
+                options.AddPolicy(
+                    "AllowSignalR",
+                    builder => builder
+                        .WithOrigins(
+                            "http://localhost:3000",  // Web dev
+                            "http://localhost:4200",  // Angular dev
+                            "http://localhost:5173",  // Vite dev
+                            "https://app.ziraai.com", // Web prod
+                            "https://ziraai.com"      // Web prod (root domain)
+                        )
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials());
             });
 
             var tokenOptions = Configuration.GetSection("TokenOptions").Get<TokenOptions>();
@@ -107,6 +124,26 @@ namespace WebAPI
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = SecurityKeyHelper.CreateSecurityKey(tokenOptions.SecurityKey),
                         ClockSkew = TimeSpan.Zero
+                    };
+
+                    // Enable SignalR authentication via query string token
+                    // SignalR can't send headers during initial connection, so token must be in query string
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+
+                            // If the request is for our hub...
+                            var path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) &&
+                                (path.StartsWithSegments("/hubs/plantanalysis")))
+                            {
+                                // Read the token out of the query string
+                                context.Token = accessToken;
+                            }
+                            return Task.CompletedTask;
+                        }
                     };
                 });
             services.AddSwaggerGen(c =>
@@ -134,6 +171,35 @@ namespace WebAPI
 
             // Add Database Initializer Service
             services.AddScoped<IDatabaseInitializerService, DatabaseInitializerService>();
+
+            // 🆕 Add SignalR with optional Redis backplane
+            var useRedis = Configuration.GetValue<bool>("UseRedis", false);
+            var isProduction = Configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT") == "Production";
+            var signalRBuilder = services.AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = !isProduction; // Enable detailed errors in dev/staging
+                options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+                options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+                options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+            });
+
+            // Note: Redis backplane for SignalR requires Microsoft.AspNetCore.SignalR.StackExchangeRedis package
+            // For now, we'll skip Redis backplane and use in-memory SignalR (works for single instance)
+            // Future: Add Redis backplane when scaling to multiple instances
+            // if (useRedis)
+            // {
+            //     var redisConnection = Configuration.GetConnectionString("Redis");
+            //     if (!string.IsNullOrEmpty(redisConnection))
+            //     {
+            //         signalRBuilder.AddStackExchangeRedis(redisConnection, options =>
+            //         {
+            //             options.Configuration.ChannelPrefix = "ZiraAI:SignalR:";
+            //         });
+            //     }
+            // }
+
+            // Register notification service
+            services.AddScoped<IPlantAnalysisNotificationService, PlantAnalysisNotificationService>();
 
             base.ConfigureServices(services);
         }
@@ -240,6 +306,9 @@ namespace WebAPI
 
             app.UseStaticFiles();
 
+            // 🆕 Apply CORS for SignalR before endpoints
+            app.UseCors("AllowSignalR");
+
             var taskSchedulerConfig = Configuration.GetSection("TaskSchedulerOptions").Get<TaskSchedulerConfig>();
             
             if (taskSchedulerConfig.Enabled)
@@ -258,7 +327,13 @@ namespace WebAPI
                 });
             }
 
-            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+
+                // 🆕 Map SignalR hub
+                endpoints.MapHub<PlantAnalysisHub>("/hubs/plantanalysis");
+            });
         }
         
         /// <summary>
