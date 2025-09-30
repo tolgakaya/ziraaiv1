@@ -2,6 +2,7 @@ using Business.Services.Notification;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -19,14 +20,31 @@ namespace WebAPI.Controllers
     {
         private readonly IPlantAnalysisNotificationService _notificationService;
         private readonly ILogger<SignalRNotificationController> _logger;
-        private const string INTERNAL_SECRET = "ZiraAI_Internal_Secret_2025"; // TODO: Move to configuration
+        private readonly IConfiguration _configuration;
+        private readonly string _internalSecret;
 
         public SignalRNotificationController(
             IPlantAnalysisNotificationService notificationService,
-            ILogger<SignalRNotificationController> logger)
+            ILogger<SignalRNotificationController> logger,
+            IConfiguration configuration)
         {
             _notificationService = notificationService;
             _logger = logger;
+            _configuration = configuration;
+
+            // Priority: Environment variable > Configuration > Fallback (dev only)
+            _internalSecret = Environment.GetEnvironmentVariable("ZIRAAI_INTERNAL_SECRET")
+                             ?? _configuration["WebAPI:InternalSecret"]
+                             ?? "ZiraAI_Internal_Secret_2025"; // Fallback for local development
+
+            if (_internalSecret == "ZiraAI_Internal_Secret_2025")
+            {
+                _logger.LogWarning("⚠️ Using default internal secret - NOT SAFE FOR PRODUCTION!");
+            }
+            else
+            {
+                _logger.LogInformation("✅ Internal secret loaded from environment/configuration");
+            }
         }
 
         /// <summary>
@@ -42,7 +60,7 @@ namespace WebAPI.Controllers
             try
             {
                 // Validate internal secret (basic security)
-                if (request.InternalSecret != INTERNAL_SECRET)
+                if (request.InternalSecret != _internalSecret)
                 {
                     _logger.LogWarning("⚠️ Invalid internal secret from IP: {IP}", HttpContext.Connection.RemoteIpAddress);
                     return Unauthorized(new { message = "Invalid internal secret" });
@@ -80,7 +98,7 @@ namespace WebAPI.Controllers
             try
             {
                 // Validate internal secret
-                if (request.InternalSecret != INTERNAL_SECRET)
+                if (request.InternalSecret != _internalSecret)
                 {
                     _logger.LogWarning("⚠️ Invalid internal secret from IP: {IP}", HttpContext.Connection.RemoteIpAddress);
                     return Unauthorized(new { message = "Invalid internal secret" });
