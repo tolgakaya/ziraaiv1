@@ -149,40 +149,67 @@ private async Task SendNotificationViaHttp(int userId, PlantAnalysisNotification
 }
 ```
 
-#### Environment Variables Setup
+#### 1.4 Railway Environment Variables Setup
 
-**Railway Production**:
+Railway environment variables ekleme (Railway UI'dan Settings → Variables):
+
+**Staging Environment** (ziraai-api-sit):
 ```bash
-ZIRAAI_INTERNAL_SECRET=<generate-secure-random-string>
-ZIRAAI_WEBAPI_URL=https://ziraai-api-production.up.railway.app
+# SignalR Notification System Variables
+ZIRAAI_INTERNAL_SECRET=ZiraAI_Internal_Staging_Secret_2025_xyz123
+ZIRAAI_WEBAPI_URL=https://ziraai-api-sit.up.railway.app
 ```
 
-**Railway Staging**:
+**Production Environment** (ziraai-api-prod):
 ```bash
-ZIRAAI_INTERNAL_SECRET=<staging-secret>
-ZIRAAI_WEBAPI_URL=https://ziraai-api-staging.up.railway.app
+# SignalR Notification System Variables
+ZIRAAI_INTERNAL_SECRET=<generate-secure-random-string-for-production>
+ZIRAAI_WEBAPI_URL=https://ziraai-api-prod.up.railway.app
 ```
 
-**Generate Secure Secret**:
+**Worker Service Environment Variables** (Her iki ortam için de):
+Aynı değişkenler Worker Service için de eklenmelidir çünkü Worker Service de bu değerleri kullanıyor.
+
+**Generate Secure Secret** (Production için):
 ```bash
 # PowerShell
 [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 }))
 
 # Linux/Mac
 openssl rand -base64 32
+
+# Example output: dGhpc2lzYXNlY3VyZXJhbmRvbXN0cmluZzEyMzQ1Ng==
 ```
 
-**Files to Update**:
-- [ ] `WebAPI/Controllers/SignalRNotificationController.cs`
-- [ ] `PlantAnalysisWorkerService/Jobs/PlantAnalysisJobService.cs`
-- [ ] Railway environment variables configuration
-- [ ] Remove hardcoded secrets from `appsettings.json` (keep as fallback for local dev)
+**Railway UI'da Nasıl Eklenir**:
+1. Railway Dashboard → Project seç (ziraai-api-sit veya ziraai-api-prod)
+2. Settings → Variables
+3. "New Variable" butonu
+4. Key-Value çiftini gir:
+   - Key: `ZIRAAI_INTERNAL_SECRET`
+   - Value: `<secret-value>`
+5. "Add" → Deploy automatically başlayacak
 
-**Testing**:
-```bash
-# Verify environment variable is read
-dotnet run --project WebAPI
-# Check logs for "Using environment variable for internal secret"
+**Mevcut Environment Variables ile Uyum**:
+Railway'de zaten şu pattern kullanılıyor:
+- `ConnectionStrings__DArchPgContext` (double underscore ile nested config)
+- `CacheOptions__Host`, `CacheOptions__Port` vb.
+
+Yeni eklenenler aynı pattern'i takip ediyor:
+- `WebAPI__BaseUrl` (appsettings.json'da `"WebAPI": { "BaseUrl": "..." }`)
+- `WebAPI__InternalSecret` (appsettings.json'da `"WebAPI": { "InternalSecret": "..." }`)
+
+**Verification**:
+Railway deployment loglarında şunları arayın:
+```
+✅ Internal secret loaded from environment/configuration
+✅ WebAPI URL loaded: https://ziraai-api-sit.up.railway.app
+```
+
+Eğer şunu görürseniz hata var:
+```
+⚠️ Using default internal secret - NOT SAFE FOR PRODUCTION!
+⚠️ Using default WebAPI URL - NOT SAFE FOR PRODUCTION!
 ```
 
 ---
