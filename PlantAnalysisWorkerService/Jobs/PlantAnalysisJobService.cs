@@ -1,9 +1,11 @@
 using Business.Services.FileStorage;
+using Business.Services.Notification;
 using DataAccess.Abstract;
 using Entities.Concrete;
 using Entities.Dtos;
 using Hangfire;
 using Newtonsoft.Json;
+using System.Net.Http.Json;
 
 namespace PlantAnalysisWorkerService.Jobs
 {
@@ -12,15 +14,21 @@ namespace PlantAnalysisWorkerService.Jobs
         private readonly ILogger<PlantAnalysisJobService> _logger;
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
         public PlantAnalysisJobService(
             ILogger<PlantAnalysisJobService> logger,
             IPlantAnalysisRepository plantAnalysisRepository,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration)
         {
             _logger = logger;
             _plantAnalysisRepository = plantAnalysisRepository;
             _fileStorageService = fileStorageService;
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
         [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
@@ -329,32 +337,99 @@ namespace PlantAnalysisWorkerService.Jobs
         {
             try
             {
-                _logger.LogInformation($"Sending notification for plant analysis: {result.AnalysisId}");
+                _logger.LogInformation($"🔔 Sending real-time notification for plant analysis: {result.AnalysisId}");
 
-                // TODO: Implement actual notification services
-                // For now, just log the notification details
-                var notificationMessage = $"Plant analysis completed for {result.FarmerId}. " +
-                    $"Overall health score: {result.Summary?.OverallHealthScore}/10. " +
-                    $"Primary concern: {result.Summary?.PrimaryConcern}";
+                // Extract UserId from FarmerId format (F046 -> 46)
+                int? userId = null;
+                if (!string.IsNullOrEmpty(result.FarmerId) && result.FarmerId.StartsWith("F"))
+                {
+                    if (int.TryParse(result.FarmerId.Substring(1), out var parsedUserId))
+                    {
+                        userId = parsedUserId;
+                    }
+                }
 
-                _logger.LogInformation($"Notification: {notificationMessage}");
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning($"⚠️ Cannot send notification: Unable to extract userId from FarmerId: {result.FarmerId}");
+                    return;
+                }
 
-                // Here you could implement:
-                // 1. Email notification
-                // 2. Push notification to mobile app
-                // 3. SMS notification  
-                // 4. WebSocket notification to web client
-                // 5. Webhook to external system
-                // 6. Slack/Teams notification
+                // Fetch the complete analysis from database to get the ID
+                var analysis = await _plantAnalysisRepository.GetAsync(x => x.AnalysisId == result.AnalysisId);
+                if (analysis == null)
+                {
+                    _logger.LogWarning($"⚠️ Cannot send notification: Analysis not found in database: {result.AnalysisId}");
+                    return;
+                }
 
-                // Simulate notification sending
-                await Task.Delay(100);
+                // Create notification DTO
+                var notification = new PlantAnalysisNotificationDto
+                {
+                    AnalysisId = analysis.Id, // Use database ID for deep link
+                    UserId = userId.Value,
+                    Status = "Completed",
+                    CompletedAt = DateTime.UtcNow,
+                    CropType = result.CropType,
+                    PrimaryConcern = result.Summary?.PrimaryConcern,
+                    OverallHealthScore = result.Summary?.OverallHealthScore,
+                    ImageUrl = result.ImageMetadata?.URL ?? analysis.ImagePath,
+                    DeepLink = $"app://analysis/{analysis.Id}", // Use database ID
+                    SponsorId = result.SponsorId,
+                    Message = $"Your {result.CropType} analysis is ready! Health Score: {result.Summary?.OverallHealthScore}/100"
+                };
 
-                _logger.LogInformation($"Successfully sent notification for analysis: {result.AnalysisId}");
+                // 🆕 Send notification via HTTP to WebAPI (cross-process communication)
+                await SendNotificationViaHttp(userId.Value, notification);
+
+                _logger.LogInformation(
+                    $"✅ Successfully sent notification request - UserId: {userId.Value}, AnalysisId: {result.AnalysisId}, " +
+                    $"HealthScore: {result.Summary?.OverallHealthScore}/100");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to send notification for analysis: {result.AnalysisId}");
+                _logger.LogError(ex, $"❌ Failed to send notification for analysis: {result.AnalysisId}");
+                // Don't re-throw - Hangfire will retry automatically
+            }
+        }
+
+        /// <summary>
+        /// Send notification to WebAPI via HTTP (cross-process communication)
+        /// WebAPI will broadcast via SignalR Hub
+        /// </summary>
+        private async Task SendNotificationViaHttp(int userId, PlantAnalysisNotificationDto notification)
+        {
+            try
+            {
+                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl", "https://localhost:5001");
+                var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret", "ZiraAI_Internal_Secret_2025");
+
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.BaseAddress = new Uri(webApiBaseUrl);
+                httpClient.Timeout = TimeSpan.FromSeconds(10);
+
+                var requestBody = new
+                {
+                    internalSecret,
+                    userId,
+                    notification
+                };
+
+                var response = await httpClient.PostAsJsonAsync("/api/internal/signalr/analysis-completed", requestBody);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation($"✅ HTTP notification sent successfully to WebAPI");
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning($"⚠️ HTTP notification failed: {response.StatusCode} - {errorContent}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"❌ Failed to send HTTP notification to WebAPI");
                 throw; // Re-throw to trigger Hangfire retry
             }
         }

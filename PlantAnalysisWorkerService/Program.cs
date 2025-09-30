@@ -191,6 +191,13 @@ builder.Services.AddScoped<Business.Services.PlantAnalysis.IPlantAnalysisService
 // Add HttpContextAccessor for URL generation
 builder.Services.AddHttpContextAccessor();
 
+// 🆕 Add SignalR for real-time notifications
+// Worker Service needs SignalR Hub Context to send notifications
+builder.Services.AddSignalR();
+
+// 🆕 Add Plant Analysis Notification Service
+builder.Services.AddScoped<Business.Services.Notification.IPlantAnalysisNotificationService, Business.Services.Notification.PlantAnalysisNotificationService>();
+
 // Add worker services
 builder.Services.AddHostedService<RabbitMQConsumerWorker>();
 builder.Services.AddScoped<IPlantAnalysisJobService, PlantAnalysisJobService>();
