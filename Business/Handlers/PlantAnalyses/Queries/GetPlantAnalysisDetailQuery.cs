@@ -92,7 +92,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Recommendations = CreateBasicRecommendations(analysis),
 
                     // Image Information from JSONB
-                    ImageInfo = TryParseJson<ImageDetails>(analysis.ImageMetadata) ?? new ImageDetails { ImageUrl = analysis.ImageUrl },
+                    ImageInfo = GetImageInfo(analysis),
 
                     // Processing Information from JSONB
                     ProcessingInfo = TryParseJson<ProcessingDetails>(analysis.ProcessingMetadata) ?? CreateBasicProcessingInfo(analysis),
@@ -966,6 +966,39 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     CorrelationId = correlationId,
                     RetryCount = retryCount
                 };
+            }
+
+            private static ImageDetails GetImageInfo(Entities.Concrete.PlantAnalysis analysis)
+            {
+                // Try to parse ImageMetadata as ImageMetadataDto first
+                var imageMetadata = TryParseJson<ImageMetadataDto>(analysis.ImageMetadata);
+                
+                if (imageMetadata != null && !string.IsNullOrEmpty(imageMetadata.ImageUrl))
+                {
+                    // ImageMetadata contains the URL, use it
+                    return new ImageDetails 
+                    { 
+                        ImageUrl = imageMetadata.ImageUrl,
+                        Format = "url",
+                        UploadTimestamp = imageMetadata.UploadTimestamp
+                    };
+                }
+                
+                // Fallback to analysis.ImageUrl or try parsing as ImageDetails
+                var imageInfo = TryParseJson<ImageDetails>(analysis.ImageMetadata);
+                
+                if (imageInfo == null)
+                {
+                    return new ImageDetails { ImageUrl = analysis.ImageUrl };
+                }
+                
+                // If parsed ImageDetails doesn't have ImageUrl, use the one from analysis
+                if (string.IsNullOrEmpty(imageInfo.ImageUrl))
+                {
+                    imageInfo.ImageUrl = analysis.ImageUrl;
+                }
+                
+                return imageInfo;
             }
             
         }

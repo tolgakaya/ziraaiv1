@@ -86,7 +86,7 @@ namespace Business.Services.PlantAnalysis
                     Location = request.Location,
                     UrgencyLevel = request.UrgencyLevel,
                     Notes = request.Notes,
-                    
+
                     // GPS and Environment
                     Latitude = request.GpsCoordinates?.Lat,
                     Longitude = request.GpsCoordinates?.Lng,
@@ -95,26 +95,27 @@ namespace Business.Services.PlantAnalysis
                     Humidity = request.Humidity,
                     WeatherConditions = request.WeatherConditions,
                     SoilType = request.SoilType,
-                    
+
                     // Dates
                     PlantingDate = request.PlantingDate,
                     ExpectedHarvestDate = request.ExpectedHarvestDate,
                     LastFertilization = request.LastFertilization,
                     LastIrrigation = request.LastIrrigation,
-                    
+
                     // Previous treatments
-                    PreviousTreatments = request.PreviousTreatments != null ? 
+                    PreviousTreatments = request.PreviousTreatments != null ?
                         JsonConvert.SerializeObject(request.PreviousTreatments) : null,
-                    
+
                     // Contact Info
                     ContactPhone = request.ContactInfo?.Phone,
                     ContactEmail = request.ContactInfo?.Email,
-                    
+
                     // Additional Info
                     AdditionalInfo = JsonConvert.SerializeObject(request.AdditionalInfo),
-                    
-                    // Image info
+
+                    // Image info - IMPORTANT: Save URL to both ImagePath and ImageUrl fields
                     ImagePath = imagePath,
+                    ImageUrl = imageUrl,  // Fix: Store the URL in ImageUrl field for async analyses
                     ImageSizeKb = (decimal?)(Convert.FromBase64String(processedImageDataUri.Split(',')[1]).Length / 1024.0),
                     
                     // Status
