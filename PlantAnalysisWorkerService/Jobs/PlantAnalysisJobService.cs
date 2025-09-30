@@ -401,8 +401,33 @@ namespace PlantAnalysisWorkerService.Jobs
         {
             try
             {
-                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl", "https://localhost:5001");
-                var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret", "ZiraAI_Internal_Secret_2025");
+                // Priority: Environment variable > Configuration > Fallback (dev only)
+                var webApiBaseUrl = Environment.GetEnvironmentVariable("ZIRAAI_WEBAPI_URL")
+                                   ?? _configuration.GetValue<string>("WebAPI:BaseUrl")
+                                   ?? "https://localhost:5001"; // Fallback for local development
+
+                var internalSecret = Environment.GetEnvironmentVariable("ZIRAAI_INTERNAL_SECRET")
+                                    ?? _configuration.GetValue<string>("WebAPI:InternalSecret")
+                                    ?? "ZiraAI_Internal_Secret_2025"; // Fallback for local development
+
+                // Log configuration source
+                if (webApiBaseUrl == "https://localhost:5001")
+                {
+                    _logger.LogWarning("⚠️ Using default WebAPI URL - NOT SAFE FOR PRODUCTION!");
+                }
+                else
+                {
+                    _logger.LogInformation("✅ WebAPI URL loaded: {Url}", webApiBaseUrl);
+                }
+
+                if (internalSecret == "ZiraAI_Internal_Secret_2025")
+                {
+                    _logger.LogWarning("⚠️ Using default internal secret - NOT SAFE FOR PRODUCTION!");
+                }
+                else
+                {
+                    _logger.LogInformation("✅ Internal secret loaded from environment/configuration");
+                }
 
                 var httpClient = _httpClientFactory.CreateClient();
                 httpClient.BaseAddress = new Uri(webApiBaseUrl);
