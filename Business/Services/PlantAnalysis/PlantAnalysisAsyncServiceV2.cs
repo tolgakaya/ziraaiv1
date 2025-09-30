@@ -180,6 +180,7 @@ namespace Business.Services.PlantAnalysis
                 ContactEmail = request.ContactInfo?.Email,
                 AdditionalInfo = JsonConvert.SerializeObject(request.AdditionalInfo),
                 ImagePath = imagePath,
+                ImageUrl = imagePath,  // Fix: Store URL in ImageUrl field for async analyses
                 ImageSizeKb = (decimal?)(Convert.FromBase64String(processedImageDataUri.Split(',')[1]).Length / 1024.0),
                 AnalysisStatus = "Processing",
                 Status = true,
