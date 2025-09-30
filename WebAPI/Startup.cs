@@ -98,11 +98,16 @@ namespace WebAPI
                     "AllowSignalR",
                     builder => builder
                         .WithOrigins(
+                            // Development
                             "http://localhost:3000",  // Web dev
                             "http://localhost:4200",  // Angular dev
                             "http://localhost:5173",  // Vite dev
-                            "https://app.ziraai.com", // Web prod
-                            "https://ziraai.com"      // Web prod (root domain)
+                            // Staging
+                            "https://staging-app.ziraai.com",
+                            "https://staging.ziraai.com",
+                            // Production
+                            "https://app.ziraai.com",
+                            "https://ziraai.com"
                         )
                         .AllowAnyMethod()
                         .AllowAnyHeader()
