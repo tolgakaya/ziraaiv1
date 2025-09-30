@@ -87,14 +87,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                     foreach (var analysis in plantAnalyses)
                     {
-                        // Convert image path to full URL if it's a relative path
-                        string imageUrl = analysis.ImagePath;
-                        if (!string.IsNullOrEmpty(imageUrl) && !imageUrl.StartsWith("http"))
-                        {
-                            var baseUrl = _fileStorageService.BaseUrl?.TrimEnd('/');
-                            var relativePath = imageUrl.TrimStart('/');
-                            imageUrl = $"{baseUrl}/{relativePath}";
-                        }
+                        // Get image URL using proper fallback logic (ImageMetadata -> ImageUrl -> ImagePath)
+                        string imageUrl = GetImageUrlFromAnalysis(analysis);
 
                         var listItem = new PlantAnalysisListItemDto
                         {
@@ -157,6 +151,43 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     return new ErrorDataResult<PlantAnalysisListResponseDto>(
                         $"An error occurred while retrieving plant analyses: {ex.Message}");
                 }
+            }
+
+            private string GetImageUrlFromAnalysis(Entities.Concrete.PlantAnalysis analysis)
+            {
+                // 1. Try to get URL from ImageMetadata (async analysis)
+                if (!string.IsNullOrEmpty(analysis.ImageMetadata))
+                {
+                    try
+                    {
+                        var imageMetadata = Newtonsoft.Json.JsonConvert.DeserializeObject<ImageMetadataDto>(analysis.ImageMetadata);
+                        if (imageMetadata != null && !string.IsNullOrEmpty(imageMetadata.ImageUrl))
+                        {
+                            return imageMetadata.ImageUrl;
+                        }
+                    }
+                    catch
+                    {
+                        // Continue to next fallback
+                    }
+                }
+
+                // 2. Try analysis.ImageUrl field
+                if (!string.IsNullOrEmpty(analysis.ImageUrl))
+                {
+                    return analysis.ImageUrl;
+                }
+
+                // 3. Fallback to ImagePath with base URL conversion
+                string imageUrl = analysis.ImagePath;
+                if (!string.IsNullOrEmpty(imageUrl) && !imageUrl.StartsWith("http"))
+                {
+                    var baseUrl = _fileStorageService.BaseUrl?.TrimEnd('/');
+                    var relativePath = imageUrl.TrimStart('/');
+                    imageUrl = $"{baseUrl}/{relativePath}";
+                }
+
+                return imageUrl;
             }
         }
     }

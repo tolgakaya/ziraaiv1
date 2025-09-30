@@ -155,7 +155,6 @@ namespace Entities.Concrete
         public string Pests { get; set; } // Legacy field - JSON string
         public string AnalysisResult { get; set; } // Legacy field - JSON string
         public string N8nWebhookResponse { get; set; } // Legacy field - JSON string
-
         // Navigation properties
         public virtual SponsorshipCode SponsorshipCode { get; set; }
         public virtual User SponsorUser { get; set; }
