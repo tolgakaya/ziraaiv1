@@ -198,36 +198,27 @@ namespace Business.DependencyResolvers
             builder.RegisterType<FreeImageHostStorageService>().InstancePerLifetimeScope();
             // builder.RegisterType<S3FileStorageService>().InstancePerLifetimeScope(); // Requires AWS SDK
             
-            // File Storage Services - Simple environment-based registration
-            // Read configuration at registration time to avoid DI issues
-            if (_configuration != null)
+            // File Storage Services - Configuration-driven registration
+            // Read FileStorage:Provider from configuration (supports environment variables)
+            builder.Register<IFileStorageService>(c =>
             {
-                var configManager = _configuration;
-                
-                // For now, register based on environment mode
-                // In Development/Staging: Use FreeImageHost, in Production: Use S3 or Local
-                switch (configManager.Mode)
+                var context = c.Resolve<IComponentContext>();
+                var config = context.Resolve<IConfiguration>();
+
+                // Read provider from configuration (supports environment variables like FileStorage__Provider)
+                var provider = config["FileStorage:Provider"] ?? "Local";
+
+                Console.WriteLine($"[FileStorage DI] Selected provider: {provider}");
+
+                return provider switch
                 {
-                    case ApplicationMode.Development:
-                    case ApplicationMode.Staging:
-                        // Development/Staging: Use FreeImageHost for external URL generation
-                        builder.Register<IFileStorageService>(c => c.Resolve<FreeImageHostStorageService>()).InstancePerLifetimeScope();
-                        break;
-                    case ApplicationMode.Production:
-                        // Production: Use Local file storage
-                        builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
-                        break;
-                    default:
-                        // Default: Use Local file storage
-                        builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
-                        break;
-                }
-            }
-            else
-            {
-                // No ConfigurationManager available, use LocalFileStorageService as fallback
-                builder.Register<IFileStorageService>(c => c.Resolve<LocalFileStorageService>()).InstancePerLifetimeScope();
-            }
+                    "FreeImageHost" => context.Resolve<FreeImageHostStorageService>(),
+                    "ImgBB" => context.Resolve<ImgBBStorageService>(),
+                    "Local" => context.Resolve<LocalFileStorageService>(),
+                    // "S3" => context.Resolve<S3FileStorageService>(), // Uncomment when S3 is implemented
+                    _ => context.Resolve<LocalFileStorageService>() // Default fallback
+                };
+            }).InstancePerLifetimeScope();
 
             switch (_configuration.Mode)
             {
