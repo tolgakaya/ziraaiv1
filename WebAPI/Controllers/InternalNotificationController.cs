@@ -32,9 +32,8 @@ namespace WebAPI.Controllers
             _logger = logger;
             _configuration = configuration;
 
-            // Priority: Environment variable > Configuration > Fallback (dev only)
-            _internalSecret = Environment.GetEnvironmentVariable("ZIRAAI_INTERNAL_SECRET")
-                             ?? _configuration["WebAPI:InternalSecret"]
+            // Use .NET Configuration API (automatically reads Railway env vars with __ pattern)
+            _internalSecret = _configuration["WebAPI:InternalSecret"]
                              ?? "ZiraAI_Internal_Secret_2025"; // Fallback for local development
 
             if (_internalSecret == "ZiraAI_Internal_Secret_2025")
@@ -43,7 +42,11 @@ namespace WebAPI.Controllers
             }
             else
             {
-                _logger.LogInformation("✅ Internal secret loaded from environment/configuration");
+                var secretPreview = _internalSecret.Length > 10 
+                    ? $"{_internalSecret.Substring(0, 5)}...{_internalSecret.Substring(_internalSecret.Length - 5)}" 
+                    : "***";
+                _logger.LogInformation("✅ Internal secret loaded - Length: {Length}, Preview: {Preview}", 
+                    _internalSecret.Length, secretPreview);
             }
         }
 

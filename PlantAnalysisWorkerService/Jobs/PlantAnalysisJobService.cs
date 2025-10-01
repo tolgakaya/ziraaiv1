@@ -401,13 +401,11 @@ namespace PlantAnalysisWorkerService.Jobs
         {
             try
             {
-                // Priority: Environment variable > Configuration > Fallback (dev only)
-                var webApiBaseUrl = Environment.GetEnvironmentVariable("ZIRAAI_WEBAPI_URL")
-                                   ?? _configuration.GetValue<string>("WebAPI:BaseUrl")
+                // Use .NET Configuration API (automatically reads Railway env vars with __ pattern)
+                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl")
                                    ?? "https://localhost:5001"; // Fallback for local development
 
-                var internalSecret = Environment.GetEnvironmentVariable("ZIRAAI_INTERNAL_SECRET")
-                                    ?? _configuration.GetValue<string>("WebAPI:InternalSecret")
+                var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret")
                                     ?? "ZiraAI_Internal_Secret_2025"; // Fallback for local development
 
                 // Log configuration source
@@ -426,7 +424,11 @@ namespace PlantAnalysisWorkerService.Jobs
                 }
                 else
                 {
-                    _logger.LogInformation("✅ Internal secret loaded from environment/configuration");
+                    var secretPreview = internalSecret.Length > 10 
+                        ? $"{internalSecret.Substring(0, 5)}...{internalSecret.Substring(internalSecret.Length - 5)}" 
+                        : "***";
+                    _logger.LogInformation("✅ Internal secret loaded - Length: {Length}, Preview: {Preview}", 
+                        internalSecret.Length, secretPreview);
                 }
 
                 var httpClient = _httpClientFactory.CreateClient();
