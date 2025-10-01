@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
+using StackExchange.Redis;
 using Business;
 using Business.Helpers;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
@@ -98,11 +99,16 @@ namespace WebAPI
                     "AllowSignalR",
                     builder => builder
                         .WithOrigins(
+                            // Development
                             "http://localhost:3000",  // Web dev
                             "http://localhost:4200",  // Angular dev
                             "http://localhost:5173",  // Vite dev
-                            "https://app.ziraai.com", // Web prod
-                            "https://ziraai.com"      // Web prod (root domain)
+                            // Staging
+                            "https://staging-app.ziraai.com",
+                            "https://staging.ziraai.com",
+                            // Production
+                            "https://app.ziraai.com",
+                            "https://ziraai.com"
                         )
                         .AllowAnyMethod()
                         .AllowAnyHeader()
@@ -183,20 +189,46 @@ namespace WebAPI
                 options.HandshakeTimeout = TimeSpan.FromSeconds(15);
             });
 
-            // Note: Redis backplane for SignalR requires Microsoft.AspNetCore.SignalR.StackExchangeRedis package
-            // For now, we'll skip Redis backplane and use in-memory SignalR (works for single instance)
-            // Future: Add Redis backplane when scaling to multiple instances
-            // if (useRedis)
-            // {
-            //     var redisConnection = Configuration.GetConnectionString("Redis");
-            //     if (!string.IsNullOrEmpty(redisConnection))
-            //     {
-            //         signalRBuilder.AddStackExchangeRedis(redisConnection, options =>
-            //         {
-            //             options.Configuration.ChannelPrefix = "ZiraAI:SignalR:";
-            //         });
-            //     }
-            // }
+            // Redis backplane for SignalR horizontal scaling (using existing CacheOptions)
+            if (useRedis)
+            {
+                var cacheConfig = Configuration.GetSection("CacheOptions").Get<Core.CrossCuttingConcerns.Caching.Redis.CacheOptions>();
+
+                if (cacheConfig != null && !string.IsNullOrEmpty(cacheConfig.Host))
+                {
+                    Console.WriteLine("🔴 Configuring Redis backplane for SignalR using existing CacheOptions");
+
+                    var configOptions = ConfigurationOptions.Parse($"{cacheConfig.Host}:{cacheConfig.Port}");
+                    if (!string.IsNullOrEmpty(cacheConfig.Password))
+                    {
+                        configOptions.Password = cacheConfig.Password;
+                    }
+                    configOptions.DefaultDatabase = cacheConfig.Database;
+                    configOptions.Ssl = cacheConfig.Ssl;
+                    configOptions.AbortOnConnectFail = false;
+
+                    // Railway SSL certificate fix
+                    if (cacheConfig.Ssl)
+                    {
+                        configOptions.CertificateValidation += (sender, certificate, chain, errors) => true;
+                    }
+
+                    signalRBuilder.AddStackExchangeRedis(configOptions.ToString(), options =>
+                    {
+                        options.Configuration.ChannelPrefix = RedisChannel.Literal("ZiraAI:SignalR:");
+                    });
+
+                    Console.WriteLine($"✅ SignalR Redis backplane configured - Host: {cacheConfig.Host}, SSL: {cacheConfig.Ssl}");
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ UseRedis=true but CacheOptions not configured - falling back to in-memory");
+                }
+            }
+            else
+            {
+                Console.WriteLine("📦 Using in-memory SignalR (single instance only)");
+            }
 
             // Register notification service
             services.AddScoped<IPlantAnalysisNotificationService, PlantAnalysisNotificationService>();
