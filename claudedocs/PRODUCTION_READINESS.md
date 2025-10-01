@@ -149,16 +149,23 @@ private async Task SendNotificationViaHttp(int userId, PlantAnalysisNotification
 }
 ```
 
-#### 1.4 Railway Environment Variables Setup
+#### 1.4 Railway Environment Variables Setup ✅ VERIFIED ON STAGING (2025-10-01)
+
+**Status**: ✅ Staging environment verified and working correctly
 
 Railway environment variables ekleme (Railway UI'dan Settings → Variables):
 
 **Staging Environment** (ziraai-api-sit):
 ```bash
 # SignalR Notification System Variables
+ASPNETCORE_ENVIRONMENT=Staging
 ZIRAAI_INTERNAL_SECRET=ZiraAI_Internal_Staging_Secret_2025_xyz123
 ZIRAAI_WEBAPI_URL=https://ziraai-api-sit.up.railway.app
 ```
+
+**IMPORTANT**: Railway uses double underscore pattern for nested configuration:
+- `WebAPI__BaseUrl` overrides `"WebAPI": { "BaseUrl": "..." }` in appsettings.json
+- `WebAPI__InternalSecret` overrides `"WebAPI": { "InternalSecret": "..." }`
 
 **Production Environment** (ziraai-api-prod):
 ```bash
@@ -202,15 +209,24 @@ Yeni eklenenler aynı pattern'i takip ediyor:
 **Verification**:
 Railway deployment loglarında şunları arayın:
 ```
-✅ Internal secret loaded from environment/configuration
+✅ Internal secret loaded - Length: 35, Preview: ZiraA..._2025
 ✅ WebAPI URL loaded: https://ziraai-api-sit.up.railway.app
+[WORKER] PlantAnalysisWorkerService starting in Staging environment
 ```
 
 Eğer şunu görürseniz hata var:
 ```
 ⚠️ Using default internal secret - NOT SAFE FOR PRODUCTION!
 ⚠️ Using default WebAPI URL - NOT SAFE FOR PRODUCTION!
+[WORKER] PlantAnalysisWorkerService starting in Production environment (when ASPNETCORE_ENVIRONMENT=Staging)
 ```
+
+**Staging Verification Results** (2025-10-01):
+- ✅ WebAPI Internal Secret: Length 35, correctly loaded
+- ✅ WorkerService Internal Secret: Length 35, correctly loaded
+- ✅ WorkerService Environment: "Staging" (correctly detected)
+- ✅ SignalR Notification Flow: Worker → WebAPI → Hub → Client (SUCCESS)
+- ✅ Test Analysis ID 28: Notification delivered successfully
 
 ---
 
@@ -1277,11 +1293,53 @@ signalr-client-test \
 
 ---
 
+## Recent Updates & Critical Fixes
+
+### 2025-10-01: WorkerService Environment Detection Fix
+
+**Problem Identified**:
+- WorkerService was reporting "Production environment" when `ASPNETCORE_ENVIRONMENT=Staging` was set
+- `Host.CreateApplicationBuilder` uses `DOTNET_ENVIRONMENT` by default, not `ASPNETCORE_ENVIRONMENT`
+- This caused incorrect appsettings file loading and internal secret mismatch
+- SignalR notifications were failing with 401 Unauthorized
+
+**Solution Implemented**:
+**File**: `PlantAnalysisWorkerService/Program.cs` (Lines 115-123)
+
+```csharp
+// FIX: Use ASPNETCORE_ENVIRONMENT instead of DOTNET_ENVIRONMENT (to match WebAPI behavior)
+var aspnetEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+if (!string.IsNullOrEmpty(aspnetEnv))
+{
+    Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", aspnetEnv);
+    Console.WriteLine($"[WORKER] Using ASPNETCORE_ENVIRONMENT: {aspnetEnv}");
+}
+
+var builder = Host.CreateApplicationBuilder(args);
+```
+
+**File**: `PlantAnalysisWorkerService/Properties/launchSettings.json`
+- Changed all profiles from `DOTNET_ENVIRONMENT` to `ASPNETCORE_ENVIRONMENT`
+
+**Verification**:
+- ✅ Build successful
+- ✅ Staging deployment verified on Railway
+- ✅ WorkerService correctly reports "Staging environment"
+- ✅ Internal secret matches between services (Length: 35)
+- ✅ SignalR notifications working end-to-end
+
+**PR Reference**: #49 (merged to staging branch)
+
+**Impact**: CRITICAL - Required for production deployment
+
+---
+
 ## Version History
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2025-09-30 | System | Initial production readiness document created |
+| 1.1 | 2025-10-01 | System | Added WorkerService environment fix and staging verification |
 
 ---
 
