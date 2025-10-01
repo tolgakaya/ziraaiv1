@@ -5,21 +5,21 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "PlantAnalysisWorkerService (Staging)": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Staging"
+        "ASPNETCORE_ENVIRONMENT": "Staging"
       }
     },
     "PlantAnalysisWorkerService (Production)": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Production"
+        "ASPNETCORE_ENVIRONMENT": "Production"
       }
     }
   }

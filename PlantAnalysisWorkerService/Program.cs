@@ -112,6 +112,16 @@ static string DetectCloudProvider()
     return "LOCAL";
 }
 
+// FIX: Use ASPNETCORE_ENVIRONMENT instead of DOTNET_ENVIRONMENT (to match WebAPI behavior)
+// Host.CreateApplicationBuilder uses DOTNET_ENVIRONMENT by default
+// but we want to use ASPNETCORE_ENVIRONMENT for consistency with WebAPI
+var aspnetEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+if (!string.IsNullOrEmpty(aspnetEnv))
+{
+    Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", aspnetEnv);
+    Console.WriteLine($"[WORKER] Using ASPNETCORE_ENVIRONMENT: {aspnetEnv}");
+}
+
 var builder = Host.CreateApplicationBuilder(args);
 
 // CLOUD FIX: Set environment variables BEFORE configuration is built
