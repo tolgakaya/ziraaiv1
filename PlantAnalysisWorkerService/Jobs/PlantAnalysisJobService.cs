@@ -401,8 +401,35 @@ namespace PlantAnalysisWorkerService.Jobs
         {
             try
             {
-                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl", "https://localhost:5001");
-                var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret", "ZiraAI_Internal_Secret_2025");
+                // Use .NET Configuration API (automatically reads Railway env vars with __ pattern)
+                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl")
+                                   ?? "https://localhost:5001"; // Fallback for local development
+
+                var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret")
+                                    ?? "ZiraAI_Internal_Secret_2025"; // Fallback for local development
+
+                // Log configuration source
+                if (webApiBaseUrl == "https://localhost:5001")
+                {
+                    _logger.LogWarning("⚠️ Using default WebAPI URL - NOT SAFE FOR PRODUCTION!");
+                }
+                else
+                {
+                    _logger.LogInformation("✅ WebAPI URL loaded: {Url}", webApiBaseUrl);
+                }
+
+                if (internalSecret == "ZiraAI_Internal_Secret_2025")
+                {
+                    _logger.LogWarning("⚠️ Using default internal secret - NOT SAFE FOR PRODUCTION!");
+                }
+                else
+                {
+                    var secretPreview = internalSecret.Length > 10 
+                        ? $"{internalSecret.Substring(0, 5)}...{internalSecret.Substring(internalSecret.Length - 5)}" 
+                        : "***";
+                    _logger.LogInformation("✅ Internal secret loaded - Length: {Length}, Preview: {Preview}", 
+                        internalSecret.Length, secretPreview);
+                }
 
                 var httpClient = _httpClientFactory.CreateClient();
                 httpClient.BaseAddress = new Uri(webApiBaseUrl);
