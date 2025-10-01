@@ -478,3 +478,14 @@ UiPreparation/.DS_Store
 # Railway environment configuration files
 .env.railway.*
 !.env.railway.*.template
+
+# Application logs
+WebAPIlogs/
+**/logs/
+*.log
+
+# Serena MCP cache
+.serena/
+
+# Windows null device files
+nul
