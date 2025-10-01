@@ -42,7 +42,11 @@ namespace WebAPI.Controllers
             }
             else
             {
-                _logger.LogInformation("✅ Internal secret loaded from environment/configuration");
+                var secretPreview = _internalSecret.Length > 10 
+                    ? $"{_internalSecret.Substring(0, 5)}...{_internalSecret.Substring(_internalSecret.Length - 5)}" 
+                    : "***";
+                _logger.LogInformation("✅ Internal secret loaded - Length: {Length}, Preview: {Preview}", 
+                    _internalSecret.Length, secretPreview);
             }
         }
 

@@ -424,7 +424,11 @@ namespace PlantAnalysisWorkerService.Jobs
                 }
                 else
                 {
-                    _logger.LogInformation("✅ Internal secret loaded from environment/configuration");
+                    var secretPreview = internalSecret.Length > 10 
+                        ? $"{internalSecret.Substring(0, 5)}...{internalSecret.Substring(internalSecret.Length - 5)}" 
+                        : "***";
+                    _logger.LogInformation("✅ Internal secret loaded - Length: {Length}, Preview: {Preview}", 
+                        internalSecret.Length, secretPreview);
                 }
 
                 var httpClient = _httpClientFactory.CreateClient();
