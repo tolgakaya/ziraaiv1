@@ -24,6 +24,8 @@ namespace Business.Services.Authentication
                     typeof(PersonAuthenticationProvider)),
                 AuthenticationProviderType.Agent => (IAuthenticationProvider)_serviceProvider.GetService(
                     typeof(AgentAuthenticationProvider)),
+                AuthenticationProviderType.Phone => (IAuthenticationProvider)_serviceProvider.GetService(
+                    typeof(PhoneAuthenticationProvider)),
                 _ => throw new ApplicationException($"Authentication provider not found: {type}")
             };
         }
