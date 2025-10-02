@@ -2,8 +2,10 @@
 using Business.Handlers.Authorizations.Commands;
 using Business.Handlers.Authorizations.Queries;
 using Business.Handlers.Users.Commands;
+using Business.Services.Authentication;
 using Core.Utilities.Results;
 using Core.Utilities.Security.Jwt;
+using Core.Entities.Concrete;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -130,5 +132,85 @@ namespace WebAPI.Controllers
 
             return Ok(token);
         }
+
+        /// <summary>
+        /// Register with phone number (OTP-based authentication)
+        /// </summary>
+        /// <param name="command"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [Consumes("application/json")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IResult))]
+        [HttpPost("register-phone")]
+        public async Task<IActionResult> RegisterWithPhone([FromBody] Business.Handlers.Authorizations.Commands.RegisterUserWithPhoneCommand command)
+        {
+            return GetResponseOnlyResult(await Mediator.Send(command));
+        }
+
+        /// <summary>
+        /// Login with phone number - sends OTP via SMS
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [Consumes("application/json")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<Business.Services.Authentication.Model.LoginUserResult>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [HttpPost("login-phone")]
+        public async Task<IActionResult> LoginWithPhone([FromBody] LoginWithPhoneRequest request)
+        {
+            var command = new Business.Services.Authentication.Model.LoginUserCommand
+            {
+                MobilePhone = request.MobilePhone,
+                Provider = Core.Entities.Concrete.AuthenticationProviderType.Phone
+            };
+
+            var result = await Mediator.Send(command);
+            return result.Success ? Ok(result) : BadRequest(result.Message);
+        }
+
+        /// <summary>
+        /// Verify phone OTP and get JWT token
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [Consumes("application/json")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DArchToken>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [HttpPost("verify-phone-otp")]
+        public async Task<IActionResult> VerifyPhoneOtp([FromBody] VerifyPhoneOtpRequest request)
+        {
+            var command = new Business.Services.Authentication.Model.VerifyOtpCommand
+            {
+                ExternalUserId = request.MobilePhone,
+                Code = request.Code,
+                Provider = Core.Entities.Concrete.AuthenticationProviderType.Phone
+            };
+
+            var result = await Mediator.Send(command);
+            return result.Success ? Ok(result) : BadRequest(result.Message);
+        }
+    }
+
+    /// <summary>
+    /// Login with phone request DTO
+    /// </summary>
+    public class LoginWithPhoneRequest
+    {
+        public string MobilePhone { get; set; }
+    }
+
+    /// <summary>
+    /// Verify phone OTP request DTO
+    /// </summary>
+    public class VerifyPhoneOtpRequest
+    {
+        public string MobilePhone { get; set; }
+        public int Code { get; set; }
     }
 }

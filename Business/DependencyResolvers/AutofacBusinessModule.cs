@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
+using Core.Utilities.Security.Jwt;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
 using DataAccess.Concrete.EntityFramework.Contexts;
@@ -190,6 +191,15 @@ namespace Business.DependencyResolvers
             // Deep Links services
             builder.RegisterType<Business.Services.MobileIntegration.DeepLinkService>().As<Business.Services.MobileIntegration.IDeepLinkService>()
                 .InstancePerLifetimeScope();
+
+            // Authentication Providers
+            builder.Register(c => new Business.Services.Authentication.PhoneAuthenticationProvider(
+                Core.Entities.Concrete.AuthenticationProviderType.Phone,
+                c.Resolve<IUserRepository>(),
+                c.Resolve<IMobileLoginRepository>(),
+                c.Resolve<ITokenHelper>(),
+                c.Resolve<Business.Adapters.SmsService.ISmsService>()
+            )).InstancePerLifetimeScope();
             
             
             // Register all storage implementations first
