@@ -20,6 +20,11 @@
         /// <summary>
         /// Login for contract service or outsource personnel.
         /// </summary>
-        Agent
+        Agent,
+
+        /// <summary>
+        /// Login with phone number and OTP (SMS-based authentication)
+        /// </summary>
+        Phone
     }
 }

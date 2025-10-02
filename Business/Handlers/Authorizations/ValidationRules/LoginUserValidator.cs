@@ -10,9 +10,23 @@ namespace Business.Handlers.Authorizations.ValidationRules
     {
         public LoginUserValidator()
         {
-            RuleFor(m => m.Password).NotEmpty()
-                .When((i) => i.Provider != AuthenticationProviderType.Person);
-            RuleFor(m => m.ExternalUserId).NotEmpty().Must((instance, value) =>
+            // Phone-based login: Only MobilePhone required
+            RuleFor(m => m.MobilePhone)
+                .NotEmpty()
+                .When(i => i.Provider == AuthenticationProviderType.Phone)
+                .WithMessage("Phone number is required for phone-based login");
+
+            // Password validation: Not required for Person and Phone (OTP-based)
+            RuleFor(m => m.Password)
+                .NotEmpty()
+                .When(i => i.Provider != AuthenticationProviderType.Person
+                        && i.Provider != AuthenticationProviderType.Phone);
+
+            // ExternalUserId validation: Not required for Phone (uses MobilePhone instead)
+            RuleFor(m => m.ExternalUserId)
+                .NotEmpty()
+                .When(i => i.Provider != AuthenticationProviderType.Phone)
+                .Must((instance, value) =>
                 {
                     switch (instance.Provider)
                     {
@@ -22,6 +36,8 @@ namespace Business.Handlers.Authorizations.ValidationRules
                             return true;
                         case AuthenticationProviderType.Agent:
                             break;
+                        case AuthenticationProviderType.Phone:
+                            return true; // Not validated here, MobilePhone is used
                         case AuthenticationProviderType.Unknown:
                             break;
                         default:
