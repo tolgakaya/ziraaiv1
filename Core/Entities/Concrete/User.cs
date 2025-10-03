@@ -61,6 +61,13 @@ namespace Core.Entities.Concrete
         public byte[] PasswordSalt { get; set; }
         public byte[] PasswordHash { get; set; }
 
+
+        /// <summary>
+        /// Referral code used during registration (if any)
+        /// Tracks which referral code brought this user to the platform
+        /// </summary>
+        public string RegistrationReferralCode { get; set; }
+
         public bool UpdateMobilePhone(string mobilePhone)
         {
             if (mobilePhone == MobilePhones)

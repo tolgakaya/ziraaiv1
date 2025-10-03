@@ -25,17 +25,20 @@ namespace WebAPI.Controllers
         private readonly IMediator _mediator;
         private readonly IPlantAnalysisAsyncService _asyncAnalysisService;
         private readonly ISubscriptionValidationService _subscriptionValidationService;
+        private readonly Business.Services.Referral.IReferralTrackingService _referralTrackingService;
         private readonly ILogger<PlantAnalysesController> _logger;
 
         public PlantAnalysesController(
             IMediator mediator,
             IPlantAnalysisAsyncService asyncAnalysisService,
             ISubscriptionValidationService subscriptionValidationService,
+            Business.Services.Referral.IReferralTrackingService referralTrackingService,
             ILogger<PlantAnalysesController> logger)
         {
             _mediator = mediator;
             _asyncAnalysisService = asyncAnalysisService;
             _subscriptionValidationService = subscriptionValidationService;
+            _referralTrackingService = referralTrackingService;
             _logger = logger;
             _logger.LogInformation("[CONTROLLER_CONSTRUCTOR] PlantAnalysesController initialized");
         }
@@ -174,6 +177,21 @@ namespace WebAPI.Controllers
 
                     _logger.LogInformation("[CONTROLLER_INCREMENT_SUCCESS] Usage increment completed successfully - UserId: {UserId}",
                         userId.Value);
+
+                    // Process referral validation if this is user's first analysis
+                    try
+                    {
+                        var validationResult = await _referralTrackingService.ValidateReferralAsync(userId.Value);
+                        if (validationResult.Success)
+                        {
+                            _logger.LogInformation("[CONTROLLER_REFERRAL_VALIDATION] Referral validation processed for UserId: {UserId}", userId.Value);
+                        }
+                    }
+                    catch (Exception refEx)
+                    {
+                        // Log but don't fail the analysis - referral is a secondary feature
+                        _logger.LogWarning(refEx, "[CONTROLLER_REFERRAL_ERROR] Referral validation failed for UserId: {UserId}", userId.Value);
+                    }
 
                     return Ok(result);
                 }
