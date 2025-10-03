@@ -318,6 +318,21 @@ namespace WebAPI.Controllers
                 // Increment usage counter after successful queueing
                 await _subscriptionValidationService.IncrementUsageAsync(userId.Value);
 
+                // Process referral validation if this is user's first analysis
+                try
+                {
+                    var validationResult = await _referralTrackingService.ValidateReferralAsync(userId.Value);
+                    if (validationResult.Success)
+                    {
+                        _logger.LogInformation("[CONTROLLER_ASYNC_REFERRAL_VALIDATION] Referral validation processed for UserId: {UserId}", userId.Value);
+                    }
+                }
+                catch (Exception refEx)
+                {
+                    // Log but don't fail the analysis - referral is a secondary feature
+                    _logger.LogWarning(refEx, "[CONTROLLER_ASYNC_REFERRAL_ERROR] Referral validation failed for UserId: {UserId}", userId.Value);
+                }
+
                 return Accepted(new
                 {
                     success = true,
