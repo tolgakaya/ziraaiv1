@@ -39,7 +39,6 @@ namespace Business.Handlers.Referrals.Queries
                 _logger = logger;
             }
 
-            [SecuredOperation(Priority = 1)]
             [CacheAspect(duration: 15)]
             [LogAspect(typeof(FileLogger))]
             public async Task<IDataResult<List<ReferralRewardDto>>> Handle(GetReferralRewardsQuery request, CancellationToken cancellationToken)
