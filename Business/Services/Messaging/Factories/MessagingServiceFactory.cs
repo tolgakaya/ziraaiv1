@@ -46,7 +46,7 @@ namespace Business.Services.Messaging.Factories
 
             return provider.ToLower() switch
             {
-                "mock" => (ISmsService)_serviceProvider.GetService(typeof(MockSmsService)),
+                "mock" => (ISmsService)_serviceProvider.GetService(typeof(ISmsService)),
                 "twilio" => throw new NotImplementedException("Twilio SMS provider not yet implemented. Use Mock for development."),
                 "netgsm" => throw new NotImplementedException("Netgsm SMS provider not yet implemented. Use Mock for development."),
                 "turkcell" => (ISmsService)_serviceProvider.GetService(typeof(TurkcellSmsService)),
@@ -65,7 +65,7 @@ namespace Business.Services.Messaging.Factories
 
             return provider.ToLower() switch
             {
-                "mock" => (IWhatsAppService)_serviceProvider.GetService(typeof(MockWhatsAppService)),
+                "mock" => (IWhatsAppService)_serviceProvider.GetService(typeof(IWhatsAppService)),
                 "twilio" => throw new NotImplementedException("Twilio WhatsApp provider not yet implemented. Use Mock for development."),
                 "whatsappbusiness" or "business" => (IWhatsAppService)_serviceProvider.GetService(typeof(WhatsAppBusinessService)),
                 "turkcell" => throw new NotImplementedException("Turkcell WhatsApp provider not yet implemented. Use Mock for development."),
