@@ -4275,7 +4275,7 @@
       "name": "Referral",
       "item": [
         {
-          "name": "POST /api/Referral/generate",
+          "name": "POST /api/v1/Referral/generate",
           "request": {
             "method": "POST",
             "header": [
@@ -4286,7 +4286,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/Referral/generate",
+              "raw": "{{base_url}}/api/v1/Referral/generate",
               "host": [
                 "{{base_url}}"
               ],
@@ -4331,7 +4331,7 @@
           ]
         },
         {
-          "name": "POST /api/Referral/track-click",
+          "name": "POST /api/v1/Referral/track-click",
           "request": {
             "method": "POST",
             "header": [
@@ -4342,7 +4342,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/Referral/track-click",
+              "raw": "{{base_url}}/api/v1/Referral/track-click",
               "host": [
                 "{{base_url}}"
               ],
@@ -4377,7 +4377,7 @@
           ]
         },
         {
-          "name": "POST /api/Referral/validate",
+          "name": "POST /api/v1/Referral/validate",
           "request": {
             "method": "POST",
             "header": [
@@ -4388,7 +4388,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/Referral/validate",
+              "raw": "{{base_url}}/api/v1/Referral/validate",
               "host": [
                 "{{base_url}}"
               ],
@@ -4423,7 +4423,7 @@
           ]
         },
         {
-          "name": "GET /api/Referral/stats",
+          "name": "GET /api/v1/Referral/stats",
           "request": {
             "method": "GET",
             "header": [
@@ -4434,7 +4434,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/Referral/stats",
+              "raw": "{{base_url}}/api/v1/Referral/stats",
               "host": [
                 "{{base_url}}"
               ],
@@ -4476,7 +4476,7 @@
           ]
         },
         {
-          "name": "GET /api/Referral/codes",
+          "name": "GET /api/v1/Referral/codes",
           "request": {
             "method": "GET",
             "header": [
@@ -4487,7 +4487,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/Referral/codes",
+              "raw": "{{base_url}}/api/v1/Referral/codes",
               "host": [
                 "{{base_url}}"
               ],
@@ -4529,7 +4529,7 @@
           ]
         },
         {
-          "name": "GET /api/Referral/credits",
+          "name": "GET /api/v1/Referral/credits",
           "request": {
             "method": "GET",
             "header": [
@@ -4540,7 +4540,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/Referral/credits",
+              "raw": "{{base_url}}/api/v1/Referral/credits",
               "host": [
                 "{{base_url}}"
               ],
@@ -4582,7 +4582,7 @@
           ]
         },
         {
-          "name": "GET /api/Referral/rewards",
+          "name": "GET /api/v1/Referral/rewards",
           "request": {
             "method": "GET",
             "header": [
@@ -4593,7 +4593,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/Referral/rewards",
+              "raw": "{{base_url}}/api/v1/Referral/rewards",
               "host": [
                 "{{base_url}}"
               ],
@@ -4635,7 +4635,7 @@
           ]
         },
         {
-          "name": "DELETE /api/Referral/disable/{code}",
+          "name": "DELETE /api/v1/Referral/disable/{code}",
           "request": {
             "method": "DELETE",
             "header": [
@@ -4646,7 +4646,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/Referral/disable/{{code}}",
+              "raw": "{{base_url}}/api/v1/Referral/disable/{{code}}",
               "host": [
                 "{{base_url}}"
               ],

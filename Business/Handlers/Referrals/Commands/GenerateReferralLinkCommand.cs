@@ -37,7 +37,6 @@ namespace Business.Handlers.Referrals.Commands
                 _logger = logger;
             }
 
-            [SecuredOperation(Priority = 1)]
             [CacheRemoveAspect("Get")]
             [LogAspect(typeof(FileLogger))]
             public async Task<IDataResult<Entities.Dtos.ReferralLinkResponse>> Handle(GenerateReferralLinkCommand request, CancellationToken cancellationToken)
