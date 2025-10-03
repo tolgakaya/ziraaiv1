@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "61d3b92d-0782-48a2-ad64-fb0a55adcc37",
     "name": "ZiraAI Complete API Collection",
-    "description": "ZiraAI Plant Analysis API\n\nGenerated from Swagger on 2025-10-03 12:52:06",
+    "description": "ZiraAI Plant Analysis API - Complete Collection\n\nIncludes:\n- Phone-based Authentication (2-step OTP: login-phone, verify-phone-otp, register-phone, verify-phone-register)\n- Email-based Authentication\n- Referral System Integration\n- Plant Analysis Endpoints\n- Subscription Management\n- Sponsorship System\n\nLast Updated: 2025-10-03",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -574,9 +574,12 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phoneNumber\": \"+905551234567\",\n  \"fullName\": \"Test User\",\n  \"referralCode\": \"\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"Test123!\",\n  \"mobilePhones\": \"+905551234567\",\n  \"role\": \"Farmer\"\n}"
-            }
-          },
+              "raw": "{
+  \"mobilePhone\": \"05329999999\",
+  \"fullName\": \"Test User\",
+  \"referralCode\": \"ZIRA-ABC123\"
+}"
+            },
           "response": [],
           "event": [
             {
@@ -620,9 +623,10 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phoneNumber\": \"+905551234567\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"Test123!\",\n  \"fullName\": \"Test User\",\n  \"mobilePhones\": \"+905551234567\",\n  \"referralCode\": \"\",\n  \"role\": \"Farmer\"\n}"
-            }
-          },
+              "raw": "{
+  \"mobilePhone\": \"05321234567\"
+}"
+            },
           "response": [],
           "event": [
             {
@@ -656,8 +660,9 @@
             }
           ]
         },
+        {$1,
         {
-          "name": "POST /api/v{version}/Auth/verify-phone-otp",
+          "name": "POST /api/v{version}/Auth/verify-phone-register",
           "request": {
             "method": "POST",
             "header": [
@@ -668,7 +673,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/v{{{version}}}/Auth/verify-phone-otp",
+              "raw": "{{base_url}}/api/v{{{version}}}/Auth/verify-phone-register",
               "host": [
                 "{{base_url}}"
               ],
@@ -676,12 +681,17 @@
                 "api",
                 "v{{{version}}}",
                 "Auth",
-                "verify-phone-otp"
+                "verify-phone-register"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"phoneNumber\": \"+905551234567\",\n  \"otpCode\": \"123456\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"Test123!\",\n  \"fullName\": \"Test User\",\n  \"mobilePhones\": \"+905551234567\",\n  \"referralCode\": \"\",\n  \"role\": \"Farmer\"\n}"
+              "raw": "{
+  \"mobilePhone\": \"05329999999\",
+  \"code\": 123456,
+  \"fullName\": \"Test User\",
+  \"referralCode\": \"ZIRA-ABC123\"
+}"
             }
           },
           "response": [],
@@ -690,15 +700,25 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test(\"OTP verification successful\", function () {",
+                  "pm.test(\"Phone registration completed successfully\", function () {",
                   "    pm.response.to.have.status(200);",
                   "    var jsonData = pm.response.json();",
                   "",
-                  "    if (jsonData.success && jsonData.data) {",
+                  "    if (jsonData.success && jsonData.data && jsonData.data.token) {",
                   "        pm.collectionVariables.set(\"access_token\", jsonData.data.token);",
                   "        pm.collectionVariables.set(\"refresh_token\", jsonData.data.refreshToken);",
-                  "        console.log(\"Tokens saved after OTP verification\");",
+                  "        console.log(\"Phone Registration Token saved to environment\");",
+                  "",
+                  "        if (jsonData.data.user) {",
+                  "            pm.collectionVariables.set(\"user_id\", jsonData.data.user.userId);",
+                  "            console.log(\"User ID:\", jsonData.data.user.userId);",
+                  "        }",
                   "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Response has token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.have.property('token');",
                   "});"
                 ],
                 "type": "text/javascript"

@@ -383,7 +383,8 @@ if (duplicateClick != null)
 
 ### 3. Registration Linking
 
-**Endpoint:** `POST /api/auth/register` (with optional referralCode field)
+#### Option A: Email-Based Registration
+**Endpoint:** `POST /api/v1/auth/register` (with optional referralCode field)
 
 **Flow:**
 ```
@@ -413,6 +414,73 @@ if (duplicateClick != null)
    │   └─ Set Status = 1 (Registered)
    └─ Return success
 ```
+
+#### Option B: Phone-Based Registration (OTP - 2 Steps)
+
+**Step 1 - Request OTP:**
+**Endpoint:** `POST /api/v1/auth/register-phone`
+
+**Flow:**
+```
+1. User provides phone + fullName + referralCode
+   └─ ReferralCode (optional): ZIRA-ABC123
+
+2. RegisterWithPhoneCommand.Handle()
+   ├─ Check phone not already registered (duplicate prevention)
+   ├─ Generate 6-digit OTP code
+   ├─ Store OTP in MobileLogin table
+   │   ├─ ExternalUserId = phone
+   │   ├─ Code = 123456
+   │   ├─ Provider = Phone
+   │   ├─ SendDate = DateTime.Now
+   │   ├─ IsUsed = false
+   │   └─ Expiry = 5 minutes
+   ├─ Send SMS with OTP code
+   └─ Return success (OTP code in dev mode)
+
+Note: Referral code is NOT stored yet - passed to Step 2
+```
+
+**Step 2 - Verify OTP & Complete Registration:**
+**Endpoint:** `POST /api/v1/auth/verify-phone-register`
+
+**Flow:**
+```
+1. User provides phone + OTP + fullName + referralCode
+   └─ Code: 123456
+
+2. VerifyPhoneRegisterCommand.Handle()
+   ├─ Check phone not already registered
+   ├─ Find OTP record:
+   │   ├─ Where ExternalUserId = phone
+   │   ├─ Where Code = 123456
+   │   ├─ Where Provider = Phone
+   │   └─ Where IsUsed = false
+   ├─ Validate OTP not expired (5 minutes)
+   ├─ Mark OTP as used (IsUsed = true)
+   ├─ Create User record:
+   │   ├─ Email = {phone}@phone.ziraai.com
+   │   ├─ MobilePhones = phone
+   │   ├─ PasswordHash/Salt = empty
+   │   ├─ AuthenticationProviderType = "Phone"
+   │   └─ RegistrationReferralCode = code (stored!)
+   ├─ Assign Farmer role
+   ├─ Create Trial subscription
+   ├─ If ReferralCode provided:
+   │   └─ Call ReferralTrackingService.LinkRegistrationAsync()
+   ├─ Generate JWT token
+   └─ Return token
+
+3. LinkRegistrationAsync(userId, code)
+   └─ Same flow as email registration (see above)
+```
+
+**Key Differences:**
+- 2-step process vs 1-step
+- OTP verification required (5-minute expiry)
+- Phone becomes email (`{phone}@phone.ziraai.com`)
+- No password required (passwordless auth)
+- Referral code stored in Step 2, not Step 1
 
 **Self-Referral Prevention:**
 ```csharp
@@ -755,7 +823,7 @@ WHERE "ConfigKey" = 'Referral_MinAnalysesForValidation';
 
 ## Integration Points
 
-### 1. User Registration
+### 1. Email-Based User Registration
 **File:** `Business/Handlers/Authorizations/Commands/RegisterUserCommand.cs`
 
 **Integration:**
@@ -770,14 +838,121 @@ user.RegistrationReferralCode = request.ReferralCode;
 if (!string.IsNullOrWhiteSpace(request.ReferralCode))
 {
     await _referralTrackingService.LinkRegistrationAsync(
-        user.UserId, 
+        user.UserId,
         request.ReferralCode);
 }
 ```
 
 ---
 
-### 2. Plant Analysis (Validation Trigger)
+### 2. Phone-Based User Registration (OTP)
+
+**Step 1: Request OTP**
+**File:** `Business/Handlers/Authorizations/Commands/RegisterWithPhoneCommand.cs`
+
+**Request:**
+```json
+{
+  "mobilePhone": "05321234567",
+  "fullName": "Ahmet Yılmaz",
+  "referralCode": "ZIRA-ABC123"
+}
+```
+
+**Flow:**
+1. Validates phone number not already registered
+2. Generates 6-digit OTP code
+3. Stores OTP in MobileLogin table (5-minute expiry)
+4. Sends SMS with OTP code
+5. Returns success (OTP included in dev mode)
+
+**Note:** Referral code is NOT stored yet - just passed through to Step 2
+
+---
+
+**Step 2: Verify OTP & Complete Registration**
+**File:** `Business/Handlers/Authorizations/Commands/VerifyPhoneRegisterCommand.cs`
+
+**Request:**
+```json
+{
+  "mobilePhone": "05321234567",
+  "code": 123456,
+  "fullName": "Ahmet Yılmaz",
+  "referralCode": "ZIRA-ABC123"
+}
+```
+
+**Integration:**
+```csharp
+// Verify OTP
+var mobileLogin = await _mobileLoginRepository.GetAsync(
+    m => m.ExternalUserId == request.MobilePhone &&
+         m.Code == request.Code &&
+         m.Provider == AuthenticationProviderType.Phone &&
+         !m.IsUsed);
+
+if (mobileLogin == null || (DateTime.Now - mobileLogin.SendDate).TotalMinutes > 5)
+{
+    return new ErrorDataResult<DArchToken>("Invalid or expired OTP code");
+}
+
+// Mark OTP as used
+mobileLogin.IsUsed = true;
+
+// Create user with phone as email
+var user = new User
+{
+    Email = $"{request.MobilePhone}@phone.ziraai.com",
+    MobilePhones = request.MobilePhone,
+    PasswordHash = new byte[0], // No password for phone auth
+    PasswordSalt = new byte[0],
+    AuthenticationProviderType = "Phone",
+    RegistrationReferralCode = request.ReferralCode // Store referral code
+};
+
+_userRepository.Add(user);
+await _userRepository.SaveChangesAsync();
+
+// Assign Farmer role
+// Create trial subscription
+
+// Link referral if provided
+if (!string.IsNullOrWhiteSpace(request.ReferralCode))
+{
+    try
+    {
+        var referralResult = await _referralTrackingService.LinkRegistrationAsync(
+            user.UserId,
+            request.ReferralCode);
+
+        if (referralResult.Success)
+        {
+            _logger.LogInformation("Referral linked: {Code}", request.ReferralCode);
+        }
+    }
+    catch (Exception ex)
+    {
+        _logger.LogWarning(ex, "Referral linking failed");
+        // Registration continues - referral is optional
+    }
+}
+
+// Generate and return JWT token
+var token = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
+return new SuccessDataResult<DArchToken>(token, "Registration successful");
+```
+
+**Key Differences from Email Registration:**
+- 2-step process (OTP request → OTP verification)
+- OTP expiry: 5 minutes (300 seconds)
+- Email auto-generated: `{phone}@phone.ziraai.com`
+- No password required (passwordless authentication)
+- Referral code passed through both steps
+
+---
+
+### 3. Plant Analysis (Validation Trigger)
 **File:** `WebAPI/Controllers/PlantAnalysesController.cs`
 
 **Integration:**

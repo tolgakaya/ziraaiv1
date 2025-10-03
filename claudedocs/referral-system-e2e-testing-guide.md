@@ -128,8 +128,12 @@ export REFERRER_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 | TS-006 | Track referral click (duplicate) | Success but not tracked | P1 |
 | TS-007 | Validate referral code (valid) | Code is valid | P0 |
 | TS-008 | Validate referral code (invalid) | Error: code not found | P1 |
-| TS-009 | Register with referral code | User created, tracking linked | P0 |
-| TS-010 | Register with self-referral | Error: cannot self-refer | P1 |
+| TS-009 | Register with referral code (email) | User created, tracking linked | P0 |
+| TS-009A | Register with referral code (phone - OTP) | User created, tracking linked | P0 |
+| TS-010 | Register with self-referral (email) | Error: cannot self-refer | P1 |
+| TS-010A | Register with self-referral (phone - OTP) | Error: cannot self-refer | P1 |
+| TS-010B | Duplicate phone registration | Error: already registered | P1 |
+| TS-010C | Expired OTP during registration | Error: expired OTP | P1 |
 | TS-011 | First analysis triggers validation | Tracking validated | P0 |
 | TS-012 | Reward processed automatically | Credits added to referrer | P0 |
 | TS-013 | Get referral statistics | Stats returned correctly | P1 |
@@ -375,6 +379,110 @@ curl -X POST https://ziraai-staging.up.railway.app/api/auth/login \
   }'
 
 export REFEREE_TOKEN="<token_from_response>"
+```
+
+---
+
+### Test Case TS-009A: Register with Referral Code (Phone - OTP)
+
+**Step 1: Request OTP for Registration (with Referral Code)**
+
+```bash
+curl -X POST https://ziraai-staging.up.railway.app/api/v1/auth/register-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobilePhone": "05327777777",
+    "fullName": "Phone Referee User",
+    "referralCode": "ZIRA-A3B7K9"
+  }'
+```
+
+**Expected Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "OTP sent to 05327777777. Code: 123456 (dev mode)"
+}
+```
+
+**Console Output (Development):**
+```
+[RegisterWithPhone] Registration OTP requested for phone: 05327777777
+[RegisterWithPhone] Phone number is unique, proceeding with registration...
+[RegisterWithPhone] OTP generated and saved for phone: 05327777777, Code: 123456
+```
+
+**Save OTP code:**
+```bash
+export OTP_CODE="123456"
+```
+
+---
+
+**Step 2: Verify OTP and Complete Registration**
+
+```bash
+curl -X POST https://ziraai-staging.up.railway.app/api/v1/auth/verify-phone-register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobilePhone": "05327777777",
+    "code": 123456,
+    "fullName": "Phone Referee User",
+    "referralCode": "ZIRA-A3B7K9"
+  }'
+```
+
+**Expected Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Registration successful",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "refresh_token_here",
+    "expiration": "2025-10-03T13:00:00Z",
+    "claims": [
+      {
+        "id": 1,
+        "name": "GetPlantAnalyses"
+      }
+    ]
+  }
+}
+```
+
+**Verification - User Created:**
+```sql
+-- Check Users table
+SELECT "UserId", "Email", "MobilePhones", "FullName", "RegistrationReferralCode"
+FROM "Users"
+WHERE "MobilePhones" = '05327777777';
+
+-- Expected:
+-- Email: 05327777777@phone.ziraai.com
+-- RegistrationReferralCode: ZIRA-A3B7K9
+-- PasswordHash: empty array (no password)
+-- AuthenticationProviderType: Phone
+```
+
+**Verification - Referral Linked:**
+```sql
+-- Check ReferralTracking table
+SELECT * FROM "ReferralTracking"
+WHERE "RefereeUserId" = (
+    SELECT "UserId" FROM "Users" WHERE "MobilePhones" = '05327777777'
+);
+
+-- Expected:
+-- Status: 1 (Registered)
+-- RegisteredAt: ~now
+-- ClickedAt: <from previous click>
+-- ReferralCodeId: matches ZIRA-A3B7K9
+```
+
+**Save referee token:**
+```bash
+export PHONE_REFEREE_TOKEN="<token_from_response>"
 ```
 
 ---
@@ -718,6 +826,141 @@ WHERE "RefereeUserId" = (
 );
 
 -- Expected: 0
+```
+
+---
+
+### Test Case TS-010B: Duplicate Phone Registration
+
+**Step 1: Complete First Registration**
+```bash
+# Request OTP
+curl -X POST https://ziraai-staging.up.railway.app/api/v1/auth/register-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobilePhone": "05328888888",
+    "fullName": "First User"
+  }'
+
+# Verify OTP
+curl -X POST https://ziraai-staging.up.railway.app/api/v1/auth/verify-phone-register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobilePhone": "05328888888",
+    "code": 123456,
+    "fullName": "First User"
+  }'
+```
+
+**Expected:** 200 OK, user created
+
+---
+
+**Step 2: Try to Register Again with Same Phone (Request OTP)**
+```bash
+curl -X POST https://ziraai-staging.up.railway.app/api/v1/auth/register-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobilePhone": "05328888888",
+    "fullName": "Second User"
+  }'
+```
+
+**Expected Response (400 Bad Request):**
+```json
+{
+  "success": false,
+  "message": "Phone number is already registered"
+}
+```
+
+---
+
+**Step 3: Try to Verify with Same Phone (Without OTP Request)**
+```bash
+curl -X POST https://ziraai-staging.up.railway.app/api/v1/auth/verify-phone-register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobilePhone": "05328888888",
+    "code": 999999,
+    "fullName": "Second User"
+  }'
+```
+
+**Expected Response (400 Bad Request):**
+```json
+{
+  "success": false,
+  "message": "Phone number is already registered"
+}
+```
+
+**Verification:**
+```sql
+-- Should only have 1 user with this phone
+SELECT COUNT(*) FROM "Users" WHERE "MobilePhones" = '05328888888';
+-- Expected: 1
+```
+
+---
+
+### Test Case TS-010C: Expired OTP During Registration
+
+**Step 1: Request OTP**
+```bash
+curl -X POST https://ziraai-staging.up.railway.app/api/v1/auth/register-phone \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobilePhone": "05329999999",
+    "fullName": "Expired OTP User"
+  }'
+```
+
+**Expected:** 200 OK, OTP generated
+
+---
+
+**Step 2: Wait 6 Minutes (OTP Expires After 5 Minutes)**
+```bash
+sleep 360
+```
+
+---
+
+**Step 3: Try to Verify with Expired OTP**
+```bash
+curl -X POST https://ziraai-staging.up.railway.app/api/v1/auth/verify-phone-register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mobilePhone": "05329999999",
+    "code": 123456,
+    "fullName": "Expired OTP User"
+  }'
+```
+
+**Expected Response (400 Bad Request):**
+```json
+{
+  "success": false,
+  "message": "OTP code has expired"
+}
+```
+
+**Verification:**
+```sql
+-- Check MobileLogin record
+SELECT
+    "ExternalUserId",
+    "Code",
+    "SendDate",
+    "IsUsed",
+    EXTRACT(EPOCH FROM (NOW() - "SendDate"))/60 AS MinutesOld
+FROM "MobileLogins"
+WHERE "ExternalUserId" = '05329999999'
+ORDER BY "SendDate" DESC
+LIMIT 1;
+
+-- Expected: MinutesOld > 5
 ```
 
 ---
@@ -1122,10 +1365,13 @@ Create a Postman collection with all test cases:
 ```
 ZiraAI Referral System Tests
 ├── Authentication
-│   ├── Register Referrer
-│   ├── Login Referrer
-│   ├── Register Referee (with code)
-│   └── Login Referee
+│   ├── Register Referrer (Email)
+│   ├── Login Referrer (Email)
+│   ├── Register Referee (Email with code)
+│   ├── Login Referee (Email)
+│   ├── Register Referee (Phone OTP - Step 1: Request OTP)
+│   ├── Register Referee (Phone OTP - Step 2: Verify OTP)
+│   └── Login Referee (Phone OTP)
 ├── Referral Management
 │   ├── Generate Link (SMS)
 │   ├── Generate Link (WhatsApp)
@@ -1169,7 +1415,8 @@ ZiraAI Referral System Tests
 - [ ] TS-003: Generate link (Hybrid) - PASSED
 - [ ] TS-004: Track click - PASSED
 - [ ] TS-007: Validate code - PASSED
-- [ ] TS-009: Register with code - PASSED
+- [ ] TS-009: Register with code (email) - PASSED
+- [ ] TS-009A: Register with code (phone - OTP) - PASSED
 - [ ] TS-011: First analysis validation - PASSED
 - [ ] TS-012: Reward processed - PASSED
 - [ ] TS-013: Get stats - PASSED
@@ -1181,7 +1428,10 @@ ZiraAI Referral System Tests
 - [ ] TS-005: Expired code - PASSED
 - [ ] TS-006: Duplicate click - PASSED
 - [ ] TS-008: Invalid code - PASSED
-- [ ] TS-010: Self-referral - PASSED
+- [ ] TS-010: Self-referral (email) - PASSED
+- [ ] TS-010A: Self-referral (phone) - PASSED
+- [ ] TS-010B: Duplicate phone registration - PASSED
+- [ ] TS-010C: Expired OTP during registration - PASSED
 - [ ] TS-017: Max phone limit - PASSED
 - [ ] TS-018: Invalid phone format - PASSED
 
