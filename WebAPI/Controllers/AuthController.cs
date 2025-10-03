@@ -133,21 +133,6 @@ namespace WebAPI.Controllers
             return Ok(token);
         }
 
-        /// <summary>
-        /// Register with phone number (OTP-based authentication)
-        /// </summary>
-        /// <param name="command"></param>
-        /// <returns></returns>
-        [AllowAnonymous]
-        [Consumes("application/json")]
-        [Produces("application/json", "text/plain")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IResult))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IResult))]
-        [HttpPost("register-phone")]
-        public async Task<IActionResult> RegisterWithPhone([FromBody] Business.Handlers.Authorizations.Commands.RegisterUserWithPhoneCommand command)
-        {
-            return GetResponseOnlyResult(await Mediator.Send(command));
-        }
 
         /// <summary>
         /// Login with phone number - sends OTP via SMS
