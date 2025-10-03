@@ -261,13 +261,28 @@ WebAPI/Controllers/
 
 ## 🌐 API Endpoints
 
-### 1. Request OTP for Phone Registration (Step 1)
+### Phone Registration Flow (2-Step OTP)
+
+#### Step 1: Request OTP for Registration
 
 **Endpoint**: `POST /api/v1/auth/register-phone`
 
 **Auth:** Public (no auth required)
 
-**Request:**
+**Request Body Fields:**
+- `mobilePhone` (string, required): Turkish mobile phone number (e.g., "05321234567")
+- `fullName` (string, required): User's full name
+- `referralCode` (string, optional): Referral code from another user
+
+**Example 1: Registration WITHOUT Referral Code**
+```json
+{
+  "mobilePhone": "05321234567",
+  "fullName": "Ahmet Yılmaz"
+}
+```
+
+**Example 2: Registration WITH Referral Code**
 ```json
 {
   "mobilePhone": "05321234567",
@@ -284,7 +299,9 @@ WebAPI/Controllers/
 }
 ```
 
-**Error Response** (400 Bad Request):
+**Error Responses:**
+
+Phone already registered (400):
 ```json
 {
   "success": false,
@@ -293,28 +310,43 @@ WebAPI/Controllers/
 ```
 
 **Flow:**
-1. Validates phone number format
-2. Checks if phone already registered (duplicate prevention)
-3. Generates 6-digit OTP
-4. Stores OTP in MobileLogin table (5-minute expiry)
-5. Sends SMS with OTP code
-6. Returns success (OTP code included in dev mode)
+1. ✅ Validates phone number format
+2. ✅ Checks if phone already registered (duplicate prevention)
+3. ✅ Generates 6-digit OTP code
+4. ✅ Stores OTP in `MobileLogins` table with 5-minute expiry
+5. ✅ Sends SMS with OTP code (mock in dev, real in production)
+6. ✅ Returns success message with OTP (dev mode only)
 
-**Side Effects:**
-- OTP code generated (6 digits)
-- OTP stored in `MobileLogins` table
-- OTP expires after 5 minutes (300 seconds)
-- SMS sent via MockSmsService (console log in dev)
+**Important Notes:**
+- ReferralCode is **optional** - system works with or without it
+- If ReferralCode is provided but invalid, registration still proceeds
+- OTP expires in **5 minutes (300 seconds)**
+- Same OTP cannot be reused (marked as `IsUsed=true` after verification)
 
 ---
 
-### 2. Verify OTP and Complete Registration (Step 2)
+#### Step 2: Verify OTP and Complete Registration
 
 **Endpoint**: `POST /api/v1/auth/verify-phone-register`
 
 **Auth:** Public (no auth required)
 
-**Request:**
+**Request Body Fields:**
+- `mobilePhone` (string, required): Same phone number from Step 1
+- `code` (integer, required): 6-digit OTP code received via SMS
+- `fullName` (string, required): User's full name (must match Step 1)
+- `referralCode` (string, optional): Same referral code from Step 1 (if provided)
+
+**Example 1: Verify WITHOUT Referral Code**
+```json
+{
+  "mobilePhone": "05321234567",
+  "code": 123456,
+  "fullName": "Ahmet Yılmaz"
+}
+```
+
+**Example 2: Verify WITH Referral Code**
 ```json
 {
   "mobilePhone": "05321234567",
@@ -343,7 +375,17 @@ WebAPI/Controllers/
 }
 ```
 
-**Error Response** (400 Bad Request):
+**Error Responses:**
+
+Phone already registered (400):
+```json
+{
+  "success": false,
+  "message": "Phone number is already registered"
+}
+```
+
+Invalid or wrong OTP (400):
 ```json
 {
   "success": false,
@@ -351,28 +393,50 @@ WebAPI/Controllers/
 }
 ```
 
-**Flow:**
-1. Validates phone number not already registered
-2. Finds OTP record matching phone + code
-3. Validates OTP not expired (5 minutes)
-4. Marks OTP as used
-5. Creates User record with phone as email (`{phone}@phone.ziraai.com`)
-6. Assigns Farmer role
-7. Creates 30-day trial subscription
-8. Links referral code if provided
-9. Generates JWT token
-10. Returns authenticated token
+OTP expired (400):
+```json
+{
+  "success": false,
+  "message": "OTP code has expired"
+}
+```
 
-**Validation Errors:**
-- Phone already registered: "Phone number is already registered"
-- Invalid OTP: "Invalid or expired OTP code"
-- Expired OTP: "OTP code has expired"
+**Flow:**
+1. ✅ Validates phone number not already registered
+2. ✅ Finds OTP record matching phone + code
+3. ✅ Validates OTP not expired (5 minutes from Step 1)
+4. ✅ Marks OTP as used (`IsUsed=true`)
+5. ✅ Creates User record:
+   - Email: `{phone}@phone.ziraai.com` (auto-generated)
+   - MobilePhones: provided phone number
+   - PasswordHash: empty (passwordless authentication)
+   - AuthenticationProviderType: "Phone"
+   - RegistrationReferralCode: referral code (if provided)
+6. ✅ Assigns "Farmer" role automatically
+7. ✅ Creates 30-day Trial subscription automatically
+8. ✅ Links referral code if provided (tracked in `ReferralTrackings`)
+9. ✅ Generates JWT access + refresh tokens
+10. ✅ Returns authenticated session
+
+**Important Notes:**
+- User record is created with auto-generated email: `{phone}@phone.ziraai.com`
+- No password required (passwordless authentication)
+- Trial subscription created automatically (30 days)
+- Referral linking is optional - if it fails, registration still succeeds
+- JWT token returned immediately - user is logged in after registration
 
 ---
 
-### 3. Login with Phone Number (Request OTP)
+### Phone Login Flow (2-Step OTP)
+
+#### Step 1: Request OTP for Login
 
 **Endpoint**: `POST /api/v1/auth/login-phone`
+
+**Auth:** Public (no auth required)
+
+**Request Body Fields:**
+- `mobilePhone` (string, required): Turkish mobile phone number (must be already registered)
 
 **Request:**
 ```json
@@ -393,7 +457,9 @@ WebAPI/Controllers/
 }
 ```
 
-**Error Response** (400 Bad Request):
+**Error Responses:**
+
+User not found (400):
 ```json
 {
   "success": false,
@@ -401,11 +467,17 @@ WebAPI/Controllers/
 }
 ```
 
-**Side Effects:**
-- OTP code generated (6 digits)
-- SMS sent via MockSmsService (console log in dev)
-- OTP stored in `MobileLogins` table
-- OTP expires after 100 seconds
+**Flow:**
+1. ✅ Validates phone number exists in database
+2. ✅ Generates 6-digit OTP code
+3. ✅ Stores OTP in `MobileLogins` table with 100-second expiry
+4. ✅ Sends SMS with OTP code (mock in dev, real in production)
+5. ✅ Returns success message
+
+**Important Notes:**
+- Phone number must be already registered (use registration flow first)
+- OTP expires in **100 seconds** (shorter than registration OTP)
+- Each login request generates a new OTP
 
 **Console Output (Development):**
 ```
@@ -415,9 +487,15 @@ WebAPI/Controllers/
 
 ---
 
-### 3. Verify OTP and Get Token
+#### Step 2: Verify OTP and Get Token
 
 **Endpoint**: `POST /api/v1/auth/verify-phone-otp`
+
+**Auth:** Public (no auth required)
+
+**Request Body Fields:**
+- `mobilePhone` (string, required): Same phone number from Step 1
+- `code` (integer, required): 6-digit OTP code received via SMS
 
 **Request:**
 ```json
@@ -434,7 +512,7 @@ WebAPI/Controllers/
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refreshToken": "refresh_token_here",
-    "expiration": "2025-10-02T11:30:00Z",
+    "expiration": "2025-10-03T11:30:00Z",
     "externalUserId": "05321234567",
     "provider": "Phone",
     "claims": [
@@ -447,7 +525,9 @@ WebAPI/Controllers/
 }
 ```
 
-**Error Response** (400 Bad Request):
+**Error Responses:**
+
+Invalid or wrong OTP (400):
 ```json
 {
   "success": false,
@@ -455,15 +535,28 @@ WebAPI/Controllers/
 }
 ```
 
-**Validation:**
-- OTP code must match stored code
-- OTP must not be expired (100 seconds)
-- OTP must not be already used (`IsUsed = false`)
+OTP expired (400):
+```json
+{
+  "success": false,
+  "message": "Invalid or expired OTP code"
+}
+```
 
-**Side Effects:**
-- OTP marked as used (`IsUsed = true`)
-- JWT token generated with user claims
-- Refresh token generated
+**Flow:**
+1. ✅ Finds OTP record matching phone + code
+2. ✅ Validates OTP not expired (100 seconds from Step 1)
+3. ✅ Validates OTP not already used
+4. ✅ Marks OTP as used (`IsUsed=true`)
+5. ✅ Retrieves user record by phone number
+6. ✅ Generates JWT access + refresh tokens
+7. ✅ Returns authenticated session
+
+**Important Notes:**
+- OTP must match exactly (6-digit integer)
+- OTP expires in **100 seconds** (shorter than registration OTP)
+- Same OTP cannot be reused after successful verification
+- Returns full authenticated session with claims
 
 ---
 
