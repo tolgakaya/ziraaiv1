@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace WebAPI.Controllers
@@ -14,7 +15,7 @@ namespace WebAPI.Controllers
     /// <summary>
     /// Referral system endpoints for generating links, tracking clicks, and managing rewards
     /// </summary>
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     public class ReferralController : BaseApiController
     {
@@ -30,10 +31,12 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GenerateReferralLink([FromBody] GenerateReferralLinkRequest request)
         {
             var userId = GetUserId();
-            
+            if (!userId.HasValue)
+                return BadRequest(new ErrorDataResult<ReferralLinkResponse>("User ID not found in token"));
+
             var command = new GenerateReferralLinkCommand
             {
-                UserId = userId,
+                UserId = userId.Value,
                 DeliveryMethod = request.DeliveryMethod,
                 PhoneNumbers = request.PhoneNumbers,
                 CustomMessage = request.CustomMessage
@@ -110,10 +113,12 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GetReferralStats()
         {
             var userId = GetUserId();
+            if (!userId.HasValue)
+                return BadRequest(new ErrorDataResult<ReferralStatsResponse>("User ID not found in token"));
 
             var query = new GetReferralStatsQuery
             {
-                UserId = userId
+                UserId = userId.Value
             };
 
             var result = await Mediator.Send(query);
@@ -135,10 +140,12 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GetUserReferralCodes()
         {
             var userId = GetUserId();
+            if (!userId.HasValue)
+                return BadRequest(new ErrorDataResult<List<ReferralCodeDto>>("User ID not found in token"));
 
             var query = new GetUserReferralCodesQuery
             {
-                UserId = userId
+                UserId = userId.Value
             };
 
             var result = await Mediator.Send(query);
@@ -160,10 +167,12 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GetReferralCreditBreakdown()
         {
             var userId = GetUserId();
+            if (!userId.HasValue)
+                return BadRequest(new ErrorDataResult<ReferralCreditBreakdownDto>("User ID not found in token"));
 
             var query = new GetReferralCreditBreakdownQuery
             {
-                UserId = userId
+                UserId = userId.Value
             };
 
             var result = await Mediator.Send(query);
@@ -185,10 +194,12 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GetReferralRewards()
         {
             var userId = GetUserId();
+            if (!userId.HasValue)
+                return BadRequest(new ErrorDataResult<List<ReferralRewardDto>>("User ID not found in token"));
 
             var query = new GetReferralRewardsQuery
             {
-                UserId = userId
+                UserId = userId.Value
             };
 
             var result = await Mediator.Send(query);
@@ -211,10 +222,12 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> DisableReferralCode([FromRoute] string code)
         {
             var userId = GetUserId();
+            if (!userId.HasValue)
+                return BadRequest(new ErrorResult("User ID not found in token"));
 
             var command = new DisableReferralCodeCommand
             {
-                UserId = userId,
+                UserId = userId.Value,
                 Code = code
             };
 
@@ -229,14 +242,12 @@ namespace WebAPI.Controllers
         /// <summary>
         /// Helper method to get authenticated user ID from JWT claims
         /// </summary>
-        private int GetUserId()
+        private int? GetUserId()
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "userId");
-            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
-            {
+            var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out var userId))
                 return userId;
-            }
-            return 0;
+            return null;
         }
 
         /// <summary>
