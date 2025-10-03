@@ -61,13 +61,25 @@ namespace Business.Handlers.Authorizations.Commands
             public async Task<IResult> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
             {
                 Console.WriteLine($"[RegisterUser] 🚀 REGISTER STARTED - Email: {request.Email}, FullName: {request.FullName}");
-                
+
+                // Check if email already exists
                 var isThereAnyUser = await _userRepository.GetAsync(u => u.Email == request.Email);
 
                 if (isThereAnyUser != null)
                 {
                     Console.WriteLine($"[RegisterUser] ❌ User already exists: {request.Email}");
                     return new ErrorResult(Messages.EmailAlreadyExists);
+                }
+
+                // Check if phone number already exists (if provided)
+                if (!string.IsNullOrWhiteSpace(request.MobilePhones))
+                {
+                    var isThereAnyUserWithPhone = await _userRepository.GetAsync(u => u.MobilePhones == request.MobilePhones);
+                    if (isThereAnyUserWithPhone != null)
+                    {
+                        Console.WriteLine($"[RegisterUser] ❌ Phone number already exists: {request.MobilePhones}");
+                        return new ErrorResult("Phone number is already registered");
+                    }
                 }
 
                 Console.WriteLine($"[RegisterUser] ✅ User email is unique, proceeding with registration...");

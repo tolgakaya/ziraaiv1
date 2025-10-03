@@ -195,6 +195,55 @@ namespace WebAPI.Controllers
             var result = await Mediator.Send(command);
             return result.Success ? Ok(result) : BadRequest(result.Message);
         }
+
+        /// <summary>
+        /// Request OTP for phone-based registration
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [Consumes("application/json")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HttpPost("register-phone")]
+        public async Task<IActionResult> RegisterWithPhone([FromBody] RegisterWithPhoneRequest request)
+        {
+            var command = new Business.Handlers.Authorizations.Commands.RegisterWithPhoneCommand
+            {
+                MobilePhone = request.MobilePhone,
+                FullName = request.FullName,
+                ReferralCode = request.ReferralCode
+            };
+
+            var result = await Mediator.Send(command);
+            return result.Success ? Ok(result) : BadRequest(result.Message);
+        }
+
+        /// <summary>
+        /// Verify OTP and complete phone-based registration
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [Consumes("application/json")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DArchToken>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [HttpPost("verify-phone-register")]
+        public async Task<IActionResult> VerifyPhoneRegister([FromBody] VerifyPhoneRegisterRequest request)
+        {
+            var command = new Business.Handlers.Authorizations.Commands.VerifyPhoneRegisterCommand
+            {
+                MobilePhone = request.MobilePhone,
+                Code = request.Code,
+                FullName = request.FullName,
+                ReferralCode = request.ReferralCode
+            };
+
+            var result = await Mediator.Send(command);
+            return result.Success ? Ok(result) : BadRequest(result.Message);
+        }
     }
 
     /// <summary>
@@ -212,5 +261,26 @@ namespace WebAPI.Controllers
     {
         public string MobilePhone { get; set; }
         public int Code { get; set; }
+    }
+
+    /// <summary>
+    /// Register with phone request DTO
+    /// </summary>
+    public class RegisterWithPhoneRequest
+    {
+        public string MobilePhone { get; set; }
+        public string FullName { get; set; }
+        public string ReferralCode { get; set; }
+    }
+
+    /// <summary>
+    /// Verify phone registration OTP request DTO
+    /// </summary>
+    public class VerifyPhoneRegisterRequest
+    {
+        public string MobilePhone { get; set; }
+        public int Code { get; set; }
+        public string FullName { get; set; }
+        public string ReferralCode { get; set; }
     }
 }
