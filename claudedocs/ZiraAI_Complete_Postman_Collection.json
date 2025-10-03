@@ -574,12 +574,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{
-  \"mobilePhone\": \"05329999999\",
-  \"fullName\": \"Test User\",
-  \"referralCode\": \"ZIRA-ABC123\"
-}"
-            },
+              "raw": "{\n  \"mobilePhone\": \"05329999999\",\n  \"fullName\": \"Test User\",\n  \"referralCode\": \"ZIRA-ABC123\"\n}"
+            }
+          },
           "response": [],
           "event": [
             {
@@ -623,10 +620,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{
-  \"mobilePhone\": \"05321234567\"
-}"
-            },
+              "raw": "{\n  \"mobilePhone\": \"05321234567\"\n}"
+            }
+          },
           "response": [],
           "event": [
             {
@@ -660,7 +656,6 @@
             }
           ]
         },
-        {$1,
         {
           "name": "POST /api/v{version}/Auth/verify-phone-register",
           "request": {
@@ -686,12 +681,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{
-  \"mobilePhone\": \"05329999999\",
-  \"code\": 123456,
-  \"fullName\": \"Test User\",
-  \"referralCode\": \"ZIRA-ABC123\"
-}"
+              "raw": "{\n  \"mobilePhone\": \"05329999999\",\n  \"code\": 123456,\n  \"fullName\": \"Test User\",\n  \"referralCode\": \"ZIRA-ABC123\"\n}"
             }
           },
           "response": [],
