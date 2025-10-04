@@ -28,5 +28,8 @@ namespace Entities.Dtos
         public int? DaysUntilExpiry { get; set; }
         public bool CanMakeRequest { get; set; }
         public string LimitExceededMessage { get; set; }
+
+        // Referral Credits
+        public int ReferralCredits { get; set; }
     }
 }

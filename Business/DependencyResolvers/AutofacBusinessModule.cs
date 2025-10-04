@@ -136,6 +136,19 @@ namespace Business.DependencyResolvers
             builder.RegisterType<SmartLinkRepository>().As<ISmartLinkRepository>()
                 .InstancePerLifetimeScope();
             
+            // Referral System repositories
+            builder.RegisterType<ReferralCodeRepository>().As<IReferralCodeRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<ReferralTrackingRepository>().As<IReferralTrackingRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<ReferralRewardRepository>().As<IReferralRewardRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<ReferralConfigurationRepository>().As<IReferralConfigurationRepository>()
+                .InstancePerLifetimeScope();
+            
             // Deep Links repositories
             builder.RegisterType<DeepLinkRepository>().As<IDeepLinkRepository>()
                 .InstancePerLifetimeScope();
@@ -164,10 +177,39 @@ namespace Business.DependencyResolvers
             builder.RegisterType<RedemptionService>().As<IRedemptionService>()
                 .InstancePerLifetimeScope();
             
-            // Notification Services
-            builder.RegisterType<WhatsAppService>().As<IWhatsAppService>()
+            // ============================================
+            // Messaging Services (SMS & WhatsApp)
+            // ============================================
+
+            // Register Mock SMS Service (Modern Interface)
+            builder.RegisterType<Business.Services.Messaging.Fakes.MockSmsService>()
+                .As<Business.Services.Messaging.ISmsService>()
                 .InstancePerLifetimeScope();
-            
+
+            // Register Mock WhatsApp Service
+            builder.RegisterType<Business.Services.Messaging.Fakes.MockWhatsAppService>()
+                .As<Business.Services.Messaging.IWhatsAppService>()
+                .InstancePerLifetimeScope();
+
+            // Register Real SMS Service (Turkcell)
+            builder.RegisterType<Business.Services.Messaging.TurkcellSmsService>()
+                .InstancePerLifetimeScope();
+
+            // Register Real WhatsApp Service (WhatsApp Business API)
+            builder.RegisterType<Business.Services.Messaging.WhatsAppBusinessService>()
+                .InstancePerLifetimeScope();
+
+            // Register Messaging Service Factory
+            builder.RegisterType<Business.Services.Messaging.Factories.MessagingServiceFactory>()
+                .As<Business.Services.Messaging.Factories.IMessagingServiceFactory>()
+                .InstancePerLifetimeScope();
+
+            // Register legacy services for backward compatibility
+            builder.RegisterType<Business.Fakes.SmsService.MockSmsService>()
+                .As<Business.Adapters.SmsService.ISmsService>()
+                .InstancePerLifetimeScope();
+
+            // Notification Services
             builder.RegisterType<NotificationService>().As<INotificationService>()
                 .InstancePerLifetimeScope();
             
@@ -190,6 +232,27 @@ namespace Business.DependencyResolvers
             
             // Deep Links services
             builder.RegisterType<Business.Services.MobileIntegration.DeepLinkService>().As<Business.Services.MobileIntegration.IDeepLinkService>()
+                .InstancePerLifetimeScope();
+            
+            // Referral System Services
+            builder.RegisterType<Business.Services.Referral.ReferralConfigurationService>()
+                .As<Business.Services.Referral.IReferralConfigurationService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<Business.Services.Referral.ReferralCodeService>()
+                .As<Business.Services.Referral.IReferralCodeService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<Business.Services.Referral.ReferralTrackingService>()
+                .As<Business.Services.Referral.IReferralTrackingService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<Business.Services.Referral.ReferralRewardService>()
+                .As<Business.Services.Referral.IReferralRewardService>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<Business.Services.Referral.ReferralLinkService>()
+                .As<Business.Services.Referral.IReferralLinkService>()
                 .InstancePerLifetimeScope();
 
             // Authentication Providers

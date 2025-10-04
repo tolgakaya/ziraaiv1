@@ -193,10 +193,17 @@ builder.Services.AddScoped<DataAccess.Abstract.IConfigurationRepository, DataAcc
 builder.Services.AddScoped<DataAccess.Abstract.IPlantAnalysisRepository, DataAccess.Concrete.EntityFramework.PlantAnalysisRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IUserSubscriptionRepository, DataAccess.Concrete.EntityFramework.UserSubscriptionRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.ISponsorshipCodeRepository, DataAccess.Concrete.EntityFramework.SponsorshipCodeRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IReferralCodeRepository, DataAccess.Concrete.EntityFramework.ReferralCodeRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IReferralTrackingRepository, DataAccess.Concrete.EntityFramework.ReferralTrackingRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IReferralRewardRepository, DataAccess.Concrete.EntityFramework.ReferralRewardRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository, DataAccess.Concrete.EntityFramework.ReferralConfigurationRepository>();
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
 builder.Services.AddScoped<Business.Services.FileStorage.IFileStorageService, Business.Services.FileStorage.FreeImageHostStorageService>();
 builder.Services.AddScoped<Business.Services.ImageProcessing.IImageProcessingService, Business.Services.ImageProcessing.ImageProcessingService>();
 builder.Services.AddScoped<Business.Services.PlantAnalysis.IPlantAnalysisService, Business.Services.PlantAnalysis.PlantAnalysisService>();
+builder.Services.AddScoped<Business.Services.Referral.IReferralTrackingService, Business.Services.Referral.ReferralTrackingService>();
+builder.Services.AddScoped<Business.Services.Referral.IReferralRewardService, Business.Services.Referral.ReferralRewardService>();
+builder.Services.AddScoped<Business.Services.Referral.IReferralConfigurationService, Business.Services.Referral.ReferralConfigurationService>();
 
 // Add HttpContextAccessor for URL generation
 builder.Services.AddHttpContextAccessor();

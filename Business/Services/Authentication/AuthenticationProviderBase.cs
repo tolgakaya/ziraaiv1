@@ -29,7 +29,7 @@ namespace Business.Services.Authentication
             var date = DateTime.Now;
             var login = await _logins.GetAsync(m => m.Provider == command.Provider && m.Code == command.Code &&
                                                     m.ExternalUserId == externalUserId &&
-                                                    m.SendDate.AddSeconds(100) > date);
+                                                    m.SendDate.AddMinutes(5) > date);
 
             if (login == null)
             {

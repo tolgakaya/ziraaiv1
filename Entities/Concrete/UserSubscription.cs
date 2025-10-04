@@ -53,6 +53,13 @@ namespace Entities.Concrete
         public int? UpdatedUserId { get; set; }
         
         // Navigation properties (for EF Core)
+
+        /// <summary>
+        /// Analysis credits earned through referrals (separate from subscription quota)
+        /// Unlimited accumulation, never expires (per user requirements)
+        /// Used before subscription quota when creating plant analysis
+        /// </summary>
+        public int ReferralCredits { get; set; }
         [JsonIgnore]
         public virtual SubscriptionTier SubscriptionTier { get; set; }
         

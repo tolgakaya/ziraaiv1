@@ -33,6 +33,13 @@ namespace Business.Services.Authentication
 
         public AuthenticationProviderType ProviderType { get; }
 
+        public override async Task<Core.Utilities.Results.IDataResult<DArchToken>> Verify(Model.VerifyOtpCommand command)
+        {
+            // Normalize phone number for consistent lookup
+            command.ExternalUserId = NormalizePhoneNumber(command.ExternalUserId);
+            return await base.Verify(command);
+        }
+
         public override async Task<LoginUserResult> Login(LoginUserCommand command)
         {
             // Normalize phone number
@@ -53,10 +60,11 @@ namespace Business.Services.Authentication
             }
 
             // Generate and send OTP
+            // IMPORTANT: Use normalized phone for both SMS and ExternalUserId to ensure consistency
             return await PrepareOneTimePassword(
                 AuthenticationProviderType.Phone,
-                user.MobilePhones,
-                user.MobilePhones); // ExternalUserId is phone for phone-based auth
+                normalizedPhone,  // SMS will be sent to normalized format
+                normalizedPhone); // ExternalUserId stored as normalized format for verify lookup
         }
 
         public override async Task<DArchToken> CreateToken(VerifyOtpCommand command)

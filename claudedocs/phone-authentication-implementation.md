@@ -12,12 +12,14 @@
 Implemented a complete phone number-based authentication system using SMS OTP (One-Time Password) as an alternative to email-based authentication. The system supports both authentication methods simultaneously with full backwards compatibility.
 
 ### Key Features
-- Phone number registration without requiring email or password
-- SMS OTP-based login flow
-- Mock SMS service for development/staging environments
-- Automatic trial subscription creation for phone users
-- Phone number validation and normalization (Turkish format)
-- Backwards compatible with existing email-based authentication
+- **OTP-Based Registration**: 2-step phone registration with SMS OTP verification
+- **Referral Code Support**: Optional referral code during phone registration
+- **SMS OTP-Based Login**: Secure login without passwords
+- **Mock SMS Service**: Development/staging testing without SMS costs
+- **Automatic Trial Subscription**: 30-day trial for new phone users
+- **Duplicate Phone Prevention**: Validates phone uniqueness before registration
+- **Phone Number Normalization**: Turkish format (05XX) support
+- **Backwards Compatible**: Email-based authentication preserved
 
 ---
 
@@ -32,10 +34,17 @@ Implemented a complete phone number-based authentication system using SMS OTP (O
 ```
 
 #### Phone-Based (New - Implemented)
+
+**Login Flow:**
 ```
-1. POST /api/v1/auth/register-phone → Phone + FullName
-2. POST /api/v1/auth/login-phone → Phone → OTP via SMS
-3. POST /api/v1/auth/verify-phone-otp → Phone + OTP Code → JWT Token
+1. POST /api/v1/auth/login-phone → Phone → OTP via SMS
+2. POST /api/v1/auth/verify-phone-otp → Phone + OTP Code → JWT Token
+```
+
+**Registration Flow (OTP-Based):**
+```
+1. POST /api/v1/auth/register-phone → Phone + FullName + ReferralCode → OTP via SMS
+2. POST /api/v1/auth/verify-phone-register → Phone + OTP + FullName + ReferralCode → JWT Token + User Created
 ```
 
 ### Component Architecture
@@ -147,16 +156,15 @@ psql -h localhost -p 5432 -U ziraai -d ziraai_dev -f "DataAccess/Migrations/Pg/M
 Business/
 ├── Fakes/
 │   └── SmsService/
-│       └── MockSmsService.cs                    # Mock SMS for dev/staging
+│       └── MockSmsService.cs                       # Mock SMS for dev/staging
 ├── Handlers/
 │   └── Authorizations/
-│       ├── Commands/
-│       │   └── RegisterUserWithPhoneCommand.cs  # Phone registration command
-│       └── ValidationRules/
-│           └── RegisterUserWithPhoneValidator.cs # Phone validation rules
+│       └── Commands/
+│           ├── RegisterWithPhoneCommand.cs         # Step 1: Request OTP for registration
+│           └── VerifyPhoneRegisterCommand.cs       # Step 2: Verify OTP & complete registration
 └── Services/
     └── Authentication/
-        └── PhoneAuthenticationProvider.cs       # OTP-based auth provider
+        └── PhoneAuthenticationProvider.cs          # OTP-based auth provider
 ```
 
 #### Configuration
@@ -253,16 +261,33 @@ WebAPI/Controllers/
 
 ## 🌐 API Endpoints
 
-### 1. Register with Phone Number
+### Phone Registration Flow (2-Step OTP)
+
+#### Step 1: Request OTP for Registration
 
 **Endpoint**: `POST /api/v1/auth/register-phone`
 
-**Request:**
+**Auth:** Public (no auth required)
+
+**Request Body Fields:**
+- `mobilePhone` (string, required): Turkish mobile phone number (e.g., "05321234567")
+- `fullName` (string, required): User's full name
+- `referralCode` (string, optional): Referral code from another user
+
+**Example 1: Registration WITHOUT Referral Code**
+```json
+{
+  "mobilePhone": "05321234567",
+  "fullName": "Ahmet Yılmaz"
+}
+```
+
+**Example 2: Registration WITH Referral Code**
 ```json
 {
   "mobilePhone": "05321234567",
   "fullName": "Ahmet Yılmaz",
-  "role": "Farmer"
+  "referralCode": "ZIRA-ABC123"
 }
 ```
 
@@ -270,28 +295,148 @@ WebAPI/Controllers/
 ```json
 {
   "success": true,
-  "message": "UserRegisteredSuccessfully"
+  "message": "OTP sent to 05321234567. Code: 123456 (dev mode)"
 }
 ```
 
-**Error Response** (400 Bad Request):
+**Error Responses:**
+
+Phone already registered (400):
 ```json
 {
   "success": false,
-  "message": "PhoneAlreadyExists"
+  "message": "Phone number is already registered"
 }
 ```
 
-**Validation Errors:**
-- Invalid phone format: "Invalid phone number format. Use Turkish format: 05XX XXX XX XX"
-- Duplicate phone: "PhoneAlreadyExists"
-- Missing full name: "Full name is required"
+**Flow:**
+1. ✅ Validates phone number format
+2. ✅ Checks if phone already registered (duplicate prevention)
+3. ✅ Generates 6-digit OTP code
+4. ✅ Stores OTP in `MobileLogins` table with 5-minute expiry
+5. ✅ Sends SMS with OTP code (mock in dev, real in production)
+6. ✅ Returns success message with OTP (dev mode only)
+
+**Important Notes:**
+- ReferralCode is **optional** - system works with or without it
+- If ReferralCode is provided but invalid, registration still proceeds
+- OTP expires in **5 minutes (300 seconds)**
+- Same OTP cannot be reused (marked as `IsUsed=true` after verification)
 
 ---
 
-### 2. Login with Phone Number (Request OTP)
+#### Step 2: Verify OTP and Complete Registration
+
+**Endpoint**: `POST /api/v1/auth/verify-phone-register`
+
+**Auth:** Public (no auth required)
+
+**Request Body Fields:**
+- `mobilePhone` (string, required): Same phone number from Step 1
+- `code` (integer, required): 6-digit OTP code received via SMS
+- `fullName` (string, required): User's full name (must match Step 1)
+- `referralCode` (string, optional): Same referral code from Step 1 (if provided)
+
+**Example 1: Verify WITHOUT Referral Code**
+```json
+{
+  "mobilePhone": "05321234567",
+  "code": 123456,
+  "fullName": "Ahmet Yılmaz"
+}
+```
+
+**Example 2: Verify WITH Referral Code**
+```json
+{
+  "mobilePhone": "05321234567",
+  "code": 123456,
+  "fullName": "Ahmet Yılmaz",
+  "referralCode": "ZIRA-ABC123"
+}
+```
+
+**Success Response** (200 OK):
+```json
+{
+  "success": true,
+  "message": "Registration successful",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refreshToken": "refresh_token_here",
+    "expiration": "2025-10-03T12:00:00Z",
+    "claims": [
+      {
+        "id": 1,
+        "name": "GetPlantAnalyses"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+
+Phone already registered (400):
+```json
+{
+  "success": false,
+  "message": "Phone number is already registered"
+}
+```
+
+Invalid or wrong OTP (400):
+```json
+{
+  "success": false,
+  "message": "Invalid or expired OTP code"
+}
+```
+
+OTP expired (400):
+```json
+{
+  "success": false,
+  "message": "OTP code has expired"
+}
+```
+
+**Flow:**
+1. ✅ Validates phone number not already registered
+2. ✅ Finds OTP record matching phone + code
+3. ✅ Validates OTP not expired (5 minutes from Step 1)
+4. ✅ Marks OTP as used (`IsUsed=true`)
+5. ✅ Creates User record:
+   - Email: `{phone}@phone.ziraai.com` (auto-generated)
+   - MobilePhones: provided phone number
+   - PasswordHash: empty (passwordless authentication)
+   - AuthenticationProviderType: "Phone"
+   - RegistrationReferralCode: referral code (if provided)
+6. ✅ Assigns "Farmer" role automatically
+7. ✅ Creates 30-day Trial subscription automatically
+8. ✅ Links referral code if provided (tracked in `ReferralTrackings`)
+9. ✅ Generates JWT access + refresh tokens
+10. ✅ Returns authenticated session
+
+**Important Notes:**
+- User record is created with auto-generated email: `{phone}@phone.ziraai.com`
+- No password required (passwordless authentication)
+- Trial subscription created automatically (30 days)
+- Referral linking is optional - if it fails, registration still succeeds
+- JWT token returned immediately - user is logged in after registration
+
+---
+
+### Phone Login Flow (2-Step OTP)
+
+#### Step 1: Request OTP for Login
 
 **Endpoint**: `POST /api/v1/auth/login-phone`
+
+**Auth:** Public (no auth required)
+
+**Request Body Fields:**
+- `mobilePhone` (string, required): Turkish mobile phone number (must be already registered)
 
 **Request:**
 ```json
@@ -312,7 +457,9 @@ WebAPI/Controllers/
 }
 ```
 
-**Error Response** (400 Bad Request):
+**Error Responses:**
+
+User not found (400):
 ```json
 {
   "success": false,
@@ -320,11 +467,17 @@ WebAPI/Controllers/
 }
 ```
 
-**Side Effects:**
-- OTP code generated (6 digits)
-- SMS sent via MockSmsService (console log in dev)
-- OTP stored in `MobileLogins` table
-- OTP expires after 100 seconds
+**Flow:**
+1. ✅ Validates phone number exists in database
+2. ✅ Generates 6-digit OTP code
+3. ✅ Stores OTP in `MobileLogins` table with 100-second expiry
+4. ✅ Sends SMS with OTP code (mock in dev, real in production)
+5. ✅ Returns success message
+
+**Important Notes:**
+- Phone number must be already registered (use registration flow first)
+- OTP expires in **100 seconds** (shorter than registration OTP)
+- Each login request generates a new OTP
 
 **Console Output (Development):**
 ```
@@ -334,9 +487,15 @@ WebAPI/Controllers/
 
 ---
 
-### 3. Verify OTP and Get Token
+#### Step 2: Verify OTP and Get Token
 
 **Endpoint**: `POST /api/v1/auth/verify-phone-otp`
+
+**Auth:** Public (no auth required)
+
+**Request Body Fields:**
+- `mobilePhone` (string, required): Same phone number from Step 1
+- `code` (integer, required): 6-digit OTP code received via SMS
 
 **Request:**
 ```json
@@ -353,7 +512,7 @@ WebAPI/Controllers/
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refreshToken": "refresh_token_here",
-    "expiration": "2025-10-02T11:30:00Z",
+    "expiration": "2025-10-03T11:30:00Z",
     "externalUserId": "05321234567",
     "provider": "Phone",
     "claims": [
@@ -366,7 +525,9 @@ WebAPI/Controllers/
 }
 ```
 
-**Error Response** (400 Bad Request):
+**Error Responses:**
+
+Invalid or wrong OTP (400):
 ```json
 {
   "success": false,
@@ -374,15 +535,28 @@ WebAPI/Controllers/
 }
 ```
 
-**Validation:**
-- OTP code must match stored code
-- OTP must not be expired (100 seconds)
-- OTP must not be already used (`IsUsed = false`)
+OTP expired (400):
+```json
+{
+  "success": false,
+  "message": "Invalid or expired OTP code"
+}
+```
 
-**Side Effects:**
-- OTP marked as used (`IsUsed = true`)
-- JWT token generated with user claims
-- Refresh token generated
+**Flow:**
+1. ✅ Finds OTP record matching phone + code
+2. ✅ Validates OTP not expired (100 seconds from Step 1)
+3. ✅ Validates OTP not already used
+4. ✅ Marks OTP as used (`IsUsed=true`)
+5. ✅ Retrieves user record by phone number
+6. ✅ Generates JWT access + refresh tokens
+7. ✅ Returns authenticated session
+
+**Important Notes:**
+- OTP must match exactly (6-digit integer)
+- OTP expires in **100 seconds** (shorter than registration OTP)
+- Same OTP cannot be reused after successful verification
+- Returns full authenticated session with claims
 
 ---
 
@@ -390,24 +564,39 @@ WebAPI/Controllers/
 
 ### Manual Testing with Postman
 
-#### Scenario 1: Complete Phone Registration Flow
+#### Scenario 1: Complete Phone Registration Flow (2-Step OTP)
 ```
-Step 1: Register new user
+Step 1: Request OTP for registration
 POST /api/v1/auth/register-phone
 Body: {
   "mobilePhone": "05321234567",
   "fullName": "Test User",
-  "role": "Farmer"
+  "referralCode": "ZIRA-ABC123"
 }
-✅ Expected: 200 OK, success message
+✅ Expected: 200 OK, success message with OTP code (dev mode)
+✅ Check console: "OTP generated and saved for phone: 05321234567, Code: 123456"
 
-Step 2: Verify user created in database
+Step 2: Verify OTP and complete registration
+POST /api/v1/auth/verify-phone-register
+Body: {
+  "mobilePhone": "05321234567",
+  "code": 123456,
+  "fullName": "Test User",
+  "referralCode": "ZIRA-ABC123"
+}
+✅ Expected: 200 OK, JWT token returned
+
+Step 3: Verify user created in database
 SELECT * FROM "Users" WHERE "MobilePhones" = '05321234567';
-✅ Expected: 1 user record, Email = null, PasswordHash = null
+✅ Expected: 1 user record, Email = '05321234567@phone.ziraai.com', PasswordHash/Salt = empty arrays
 
-Step 3: Verify trial subscription created
+Step 4: Verify trial subscription created
 SELECT * FROM "UserSubscriptions" WHERE "UserId" = <user_id>;
 ✅ Expected: 1 trial subscription, 30 days validity
+
+Step 5: Verify referral linked (if code provided)
+SELECT * FROM "ReferralTracking" WHERE "RefereeUserId" = <user_id>;
+✅ Expected: 1 record with Status = 1 (Registered)
 ```
 
 #### Scenario 2: Phone Login with OTP
@@ -456,15 +645,24 @@ Body: { "mobilePhone": "05321234567", "code": 123456 }
 
 #### Scenario 5: Duplicate Phone Registration
 ```
-Step 1: Register first time
+Step 1: Complete first registration
 POST /api/v1/auth/register-phone
 Body: { "mobilePhone": "05321234567", "fullName": "User 1" }
-✅ Expected: 200 OK
+✅ Expected: 200 OK, OTP sent
 
-Step 2: Register again with same phone
+POST /api/v1/auth/verify-phone-register
+Body: { "mobilePhone": "05321234567", "code": 123456, "fullName": "User 1" }
+✅ Expected: 200 OK, user created
+
+Step 2: Try to register again with same phone (request OTP)
 POST /api/v1/auth/register-phone
 Body: { "mobilePhone": "05321234567", "fullName": "User 2" }
-✅ Expected: 400 Bad Request, "PhoneAlreadyExists"
+✅ Expected: 400 Bad Request, "Phone number is already registered"
+
+Step 3: Try to verify with same phone (without OTP request)
+POST /api/v1/auth/verify-phone-register
+Body: { "mobilePhone": "05321234567", "code": 999999, "fullName": "User 2" }
+✅ Expected: 400 Bad Request, "Phone number is already registered"
 ```
 
 #### Scenario 6: Email User Can Still Login
