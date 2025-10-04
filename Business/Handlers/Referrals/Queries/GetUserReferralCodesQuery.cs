@@ -35,7 +35,7 @@ namespace Business.Handlers.Referrals.Queries
                 _logger = logger;
             }
 
-            [CacheAspect(duration: 5)]
+            // Cache removed - referral data must be real-time
             [LogAspect(typeof(FileLogger))]
             public async Task<IDataResult<List<ReferralCodeDto>>> Handle(GetUserReferralCodesQuery request, CancellationToken cancellationToken)
             {

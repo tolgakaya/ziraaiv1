@@ -33,7 +33,7 @@ namespace Business.Handlers.Referrals.Queries
                 _logger = logger;
             }
 
-            [CacheAspect(duration: 10)]
+            // Cache removed - referral data must be real-time
             [LogAspect(typeof(FileLogger))]
             public async Task<IDataResult<ReferralCreditBreakdownDto>> Handle(GetReferralCreditBreakdownQuery request, CancellationToken cancellationToken)
             {
