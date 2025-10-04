@@ -66,19 +66,22 @@ namespace Business.Handlers.Authorizations.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IDataResult<DArchToken>> Handle(VerifyPhoneRegisterCommand request, CancellationToken cancellationToken)
             {
-                _logger.LogInformation("[VerifyPhoneRegister] Verifying OTP for phone: {Phone}", request.MobilePhone);
+                // Normalize phone number for consistency
+                var normalizedPhone = NormalizePhoneNumber(request.MobilePhone);
+
+                _logger.LogInformation("[VerifyPhoneRegister] Verifying OTP for phone: {Phone}", normalizedPhone);
 
                 // Check if phone already registered
-                var existingUser = await _userRepository.GetAsync(u => u.MobilePhones == request.MobilePhone);
+                var existingUser = await _userRepository.GetAsync(u => u.MobilePhones == normalizedPhone);
                 if (existingUser != null)
                 {
-                    _logger.LogWarning("[VerifyPhoneRegister] Phone already registered: {Phone}", request.MobilePhone);
+                    _logger.LogWarning("[VerifyPhoneRegister] Phone already registered: {Phone}", normalizedPhone);
                     return new ErrorDataResult<DArchToken>("Phone number is already registered");
                 }
 
                 // Verify OTP
                 var mobileLogin = await _mobileLoginRepository.GetAsync(
-                    m => m.ExternalUserId == request.MobilePhone &&
+                    m => m.ExternalUserId == normalizedPhone &&
                          m.Code == request.Code &&
                          m.Provider == AuthenticationProviderType.Phone &&
                          !m.IsUsed);
@@ -106,9 +109,9 @@ namespace Business.Handlers.Authorizations.Commands
                 var user = new User
                 {
                     CitizenId = 0,
-                    Email = $"{request.MobilePhone}@phone.ziraai.com", // Generate email from phone
+                    Email = $"{normalizedPhone}@phone.ziraai.com", // Generate email from normalized phone
                     FullName = request.FullName,
-                    MobilePhones = request.MobilePhone,
+                    MobilePhones = normalizedPhone,  // Store normalized phone
                     PasswordHash = new byte[0], // No password for phone auth
                     PasswordSalt = new byte[0],
                     Status = true,
@@ -195,9 +198,36 @@ namespace Business.Handlers.Authorizations.Commands
                 var token = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
                 token.Claims = claims.Select(x => x.Name).ToList();
 
-                _logger.LogInformation("[VerifyPhoneRegister] Registration completed for phone: {Phone}", request.MobilePhone);
+                _logger.LogInformation("[VerifyPhoneRegister] Registration completed for phone: {Phone}", normalizedPhone);
 
                 return new SuccessDataResult<DArchToken>(token, "Registration successful");
+            }
+
+            /// <summary>
+            /// Normalize phone number by removing non-digit characters and ensuring Turkish format
+            /// </summary>
+            private string NormalizePhoneNumber(string phone)
+            {
+                if (string.IsNullOrWhiteSpace(phone))
+                    return phone;
+
+                // Remove all non-digit characters
+                var digitsOnly = System.Text.RegularExpressions.Regex.Replace(phone, @"[^\d]", string.Empty);
+
+                // Handle different formats
+                // +905321234567 → 05321234567
+                if (digitsOnly.StartsWith("90") && digitsOnly.Length == 12)
+                {
+                    digitsOnly = "0" + digitsOnly.Substring(2);
+                }
+
+                // 5321234567 → 05321234567
+                if (!digitsOnly.StartsWith("0") && digitsOnly.Length == 10)
+                {
+                    digitsOnly = "0" + digitsOnly;
+                }
+
+                return digitsOnly;
             }
         }
     }
