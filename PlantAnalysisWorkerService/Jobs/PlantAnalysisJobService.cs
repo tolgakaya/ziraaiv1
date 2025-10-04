@@ -1,6 +1,8 @@
 using Business.Services.FileStorage;
 using Business.Services.Notification;
+using Business.Services.Referral;
 using DataAccess.Abstract;
+using Microsoft.EntityFrameworkCore;
 using Entities.Concrete;
 using Entities.Dtos;
 using Hangfire;
@@ -16,19 +18,25 @@ namespace PlantAnalysisWorkerService.Jobs
         private readonly IFileStorageService _fileStorageService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
+        private readonly IReferralTrackingService _referralTrackingService;
+        private readonly IReferralRewardService _referralRewardService;
 
         public PlantAnalysisJobService(
             ILogger<PlantAnalysisJobService> logger,
             IPlantAnalysisRepository plantAnalysisRepository,
             IFileStorageService fileStorageService,
             IHttpClientFactory httpClientFactory,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IReferralTrackingService referralTrackingService,
+            IReferralRewardService referralRewardService)
         {
             _logger = logger;
             _plantAnalysisRepository = plantAnalysisRepository;
             _fileStorageService = fileStorageService;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
+            _referralTrackingService = referralTrackingService;
+            _referralRewardService = referralRewardService;
         }
 
         [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
@@ -301,6 +309,81 @@ namespace PlantAnalysisWorkerService.Jobs
                 await _plantAnalysisRepository.SaveChangesAsync();
 
                 _logger.LogInformation($"Successfully saved/updated plant analysis result: {result.AnalysisId}");
+
+                // ✅ REFERRAL VALIDATION & REWARD PROCESSING
+                // Check if this is the user's first analysis and trigger referral validation
+                try
+                {
+                    // Extract UserId from FarmerId format (F046 -> 46)
+                    int? userId = null;
+                    if (existingAnalysis != null)
+                    {
+                        userId = existingAnalysis.UserId;
+                    }
+                    else if (!string.IsNullOrEmpty(result.FarmerId) && result.FarmerId.StartsWith("F"))
+                    {
+                        if (int.TryParse(result.FarmerId.Substring(1), out var parsedUserId))
+                        {
+                            userId = parsedUserId;
+                        }
+                    }
+
+                    if (userId.HasValue)
+                    {
+                        // Count total analyses for this user
+                        var analysisCount = await _plantAnalysisRepository.Query()
+                            .Where(a => a.UserId == userId.Value && a.AnalysisStatus == "Completed")
+                            .CountAsync();
+
+                        _logger.LogInformation($"📊 User {userId.Value} has {analysisCount} completed analysis(es)");
+
+                        if (analysisCount == 1) // First completed analysis
+                        {
+                            _logger.LogInformation($"🎯 First analysis detected for user {userId.Value}, validating referral...");
+
+                            // Validate referral (updates tracking to Validated status)
+                            var validationResult = await _referralTrackingService.ValidateReferralAsync(userId.Value);
+                            
+                            if (validationResult.Success)
+                            {
+                                _logger.LogInformation($"✅ Referral validated for user {userId.Value}");
+
+                                // Get the tracking record to process reward
+                                var trackingResult = await _referralTrackingService.GetByRefereeUserIdAsync(userId.Value);
+                                
+                                if (trackingResult.Success && trackingResult.Data != null)
+                                {
+                                    var tracking = trackingResult.Data;
+                                    
+                                    // Process the reward (awards credits to referrer)
+                                    var rewardResult = await _referralRewardService.ProcessRewardAsync(tracking.Id);
+                                    
+                                    if (rewardResult.Success)
+                                    {
+                                        _logger.LogInformation($"💰 Referral reward processed successfully for tracking ID {tracking.Id}");
+                                    }
+                                    else
+                                    {
+                                        _logger.LogWarning($"⚠️ Failed to process referral reward: {rewardResult.Message}");
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogInformation($"ℹ️ No referral to validate for user {userId.Value}: {validationResult.Message}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"⚠️ Cannot process referral: Unable to extract userId from FarmerId: {result.FarmerId}");
+                    }
+                }
+                catch (Exception refEx)
+                {
+                    // Log error but don't fail the entire job
+                    _logger.LogError(refEx, $"❌ Error processing referral validation/reward for analysis {result.AnalysisId}");
+                }
 
                 // Schedule notification job
                 BackgroundJob.Enqueue(() => SendNotificationAsync(result));
