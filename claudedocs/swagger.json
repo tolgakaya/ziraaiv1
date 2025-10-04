@@ -410,64 +410,6 @@
         ]
       }
     },
-    "/api/v{version}/Auth/register-phone": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "parameters": [
-          {
-            "name": "version",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Business.Handlers.Authorizations.Commands.RegisterUserWithPhoneCommand"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Core.Utilities.Results.IResult"
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/Core.Utilities.Results.IResult"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Core.Utilities.Results.IResult"
-                }
-              },
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/Core.Utilities.Results.IResult"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v{version}/Auth/login-phone": {
       "post": {
         "tags": [
@@ -546,6 +488,110 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebAPI.Controllers.VerifyPhoneOtpRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Core.Utilities.Results.IDataResult`1[[Business.Services.Authentication.DArchToken, Business, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Core.Utilities.Results.IDataResult`1[[Business.Services.Authentication.DArchToken, Business, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v{version}/Auth/register-phone": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAPI.Controllers.RegisterWithPhoneRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v{version}/Auth/verify-phone-register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebAPI.Controllers.VerifyPhoneRegisterRequest"
               }
             }
           }
@@ -4411,10 +4457,20 @@
         }
       }
     },
-    "/api/Referral/generate": {
+    "/api/v{version}/Referral/generate": {
       "post": {
         "tags": [
           "Referral"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "content": {
@@ -4490,10 +4546,20 @@
         ]
       }
     },
-    "/api/Referral/track-click": {
+    "/api/v{version}/Referral/track-click": {
       "post": {
         "tags": [
           "Referral"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "content": {
@@ -4558,10 +4624,20 @@
         }
       }
     },
-    "/api/Referral/validate": {
+    "/api/v{version}/Referral/validate": {
       "post": {
         "tags": [
           "Referral"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "content": {
@@ -4626,10 +4702,20 @@
         }
       }
     },
-    "/api/Referral/stats": {
+    "/api/v{version}/Referral/stats": {
       "get": {
         "tags": [
           "Referral"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -4686,10 +4772,20 @@
         ]
       }
     },
-    "/api/Referral/codes": {
+    "/api/v{version}/Referral/codes": {
       "get": {
         "tags": [
           "Referral"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -4746,10 +4842,20 @@
         ]
       }
     },
-    "/api/Referral/credits": {
+    "/api/v{version}/Referral/credits": {
       "get": {
         "tags": [
           "Referral"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -4806,10 +4912,20 @@
         ]
       }
     },
-    "/api/Referral/rewards": {
+    "/api/v{version}/Referral/rewards": {
       "get": {
         "tags": [
           "Referral"
+        ],
+        "parameters": [
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -4866,7 +4982,7 @@
         ]
       }
     },
-    "/api/Referral/disable/{code}": {
+    "/api/v{version}/Referral/disable/{code}": {
       "delete": {
         "tags": [
           "Referral"
@@ -4874,6 +4990,14 @@
         "parameters": [
           {
             "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
             "in": "path",
             "required": true,
             "schema": {
@@ -8731,24 +8855,6 @@
             "nullable": true
           },
           "referralCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "role": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
-      "Business.Handlers.Authorizations.Commands.RegisterUserWithPhoneCommand": {
-        "type": "object",
-        "properties": {
-          "mobilePhone": {
-            "type": "string",
-            "nullable": true
-          },
-          "fullName": {
             "type": "string",
             "nullable": true
           },
@@ -13125,6 +13231,24 @@
         },
         "additionalProperties": false
       },
+      "WebAPI.Controllers.RegisterWithPhoneRequest": {
+        "type": "object",
+        "properties": {
+          "mobilePhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "fullName": {
+            "type": "string",
+            "nullable": true
+          },
+          "referralCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "WebAPI.Controllers.RejectSponsorRequestDto": {
         "type": "object",
         "properties": {
@@ -13287,6 +13411,28 @@
           "code": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebAPI.Controllers.VerifyPhoneRegisterRequest": {
+        "type": "object",
+        "properties": {
+          "mobilePhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fullName": {
+            "type": "string",
+            "nullable": true
+          },
+          "referralCode": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

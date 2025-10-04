@@ -113,6 +113,10 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> GetReferralStats()
         {
             var userId = GetUserId();
+            
+            // 🔍 DEBUG: Log token UserId for troubleshooting
+            Console.WriteLine($"[REFERRAL_STATS] Token UserId: {userId?.ToString() ?? "NULL"}");
+            
             if (!userId.HasValue)
                 return BadRequest(new ErrorDataResult<ReferralStatsResponse>("User ID not found in token"));
 
