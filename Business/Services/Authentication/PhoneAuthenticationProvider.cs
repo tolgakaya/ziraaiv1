@@ -33,6 +33,13 @@ namespace Business.Services.Authentication
 
         public AuthenticationProviderType ProviderType { get; }
 
+        public override async Task<Core.Utilities.Results.IDataResult<DArchToken>> Verify(Model.VerifyOtpCommand command)
+        {
+            // Normalize phone number for consistent lookup
+            command.ExternalUserId = NormalizePhoneNumber(command.ExternalUserId);
+            return await base.Verify(command);
+        }
+
         public override async Task<LoginUserResult> Login(LoginUserCommand command)
         {
             // Normalize phone number

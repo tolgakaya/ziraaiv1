@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Linq;
 using System.Threading;
@@ -22,10 +23,10 @@ namespace Business.Handlers.Authorizations.Commands
     /// </summary>
     public class VerifyPhoneRegisterCommand : IRequest<IDataResult<DArchToken>>
     {
-        public string MobilePhone { get; set; }
+        public string MobilePhone { get; set; } = string.Empty;
         public int Code { get; set; }
-        public string FullName { get; set; }
-        public string ReferralCode { get; set; }
+        public string? FullName { get; set; }
+        public string? ReferralCode { get; set; }
 
         public class VerifyPhoneRegisterCommandHandler : IRequestHandler<VerifyPhoneRegisterCommand, IDataResult<DArchToken>>
         {
