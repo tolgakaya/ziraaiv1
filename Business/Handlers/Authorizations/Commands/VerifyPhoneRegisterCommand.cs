@@ -114,18 +114,19 @@ namespace Business.Handlers.Authorizations.Commands
                     return new ErrorDataResult<DArchToken>("OTP code has expired");
                 }
 
-                // Mark OTP as used
-                mobileLogin.IsUsed = true;
-                _mobileLoginRepository.Update(mobileLogin);
-                await _mobileLoginRepository.SaveChangesAsync();
-
-                // Create new user
+                // Create new user (do NOT mark OTP as used yet - wait until user creation succeeds)
                 var now = DateTime.Now;
+
+                // Use FullName if provided, otherwise generate from phone number
+                var fullName = !string.IsNullOrWhiteSpace(request.FullName)
+                    ? request.FullName
+                    : $"User {normalizedPhone.Substring(normalizedPhone.Length - 4)}"; // e.g., "User 8694"
+
                 var user = new User
                 {
                     CitizenId = 0,
                     Email = $"{normalizedPhone}@phone.ziraai.com", // Generate email from normalized phone
-                    FullName = request.FullName,
+                    FullName = fullName,  // Use provided or generated FullName
                     MobilePhones = normalizedPhone,  // Store normalized phone
                     PasswordHash = new byte[0], // No password for phone auth
                     PasswordSalt = new byte[0],
@@ -212,6 +213,11 @@ namespace Business.Handlers.Authorizations.Commands
 
                 var token = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
                 token.Claims = claims.Select(x => x.Name).ToList();
+
+                // NOW mark OTP as used (only after everything succeeded)
+                mobileLogin.IsUsed = true;
+                _mobileLoginRepository.Update(mobileLogin);
+                await _mobileLoginRepository.SaveChangesAsync();
 
                 _logger.LogInformation("[VerifyPhoneRegister] Registration completed for phone: {Phone}", normalizedPhone);
 
