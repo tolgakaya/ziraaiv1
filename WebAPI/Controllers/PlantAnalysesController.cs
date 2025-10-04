@@ -364,7 +364,7 @@ namespace WebAPI.Controllers
         {
             var query = new GetPlantAnalysisQuery { Id = id };
             var result = await _mediator.Send(query);
-            
+
             if (!result.Success)
                 return NotFound(result);
 
@@ -372,19 +372,29 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             var isAdmin = User.IsInRole("Admin");
             var isSponsor = User.IsInRole("Sponsor");
-            
+
+            // Debug logging
+            _logger.LogWarning("[GetById] Authorization check - AnalysisId: {AnalysisId}, AnalysisUserId: {AnalysisUserId}, CurrentUserId: {CurrentUserId}, IsAdmin: {IsAdmin}, IsSponsor: {IsSponsor}",
+                id, result.Data.UserId, userId, isAdmin, isSponsor);
+
+            _logger.LogWarning("[GetById] All Claims: {Claims}",
+                string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+
             // Admins can see all analyses
             if (isAdmin)
                 return Ok(result);
-            
+
             // Sponsors can see analyses they sponsor
             if (isSponsor && result.Data.SponsorId == User.FindFirst("SponsorId")?.Value)
                 return Ok(result);
-            
+
             // Farmers can only see their own analyses
             if (result.Data.UserId == userId)
                 return Ok(result);
-            
+
+            _logger.LogWarning("[GetById] Access DENIED - AnalysisUserId ({AnalysisUserId}) != CurrentUserId ({CurrentUserId})",
+                result.Data.UserId, userId);
+
             return Forbid();
         }
 
