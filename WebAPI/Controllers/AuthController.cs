@@ -254,9 +254,9 @@ namespace WebAPI.Controllers
     /// </summary>
     public class RegisterWithPhoneRequest
     {
-        public string MobilePhone { get; set; }
-        public string FullName { get; set; }
-        public string ReferralCode { get; set; }
+        public string MobilePhone { get; set; } = string.Empty;
+        public string? FullName { get; set; }
+        public string? ReferralCode { get; set; }
     }
 
     /// <summary>

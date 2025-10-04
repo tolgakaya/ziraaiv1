@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,9 +19,9 @@ namespace Business.Handlers.Authorizations.Commands
     /// </summary>
     public class RegisterWithPhoneCommand : IRequest<IResult>
     {
-        public string MobilePhone { get; set; }
-        public string FullName { get; set; }
-        public string ReferralCode { get; set; }
+        public string MobilePhone { get; set; } = string.Empty;
+        public string? FullName { get; set; }
+        public string? ReferralCode { get; set; }
 
         public class RegisterWithPhoneCommandHandler : IRequestHandler<RegisterWithPhoneCommand, IResult>
         {

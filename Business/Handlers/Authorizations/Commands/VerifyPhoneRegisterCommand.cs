@@ -80,6 +80,9 @@ namespace Business.Handlers.Authorizations.Commands
                 }
 
                 // Verify OTP
+                _logger.LogInformation("[VerifyPhoneRegister] Looking for OTP - Phone: {NormalizedPhone}, Code: {Code}, Provider: Phone",
+                    normalizedPhone, request.Code);
+
                 var mobileLogin = await _mobileLoginRepository.GetAsync(
                     m => m.ExternalUserId == normalizedPhone &&
                          m.Code == request.Code &&
@@ -88,7 +91,19 @@ namespace Business.Handlers.Authorizations.Commands
 
                 if (mobileLogin == null)
                 {
-                    _logger.LogWarning("[VerifyPhoneRegister] Invalid OTP for phone: {Phone}", request.MobilePhone);
+                    // Debug: Check what records exist for this phone
+                    var allRecords = (await _mobileLoginRepository.GetListAsync(
+                        m => m.ExternalUserId == normalizedPhone && m.Provider == AuthenticationProviderType.Phone)).ToList();
+
+                    _logger.LogWarning("[VerifyPhoneRegister] Invalid OTP for phone: {Phone}. Found {Count} total records",
+                        normalizedPhone, allRecords.Count);
+
+                    foreach (var record in allRecords)
+                    {
+                        _logger.LogWarning("[VerifyPhoneRegister] Record - Code: {Code}, IsUsed: {IsUsed}, SendDate: {SendDate}",
+                            record.Code, record.IsUsed, record.SendDate);
+                    }
+
                     return new ErrorDataResult<DArchToken>("Invalid or expired OTP code");
                 }
 
