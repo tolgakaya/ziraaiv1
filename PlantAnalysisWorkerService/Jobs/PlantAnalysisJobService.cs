@@ -330,14 +330,20 @@ namespace PlantAnalysisWorkerService.Jobs
 
                     if (userId.HasValue)
                     {
-                        // Count total analyses for this user
-                        var analysisCount = await _plantAnalysisRepository.Query()
-                            .Where(a => a.UserId == userId.Value && a.AnalysisStatus == "Completed")
-                            .CountAsync();
+                        // Check if this is the user's first completed analysis AND reward hasn't been processed yet
+                    var analysisCount = await _plantAnalysisRepository.Query()
+                        .Where(a => a.UserId == userId.Value && a.AnalysisStatus == "Completed")
+                        .CountAsync();
 
-                        _logger.LogInformation($"📊 User {userId.Value} has {analysisCount} completed analysis(es)");
+                    _logger.LogInformation($"📊 User {userId.Value} has {analysisCount} completed analysis(es)");
 
-                        if (analysisCount == 1) // First completed analysis
+                    // Get existing tracking record to check if reward was already processed
+                    var trackingResult = await _referralTrackingService.GetByRefereeUserIdAsync(userId.Value);
+                    var hasUnprocessedReferral = trackingResult.Success && 
+                                                trackingResult.Data != null && 
+                                                trackingResult.Data.Status < (int)Entities.Concrete.ReferralTrackingStatus.Rewarded;
+
+                    if (analysisCount >= 1 && hasUnprocessedReferral) // First completed analysis with unprocessed referral
                         {
                             _logger.LogInformation($"🎯 First analysis detected for user {userId.Value}, validating referral...");
 
@@ -348,10 +354,8 @@ namespace PlantAnalysisWorkerService.Jobs
                             {
                                 _logger.LogInformation($"✅ Referral validated for user {userId.Value}");
 
-                                // Get the tracking record to process reward
-                                var trackingResult = await _referralTrackingService.GetByRefereeUserIdAsync(userId.Value);
-                                
-                                if (trackingResult.Success && trackingResult.Data != null)
+                            // Use the tracking record we already fetched above
+                            if (trackingResult.Success && trackingResult.Data != null)
                                 {
                                     var tracking = trackingResult.Data;
                                     
