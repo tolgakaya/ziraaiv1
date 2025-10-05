@@ -1,6 +1,7 @@
 using DataAccess.Abstract;
 using Entities.Concrete;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -12,16 +13,19 @@ namespace Business.Services.Referral
         private readonly IReferralConfigurationRepository _configRepository;
         private readonly IMemoryCache _cache;
         private readonly ILogger<ReferralConfigurationService> _logger;
+        private readonly IConfiguration _configuration;
         private readonly TimeSpan _cacheExpiration = TimeSpan.FromMinutes(15);
 
         public ReferralConfigurationService(
             IReferralConfigurationRepository configRepository,
             IMemoryCache cache,
-            ILogger<ReferralConfigurationService> logger)
+            ILogger<ReferralConfigurationService> logger,
+            IConfiguration configuration)
         {
             _configRepository = configRepository;
             _cache = cache;
             _logger = logger;
+            _configuration = configuration;
         }
 
         public async Task<int> GetCreditsPerReferralAsync()
@@ -75,9 +79,22 @@ namespace Business.Services.Referral
 
         public async Task<string> GetDeepLinkBaseUrlAsync()
         {
+            // Priority: 1. appsettings.json (environment-specific), 2. Database, 3. Fallback from config
+            var configValue = _configuration["Referral:DeepLinkBaseUrl"];
+
+            if (!string.IsNullOrWhiteSpace(configValue))
+            {
+                _logger.LogDebug("Using deep link base URL from appsettings: {Url}", configValue);
+                return await Task.FromResult(configValue);
+            }
+
+            // If not in appsettings, try database with fallback from configuration
+            var fallbackUrl = _configuration["Referral:FallbackDeepLinkBaseUrl"]
+                ?? throw new InvalidOperationException("Referral:DeepLinkBaseUrl or Referral:FallbackDeepLinkBaseUrl must be configured");
+
             return await GetCachedStringValueAsync(
                 ReferralConfigurationKeys.DeepLinkBaseUrl,
-                "https://ziraai.com/ref/"); // Default: production URL
+                fallbackUrl);
         }
 
         public async Task<bool> UpdateConfigurationAsync(string key, string value, int updatedBy)

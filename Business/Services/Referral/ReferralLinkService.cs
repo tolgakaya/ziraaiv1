@@ -18,9 +18,6 @@ namespace Business.Services.Referral
         private readonly IConfiguration _configuration;
         private readonly ILogger<ReferralLinkService> _logger;
 
-        // Play Store app package name
-        private const string PlayStorePackageName = "com.ziraai.app"; // TODO: Update with actual package name
-
         public ReferralLinkService(
             IReferralCodeService codeService,
             IReferralConfigurationService configService,
@@ -107,7 +104,10 @@ namespace Business.Services.Referral
         {
             // Play Store link with referrer parameter
             // When user installs from this link, the app can capture the referrer parameter
-            var playStoreLink = $"https://play.google.com/store/apps/details?id={PlayStorePackageName}&referrer={referralCode}";
+            var packageName = _configuration["MobileApp:PlayStorePackageName"]
+                ?? throw new InvalidOperationException("MobileApp:PlayStorePackageName must be configured");
+
+            var playStoreLink = $"https://play.google.com/store/apps/details?id={packageName}&referrer={referralCode}";
 
             return await Task.FromResult(playStoreLink);
         }
