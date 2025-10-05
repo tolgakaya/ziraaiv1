@@ -5,18 +5,68 @@ Complete testing strategy for referral system with staging backend (Railway) and
 
 ## Environment Configuration
 
+### ⚠️ IMPORTANT: All URLs Must Be Configurable
+
+**NEVER hard-code URLs in code!** All environment-specific URLs must be configured via `appsettings.json` or environment variables.
+
 ### Backend URLs by Environment
 
-| Environment | Deep Link Base URL | Notes |
-|------------|-------------------|-------|
-| **Development** | `https://localhost:5001/ref/` | Local development |
-| **Staging** | `https://ziraai-api-sit.up.railway.app/ref/` | Railway staging |
-| **Production** | `https://ziraai.com/ref/` | Production |
+| Environment | Deep Link Base URL | PlayStore Package | Notes |
+|------------|-------------------|-------------------|-------|
+| **Development** | `https://localhost:5001/ref/` | `com.ziraai.app.dev` | Local development |
+| **Staging** | `https://ziraai-api-sit.up.railway.app/ref/` | `com.ziraai.app.staging` | Railway staging |
+| **Production** | `https://ziraai.com/ref/` | `com.ziraai.app` | Production |
+
+### Configuration Files Location
+
+**Development:** `WebAPI/appsettings.Development.json`
+```json
+{
+  "MobileApp": {
+    "PlayStorePackageName": "com.ziraai.app.dev"
+  },
+  "Referral": {
+    "DeepLinkBaseUrl": "https://localhost:5001/ref/"
+  },
+  "SponsorRequest": {
+    "DeepLinkBaseUrl": "https://localhost:5001/sponsor-request/"
+  }
+}
+```
+
+**Staging:** `WebAPI/appsettings.Staging.json`
+```json
+{
+  "MobileApp": {
+    "PlayStorePackageName": "com.ziraai.app.staging"
+  },
+  "Referral": {
+    "DeepLinkBaseUrl": "https://ziraai-api-sit.up.railway.app/ref/"
+  },
+  "SponsorRequest": {
+    "DeepLinkBaseUrl": "https://ziraai-api-sit.up.railway.app/sponsor-request/"
+  }
+}
+```
+
+**Production:** Environment Variables (Railway/Docker)
+```bash
+MobileApp__PlayStorePackageName=com.ziraai.app
+Referral__DeepLinkBaseUrl=https://ziraai.com/ref/
+Referral__FallbackDeepLinkBaseUrl=https://ziraai.com/ref/
+SponsorRequest__DeepLinkBaseUrl=https://ziraai.com/sponsor-request/
+```
 
 ### Configuration Priority
-1. **appsettings.json** (Environment-specific) - **HIGHEST PRIORITY**
-2. Database configuration (ReferralConfiguration table)
-3. Default fallback (`https://ziraai.com/ref/`)
+1. **appsettings.{Environment}.json** - **HIGHEST PRIORITY**
+2. **Environment Variables** (Railway/Docker)
+3. Database configuration (ReferralConfiguration table)
+4. Fallback from `Referral:FallbackDeepLinkBaseUrl`
+
+### Code Implementation
+- `ReferralConfigurationService.GetDeepLinkBaseUrlAsync()` - reads from IConfiguration first
+- `ReferralLinkService.BuildPlayStoreLinkAsync()` - uses `MobileApp:PlayStorePackageName`
+- Both throw `InvalidOperationException` if configuration is missing
 
 ## Testing Scenarios
 

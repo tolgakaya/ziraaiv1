@@ -182,10 +182,43 @@ public class Get{Entity}Query : IRequest<IDataResult<{Entity}>>
 ```
 
 ## Environment Configuration
+
+### ⚠️ CRITICAL: Never Hard-Code URLs or Environment-Specific Values
+All environment-specific configurations (URLs, package names, API endpoints) must be externalized to configuration files or environment variables. See [Environment Configuration Guide](./claudedocs/environment-configuration.md) for details.
+
+### Configuration Files
 - Development: `appsettings.Development.json`
 - Staging: `appsettings.Staging.json`
-- Production: `appsettings.json`
+- Production: `appsettings.json` (in `.gitignore`) + Railway environment variables
 - Key setting: `ASPNETCORE_ENVIRONMENT`
+
+### Referral System Configuration (REQUIRED)
+
+**⚠️ Must be configured for each environment:**
+
+```json
+{
+  "MobileApp": {
+    "PlayStorePackageName": "com.ziraai.app"  // Changes per environment
+  },
+  "Referral": {
+    "DeepLinkBaseUrl": "https://ziraai.com/ref/",
+    "FallbackDeepLinkBaseUrl": "https://ziraai.com/ref/"
+  },
+  "SponsorRequest": {
+    "DeepLinkBaseUrl": "https://ziraai.com/sponsor-request/"
+  }
+}
+```
+
+**Environment Values:**
+- **Development:** `localhost:5001`, `com.ziraai.app.dev`
+- **Staging:** `ziraai-api-sit.up.railway.app`, `com.ziraai.app.staging`
+- **Production:** `ziraai.com`, `com.ziraai.app`
+
+**See Also:**
+- [Environment Configuration Guide](./claudedocs/environment-configuration.md) - Complete configuration reference
+- [Referral Testing Guide](./claudedocs/referral-testing-guide.md) - End-to-end testing with environments
 
 ## API Documentation
 - Swagger UI: `https://localhost:{port}/swagger`
