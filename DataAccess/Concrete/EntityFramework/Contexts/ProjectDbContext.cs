@@ -86,6 +86,12 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<SecurityEvent> SecurityEvents { get; set; }
         public DbSet<BlockedEntity> BlockedEntities { get; set; }
 
+
+        // Referral System
+        public DbSet<ReferralCode> ReferralCodes { get; set; }
+        public DbSet<ReferralTracking> ReferralTrackings { get; set; }
+        public DbSet<ReferralReward> ReferralRewards { get; set; }
+        public DbSet<ReferralConfiguration> ReferralConfigurations { get; set; }
         protected IConfiguration Configuration { get; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
