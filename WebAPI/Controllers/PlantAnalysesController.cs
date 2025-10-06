@@ -25,17 +25,20 @@ namespace WebAPI.Controllers
         private readonly IMediator _mediator;
         private readonly IPlantAnalysisAsyncService _asyncAnalysisService;
         private readonly ISubscriptionValidationService _subscriptionValidationService;
+        private readonly Business.Services.Referral.IReferralTrackingService _referralTrackingService;
         private readonly ILogger<PlantAnalysesController> _logger;
 
         public PlantAnalysesController(
             IMediator mediator,
             IPlantAnalysisAsyncService asyncAnalysisService,
             ISubscriptionValidationService subscriptionValidationService,
+            Business.Services.Referral.IReferralTrackingService referralTrackingService,
             ILogger<PlantAnalysesController> logger)
         {
             _mediator = mediator;
             _asyncAnalysisService = asyncAnalysisService;
             _subscriptionValidationService = subscriptionValidationService;
+            _referralTrackingService = referralTrackingService;
             _logger = logger;
             _logger.LogInformation("[CONTROLLER_CONSTRUCTOR] PlantAnalysesController initialized");
         }
@@ -175,6 +178,21 @@ namespace WebAPI.Controllers
                     _logger.LogInformation("[CONTROLLER_INCREMENT_SUCCESS] Usage increment completed successfully - UserId: {UserId}",
                         userId.Value);
 
+                    // Process referral validation if this is user's first analysis
+                    try
+                    {
+                        var validationResult = await _referralTrackingService.ValidateReferralAsync(userId.Value);
+                        if (validationResult.Success)
+                        {
+                            _logger.LogInformation("[CONTROLLER_REFERRAL_VALIDATION] Referral validation processed for UserId: {UserId}", userId.Value);
+                        }
+                    }
+                    catch (Exception refEx)
+                    {
+                        // Log but don't fail the analysis - referral is a secondary feature
+                        _logger.LogWarning(refEx, "[CONTROLLER_REFERRAL_ERROR] Referral validation failed for UserId: {UserId}", userId.Value);
+                    }
+
                     return Ok(result);
                 }
                 catch (Exception ex)
@@ -300,6 +318,21 @@ namespace WebAPI.Controllers
                 // Increment usage counter after successful queueing
                 await _subscriptionValidationService.IncrementUsageAsync(userId.Value);
 
+                // Process referral validation if this is user's first analysis
+                try
+                {
+                    var validationResult = await _referralTrackingService.ValidateReferralAsync(userId.Value);
+                    if (validationResult.Success)
+                    {
+                        _logger.LogInformation("[CONTROLLER_ASYNC_REFERRAL_VALIDATION] Referral validation processed for UserId: {UserId}", userId.Value);
+                    }
+                }
+                catch (Exception refEx)
+                {
+                    // Log but don't fail the analysis - referral is a secondary feature
+                    _logger.LogWarning(refEx, "[CONTROLLER_ASYNC_REFERRAL_ERROR] Referral validation failed for UserId: {UserId}", userId.Value);
+                }
+
                 return Accepted(new
                 {
                     success = true,
@@ -331,7 +364,7 @@ namespace WebAPI.Controllers
         {
             var query = new GetPlantAnalysisQuery { Id = id };
             var result = await _mediator.Send(query);
-            
+
             if (!result.Success)
                 return NotFound(result);
 
@@ -339,19 +372,29 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             var isAdmin = User.IsInRole("Admin");
             var isSponsor = User.IsInRole("Sponsor");
-            
+
+            // Debug logging
+            _logger.LogWarning("[GetById] Authorization check - AnalysisId: {AnalysisId}, AnalysisUserId: {AnalysisUserId}, CurrentUserId: {CurrentUserId}, IsAdmin: {IsAdmin}, IsSponsor: {IsSponsor}",
+                id, result.Data.UserId, userId, isAdmin, isSponsor);
+
+            _logger.LogWarning("[GetById] All Claims: {Claims}",
+                string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+
             // Admins can see all analyses
             if (isAdmin)
                 return Ok(result);
-            
+
             // Sponsors can see analyses they sponsor
             if (isSponsor && result.Data.SponsorId == User.FindFirst("SponsorId")?.Value)
                 return Ok(result);
-            
+
             // Farmers can only see their own analyses
             if (result.Data.UserId == userId)
                 return Ok(result);
-            
+
+            _logger.LogWarning("[GetById] Access DENIED - AnalysisUserId ({AnalysisUserId}) != CurrentUserId ({CurrentUserId})",
+                result.Data.UserId, userId);
+
             return Forbid();
         }
 

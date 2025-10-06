@@ -23,6 +23,7 @@ namespace Business.Handlers.Authorizations.Commands
         public string Password { get; set; }
         public string FullName { get; set; }
         public string MobilePhones { get; set; }
+        public string ReferralCode { get; set; } // Optional referral code
         
         [JsonPropertyName("role")]
         public string UserRole { get; set; } = "Farmer"; // Default to Farmer, but allow override
@@ -35,19 +36,22 @@ namespace Business.Handlers.Authorizations.Commands
             private readonly IUserGroupRepository _userGroupRepository;
             private readonly ISubscriptionTierRepository _subscriptionTierRepository;
             private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+            private readonly Business.Services.Referral.IReferralTrackingService _referralTrackingService;
 
             public RegisterUserCommandHandler(
                 IUserRepository userRepository, 
                 IGroupRepository groupRepository, 
                 IUserGroupRepository userGroupRepository,
                 ISubscriptionTierRepository subscriptionTierRepository,
-                IUserSubscriptionRepository userSubscriptionRepository)
+                IUserSubscriptionRepository userSubscriptionRepository,
+                Business.Services.Referral.IReferralTrackingService referralTrackingService)
             {
                 _userRepository = userRepository;
                 _groupRepository = groupRepository;
                 _userGroupRepository = userGroupRepository;
                 _subscriptionTierRepository = subscriptionTierRepository;
                 _userSubscriptionRepository = userSubscriptionRepository;
+                _referralTrackingService = referralTrackingService;
             }
 
 
@@ -57,13 +61,25 @@ namespace Business.Handlers.Authorizations.Commands
             public async Task<IResult> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
             {
                 Console.WriteLine($"[RegisterUser] 🚀 REGISTER STARTED - Email: {request.Email}, FullName: {request.FullName}");
-                
+
+                // Check if email already exists
                 var isThereAnyUser = await _userRepository.GetAsync(u => u.Email == request.Email);
 
                 if (isThereAnyUser != null)
                 {
                     Console.WriteLine($"[RegisterUser] ❌ User already exists: {request.Email}");
                     return new ErrorResult(Messages.EmailAlreadyExists);
+                }
+
+                // Check if phone number already exists (if provided)
+                if (!string.IsNullOrWhiteSpace(request.MobilePhones))
+                {
+                    var isThereAnyUserWithPhone = await _userRepository.GetAsync(u => u.MobilePhones == request.MobilePhones);
+                    if (isThereAnyUserWithPhone != null)
+                    {
+                        Console.WriteLine($"[RegisterUser] ❌ Phone number already exists: {request.MobilePhones}");
+                        return new ErrorResult("Phone number is already registered");
+                    }
                 }
 
                 Console.WriteLine($"[RegisterUser] ✅ User email is unique, proceeding with registration...");
@@ -85,7 +101,8 @@ namespace Business.Handlers.Authorizations.Commands
                     RecordDate = now,
                     UpdateContactDate = now,
                     BirthDate = null, // Explicitly set as null
-                    Gender = null // Explicitly set as null
+                    Gender = null, // Explicitly set as null
+                    RegistrationReferralCode = request.ReferralCode // Store referral code if provided
                 };
 
                 Console.WriteLine($"[RegisterUser] 💾 Adding user to database...");
@@ -262,6 +279,33 @@ namespace Business.Handlers.Authorizations.Commands
                     
                     Console.WriteLine($"[RegisterUser] Stack trace: {subscriptionEx.StackTrace}");
                     // Registration continues without subscription
+                }
+
+                // Process referral tracking if referral code was provided
+                if (!string.IsNullOrWhiteSpace(request.ReferralCode))
+                {
+                    try
+                    {
+                        Console.WriteLine($"[RegisterUser] Processing referral code: {request.ReferralCode} for user {user.Email}");
+                        
+                        var referralResult = await _referralTrackingService.LinkRegistrationAsync(
+                            user.UserId,
+                            request.ReferralCode);
+                        
+                        if (referralResult.Success)
+                        {
+                            Console.WriteLine($"[RegisterUser] ✅ Referral registration processed successfully");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[RegisterUser] ⚠️ Referral processing failed: {referralResult.Message}");
+                        }
+                    }
+                    catch (Exception refEx)
+                    {
+                        // Log but don't fail registration
+                        Console.WriteLine($"[RegisterUser] ❌ Exception during referral processing: {refEx.Message}");
+                    }
                 }
 
                 Console.WriteLine($"[RegisterUser] 🎉 REGISTRATION COMPLETED SUCCESSFULLY for {request.Email} (ID: {user.UserId})");
