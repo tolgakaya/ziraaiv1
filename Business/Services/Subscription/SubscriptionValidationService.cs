@@ -148,27 +148,42 @@ namespace Business.Services.Subscription
                 }
 
                 var tier = subscription.SubscriptionTier;
+                
+                // ✅ REFERRAL CREDITS PRIORITY: Check referral credits first before subscription quota
+                var referralCredits = subscription.ReferralCredits;
+                var hasReferralCredits = referralCredits > 0;
+                
                 var dailyRemaining = tier.DailyRequestLimit - subscription.CurrentDailyUsage;
                 var monthlyRemaining = tier.MonthlyRequestLimit - subscription.CurrentMonthlyUsage;
-
-                var canMakeRequest = dailyRemaining > 0 && monthlyRemaining > 0;
+                
+                // User can make request if they have referral credits OR subscription quota
+                var canMakeRequest = hasReferralCredits || (dailyRemaining > 0 && monthlyRemaining > 0);
                 string limitMessage = null;
 
-                if (dailyRemaining <= 0)
+                // Only show limit messages if user has no referral credits
+                if (!hasReferralCredits)
                 {
-                    limitMessage = $"Daily request limit reached ({tier.DailyRequestLimit} requests). Resets at midnight.";
-                    _logger.LogWarning("[SUBSCRIPTION_CHECK_DAILY_LIMIT_EXCEEDED] Daily limit reached - UserId: {UserId}, CorrelationId: {CorrelationId}, DailyUsed: {DailyUsed}, DailyLimit: {DailyLimit}", 
-                        userId, correlationId, subscription.CurrentDailyUsage, tier.DailyRequestLimit);
+                    if (dailyRemaining <= 0)
+                    {
+                        limitMessage = $"Daily request limit reached ({tier.DailyRequestLimit} requests). Resets at midnight.";
+                        _logger.LogWarning("[SUBSCRIPTION_CHECK_DAILY_LIMIT_EXCEEDED] Daily limit reached - UserId: {UserId}, CorrelationId: {CorrelationId}, DailyUsed: {DailyUsed}, DailyLimit: {DailyLimit}, ReferralCredits: {ReferralCredits}", 
+                            userId, correlationId, subscription.CurrentDailyUsage, tier.DailyRequestLimit, referralCredits);
+                    }
+                    else if (monthlyRemaining <= 0)
+                    {
+                        limitMessage = $"Monthly request limit reached ({tier.MonthlyRequestLimit} requests). Resets on the 1st of next month.";
+                        _logger.LogWarning("[SUBSCRIPTION_CHECK_MONTHLY_LIMIT_EXCEEDED] Monthly limit reached - UserId: {UserId}, CorrelationId: {CorrelationId}, MonthlyUsed: {MonthlyUsed}, MonthlyLimit: {MonthlyLimit}, ReferralCredits: {ReferralCredits}", 
+                            userId, correlationId, subscription.CurrentMonthlyUsage, tier.MonthlyRequestLimit, referralCredits);
+                    }
                 }
-                else if (monthlyRemaining <= 0)
+                else
                 {
-                    limitMessage = $"Monthly request limit reached ({tier.MonthlyRequestLimit} requests). Resets on the 1st of next month.";
-                    _logger.LogWarning("[SUBSCRIPTION_CHECK_MONTHLY_LIMIT_EXCEEDED] Monthly limit reached - UserId: {UserId}, CorrelationId: {CorrelationId}, MonthlyUsed: {MonthlyUsed}, MonthlyLimit: {MonthlyLimit}", 
-                        userId, correlationId, subscription.CurrentMonthlyUsage, tier.MonthlyRequestLimit);
+                    _logger.LogInformation("[SUBSCRIPTION_CHECK_USING_REFERRAL_CREDITS] User has referral credits available - UserId: {UserId}, CorrelationId: {CorrelationId}, ReferralCredits: {ReferralCredits}", 
+                        userId, correlationId, referralCredits);
                 }
 
-                _logger.LogInformation("[SUBSCRIPTION_CHECK_QUOTA_STATUS] Quota status calculated - UserId: {UserId}, CorrelationId: {CorrelationId}, CanMakeRequest: {CanMakeRequest}, DailyRemaining: {DailyRemaining}, MonthlyRemaining: {MonthlyRemaining}", 
-                    userId, correlationId, canMakeRequest, dailyRemaining, monthlyRemaining);
+                _logger.LogInformation("[SUBSCRIPTION_CHECK_QUOTA_STATUS] Quota status calculated - UserId: {UserId}, CorrelationId: {CorrelationId}, CanMakeRequest: {CanMakeRequest}, DailyRemaining: {DailyRemaining}, MonthlyRemaining: {MonthlyRemaining}, ReferralCredits: {ReferralCredits}", 
+                    userId, correlationId, canMakeRequest, dailyRemaining, monthlyRemaining, referralCredits);
 
                 var status = new SubscriptionUsageStatusDto
                 {
@@ -181,6 +196,7 @@ namespace Business.Services.Subscription
                     MonthlyUsed = subscription.CurrentMonthlyUsage,
                     MonthlyLimit = tier.MonthlyRequestLimit,
                     MonthlyRemaining = monthlyRemaining,
+                    ReferralCredits = referralCredits, // ✅ Add referral credits to response
                     CanMakeRequest = canMakeRequest,
                     LimitExceededMessage = limitMessage,
                     NextDailyReset = DateTime.Now.Date.AddDays(1),
@@ -328,17 +344,33 @@ namespace Business.Services.Subscription
                 return new ErrorResult("No active subscription found");
             }
 
-            _logger.LogInformation("[INCREMENT_USAGE_SUBSCRIPTION_FOUND] Subscription found - UserId: {UserId}, SubscriptionId: {SubscriptionId}, TierName: {TierName}",
-                userId, subscription.Id, subscription.SubscriptionTier?.TierName);
+            _logger.LogInformation("[INCREMENT_USAGE_SUBSCRIPTION_FOUND] Subscription found - UserId: {UserId}, SubscriptionId: {SubscriptionId}, TierName: {TierName}, ReferralCredits: {ReferralCredits}",
+                userId, subscription.Id, subscription.SubscriptionTier?.TierName, subscription.ReferralCredits);
 
-            // Increment usage counters
-            _logger.LogInformation("[INCREMENT_USAGE_COUNTERS] Updating usage counters - UserId: {UserId}, SubscriptionId: {SubscriptionId}",
-                userId, subscription.Id);
+            // ✅ PRIORITY: Use referral credits first, then subscription quota
+            var referralCredits = subscription.ReferralCredits;
+            
+            if (referralCredits > 0)
+            {
+                // Decrement referral credits
+                subscription.ReferralCredits -= 1;
+                _userSubscriptionRepository.Update(subscription);
+                await _userSubscriptionRepository.SaveChangesAsync();
+                
+                _logger.LogInformation("[INCREMENT_USAGE_REFERRAL_CREDIT_USED] Referral credit used - UserId: {UserId}, SubscriptionId: {SubscriptionId}, RemainingCredits: {RemainingCredits}",
+                    userId, subscription.Id, subscription.ReferralCredits);
+            }
+            else
+            {
+                // Use subscription quota
+                _logger.LogInformation("[INCREMENT_USAGE_COUNTERS] Updating subscription quota counters - UserId: {UserId}, SubscriptionId: {SubscriptionId}",
+                    userId, subscription.Id);
 
-            await _userSubscriptionRepository.UpdateUsageCountersAsync(subscription.Id, 1, 1);
+                await _userSubscriptionRepository.UpdateUsageCountersAsync(subscription.Id, 1, 1);
 
-            _logger.LogInformation("[INCREMENT_USAGE_COUNTERS_UPDATED] Usage counters updated - UserId: {UserId}, SubscriptionId: {SubscriptionId}",
-                userId, subscription.Id);
+            _logger.LogInformation("[INCREMENT_USAGE_COUNTERS_UPDATED] Subscription quota counters updated - UserId: {UserId}, SubscriptionId: {SubscriptionId}",
+                    userId, subscription.Id);
+            }
 
             // Log the usage
             var httpContext = _httpContextAccessor.HttpContext;

@@ -1,0 +1,5203 @@
+{
+  "info": {
+    "_postman_id": "801a63ad-1747-42f0-bd10-685dbdc8e74c",
+    "name": "ZiraAI API - Complete Collection",
+    "description": "Auto-generated from Swagger - All endpoints with proper auth",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/v{version}/Auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobilePhone\": \"05321111111\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Auth/refresh-token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/refresh-token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "refresh-token"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobilePhone\": \"05321111111\",\n  \"fullName\": \"Test User\",\n  \"referralCode\": \"ZIRA-XXXXXX\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/Auth/forgot-password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/forgot-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "forgot-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/Auth/user-password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/user-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "user-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Auth/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Auth/test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/test",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "test"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Auth/login-phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/login-phone",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "login-phone"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Auth/verify-phone-otp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/verify-phone-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "verify-phone-otp"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Auth/register-phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/register-phone",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "register-phone"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Auth/verify-phone-register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Auth/verify-phone-register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Auth",
+                "verify-phone-register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Auth endpoints"
+    },
+    {
+      "name": "BulkOperations",
+      "item": [
+        {
+          "name": "POST /api/v{version}/BulkOperations/send-links",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/BulkOperations/send-links",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "BulkOperations",
+                "send-links"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/BulkOperations/generate-codes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/BulkOperations/generate-codes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "BulkOperations",
+                "generate-codes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/BulkOperations/status/{operationId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/BulkOperations/status/{operationId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "BulkOperations",
+                "status",
+                "{operationId}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/BulkOperations/history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/BulkOperations/history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "BulkOperations",
+                "history"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/BulkOperations/cancel/{operationId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/BulkOperations/cancel/{operationId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "BulkOperations",
+                "cancel",
+                "{operationId}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/BulkOperations/retry/{operationId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/BulkOperations/retry/{operationId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "BulkOperations",
+                "retry",
+                "{operationId}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/BulkOperations/templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/BulkOperations/templates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "BulkOperations",
+                "templates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/BulkOperations/statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/BulkOperations/statistics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "BulkOperations",
+                "statistics"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "BulkOperations endpoints"
+    },
+    {
+      "name": "DeepLinks",
+      "item": [
+        {
+          "name": "POST /api/v{version}/DeepLinks/generate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/DeepLinks/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "DeepLinks",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/DeepLinks/analytics/{linkId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/DeepLinks/analytics/{linkId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "DeepLinks",
+                "analytics",
+                "{linkId}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/DeepLinks/track-click/{linkId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/DeepLinks/track-click/{linkId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "DeepLinks",
+                "track-click",
+                "{linkId}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/DeepLinks/universal-link-config",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/DeepLinks/universal-link-config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "DeepLinks",
+                "universal-link-config"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /.well-known/apple-app-site-association",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/.well-known/apple-app-site-association",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ".well-known",
+                "apple-app-site-association"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /.well-known/assetlinks.json",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/.well-known/assetlinks.json",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ".well-known",
+                "assetlinks.json"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /r/{linkId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/r/{linkId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "r",
+                "{linkId}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "DeepLinks endpoints"
+    },
+    {
+      "name": "GroupClaims",
+      "item": [
+        {
+          "name": "GET /api/v{version}/group-claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/group-claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "group-claims"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/group-claims",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/group-claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "group-claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/group-claims",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/group-claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "group-claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/group-claims/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/group-claims/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "group-claims",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/v{version}/group-claims/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/group-claims/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "group-claims",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/group-claims/groups/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/group-claims/groups/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "group-claims",
+                "groups",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "GroupClaims endpoints"
+    },
+    {
+      "name": "Groups",
+      "item": [
+        {
+          "name": "GET /api/v{version}/Groups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Groups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Groups"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Groups",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Groups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Groups"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/Groups",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Groups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Groups"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Groups/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Groups/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Groups",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/v{version}/Groups/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Groups/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Groups",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Groups/lookups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Groups/lookups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Groups",
+                "lookups"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Groups endpoints"
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /health/detailed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health/detailed",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                "detailed"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Health endpoints"
+    },
+    {
+      "name": "Languages",
+      "item": [
+        {
+          "name": "GET /api/v{version}/Languages/codes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Languages/codes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Languages",
+                "codes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Languages/lookups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Languages/lookups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Languages",
+                "lookups"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Languages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Languages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Languages"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Languages",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Languages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Languages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/Languages",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Languages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Languages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Languages/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Languages/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Languages",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/v{version}/Languages/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Languages/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Languages",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Languages endpoints"
+    },
+    {
+      "name": "Logs",
+      "item": [
+        {
+          "name": "GET /api/v{version}/Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Logs"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Logs endpoints"
+    },
+    {
+      "name": "Notification",
+      "item": [
+        {
+          "name": "POST /api/v{version}/Notification/whatsapp/send-template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/whatsapp/send-template",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "whatsapp",
+                "send-template"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Notification/whatsapp/send-bulk",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/whatsapp/send-bulk",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "whatsapp",
+                "send-bulk"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Notification/whatsapp/test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/whatsapp/test",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "whatsapp",
+                "test"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Notification/plant-analysis-completed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/plant-analysis-completed",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "plant-analysis-completed"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Notification/urgent-health-alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/urgent-health-alert",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "urgent-health-alert"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Notification/usage-alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/usage-alert",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "usage-alert"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Notification/health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Notification/preferences/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/preferences/{{userId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "preferences",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/Notification/preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Notification/preferences",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Notification",
+                "preferences"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/webhooks/whatsapp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/webhooks/whatsapp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "webhooks",
+                "whatsapp"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/webhooks/whatsapp",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/webhooks/whatsapp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "webhooks",
+                "whatsapp"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Notification endpoints"
+    },
+    {
+      "name": "OperationClaims",
+      "item": [
+        {
+          "name": "GET /api/v{version}/operation-claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/operation-claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "operation-claims"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/operation-claims",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/operation-claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "operation-claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/operation-claims/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/operation-claims/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "operation-claims",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/operation-claims/lookups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/operation-claims/lookups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "operation-claims",
+                "lookups"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/operation-claims/cache",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/operation-claims/cache",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "operation-claims",
+                "cache"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "OperationClaims endpoints"
+    },
+    {
+      "name": "PlantAnalyses",
+      "item": [
+        {
+          "name": "POST /api/v{version}/PlantAnalyses/analyze",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses/analyze",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses",
+                "analyze"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/PlantAnalyses/analyze-async",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses/analyze-async",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses",
+                "analyze-async"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/PlantAnalyses/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/PlantAnalyses/{id}/detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses/{{id}}/detail",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses",
+                "{{id}}",
+                "detail"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/PlantAnalyses/my-analyses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses/my-analyses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses",
+                "my-analyses"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/PlantAnalyses/list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses/list",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses",
+                "list"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/PlantAnalyses/sponsored-analyses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses/sponsored-analyses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses",
+                "sponsored-analyses"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/PlantAnalyses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/PlantAnalyses/{id}/image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/PlantAnalyses/{{id}}/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "PlantAnalyses",
+                "{{id}}",
+                "image"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "PlantAnalyses endpoints"
+    },
+    {
+      "name": "Redemption",
+      "item": [
+        {
+          "name": "GET /redeem/{code}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redeem/{{code}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redeem",
+                "{{code}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /redeem/success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redeem/success",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redeem",
+                "success"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/redeem/success",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/redeem/success",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "redeem",
+                "success"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /redeem/error",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/redeem/error",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "redeem",
+                "error"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/redeem/error",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/redeem/error",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "redeem",
+                "error"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Redemption endpoints"
+    },
+    {
+      "name": "Referral",
+      "item": [
+        {
+          "name": "POST /api/v{version}/Referral/generate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Referral/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Referral",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deliveryMethod\": 1,\n  \"phoneNumbers\": [\n    \"05321111112\",\n    \"05321111113\"\n  ],\n  \"customMessage\": \"ZiraAI ile bitkilerini analiz et!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Referral/track-click",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Referral/track-click",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Referral",
+                "track-click"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ZIRA-XXXXXX\",\n  \"ipAddress\": \"127.0.0.1\",\n  \"deviceId\": \"device-uuid-001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Referral/validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Referral/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Referral",
+                "validate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"ZIRA-XXXXXX\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Referral/stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Referral/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Referral",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Referral/codes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Referral/codes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Referral",
+                "codes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Referral/credits",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Referral/credits",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Referral",
+                "credits"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Referral/rewards",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Referral/rewards",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Referral",
+                "rewards"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/v{version}/Referral/disable/{code}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Referral/disable/{{code}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Referral",
+                "disable",
+                "{{code}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Referral endpoints"
+    },
+    {
+      "name": "SignalRNotification",
+      "item": [
+        {
+          "name": "POST /api/internal/signalr/analysis-completed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/internal/signalr/analysis-completed",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "signalr",
+                "analysis-completed"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/internal/signalr/analysis-failed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/internal/signalr/analysis-failed",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "signalr",
+                "analysis-failed"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/internal/signalr/health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/internal/signalr/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "signalr",
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "SignalRNotification endpoints"
+    },
+    {
+      "name": "SponsorRequest",
+      "item": [
+        {
+          "name": "POST /api/SponsorRequest/create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/SponsorRequest/create",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "SponsorRequest",
+                "create"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/SponsorRequest/process/{hashedToken}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/SponsorRequest/process/{hashedToken}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "SponsorRequest",
+                "process",
+                "{hashedToken}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/SponsorRequest/pending",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/SponsorRequest/pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "SponsorRequest",
+                "pending"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/SponsorRequest/approve",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/SponsorRequest/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "SponsorRequest",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/SponsorRequest/reject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/SponsorRequest/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "SponsorRequest",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/SponsorRequest/{requestId}/whatsapp-message",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/SponsorRequest/{requestId}/whatsapp-message",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "SponsorRequest",
+                "{requestId}",
+                "whatsapp-message"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "SponsorRequest endpoints"
+    },
+    {
+      "name": "Sponsorship",
+      "item": [
+        {
+          "name": "POST /api/v{version}/sponsorship/create-profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/create-profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "create-profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/sponsorship/purchase-package",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/purchase-package",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "purchase-package"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/sponsorship/redeem",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/redeem",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "redeem"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/sponsorship/codes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/codes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "codes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/codes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/codes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "codes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/purchases",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/purchases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "purchases"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/farmers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/farmers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "farmers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/statistics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "statistics"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/link-statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/link-statistics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "link-statistics"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/sponsorship/send-link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/send-link",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "send-link"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/validate/{code}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/validate/{{code}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "validate",
+                "{{code}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/my-sponsor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/my-sponsor",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "my-sponsor"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/sponsorship/profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/analysis/{plantAnalysisId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/analysis/{plantAnalysisId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "analysis",
+                "{plantAnalysisId}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/sponsorship/messages",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "messages"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/messages/conversation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/messages/conversation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "messages",
+                "conversation"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/sponsorship/smart-links",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/smart-links",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "smart-links"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/smart-links",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/smart-links",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "smart-links"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/smart-links/performance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/smart-links/performance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "smart-links",
+                "performance"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/logo-permissions/analysis/{plantAnalysisId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/logo-permissions/analysis/{plantAnalysisId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "logo-permissions",
+                "analysis",
+                "{plantAnalysisId}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/display-info/analysis/{plantAnalysisId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/display-info/analysis/{plantAnalysisId}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "display-info",
+                "analysis",
+                "{plantAnalysisId}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/sponsorship/debug/user-info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/sponsorship/debug/user-info",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "sponsorship",
+                "debug",
+                "user-info"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Sponsorship endpoints"
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "GET /api/v{version}/Subscriptions/tiers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Subscriptions/tiers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Subscriptions",
+                "tiers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Subscriptions/my-subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Subscriptions/my-subscription",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Subscriptions",
+                "my-subscription"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Subscriptions/usage-status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Subscriptions/usage-status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Subscriptions",
+                "usage-status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Subscriptions/subscribe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Subscriptions/subscribe",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Subscriptions",
+                "subscribe"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Subscriptions/cancel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Subscriptions/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Subscriptions",
+                "cancel"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Subscriptions/history",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Subscriptions/history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Subscriptions",
+                "history"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Subscriptions/usage-logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Subscriptions/usage-logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Subscriptions",
+                "usage-logs"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/Subscriptions/tiers/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Subscriptions/tiers/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Subscriptions",
+                "tiers",
+                "{{id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Subscriptions endpoints"
+    },
+    {
+      "name": "Test",
+      "item": [
+        {
+          "name": "POST /api/v{version}/Test/mock-n8n-response",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Test/mock-n8n-response",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Test",
+                "mock-n8n-response"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Test/rabbitmq-health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Test/rabbitmq-health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Test",
+                "rabbitmq-health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Test/debug/analysis/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Test/debug/analysis/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Test",
+                "debug",
+                "analysis",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Test endpoints"
+    },
+    {
+      "name": "TestDatabase",
+      "item": [
+        {
+          "name": "GET /api/v{version}/TestDatabase/recent-analyses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/TestDatabase/recent-analyses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "TestDatabase",
+                "recent-analyses"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/TestDatabase/subscription-debug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/TestDatabase/subscription-debug",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "TestDatabase",
+                "subscription-debug"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/TestDatabase/user-subscription/{userId}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/TestDatabase/user-subscription/{{userId}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "TestDatabase",
+                "user-subscription",
+                "{{userId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/TestDatabase/add-trial-tier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/TestDatabase/add-trial-tier",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "TestDatabase",
+                "add-trial-tier"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "TestDatabase endpoints"
+    },
+    {
+      "name": "Translates",
+      "item": [
+        {
+          "name": "GET /api/v{version}/Translates/languages/{lang}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Translates/languages/{lang}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Translates",
+                "languages",
+                "{lang}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Translates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Translates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Translates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Translates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Translates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Translates"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/Translates",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Translates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Translates"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Translates/dtos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Translates/dtos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Translates",
+                "dtos"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Translates/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Translates/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Translates",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/v{version}/Translates/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Translates/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Translates",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Translates endpoints"
+    },
+    {
+      "name": "UserClaims",
+      "item": [
+        {
+          "name": "GET /api/v{version}/user-claims",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-claims"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/user-claims",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/user-claims",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-claims",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-claims"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/user-claims/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-claims/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-claims",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/v{version}/user-claims/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-claims/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-claims",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/user-claims/users/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-claims/users/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-claims",
+                "users",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "UserClaims endpoints"
+    },
+    {
+      "name": "UserGroups",
+      "item": [
+        {
+          "name": "GET /api/v{version}/user-groups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-groups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-groups"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/user-groups",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-groups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-groups"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/user-groups",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-groups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-groups"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/user-groups/users/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-groups/users/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-groups",
+                "users",
+                "{{id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/user-groups/users/{id}/groups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-groups/users/{{id}}/groups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-groups",
+                "users",
+                "{{id}}",
+                "groups"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/user-groups/groups/{id}/users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-groups/groups/{{id}}/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-groups",
+                "groups",
+                "{{id}}",
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/user-groups/groups",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-groups/groups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-groups",
+                "groups"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/v{version}/user-groups/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/user-groups/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "user-groups",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "UserGroups endpoints"
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET /api/v{version}/Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/v{version}/Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/v{version}/Users",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeholder\": \"Fill with actual data\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Users/lookups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Users/lookups",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Users",
+                "lookups"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/v{version}/Users/{id}",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Users/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Users",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/v{version}/Users/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v{{version}}/Users/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v{{version}}",
+                "Users",
+                "{{id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Users endpoints"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-refresh token if expired",
+          "const tokenExpiry = pm.collectionVariables.get('token_expiry');",
+          "const now = new Date().getTime();",
+          "",
+          "if (!tokenExpiry || now >= tokenExpiry) {",
+          "    console.log('Token expired or missing, please login first');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-extract token from login/register responses",
+          "if (pm.response.code === 200 && pm.info.requestName.includes('Login')) {",
+          "    const response = pm.response.json();",
+          "    if (response.data && response.data.token) {",
+          "        pm.collectionVariables.set('access_token', response.data.token);",
+          "        pm.collectionVariables.set('refresh_token', response.data.refreshToken);",
+          "        ",
+          "        // Calculate expiry (1 hour from now)",
+          "        const expiry = new Date().getTime() + (60 * 60 * 1000);",
+          "        pm.collectionVariables.set('token_expiry', expiry);",
+          "        ",
+          "        console.log('[OK] Token auto-saved');",
+          "    }",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "version",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token_expiry",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
