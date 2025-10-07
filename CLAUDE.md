@@ -217,7 +217,8 @@ All environment-specific configurations (URLs, package names, API endpoints) mus
 - **Production:** `ziraai.com`, `com.ziraai.app`
 
 **See Also:**
-- [Environment Configuration Guide](./claudedocs/environment-configuration.md) - Complete configuration reference
+- [Environment Variables Complete Reference](./claudedocs/ENVIRONMENT_VARIABLES_COMPLETE_REFERENCE.md) - **⭐ Comprehensive guide for all environment variables**
+- [Environment Configuration Guide](./claudedocs/environment-configuration.md) - Referral system configuration
 - [Referral Testing Guide](./claudedocs/referral-testing-guide.md) - End-to-end testing with environments
 
 ## API Documentation

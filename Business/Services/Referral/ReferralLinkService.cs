@@ -228,34 +228,28 @@ namespace Business.Services.Referral
 
         private string BuildSmsMessage(string referralCode, string playStoreLink)
         {
-            var expiryDays = 30; // Default, could be fetched from config
-            var expiryDate = DateTime.Now.AddDays(expiryDays).ToString("dd.MM.yyyy");
+            // SMS-based deferred deep linking: Mobile app will read SMS and auto-extract ZIRA-XXXXX code
+            return $@"🌱 ZiraAI'ya davet edildiniz!
 
-            return $@"🌱 ZiraAI'ye hoş geldin!
+Referans Kodunuz: {referralCode}
 
-Bitki analizi için uygulamayı indir:
-{playStoreLink}
+Uygulamayı indirin:
+https://play.google.com/store/apps/details?id=com.ziraai.app
 
-Kod: {referralCode}
-Son kullanma: {expiryDate}";
+Uygulama açıldığında kod otomatik gelecek!";
         }
 
         private string BuildWhatsAppMessage(string referralCode, string playStoreLink)
         {
-            var expiryDays = 30; // Default, could be fetched from config
-            var expiryDate = DateTime.Now.AddDays(expiryDays).ToString("dd.MM.yyyy");
+            // WhatsApp-based deferred deep linking: Mobile app will read WhatsApp messages and auto-extract ZIRA-XXXXX code
+            return $@"🌱 *ZiraAI'ya davet edildiniz!*
 
-            return $@"🌱 *ZiraAI - Bitki Analizi*
+*Referans Kodunuz:* {referralCode}
 
-Merhaba! Yapay zeka ile bitkilerini ücretsiz analiz et.
+Uygulamayı indirin:
+https://play.google.com/store/apps/details?id=com.ziraai.app
 
-📱 Uygulamayı İndir:
-{playStoreLink}
-
-🎁 Referans Kodu: *{referralCode}*
-⏰ Son Kullanma: {expiryDate}
-
-_Kayıt olurken bu kodu kullan!_";
+_Uygulama açıldığında kod otomatik gelecek!_";
         }
 
         #endregion
