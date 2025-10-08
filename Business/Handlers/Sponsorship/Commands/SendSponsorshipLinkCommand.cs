@@ -15,6 +15,7 @@ using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Business.Handlers.Sponsorship.Commands
@@ -38,17 +39,20 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly IRedemptionService _redemptionService;
             private readonly ISponsorshipCodeRepository _codeRepository;
             private readonly INotificationService _notificationService;
+            private readonly IConfiguration _configuration;
             private readonly ILogger<SendSponsorshipLinkCommandHandler> _logger;
 
             public SendSponsorshipLinkCommandHandler(
                 IRedemptionService redemptionService,
                 ISponsorshipCodeRepository codeRepository,
                 INotificationService notificationService,
+                IConfiguration configuration,
                 ILogger<SendSponsorshipLinkCommandHandler> logger)
             {
                 _redemptionService = redemptionService;
                 _codeRepository = codeRepository;
                 _notificationService = notificationService;
+                _configuration = configuration;
                 _logger = logger;
             }
 
@@ -94,8 +98,11 @@ namespace Business.Handlers.Sponsorship.Commands
                             continue;
                         }
 
-                        // Generate redemption link
-                        var redemptionLink = $"https://ziraai.com/redeem/{recipient.Code}";
+                        // Generate redemption link using environment-specific base URL
+                        var baseUrl = _configuration["WebAPI:BaseUrl"] 
+                            ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
+                            ?? throw new InvalidOperationException("WebAPI:BaseUrl must be configured");
+                        var redemptionLink = $"{baseUrl.TrimEnd('/')}/redeem/{recipient.Code}";
 
                         recipients.Add(new BulkNotificationRecipientDto
                         {

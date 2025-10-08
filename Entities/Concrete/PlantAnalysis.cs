@@ -26,6 +26,10 @@ namespace Entities.Concrete
         public string SponsorId { get; set; }
         public int? SponsorshipCodeId { get; set; }
         public int? SponsorUserId { get; set; }
+        
+        // Sponsor Attribution (tracks which sponsor was active during analysis)
+        public int? ActiveSponsorshipId { get; set; } // FK to UserSubscription that was active
+        public int? SponsorCompanyId { get; set; } // Denormalized sponsor company ID for performance
 
         // Location Information
         public string Location { get; set; }
@@ -158,5 +162,6 @@ namespace Entities.Concrete
         // Navigation properties
         public virtual SponsorshipCode SponsorshipCode { get; set; }
         public virtual User SponsorUser { get; set; }
+        public virtual UserSubscription ActiveSponsorship { get; set; }
     }
 }
