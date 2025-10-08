@@ -290,6 +290,9 @@ namespace Business.Services.Subscription
 
             try
             {
+                // ✨ EVENT-DRIVEN QUEUE ACTIVATION: Process expired subscriptions and activate queued ones
+                await ProcessExpiredSubscriptionsAsync();
+                
                 var statusResult = await CheckSubscriptionStatusAsync(userId);
                 
                 _logger.LogInformation("[USAGE_VALIDATION_STATUS_CHECK] Subscription status checked - UserId: {UserId}, CorrelationId: {CorrelationId}, Success: {Success}, CanMakeRequest: {CanMakeRequest}", 
