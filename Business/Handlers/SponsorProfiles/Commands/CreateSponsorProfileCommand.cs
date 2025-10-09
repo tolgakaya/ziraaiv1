@@ -7,6 +7,7 @@ using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Core.Entities.Concrete;
 using MediatR;
 using System;
 using System.Threading;
@@ -30,10 +31,17 @@ namespace Business.Handlers.SponsorProfiles.Commands
         public class CreateSponsorProfileCommandHandler : IRequestHandler<CreateSponsorProfileCommand, IResult>
         {
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
+            private readonly IGroupRepository _groupRepository;
 
-            public CreateSponsorProfileCommandHandler(ISponsorProfileRepository sponsorProfileRepository)
+            public CreateSponsorProfileCommandHandler(
+                ISponsorProfileRepository sponsorProfileRepository,
+                IUserGroupRepository userGroupRepository,
+                IGroupRepository groupRepository)
             {
                 _sponsorProfileRepository = sponsorProfileRepository;
+                _userGroupRepository = userGroupRepository;
+                _groupRepository = groupRepository;
             }
 
             [ValidationAspect(typeof(CreateSponsorProfileValidator), Priority = 1)]
@@ -69,6 +77,27 @@ namespace Business.Handlers.SponsorProfiles.Commands
 
                 _sponsorProfileRepository.Add(sponsorProfile);
                 await _sponsorProfileRepository.SaveChangesAsync();
+
+                // Assign Sponsor role to user (in addition to existing Farmer role)
+                var sponsorGroup = await _groupRepository.GetAsync(g => g.GroupName == "Sponsor");
+                if (sponsorGroup != null)
+                {
+                    // Check if user already has Sponsor role (idempotent operation)
+                    var existingUserGroup = await _userGroupRepository.GetAsync(
+                        ug => ug.UserId == request.SponsorId && ug.GroupId == sponsorGroup.Id);
+                    
+                    if (existingUserGroup == null)
+                    {
+                        var userGroup = new UserGroup
+                        {
+                            UserId = request.SponsorId,
+                            GroupId = sponsorGroup.Id
+                        };
+                        _userGroupRepository.Add(userGroup);
+                        await _userGroupRepository.SaveChangesAsync();
+                    }
+                }
+
                 return new SuccessResult(Messages.SponsorProfileCreated);
             }
 
