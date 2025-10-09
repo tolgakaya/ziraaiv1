@@ -15,7 +15,11 @@ namespace Business.Handlers.SponsorProfiles.ValidationRules
             RuleFor(x => x.ContactEmail).EmailAddress().MaximumLength(100);
             RuleFor(x => x.ContactPhone).MaximumLength(20);
             RuleFor(x => x.ContactPerson).MaximumLength(100);
-            // CurrentSubscriptionTierId artık yok - tier bilgisi purchase'larda tutulacak
+
+            // Password is optional, but if provided, must meet requirements
+            RuleFor(x => x.Password)
+                .MinimumLength(6).WithMessage("Password must be at least 6 characters")
+                .When(x => !string.IsNullOrWhiteSpace(x.Password));
         }
     }
 }

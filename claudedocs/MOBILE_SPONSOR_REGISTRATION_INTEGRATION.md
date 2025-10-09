@@ -7,6 +7,30 @@
 
 ---
 
+## 🚀 Quick Start Summary
+
+### For Phone-Registered Users Becoming Sponsors:
+
+**Before (Phone Registration Only):**
+- ✅ Register with phone number
+- ✅ Login with SMS OTP
+- ❌ No email/password login
+
+**After (Create Sponsor Profile):**
+- ✅ Register with phone number (same as before)
+- ✅ Login with SMS OTP (still works)
+- ✅ **NEW:** Login with email + password
+- ✅ Access to Sponsor features
+
+**Required Fields for Profile Creation:**
+- `companyName` (string, required)
+- `contactEmail` (email, required) - becomes your login email
+- `password` (string, min 6 chars, required) - enables email+password login
+- `contactPhone`, `contactPerson` (required)
+- Others optional
+
+---
+
 ## 📋 Overview
 
 This document provides complete integration instructions for the new **dual-role sponsor registration system**. All users now register as **Farmers first**, and can later become **Sponsors** by creating a sponsor profile.
@@ -19,12 +43,18 @@ This document provides complete integration instructions for the new **dual-role
 | Sponsor Access | Required admin assignment or special registration | Self-service: Create sponsor profile |
 | User Roles | Single role (Farmer OR Sponsor) | Dual roles (Farmer AND Sponsor) |
 | Profile Creation Auth | Required pre-existing Sponsor role | Any authenticated user (Farmer) |
+| Email Update | No email update on profile creation | Auto-updates phone-generated email to business email |
+| Password for Phone Users | No password support | Password field sets password during profile creation |
+| Login Methods (Phone Reg) | SMS OTP only | Email+Password OR SMS OTP |
 
 ### Breaking Changes ⚠️
 
 1. **Registration Endpoint**: `role` parameter is now **ignored** (no error, just ignored)
 2. **Authorization**: Farmer users can now create sponsor profiles without pre-existing Sponsor role
 3. **JWT Claims**: After sponsor profile creation, JWT will contain **both** Farmer and Sponsor roles
+4. **Email Update**: Phone registrations with auto-generated emails (`{phone}@phone.ziraai.com`) are updated to business email on profile creation
+5. **Password Requirement**: Sponsor profile creation now requires password field for phone-registered users
+6. **Login Methods**: Phone-registered users can now login with email+password (in addition to SMS OTP)
 
 ---
 
@@ -41,8 +71,13 @@ User Input → Phone Registration → Verify Code → Login → Farmer Features
 ### Journey 2: Farmer → Sponsor Upgrade (NEW)
 
 ```
-Farmer User → "Become Sponsor" Button → Sponsor Profile Form → API Call → Success → Token Refresh → Sponsor Features Unlocked
+Farmer User → "Become Sponsor" Button → Sponsor Profile Form (Email + Password) → API Call → Email + Password Updated + Sponsor Role Added → Token Refresh → Login with Business Email+Password + Sponsor Features Unlocked
 ```
+
+**Important**: For users who registered with phone:
+- **Before**: Login only with SMS OTP to phone number
+- **After Profile Creation**: Login with business email + password (SMS OTP still works for phone number)
+- System automatically updates email and sets password during profile creation
 
 ---
 
@@ -250,7 +285,11 @@ class SponsorService {
   SponsorService(this._dio, this._authService);
 
   /// Create sponsor profile
-  /// This will automatically assign Sponsor role to user
+  /// This will automatically:
+  /// 1. Assign Sponsor role to user
+  /// 2. Update user's email to contactEmail (if currently using phone-generated email)
+  /// 3. Set user's password (if provided and user has no password from phone registration)
+  /// This allows phone registrants to login with their business email + password
   Future<SponsorProfileResponse> createSponsorProfile({
     required String companyName,
     required String companyDescription,
@@ -261,6 +300,7 @@ class SponsorService {
     required String contactPerson,
     String? companyType, // Default: "Agriculture"
     String? businessModel, // Default: "B2B"
+    String? password, // IMPORTANT: Required for phone-registered users to enable email+password login
   }) async {
     try {
       final response = await _dio.post(
@@ -275,6 +315,7 @@ class SponsorService {
           'contactPerson': contactPerson,
           'companyType': companyType ?? 'Agriculture',
           'businessModel': businessModel ?? 'B2B',
+          'password': password, // Send password if provided
         },
         options: Options(
           headers: await _getAuthHeaders(),
@@ -437,10 +478,13 @@ class _CreateSponsorProfileScreenState extends State<CreateSponsorProfileScreen>
   final _contactEmailController = TextEditingController();
   final _contactPhoneController = TextEditingController();
   final _contactPersonController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   String _companyType = 'Agriculture';
   String _businessModel = 'B2B';
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -524,11 +568,14 @@ class _CreateSponsorProfileScreenState extends State<CreateSponsorProfileScreen>
             SizedBox(height: 16),
 
             // Contact Email (Required)
+            // NOTE: This email will also become the user's login email
+            // if they registered with phone (replacing auto-generated email)
             TextFormField(
               controller: _contactEmailController,
               decoration: InputDecoration(
                 labelText: 'Contact Email *',
                 hintText: 'contact@yourcompany.com',
+                helperText: 'This will be your login email',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.emailAddress,
@@ -573,6 +620,58 @@ class _CreateSponsorProfileScreenState extends State<CreateSponsorProfileScreen>
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Contact person is required';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: 16),
+
+            // Password (Required for phone-registered users)
+            // IMPORTANT: This allows login with email+password
+            TextFormField(
+              controller: _passwordController,
+              decoration: InputDecoration(
+                labelText: 'Password *',
+                hintText: 'Set your password for email login',
+                helperText: 'Min 6 characters - required for email+password login',
+                border: OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+              ),
+              obscureText: _obscurePassword,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Password is required';
+                }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: 16),
+
+            // Confirm Password
+            TextFormField(
+              controller: _confirmPasswordController,
+              decoration: InputDecoration(
+                labelText: 'Confirm Password *',
+                hintText: 'Re-enter your password',
+                border: OutlineInputBorder(),
+              ),
+              obscureText: _obscurePassword,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please confirm your password';
+                }
+                if (value != _passwordController.text) {
+                  return 'Passwords do not match';
                 }
                 return null;
               },
@@ -663,6 +762,7 @@ class _CreateSponsorProfileScreenState extends State<CreateSponsorProfileScreen>
         contactPerson: _contactPersonController.text,
         companyType: _companyType,
         businessModel: _businessModel,
+        password: _passwordController.text, // IMPORTANT: Send password for email+password login
       );
 
       // Success!
@@ -707,6 +807,8 @@ class _CreateSponsorProfileScreenState extends State<CreateSponsorProfileScreen>
     _contactEmailController.dispose();
     _contactPhoneController.dispose();
     _contactPersonController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 }
@@ -762,9 +864,10 @@ class AuthService {
 
 **Why is this important?**
 - Sponsor profile creation adds Sponsor role to database
-- But JWT token still contains old claims (only Farmer role)
-- Token refresh gets new JWT with **both** Farmer and Sponsor roles
-- Without refresh, user won't have access to sponsor features
+- For phone registrations, it also updates user's email to business email AND sets password
+- But JWT token still contains old claims (only Farmer role + old email)
+- Token refresh gets new JWT with **both** Farmer and Sponsor roles + updated email
+- Without refresh, user won't have access to sponsor features and can't login with new email+password
 
 ---
 
@@ -809,23 +912,25 @@ test('New user registers as Farmer', () async {
 });
 ```
 
-### Test Case 2: Create Sponsor Profile → Dual Roles
+### Test Case 2: Create Sponsor Profile → Dual Roles + Email Update
 
 ```dart
-test('Farmer creates sponsor profile and gets Sponsor role', () async {
-  // Assuming user is already logged in as Farmer
+test('Farmer creates sponsor profile and gets Sponsor role + email updated', () async {
+  // Assuming user registered with phone and is logged in as Farmer
+  // Current email should be: +905551234567@phone.ziraai.com
 
   // 1. Verify initially NOT a sponsor
   final initialCheck = await authService.hasSponsorRole();
   expect(initialCheck, false);
 
-  // 2. Create sponsor profile
+  // 2. Create sponsor profile with business email + password
   final profileResponse = await sponsorService.createSponsorProfile(
     companyName: 'Test Company',
     companyDescription: 'Test Description',
-    contactEmail: 'test@example.com',
+    contactEmail: 'business@company.com',
     contactPhone: '+905551234567',
     contactPerson: 'Test Person',
+    password: 'SecurePass123', // IMPORTANT: Set password for email+password login
   );
   expect(profileResponse.success, true);
 
@@ -837,6 +942,20 @@ test('Farmer creates sponsor profile and gets Sponsor role', () async {
   // 4. Verify sponsor role check
   final sponsorCheck = await authService.hasSponsorRole();
   expect(sponsorCheck, true);
+
+  // 5. IMPORTANT: Test login with new business email + new password
+  final loginResponse = await authService.login(
+    email: 'business@company.com',  // Business email from profile
+    password: 'SecurePass123'        // Password set during profile creation
+  );
+  expect(loginResponse.success, true);
+
+  // 6. Verify old phone-generated email no longer works
+  final oldEmailLogin = await authService.login(
+    email: '+905551234567@phone.ziraai.com',
+    password: 'SecurePass123'
+  );
+  expect(oldEmailLogin.success, false); // Should fail - email was updated
 });
 ```
 
@@ -1428,22 +1547,37 @@ print('All Claims: ${debugInfo['allClaims']}');
 - [ ] Add token refresh after profile creation
 - [ ] Create "Become Sponsor" button in profile screen
 - [ ] Implement `CreateSponsorProfileScreen` with form
+- [ ] Add helper text on email field: "This will be your login email"
+- [ ] Add password field with validation (min 6 characters)
+- [ ] Add confirm password field with matching validation
+- [ ] Add password visibility toggle icon
 - [ ] Add role badge display in UI
 - [ ] Implement state management for sponsor profile
 - [ ] Add success/error handling for profile creation
 - [ ] Add idempotency check (profile already exists)
 - [ ] Test complete flow: Register → Login → Create Profile → Token Refresh
+- [ ] Test email update flow: Phone Register → Create Profile → Login with Business Email
 - [ ] Update environment configuration for API URLs
 
 ### Testing Checklist
 
 - [ ] Test registration creates Farmer role only
 - [ ] Test JWT contains only Farmer role after registration
+- [ ] Test phone registration creates auto-generated email (`{phone}@phone.ziraai.com`)
+- [ ] Test phone registration creates user with no password (empty PasswordHash)
 - [ ] Test creating sponsor profile succeeds (200 OK)
+- [ ] Test user email updated from phone-generated to business email
+- [ ] Test user password set when provided (PasswordHash no longer empty)
 - [ ] Test token refresh after profile creation
 - [ ] Test JWT contains both Farmer and Sponsor roles after refresh
+- [ ] Test login with old phone-generated email fails (for phone registrations)
+- [ ] Test login with new business email + new password succeeds (for phone registrations)
+- [ ] Test password validation (min 6 characters)
+- [ ] Test password mismatch validation (password != confirmPassword)
 - [ ] Test accessing sponsor endpoints with new token
 - [ ] Test creating profile twice fails gracefully
+- [ ] Test email update only affects phone-generated emails (not real emails)
+- [ ] Test duplicate business email validation (different user already has it)
 - [ ] Test network error handling
 - [ ] Test session expiry handling
 - [ ] Test on Development, Staging, and Production environments
@@ -1476,8 +1610,12 @@ For questions or issues during integration:
 - **BREAKING**: All registrations now default to Farmer role
 - **NEW**: Self-service sponsor profile creation
 - **NEW**: Automatic dual-role assignment (Farmer + Sponsor)
+- **NEW**: Auto-update email from phone-generated to business email on profile creation
+- **NEW**: Password field for phone-registered users (enables email+password login)
 - **FIXED**: 403 error on create-profile endpoint
+- **FIXED**: Phone registrations can now set password and login with email+password
 - **REMOVED**: `role` parameter from registration (now ignored)
+- **FEATURE**: Phone registrants can login with business email+password after creating sponsor profile
 
 ### v1.0 (Previous)
 - Initial sponsor system with role-based registration

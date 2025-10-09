@@ -13,9 +13,10 @@
 3. [Farmer Flow](#farmer-flow)
 4. [Sponsor Flow](#sponsor-flow)
 5. [Queue System](#queue-system)
-6. [Tier-Based Features](#tier-based-features)
-7. [Error Handling](#error-handling)
-8. [Testing Checklist](#testing-checklist)
+6. [Role Management](#role-management)
+7. [Tier-Based Features](#tier-based-features)
+8. [Error Handling](#error-handling)
+9. [Testing Checklist](#testing-checklist)
 
 ---
 
@@ -59,9 +60,14 @@ x-dev-arch-version: 1.0
 
 | Role | Endpoints Access |
 |------|-----------------|
-| **Farmer** | Redeem codes, view my-sponsor, validate codes |
+| **Farmer** | Redeem codes, view my-sponsor, validate codes, create sponsor profile (self-service upgrade) |
 | **Sponsor** | Purchase packages, send links, view statistics, messaging (tier-based), smart links (XL only) |
 | **Admin** | All endpoints |
+
+**Note**: Users who register with phone (email: `{phone}@phone.ziraai.com`) can upgrade to Sponsor by creating a sponsor profile. The system automatically:
+- Updates email from `{phone}@phone.ziraai.com` to business email
+- Sets password (phone registrations have no password initially)
+- Allows login with business email + password (in addition to phone + SMS OTP)
 
 ---
 
@@ -254,16 +260,22 @@ Content-Type: application/json
 
 ### 1. Create Sponsor Profile (One-Time Setup)
 
-**Purpose**: Set up company profile for branding
+**Purpose**: Set up company profile for branding + auto-upgrade from Farmer to Sponsor
 
-**Endpoint**: `POST /api/v1/sponsorship/profile`
+**Endpoint**: `POST /api/v1/sponsorship/create-profile`
 
-**Authorization**: `Sponsor` role required
+**Authorization**: Any authenticated user (typically Farmer upgrading to Sponsor)
+
+**Important**: This endpoint automatically:
+1. Creates sponsor profile
+2. Assigns Sponsor role to user (in addition to existing roles)
+3. Updates user's email to `contactEmail` if currently using phone-generated email (`{phone}@phone.ziraai.com`)
+4. Sets user's password if provided and user has no password (phone registrations)
 
 **Request**:
 ```http
-POST {{baseUrl}}/api/v1/sponsorship/profile
-Authorization: Bearer {sponsor_token}
+POST {{baseUrl}}/api/v1/sponsorship/create-profile
+Authorization: Bearer {farmer_token}
 Content-Type: application/json
 
 {
@@ -271,11 +283,12 @@ Content-Type: application/json
   "companyDescription": "Leading agricultural technology provider",
   "sponsorLogoUrl": "https://cdn.example.com/logo.png",
   "websiteUrl": "https://agritech.com",
-  "contactEmail": "support@agritech.com",
+  "contactEmail": "support@agritech.com",  // Will become login email for phone registrations
   "contactPhone": "+905551234567",
   "contactPerson": "John Doe",
   "companyType": "Technology",
-  "businessModel": "B2B"
+  "businessModel": "B2B",
+  "password": "SecurePass123"  // REQUIRED for phone-registered users to enable email+password login
 }
 ```
 
@@ -302,16 +315,20 @@ Content-Type: application/json
 ```
 
 **UI Guidelines**:
-- Required fields: companyName, contactEmail
+- Required fields: companyName, contactEmail, password (for phone registrations)
 - Optional: logo, website, description
+- Add helper text on email: "Your contact email will become your login email"
+- Add helper text on password: "Min 6 characters - required for email+password login"
+- Show password/confirm password fields with visibility toggle
 - Show preview of farmer-facing branding
 - Allow logo upload with image picker
+- After success: Show message "You can now login with {contactEmail} and your password"
 
 ---
 
 ### 2. Get Sponsor Profile
 
-**Endpoint**: `GET /api/v1/sponsorship/profile`
+**Endpoint**: `GET /api/v1/sponsorship/profile` OR `GET /api/v1/sponsorship/my-profile`
 
 **Authorization**: `Sponsor` role required
 
@@ -728,6 +745,397 @@ Response includes:
 
 ---
 
+## 👥 Role Management
+
+### Understanding Roles
+
+ZiraAI uses role-based access control. Users can have multiple roles simultaneously:
+
+| Role | Purpose | Default Assignment |
+|------|---------|-------------------|
+| **Farmer** | End users who analyze plants | Auto-assigned on registration |
+| **Sponsor** | Companies who purchase packages | Manually assigned by Admin |
+| **Admin** | System administrators | Manually assigned |
+
+**Key Points**:
+- Users can be **both Farmer AND Sponsor** simultaneously
+- Role changes require **Admin authorization**
+- Roles are stored as JWT claims (token refresh needed after changes)
+
+---
+
+### 1. Get Available Roles
+
+**Purpose**: List all roles in the system
+
+**Endpoint**: `GET /api/v1/groups`
+
+**Authorization**: Any authenticated user (but only Admin can assign roles)
+
+**Request**:
+```http
+GET {{baseUrl}}/api/v1/groups
+Authorization: Bearer {token}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "groupName": "Admin"
+    },
+    {
+      "id": 2,
+      "groupName": "Farmer"
+    },
+    {
+      "id": 3,
+      "groupName": "Sponsor"
+    }
+  ]
+}
+```
+
+**UI Guidelines**:
+- Cache roles list (rarely changes)
+- Use for role selection UI in admin panels
+- Display user-friendly names
+
+---
+
+### 2. Get User's Current Roles
+
+**Purpose**: Check which roles a user has
+
+**Endpoint**: `GET /api/v1/user-groups/users/{userId}/groups`
+
+**Authorization**: Admin or the user themselves
+
+**Request**:
+```http
+GET {{baseUrl}}/api/v1/user-groups/users/131/groups
+Authorization: Bearer {admin_token}
+```
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 100,
+      "userId": 131,
+      "groupId": 2,
+      "groupName": "Farmer"
+    },
+    {
+      "id": 101,
+      "userId": 131,
+      "groupId": 3,
+      "groupName": "Sponsor"
+    }
+  ]
+}
+```
+
+**UI Guidelines**:
+- Show role badges on user profile
+- Display as chips/tags (e.g., 🌾 Farmer, 🏢 Sponsor)
+- Allow admins to add/remove roles
+
+---
+
+### 3. Assign Role to User
+
+**Purpose**: Add a role to a user (e.g., Farmer → Sponsor)
+
+**Endpoint**: `POST /api/v1/user-groups`
+
+**Authorization**: **Admin only** (via `[SecuredOperation]` aspect)
+
+**Request**:
+```http
+POST {{baseUrl}}/api/v1/user-groups
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "userId": 131,
+  "groupId": 3
+}
+```
+
+**Field Details**:
+- `userId`: Target user's ID
+- `groupId`: Role ID to assign (2=Farmer, 3=Sponsor, 1=Admin)
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "message": "Kullanıcıya rol başarıyla atandı",
+  "data": {
+    "id": 101,
+    "userId": 131,
+    "groupId": 3,
+    "groupName": "Sponsor"
+  }
+}
+```
+
+**Response - Already Has Role** (400 Bad Request):
+```json
+{
+  "success": false,
+  "message": "Kullanıcı zaten bu role sahip"
+}
+```
+
+**Response - Insufficient Permissions** (403 Forbidden):
+```json
+{
+  "success": false,
+  "message": "Bu işlem için yetkiniz yok"
+}
+```
+
+**UI Guidelines**:
+- Only show to Admin users
+- Prevent duplicate role assignments
+- Show success confirmation with new role badge
+- **Important**: User must re-login for role to take effect (JWT refresh)
+
+---
+
+### 4. Remove Role from User
+
+**Purpose**: Revoke a role from a user
+
+**Endpoint**: `DELETE /api/v1/user-groups/{id}`
+
+**Authorization**: **Admin only**
+
+**Request**:
+```http
+DELETE {{baseUrl}}/api/v1/user-groups/101
+Authorization: Bearer {admin_token}
+```
+
+**Path Parameter**:
+- `id`: UserGroup relationship ID (from GET response, NOT groupId)
+
+**Response** (200 OK):
+```json
+{
+  "success": true,
+  "message": "Kullanıcıdan rol başarıyla kaldırıldı"
+}
+```
+
+**Response - Not Found** (404 Not Found):
+```json
+{
+  "success": false,
+  "message": "UserGroup bulunamadı"
+}
+```
+
+**UI Guidelines**:
+- Confirm before removing role
+- Prevent removing last role from user
+- Show warning if removing critical role (e.g., Farmer)
+- **Important**: User must re-login for change to take effect
+
+---
+
+### 5. Common Role Management Scenarios
+
+#### Scenario A: Farmer Wants to Become Sponsor (Self-Service - v2.0)
+
+**Flow**:
+1. Farmer clicks "Become a Sponsor" in profile
+2. Farmer fills out sponsor profile form:
+   - Business email (will replace phone-generated email)
+   - Password (will enable email+password login)
+   - Company information
+3. Farmer submits form → `POST /api/v1/sponsorship/create-profile`
+4. Backend automatically:
+   - Creates sponsor profile
+   - Assigns Sponsor role (GroupId: 3)
+   - Updates email from `{phone}@phone.ziraai.com` to business email (if phone registration)
+   - Sets password (if phone registration - they had no password before)
+5. User logs out and back in (for JWT refresh)
+6. User can now login with:
+   - Business email + password ⭐ NEW for phone registrations
+   - Phone number + SMS OTP (still works)
+7. User can access both farmer and sponsor features
+
+**API Calls**:
+```http
+# 1. Create sponsor profile (also assigns role + updates email + sets password)
+POST /api/v1/sponsorship/create-profile
+{
+  "companyName": "My Farm Company",
+  "companyDescription": "Agricultural services",
+  "contactEmail": "farmer@company.com",
+  "contactPhone": "+905551234567",
+  "contactPerson": "Ali Kaya",
+  "password": "SecurePassword123"
+}
+
+# 2. Verify roles (after token refresh/re-login)
+GET /api/v1/user-groups/users/131/groups
+# Response: [{ groupId: 2, groupName: "Farmer" }, { groupId: 3, groupName: "Sponsor" }]
+
+# 3. Test login with new business email + new password
+POST /api/v1/auth/login
+{
+  "email": "farmer@company.com",
+  "password": "SecurePassword123"
+}
+```
+
+**Note**: No admin approval needed - fully self-service!
+
+---
+
+#### Scenario B: Sponsor Wants to Stop Sponsoring (But Keep Farmer)
+
+**Flow**:
+1. Sponsor requests to remove sponsor role
+2. Admin reviews active sponsorships
+3. Admin calls `DELETE /api/v1/user-groups/{userGroupId}`
+4. User retains Farmer role, loses Sponsor access
+
+**API Calls**:
+```http
+# 1. Get user's roles
+GET /api/v1/user-groups/users/131/groups
+# Response: [{ id: 100, groupId: 2 }, { id: 101, groupId: 3 }]
+
+# 2. Delete Sponsor role (id: 101)
+DELETE /api/v1/user-groups/101
+
+# 3. Verify removal
+GET /api/v1/user-groups/users/131/groups
+# Response: [{ id: 100, groupId: 2 }] (only Farmer remains)
+```
+
+---
+
+#### Scenario C: Admin Promotes User to Admin
+
+**Flow**:
+1. Admin assigns Admin role (`groupId: 1`)
+2. User gets Admin role in addition to existing roles
+3. User logs out and back in
+4. User can now access admin panel
+
+**API Calls**:
+```http
+POST /api/v1/user-groups
+{
+  "userId": 131,
+  "groupId": 1
+}
+```
+
+---
+
+### 6. JWT Token Refresh After Role Changes
+
+**Important**: Role changes are stored in JWT claims. Users **must re-authenticate** for changes to take effect.
+
+**Mobile Implementation**:
+```dart
+// After role assignment/removal
+void handleRoleChange() async {
+  // 1. Show message
+  showDialog(
+    title: "Role Updated",
+    message: "Please log out and log back in for changes to take effect"
+  );
+  
+  // 2. Clear local token
+  await secureStorage.delete(key: 'jwt_token');
+  
+  // 3. Navigate to login
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => LoginScreen()),
+    (route) => false
+  );
+}
+```
+
+**Alternative: Background Token Refresh** (if implemented):
+```dart
+// Refresh token endpoint call
+final response = await http.post(
+  '/api/v1/auth/refresh-token',
+  body: { 'refreshToken': currentRefreshToken }
+);
+
+if (response.statusCode == 200) {
+  final newToken = response.data['accessToken'];
+  await secureStorage.write(key: 'jwt_token', value: newToken);
+  // Roles now updated in new token
+}
+```
+
+---
+
+### 7. Role-Based UI Rendering
+
+**Check User Roles in Mobile App**:
+
+```dart
+// Decode JWT to get roles
+class AuthService {
+  List<String> getUserRoles() {
+    final token = secureStorage.read('jwt_token');
+    final decodedToken = JwtDecoder.decode(token);
+    
+    // Roles are stored in "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+    final roles = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    
+    if (roles is String) {
+      return [roles]; // Single role
+    } else if (roles is List) {
+      return List<String>.from(roles); // Multiple roles
+    }
+    return [];
+  }
+  
+  bool hasRole(String roleName) {
+    return getUserRoles().contains(roleName);
+  }
+}
+
+// Usage in UI
+Widget build(BuildContext context) {
+  final authService = AuthService();
+  
+  return Column(
+    children: [
+      if (authService.hasRole('Farmer'))
+        FarmerDashboard(),
+      
+      if (authService.hasRole('Sponsor'))
+        SponsorDashboard(),
+      
+      if (authService.hasRole('Admin'))
+        AdminPanel(),
+    ],
+  );
+}
+```
+
+---
+
 ## 🎁 Tier-Based Features
 
 ### Tier Comparison
@@ -1048,6 +1456,10 @@ Authorization: Bearer {sponsor_token}
 - [ ] Redeem code (queue when active exists)
 - [ ] View my subscription (with queue)
 - [ ] View my subscription (no queue)
+- [ ] Create sponsor profile (self-service upgrade)
+- [ ] Email update on profile creation (phone registrations)
+- [ ] Password set on profile creation (phone registrations)
+- [ ] Login with business email + password after upgrade
 
 ### Sponsor Flow
 - [ ] Create profile
@@ -1072,6 +1484,15 @@ Authorization: Bearer {sponsor_token}
 - [ ] L tier: start + result logo, messaging
 - [ ] XL tier: all screens logo, messaging, smart links
 
+### Role Management
+- [ ] Get available roles
+- [ ] Get user's current roles
+- [ ] Assign Farmer → Sponsor (Admin)
+- [ ] Remove Sponsor role (Admin)
+- [ ] Verify JWT refresh after role change
+- [ ] Role-based UI rendering
+- [ ] Insufficient permissions error (non-Admin)
+
 ### Error Handling
 - [ ] Invalid code
 - [ ] Expired code
@@ -1086,8 +1507,8 @@ Authorization: Bearer {sponsor_token}
 
 For technical questions or issues:
 - Backend Team Lead: [Contact Info]
-- API Documentation: `https://api.ziraai.com/swagger`
-- Postman Collection: `ZiraAI_Complete_API_Collection_v6.1.json`
+- API Documentation: `https://ziraai-api-sit.up.railway.app/swagger/index.html`
+- Postman Collection: `ZiraAI_Complete_API_Collection.json`
 
 ---
 
