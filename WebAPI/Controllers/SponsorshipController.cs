@@ -41,7 +41,7 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="dto">Company profile information</param>
         /// <returns>Created sponsor profile</returns>
-        [Authorize(Roles = "Sponsor,Admin")]
+        [Authorize] // Allow any authenticated user (Farmer can become Sponsor)
         [HttpPost("create-profile")]
         public async Task<IActionResult> CreateSponsorProfile([FromBody] CreateSponsorProfileDto dto)
         {
