@@ -293,6 +293,66 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get package distribution statistics: purchased vs distributed vs redeemed breakdown
+        /// </summary>
+        /// <returns>Detailed package-level distribution statistics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("package-statistics")]
+        public async Task<IActionResult> GetPackageDistributionStatistics()
+        {
+            var userId = GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+
+            var query = new GetPackageDistributionStatisticsQuery
+            {
+                SponsorId = userId.Value
+            };
+
+            var result = await Mediator.Send(query);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Get code-level analysis statistics: which codes generated how many analyses
+        /// </summary>
+        /// <param name="includeAnalysisDetails">Include full analysis list per code (default: true)</param>
+        /// <param name="topCodesCount">Number of top performing codes to show (default: 10)</param>
+        /// <returns>Detailed code-level analysis statistics with drill-down capability</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("code-analysis-statistics")]
+        public async Task<IActionResult> GetCodeAnalysisStatistics(
+            [FromQuery] bool includeAnalysisDetails = true,
+            [FromQuery] int topCodesCount = 10)
+        {
+            var userId = GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+
+            var query = new GetCodeAnalysisStatisticsQuery
+            {
+                SponsorId = userId.Value,
+                IncludeAnalysisDetails = includeAnalysisDetails,
+                TopCodesCount = topCodesCount
+            };
+
+            var result = await Mediator.Send(query);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
+        }
+
+        /// <summary>
         /// Get link distribution statistics for current sponsor
         /// </summary>
         /// <param name="startDate">Start date for statistics (optional)</param>
@@ -307,21 +367,21 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
-                
+
             var query = new GetLinkStatisticsQuery
             {
                 SponsorId = userId.Value,
                 StartDate = startDate,
                 EndDate = endDate
             };
-            
+
             var result = await Mediator.Send(query);
-            
+
             if (result.Success)
             {
                 return Ok(result);
             }
-            
+
             return BadRequest(result);
         }
 
