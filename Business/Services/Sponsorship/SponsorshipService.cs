@@ -46,6 +46,19 @@ namespace Business.Services.Sponsorship
                 if (tier == null)
                     return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>("Subscription tier not found");
 
+                // Validate quantity limits
+                if (quantity < tier.MinPurchaseQuantity)
+                {
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
+                        $"Quantity must be at least {tier.MinPurchaseQuantity} for {tier.DisplayName} tier");
+                }
+                
+                if (quantity > tier.MaxPurchaseQuantity)
+                {
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
+                        $"Quantity cannot exceed {tier.MaxPurchaseQuantity} for {tier.DisplayName} tier");
+                }
+
                 // Create purchase record
                 var purchase = new SponsorshipPurchase
                 {

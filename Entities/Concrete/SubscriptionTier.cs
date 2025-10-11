@@ -19,6 +19,11 @@ namespace Entities.Concrete
         public decimal YearlyPrice { get; set; }
         public string Currency { get; set; } // TRY, USD, EUR
         
+        // Sponsorship Purchase Limits
+        public int MinPurchaseQuantity { get; set; } = 10; // Minimum codes per purchase
+        public int MaxPurchaseQuantity { get; set; } = 10000; // Maximum codes per purchase
+        public int RecommendedQuantity { get; set; } = 100; // Recommended/default quantity
+        
         // Features
         public bool PrioritySupport { get; set; }
         public bool AdvancedAnalytics { get; set; }
