@@ -183,31 +183,38 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Get sponsorship codes for current sponsor
+        /// Get sponsorship codes for current sponsor with advanced filtering
         /// </summary>
-        /// <param name="onlyUnused">Return only unused codes</param>
+        /// <param name="onlyUnused">Return only unused codes (includes both sent and unsent)</param>
+        /// <param name="onlyUnsent">Return only codes never sent to farmers (DistributionDate IS NULL) - RECOMMENDED for distribution</param>
+        /// <param name="sentDaysAgo">Return codes sent X days ago but still unused (e.g., 7 for codes sent 1 week ago)</param>
         /// <returns>List of sponsorship codes</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpGet("codes")]
-        public async Task<IActionResult> GetSponsorshipCodes([FromQuery] bool onlyUnused = false)
+        public async Task<IActionResult> GetSponsorshipCodes(
+            [FromQuery] bool onlyUnused = false,
+            [FromQuery] bool onlyUnsent = false,
+            [FromQuery] int? sentDaysAgo = null)
         {
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
-                
+
             var query = new GetSponsorshipCodesQuery
             {
                 SponsorId = userId.Value,
-                OnlyUnused = onlyUnused
+                OnlyUnused = onlyUnused,
+                OnlyUnsent = onlyUnsent,
+                SentDaysAgo = sentDaysAgo
             };
-            
+
             var result = await Mediator.Send(query);
-            
+
             if (result.Success)
             {
                 return Ok(result);
             }
-            
+
             return BadRequest(result);
         }
 

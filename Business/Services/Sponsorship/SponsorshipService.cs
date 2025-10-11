@@ -403,6 +403,36 @@ namespace Business.Services.Sponsorship
             }
         }
 
+        public async Task<IDataResult<List<SponsorshipCode>>> GetUnsentSponsorCodesAsync(int sponsorId)
+        {
+            try
+            {
+                var codes = await _sponsorshipCodeRepository.GetUnsentCodesBySponsorAsync(sponsorId);
+                return new SuccessDataResult<List<SponsorshipCode>>(codes,
+                    $"{codes.Count} unsent codes available for distribution");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<List<SponsorshipCode>>($"Error fetching unsent codes: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<List<SponsorshipCode>>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int? sentDaysAgo = null)
+        {
+            try
+            {
+                var codes = await _sponsorshipCodeRepository.GetSentButUnusedCodesBySponsorAsync(sponsorId, sentDaysAgo);
+                var message = sentDaysAgo.HasValue
+                    ? $"{codes.Count} codes sent {sentDaysAgo} days ago but still unused"
+                    : $"{codes.Count} codes sent but still unused";
+                return new SuccessDataResult<List<SponsorshipCode>>(codes, message);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<List<SponsorshipCode>>($"Error fetching sent but unused codes: {ex.Message}");
+            }
+        }
+
         public async Task<IDataResult<List<SponsorshipPurchase>>> GetSponsorPurchasesAsync(int sponsorId)
         {
             try

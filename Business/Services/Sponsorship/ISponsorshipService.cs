@@ -13,6 +13,8 @@ namespace Business.Services.Sponsorship
         Task<IDataResult<SponsorshipCode>> ValidateCodeAsync(string code);
         Task<IDataResult<List<SponsorshipCode>>> GetSponsorCodesAsync(int sponsorId);
         Task<IDataResult<List<SponsorshipCode>>> GetUnusedSponsorCodesAsync(int sponsorId);
+        Task<IDataResult<List<SponsorshipCode>>> GetUnsentSponsorCodesAsync(int sponsorId);
+        Task<IDataResult<List<SponsorshipCode>>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int? sentDaysAgo = null);
         Task<IDataResult<List<SponsorshipPurchase>>> GetSponsorPurchasesAsync(int sponsorId);
         Task<IDataResult<object>> GetSponsorshipStatisticsAsync(int sponsorId);
         Task<IDataResult<List<object>>> GetSponsoredFarmersAsync(int sponsorId);
