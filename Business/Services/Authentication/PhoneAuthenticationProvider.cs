@@ -27,7 +27,7 @@ namespace Business.Services.Authentication
             ITokenHelper tokenHelper,
             ISmsService smsService,
             ILogger<PhoneAuthenticationProvider> logger)
-            : base(mobileLogins, smsService)
+            : base(mobileLogins, smsService, logger)
         {
             _users = users;
             ProviderType = providerType;
