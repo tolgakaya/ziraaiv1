@@ -143,33 +143,66 @@ namespace Business.Handlers.Sponsorship.Commands
                             NotificationChannel.SMS);
                     }
 
-                    // Process notification results
+                    // Process notification results and update database
                     if (notificationResult.Success && notificationResult.Data != null)
                     {
                         for (int i = 0; i < recipients.Count; i++)
                         {
                             var recipient = recipients[i];
-                            var originalRecipient = request.Recipients.FirstOrDefault(r => 
+                            var originalRecipient = request.Recipients.FirstOrDefault(r =>
                                 FormatPhoneNumber(r.Phone) == recipient.PhoneNumber);
 
                             if (originalRecipient != null)
                             {
-                                var notificationSuccess = i < notificationResult.Data.Count && 
+                                var notificationSuccess = i < notificationResult.Data.Count &&
                                                         notificationResult.Data[i].Success;
+
+                                // Update database for successful sends
+                                if (notificationSuccess)
+                                {
+                                    var codeEntity = validCodesList.FirstOrDefault(c => c.Code == originalRecipient.Code);
+                                    if (codeEntity != null)
+                                    {
+                                        // Generate redemption link (same logic as before)
+                                        var baseUrl = _configuration["WebAPI:BaseUrl"]
+                                            ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
+                                            ?? "https://ziraai.com";
+                                        var redemptionLink = $"{baseUrl.TrimEnd('/')}/redeem/{originalRecipient.Code}";
+
+                                        // Update code entity
+                                        codeEntity.RedemptionLink = redemptionLink;
+                                        codeEntity.RecipientPhone = recipient.PhoneNumber;
+                                        codeEntity.RecipientName = originalRecipient.Name;
+                                        codeEntity.LinkSentDate = DateTime.Now;
+                                        codeEntity.LinkSentVia = request.Channel;
+                                        codeEntity.LinkDelivered = true;
+                                        codeEntity.DistributionChannel = request.Channel;
+                                        codeEntity.DistributionDate = DateTime.Now;  // ✅ KEY FIELD!
+                                        codeEntity.DistributedTo = $"{originalRecipient.Name} ({recipient.PhoneNumber})";
+
+                                        _codeRepository.Update(codeEntity);
+
+                                        _logger.LogInformation("✅ Updated code {Code} with distribution info", originalRecipient.Code);
+                                    }
+                                }
 
                                 results.Add(new SendResult
                                 {
                                     Code = originalRecipient.Code,
                                     Phone = recipient.PhoneNumber,
                                     Success = notificationSuccess,
-                                    ErrorMessage = notificationSuccess ? null : 
-                                        (i < notificationResult.Data.Count ? 
-                                         notificationResult.Data[i].ErrorDetails : 
+                                    ErrorMessage = notificationSuccess ? null :
+                                        (i < notificationResult.Data.Count ?
+                                         notificationResult.Data[i].ErrorDetails :
                                          "Bildirim gönderimi başarısız"),
                                     DeliveryStatus = notificationSuccess ? "Sent" : "Failed"
                                 });
                             }
                         }
+
+                        // Save all changes to database
+                        await _codeRepository.SaveChangesAsync();
+                        _logger.LogInformation("💾 Saved {Count} code updates to database", results.Count(r => r.Success));
                     }
                     else
                     {
