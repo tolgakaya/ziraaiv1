@@ -276,20 +276,65 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
-                
+
             var query = new GetSponsorshipStatisticsQuery
             {
                 SponsorId = userId.Value
             };
-            
+
             var result = await Mediator.Send(query);
-            
+
             if (result.Success)
             {
                 return Ok(result);
             }
-            
+
             return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Get comprehensive dashboard summary for mobile app home screen
+        /// Includes sent codes count, total analyses, purchases, and tier-based package breakdowns
+        /// Optimized single endpoint for sponsor dashboard UI
+        /// </summary>
+        /// <returns>Dashboard summary with all key metrics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("dashboard-summary")]
+        public async Task<IActionResult> GetDashboardSummary()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[Dashboard] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("[Dashboard] Fetching dashboard summary for sponsor {SponsorId}", userId.Value);
+
+                var query = new GetSponsorDashboardSummaryQuery
+                {
+                    SponsorId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[Dashboard] Successfully retrieved dashboard summary for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[Dashboard] Failed to retrieve dashboard summary for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Dashboard] Error retrieving dashboard summary for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Dashboard summary retrieval failed: {ex.Message}"));
+            }
         }
 
         /// <summary>
