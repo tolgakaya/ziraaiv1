@@ -7,6 +7,7 @@ using Core.Entities.Concrete;
 using Core.Utilities.Security.Jwt;
 using DataAccess.Abstract;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Business.Services.Authentication
 {
@@ -17,7 +18,7 @@ namespace Business.Services.Authentication
     {
         private readonly IUserRepository _users;
         private readonly ITokenHelper _tokenHelper;
-        private readonly Microsoft.Extensions.Logging.ILogger<PhoneAuthenticationProvider> _logger;
+        private readonly ILogger<PhoneAuthenticationProvider> _logger;
 
         public PhoneAuthenticationProvider(
             AuthenticationProviderType providerType,
@@ -25,7 +26,7 @@ namespace Business.Services.Authentication
             IMobileLoginRepository mobileLogins,
             ITokenHelper tokenHelper,
             ISmsService smsService,
-            Microsoft.Extensions.Logging.ILogger<PhoneAuthenticationProvider> logger)
+            ILogger<PhoneAuthenticationProvider> logger)
             : base(mobileLogins, smsService)
         {
             _users = users;
