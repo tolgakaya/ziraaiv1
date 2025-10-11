@@ -17,33 +17,53 @@ namespace Business.Services.Authentication
     {
         private readonly IUserRepository _users;
         private readonly ITokenHelper _tokenHelper;
+        private readonly Microsoft.Extensions.Logging.ILogger<PhoneAuthenticationProvider> _logger;
 
         public PhoneAuthenticationProvider(
             AuthenticationProviderType providerType,
             IUserRepository users,
             IMobileLoginRepository mobileLogins,
             ITokenHelper tokenHelper,
-            ISmsService smsService)
+            ISmsService smsService,
+            Microsoft.Extensions.Logging.ILogger<PhoneAuthenticationProvider> logger)
             : base(mobileLogins, smsService)
         {
             _users = users;
             ProviderType = providerType;
             _tokenHelper = tokenHelper;
+            _logger = logger;
         }
 
         public AuthenticationProviderType ProviderType { get; }
 
         public override async Task<Core.Utilities.Results.IDataResult<DArchToken>> Verify(Model.VerifyOtpCommand command)
         {
+            _logger.LogInformation("[PhoneAuth:Verify] Starting OTP verification - Input phone: {Phone}, Code: {Code}",
+                command.ExternalUserId, command.Code);
+
             // Normalize phone number for consistent lookup
+            var originalPhone = command.ExternalUserId;
             command.ExternalUserId = NormalizePhoneNumber(command.ExternalUserId);
-            return await base.Verify(command);
+
+            _logger.LogInformation("[PhoneAuth:Verify] Phone normalized - Original: {Original}, Normalized: {Normalized}",
+                originalPhone, command.ExternalUserId);
+
+            var result = await base.Verify(command);
+
+            _logger.LogInformation("[PhoneAuth:Verify] Verification result - Success: {Success}, Message: {Message}",
+                result.Success, result.Message);
+
+            return result;
         }
 
         public override async Task<LoginUserResult> Login(LoginUserCommand command)
         {
+            _logger.LogInformation("[PhoneAuth:Login] Starting phone login - Input phone: {Phone}", command.MobilePhone);
+
             // Normalize phone number
             var normalizedPhone = NormalizePhoneNumber(command.MobilePhone);
+            _logger.LogInformation("[PhoneAuth:Login] Phone normalized - Original: {Original}, Normalized: {Normalized}",
+                command.MobilePhone, normalizedPhone);
 
             // Find user by phone
             var user = await _users.Query()
@@ -52,6 +72,7 @@ namespace Business.Services.Authentication
 
             if (user == null)
             {
+                _logger.LogWarning("[PhoneAuth:Login] User not found for phone: {Phone}", normalizedPhone);
                 return new LoginUserResult
                 {
                     Message = Messages.UserNotFound,
@@ -59,12 +80,20 @@ namespace Business.Services.Authentication
                 };
             }
 
+            _logger.LogInformation("[PhoneAuth:Login] User found - UserId: {UserId}, Phone in DB: {DbPhone}",
+                user.UserId, user.MobilePhones);
+
             // Generate and send OTP
             // IMPORTANT: Use normalized phone for both SMS and ExternalUserId to ensure consistency
-            return await PrepareOneTimePassword(
+            var result = await PrepareOneTimePassword(
                 AuthenticationProviderType.Phone,
                 normalizedPhone,  // SMS will be sent to normalized format
                 normalizedPhone); // ExternalUserId stored as normalized format for verify lookup
+
+            _logger.LogInformation("[PhoneAuth:Login] OTP preparation result - Status: {Status}, Message: {Message}",
+                result.Status, result.Message);
+
+            return result;
         }
 
         public override async Task<DArchToken> CreateToken(VerifyOtpCommand command)
