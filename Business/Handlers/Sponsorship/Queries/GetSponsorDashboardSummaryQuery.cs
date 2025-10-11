@@ -1,3 +1,4 @@
+using Core.CrossCuttingConcerns.Caching;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
@@ -13,6 +14,7 @@ namespace Business.Handlers.Sponsorship.Queries
     /// <summary>
     /// Get comprehensive dashboard summary for sponsor mobile app
     /// Includes sent codes, analyses count, purchases, and tier-based package breakdowns
+    /// Uses Redis cache with 24-hour TTL for performance optimization
     /// </summary>
     public class GetSponsorDashboardSummaryQuery : IRequest<IDataResult<SponsorDashboardSummaryDto>>
     {
@@ -25,20 +27,31 @@ namespace Business.Handlers.Sponsorship.Queries
             private readonly ISubscriptionTierRepository _subscriptionTierRepository;
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
             private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+            private readonly ICacheManager _cacheManager;
+
+            private const string CacheKeyPrefix = "SponsorDashboard";
+            private const int CacheDurationMinutes = 1440; // 24 hours
 
             public GetSponsorDashboardSummaryQueryHandler(
                 ISponsorshipCodeRepository sponsorshipCodeRepository,
                 ISponsorshipPurchaseRepository sponsorshipPurchaseRepository,
                 ISubscriptionTierRepository subscriptionTierRepository,
                 IPlantAnalysisRepository plantAnalysisRepository,
-                IUserSubscriptionRepository userSubscriptionRepository)
+                IUserSubscriptionRepository userSubscriptionRepository,
+                ICacheManager cacheManager)
             {
                 _sponsorshipCodeRepository = sponsorshipCodeRepository;
                 _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
                 _subscriptionTierRepository = subscriptionTierRepository;
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _userSubscriptionRepository = userSubscriptionRepository;
+                _cacheManager = cacheManager;
             }
+
+            /// <summary>
+            /// Get cache key for a specific sponsor
+            /// </summary>
+            private string GetCacheKey(int sponsorId) => $"{CacheKeyPrefix}:{sponsorId}";
 
             public async Task<IDataResult<SponsorDashboardSummaryDto>> Handle(
                 GetSponsorDashboardSummaryQuery request,
@@ -46,6 +59,20 @@ namespace Business.Handlers.Sponsorship.Queries
             {
                 try
                 {
+                    // Check cache first
+                    var cacheKey = GetCacheKey(request.SponsorId);
+                    var cachedData = _cacheManager.Get<SponsorDashboardSummaryDto>(cacheKey);
+
+                    if (cachedData != null)
+                    {
+                        Console.WriteLine($"[DashboardCache] ✅ Cache HIT for sponsor {request.SponsorId}");
+                        return new SuccessDataResult<SponsorDashboardSummaryDto>(
+                            cachedData,
+                            "Dashboard summary retrieved from cache");
+                    }
+
+                    Console.WriteLine($"[DashboardCache] ❌ Cache MISS for sponsor {request.SponsorId} - fetching from database");
+
                     // Get all sponsor's codes
                     var allCodes = await _sponsorshipCodeRepository.GetBySponsorIdAsync(request.SponsorId);
 
@@ -215,6 +242,10 @@ namespace Business.Handlers.Sponsorship.Queries
                             LastDistributionDate = lastDistributionDate
                         }
                     };
+
+                    // Cache the result for 24 hours
+                    _cacheManager.Add(cacheKey, summary, CacheDurationMinutes);
+                    Console.WriteLine($"[DashboardCache] 💾 Cached data for sponsor {request.SponsorId} (TTL: 24h)");
 
                     return new SuccessDataResult<SponsorDashboardSummaryDto>(
                         summary,

@@ -1,4 +1,5 @@
 using Business.Services.Sponsorship;
+using Core.CrossCuttingConcerns.Caching;
 using Core.Utilities.Results;
 using Entities.Concrete;
 using MediatR;
@@ -26,10 +27,14 @@ namespace Business.Handlers.Sponsorship.Commands
         public class PurchaseBulkSponsorshipCommandHandler : IRequestHandler<PurchaseBulkSponsorshipCommand, IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>>
         {
             private readonly ISponsorshipService _sponsorshipService;
+            private readonly ICacheManager _cacheManager;
 
-            public PurchaseBulkSponsorshipCommandHandler(ISponsorshipService sponsorshipService)
+            public PurchaseBulkSponsorshipCommandHandler(
+                ISponsorshipService sponsorshipService,
+                ICacheManager cacheManager)
             {
                 _sponsorshipService = sponsorshipService;
+                _cacheManager = cacheManager;
             }
 
             public async Task<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>> Handle(PurchaseBulkSponsorshipCommand request, CancellationToken cancellationToken)
@@ -45,6 +50,14 @@ namespace Business.Handlers.Sponsorship.Commands
                         request.TotalAmount,
                         request.PaymentReference
                     );
+
+                    // Invalidate sponsor dashboard cache after successful purchase
+                    if (result.Success)
+                    {
+                        var cacheKey = $"SponsorDashboard:{request.SponsorId}";
+                        _cacheManager.Remove(cacheKey);
+                        Console.WriteLine($"[DashboardCache] 🗑️ Invalidated cache for sponsor {request.SponsorId} after purchase");
+                    }
 
                     Console.WriteLine($"[PurchaseBulkSponsorship] Service result: Success={result.Success}, Message={result.Message}");
                     return result;

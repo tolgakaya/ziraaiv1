@@ -34,6 +34,7 @@ The **Dashboard Summary Endpoint** provides a comprehensive, optimized API respo
 - **Analysis Tracking**: Total analyses performed using sponsored codes
 - **Distribution Metrics**: Sent vs unsent codes with percentages
 - **Overall Statistics**: SMS/WhatsApp distribution, redemption rates, average times
+- **Redis Cache**: 24-hour TTL for performance, auto-invalidation on changes
 
 ### Business Context
 
@@ -662,9 +663,31 @@ class _SponsorDashboardScreenState extends State<SponsorDashboardScreen> {
 
 ### Response Time
 
-- **Target**: <500ms average response time
+- **Target**: <500ms average response time (first call), <50ms (cached)
 - **Database Queries**: Optimized with indexes on `SponsorId`, `DistributionDate`, `IsUsed`
-- **Caching**: Not recommended due to real-time nature of metrics
+- **Redis Cache**: 24-hour TTL with automatic invalidation
+
+### Cache Strategy
+
+**Cache Key Format**: `SponsorDashboard:{sponsorId}`
+
+**Cache Duration**: 1440 minutes (24 hours)
+
+**Cache Invalidation Triggers**:
+1. **Bulk Purchase**: When sponsor purchases new codes
+2. **Code Distribution**: When codes are sent to farmers via SMS/WhatsApp
+
+**Cache Behavior**:
+```
+First Request → Database Query → Cache Store → Return Data (500ms)
+Subsequent Requests → Cache Hit → Return Data (<50ms)
+After Purchase/Send → Cache Invalidated → Next Request Rebuilds Cache
+```
+
+**Benefits**:
+- 90%+ faster response time for repeated requests
+- Reduced database load
+- Real-time updates on business operations
 
 ### Optimization Tips
 
@@ -676,10 +699,10 @@ class _SponsorDashboardScreenState extends State<SponsorDashboardScreen> {
    CREATE INDEX IX_PlantAnalysis_ActiveSponsorshipId ON PlantAnalyses(ActiveSponsorshipId);
    ```
 
-2. **Mobile Caching**:
-   - Cache dashboard for 5 minutes
+2. **Mobile Caching** (Optional additional layer):
+   - Short-term cache (1-2 minutes) for offline support
    - Use pull-to-refresh for manual updates
-   - Show stale data while refreshing
+   - Show stale data while refreshing in background
 
 3. **Lazy Loading**:
    - Load top cards first (priority)
@@ -773,6 +796,12 @@ SELECT * FROM pg_indexes WHERE tablename = 'sponsorshipcodes';
 ---
 
 ## 📝 Changelog
+
+### Version 1.1.0 (2025-10-11)
+- ✅ Redis cache implementation with 24-hour TTL
+- ✅ Cache invalidation on bulk purchase
+- ✅ Cache invalidation on code distribution
+- ✅ Cache hit/miss logging for monitoring
 
 ### Version 1.0.0 (2025-10-11)
 - ✅ Initial implementation

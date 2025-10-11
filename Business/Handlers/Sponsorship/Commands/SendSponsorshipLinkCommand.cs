@@ -11,6 +11,7 @@ using Business.Services.Notification.Models;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.Aspects.Autofac.Validation;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -41,19 +42,22 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly INotificationService _notificationService;
             private readonly IConfiguration _configuration;
             private readonly ILogger<SendSponsorshipLinkCommandHandler> _logger;
+            private readonly ICacheManager _cacheManager;
 
             public SendSponsorshipLinkCommandHandler(
                 IRedemptionService redemptionService,
                 ISponsorshipCodeRepository codeRepository,
                 INotificationService notificationService,
                 IConfiguration configuration,
-                ILogger<SendSponsorshipLinkCommandHandler> logger)
+                ILogger<SendSponsorshipLinkCommandHandler> logger,
+                ICacheManager cacheManager)
             {
                 _redemptionService = redemptionService;
                 _codeRepository = codeRepository;
                 _notificationService = notificationService;
                 _configuration = configuration;
                 _logger = logger;
+                _cacheManager = cacheManager;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -200,7 +204,16 @@ namespace Business.Handlers.Sponsorship.Commands
                     _logger.LogInformation("📧 Bulk send completed. Success: {Success}, Failed: {Failed}",
                         bulkResult.SuccessCount, bulkResult.FailureCount);
 
-                    return new SuccessDataResult<BulkSendResult>(bulkResult, 
+                    // Invalidate sponsor dashboard cache after successful sends
+                    if (bulkResult.SuccessCount > 0)
+                    {
+                        var cacheKey = $"SponsorDashboard:{request.SponsorId}";
+                        _cacheManager.Remove(cacheKey);
+                        _logger.LogInformation("[DashboardCache] 🗑️ Invalidated cache for sponsor {SponsorId} after sending {Count} links",
+                            request.SponsorId, bulkResult.SuccessCount);
+                    }
+
+                    return new SuccessDataResult<BulkSendResult>(bulkResult,
                         $"📱 {bulkResult.SuccessCount} link başarıyla gönderildi via {request.Channel}");
                 }
                 catch (Exception ex)
