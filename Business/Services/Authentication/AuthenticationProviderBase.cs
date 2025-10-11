@@ -83,14 +83,19 @@ namespace Business.Services.Authentication
 
         protected virtual async Task<LoginUserResult> PrepareOneTimePassword(AuthenticationProviderType providerType, string cellPhone, string externalUserId)
         {
+            var currentTime = DateTime.Now;
             var oneTimePassword = await _logins.Query()
-                .Where(m => m.Provider == providerType && m.ExternalUserId == externalUserId && m.IsUsed == false)
+                .Where(m => m.Provider == providerType &&
+                           m.ExternalUserId == externalUserId &&
+                           m.IsUsed == false &&
+                           m.SendDate.AddMinutes(5) > currentTime) // Only reuse if not expired
                 .Select(m => m.Code)
                 .FirstOrDefaultAsync();
             int mobileCode;
             if (oneTimePassword == default)
             {
                 mobileCode = RandomPassword.RandomNumberGenerator();
+                _logger?.LogInformation("[PrepareOTP] Creating new OTP code {Code} for {Phone}", mobileCode, externalUserId);
                 try
                 {
                     var sendSms = await _smsService.SendAssist(
@@ -116,6 +121,7 @@ namespace Business.Services.Authentication
             else
             {
                 mobileCode = oneTimePassword;
+                _logger?.LogInformation("[PrepareOTP] Reusing existing valid OTP code {Code} for {Phone}", mobileCode, externalUserId);
             }
 
             return new LoginUserResult
