@@ -61,10 +61,13 @@ namespace WebAPI.Controllers
                 // Get active tiers
                 var tiers = await _subscriptionTierRepository.GetActiveTiersAsync();
 
-                // Map to sponsorship comparison DTOs
-                var comparisonDtos = _tierMappingService.MapToComparisonDtos(tiers.ToList());
+                // Exclude Trial tier - only show purchasable tiers (S, M, L, XL)
+                var purchasableTiers = tiers.Where(t => t.TierName != "Trial").ToList();
 
-                _logger.LogInformation("✅ Retrieved {Count} tier options for purchase selection", comparisonDtos.Count);
+                // Map to sponsorship comparison DTOs
+                var comparisonDtos = _tierMappingService.MapToComparisonDtos(purchasableTiers);
+
+                _logger.LogInformation("✅ Retrieved {Count} purchasable tier options (excluded Trial)", comparisonDtos.Count);
 
                 return Ok(new SuccessDataResult<List<SponsorshipTierComparisonDto>>(
                     comparisonDtos,
@@ -73,7 +76,7 @@ namespace WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error retrieving tiers for purchase");
+                _logger.LogError(ex, "❌ Error retrieving tiers for purchase: {Message}", ex.Message);
                 return StatusCode(500, new ErrorResult($"Tier retrieval failed: {ex.Message}"));
             }
         }
