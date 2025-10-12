@@ -27,6 +27,7 @@ namespace Business.Handlers.Sponsorship.Commands
         public List<LinkRecipient> Recipients { get; set; } = new();
         public string Channel { get; set; } = "SMS"; // SMS or WhatsApp
         public string CustomMessage { get; set; } // Optional custom message
+        public bool AllowResendExpired { get; set; } = false; // Allow resending expired codes with renewed expiry date
 
         public class LinkRecipient
         {
@@ -72,15 +73,39 @@ namespace Business.Handlers.Sponsorship.Commands
 
                     // Validate codes exist and are available
                     var codes = request.Recipients.Select(r => r.Code).ToList();
-                    var validCodes = await _codeRepository.GetListAsync(c => 
-                        codes.Contains(c.Code) && 
-                        c.SponsorId == request.SponsorId && 
-                        !c.IsUsed && 
-                        c.ExpiryDate > DateTime.Now);
+                    
+                    // Fetch codes based on AllowResendExpired flag
+                    var validCodes = request.AllowResendExpired
+                        ? await _codeRepository.GetListAsync(c => 
+                            codes.Contains(c.Code) && 
+                            c.SponsorId == request.SponsorId && 
+                            !c.IsUsed)  // Allow expired codes if AllowResendExpired=true
+                        : await _codeRepository.GetListAsync(c => 
+                            codes.Contains(c.Code) && 
+                            c.SponsorId == request.SponsorId && 
+                            !c.IsUsed && 
+                            c.ExpiryDate > DateTime.Now);  // Only non-expired codes
 
                     var validCodesList = validCodes.ToList();
-                    _logger.LogInformation("📋 Validated {ValidCount}/{TotalCount} codes", 
-                        validCodesList.Count, codes.Count);
+                    _logger.LogInformation("📋 Validated {ValidCount}/{TotalCount} codes (AllowResendExpired: {AllowResend})", 
+                        validCodesList.Count, codes.Count, request.AllowResendExpired);
+
+                    // Renew expiry date for expired codes if AllowResendExpired=true
+                    if (request.AllowResendExpired)
+                    {
+                        var expiredCodes = validCodesList.Where(c => c.ExpiryDate < DateTime.Now).ToList();
+                        if (expiredCodes.Any())
+                        {
+                            _logger.LogInformation("🔄 Renewing expiry date for {Count} expired codes", expiredCodes.Count);
+                            foreach (var expiredCode in expiredCodes)
+                            {
+                                expiredCode.ExpiryDate = DateTime.Now.AddDays(30); // Renew for 30 days
+                                _codeRepository.Update(expiredCode);
+                            }
+                            await _codeRepository.SaveChangesAsync();
+                            _logger.LogInformation("✅ Renewed expiry dates successfully");
+                        }
+                    }
 
                     // Prepare bulk notification recipients
                     var recipients = new List<BulkNotificationRecipientDto>();
