@@ -8,9 +8,11 @@ using Business.Handlers.AnalysisMessages.Queries;
 using Business.Handlers.SmartLinks.Commands;
 using Business.Handlers.SmartLinks.Queries;
 using Business.Handlers.PlantAnalyses.Queries;
+using Business.Services.Sponsorship;
 using Core.Entities.Concrete;
 using Core.Extensions;
 using Core.Utilities.Results;
+using DataAccess.Abstract;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -31,11 +33,51 @@ namespace WebAPI.Controllers
     public class SponsorshipController : BaseApiController
     {
         private readonly ILogger<SponsorshipController> _logger;
+        private readonly ISponsorshipTierMappingService _tierMappingService;
+        private readonly ISubscriptionTierRepository _subscriptionTierRepository;
 
-        public SponsorshipController(ILogger<SponsorshipController> logger)
+        public SponsorshipController(
+            ILogger<SponsorshipController> logger,
+            ISponsorshipTierMappingService tierMappingService,
+            ISubscriptionTierRepository subscriptionTierRepository)
         {
             _logger = logger;
+            _tierMappingService = tierMappingService;
+            _subscriptionTierRepository = subscriptionTierRepository;
         }
+        /// <summary>
+        /// Get subscription tiers for sponsor package purchase selection
+        /// Returns tier-specific sponsorship features (data access, logo visibility, messaging, smart links)
+        /// </summary>
+        /// <returns>List of available tiers with sponsorship features</returns>
+        [AllowAnonymous] // Public endpoint for purchase preview
+        [HttpGet("tiers-for-purchase")]
+        public async Task<IActionResult> GetTiersForPurchase()
+        {
+            try
+            {
+                _logger.LogInformation("📊 Fetching subscription tiers for purchase selection");
+
+                // Get active tiers
+                var tiers = await _subscriptionTierRepository.GetActiveTiersAsync();
+
+                // Map to sponsorship comparison DTOs
+                var comparisonDtos = _tierMappingService.MapToComparisonDtos(tiers.ToList());
+
+                _logger.LogInformation("✅ Retrieved {Count} tier options for purchase selection", comparisonDtos.Count);
+
+                return Ok(new SuccessDataResult<List<SponsorshipTierComparisonDto>>(
+                    comparisonDtos,
+                    "Sponsorship tiers retrieved successfully"
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error retrieving tiers for purchase");
+                return StatusCode(500, new ErrorResult($"Tier retrieval failed: {ex.Message}"));
+            }
+        }
+
         /// <summary>
         /// Create sponsor company profile (one-time setup)
         /// </summary>

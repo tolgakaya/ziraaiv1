@@ -173,7 +173,10 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<SponsorshipService>().As<ISponsorshipService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<SponsorshipTierMappingService>().As<ISponsorshipTierMappingService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<RedemptionService>().As<IRedemptionService>()
                 .InstancePerLifetimeScope();
             
