@@ -18,23 +18,34 @@ namespace Business.Services.Sponsorship
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ISponsorProfileRepository _sponsorProfileRepository;
 
         public SponsorshipService(
             ISponsorshipCodeRepository sponsorshipCodeRepository,
             ISponsorshipPurchaseRepository sponsorshipPurchaseRepository,
             IUserSubscriptionRepository userSubscriptionRepository,
             ISubscriptionTierRepository subscriptionTierRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            ISponsorProfileRepository sponsorProfileRepository)
         {
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
             _userSubscriptionRepository = userSubscriptionRepository;
             _subscriptionTierRepository = subscriptionTierRepository;
             _userRepository = userRepository;
+            _sponsorProfileRepository = sponsorProfileRepository;
         }
 
         public async Task<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>> PurchaseBulkSubscriptionsAsync(
-            int sponsorId, int tierId, int quantity, decimal amount, string paymentReference)
+            int sponsorId,
+            int tierId,
+            int quantity,
+            decimal amount,
+            string paymentMethod,
+            string paymentReference,
+            string companyName = null,
+            string invoiceAddress = null,
+            string taxNumber = null)
         {
             try
             {
@@ -54,12 +65,29 @@ namespace Business.Services.Sponsorship
                     return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
                         $"Quantity must be at least {tier.MinPurchaseQuantity} for {tier.DisplayName} tier");
                 }
-                
+
                 if (quantity > tier.MaxPurchaseQuantity)
                 {
                     return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
                         $"Quantity cannot exceed {tier.MaxPurchaseQuantity} for {tier.DisplayName} tier");
                 }
+
+                // Get invoice information from SponsorProfile or use provided values
+                var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
+
+                // Prioritize provided values, fallback to SponsorProfile, then to User
+                var finalCompanyName = companyName ?? sponsorProfile?.CompanyName ?? sponsor.FullName;
+                var finalInvoiceAddress = invoiceAddress ?? sponsorProfile?.Address;
+                var finalTaxNumber = taxNumber ?? sponsorProfile?.TaxNumber;
+
+                // Validate required invoice fields
+                if (string.IsNullOrWhiteSpace(finalCompanyName))
+                {
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
+                        "Company name is required for invoice");
+                }
+
+                Console.WriteLine($"[Purchase] Invoice Info - Company: {finalCompanyName}, Tax: {finalTaxNumber}, Address: {(finalInvoiceAddress != null ? finalInvoiceAddress.Substring(0, Math.Min(50, finalInvoiceAddress.Length)) : "N/A")}");
 
                 // Create purchase record
                 var purchase = new SponsorshipPurchase
@@ -71,11 +99,13 @@ namespace Business.Services.Sponsorship
                     TotalAmount = amount,
                     Currency = tier.Currency,
                     PurchaseDate = DateTime.Now,
-                    PaymentMethod = "CreditCard",
+                    PaymentMethod = paymentMethod ?? "CreditCard",
                     PaymentReference = paymentReference,
-                    PaymentStatus = "Completed",
-                    PaymentCompletedDate = DateTime.Now,
-                    CompanyName = sponsor.FullName,
+                    PaymentStatus = "Pending", // Changed from "Completed" - payment not verified yet
+                    PaymentCompletedDate = null, // Will be set when payment is confirmed
+                    CompanyName = finalCompanyName,
+                    InvoiceAddress = finalInvoiceAddress,
+                    TaxNumber = finalTaxNumber,
                     CodePrefix = "AGRI",
                     ValidityDays = 30,
                     Status = "Active",
@@ -87,7 +117,14 @@ namespace Business.Services.Sponsorship
                 _sponsorshipPurchaseRepository.Add(purchase);
                 await _sponsorshipPurchaseRepository.SaveChangesAsync();
 
-                // Generate codes
+                // MOCK PAYMENT: Auto-approve for now (real payment gateway integration later)
+                Console.WriteLine($"[Purchase] MOCK PAYMENT: Auto-approving purchase {purchase.Id}");
+                purchase.PaymentStatus = "Completed";
+                purchase.PaymentCompletedDate = DateTime.Now;
+                _sponsorshipPurchaseRepository.Update(purchase);
+                await _sponsorshipPurchaseRepository.SaveChangesAsync();
+
+                // Generate codes after payment "completed"
                 var codes = await _sponsorshipCodeRepository.GenerateCodesAsync(
                     purchase.Id, sponsorId, tierId, quantity, purchase.CodePrefix, purchase.ValidityDays);
 
