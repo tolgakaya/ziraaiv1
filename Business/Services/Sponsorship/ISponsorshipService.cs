@@ -1,5 +1,6 @@
 using Core.Utilities.Results;
 using Entities.Concrete;
+using Entities.Dtos;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -11,10 +12,14 @@ namespace Business.Services.Sponsorship
         Task<IDataResult<List<SponsorshipCode>>> GenerateCodesForPurchaseAsync(int purchaseId);
         Task<IDataResult<UserSubscription>> RedeemSponsorshipCodeAsync(string code, int userId);
         Task<IDataResult<SponsorshipCode>> ValidateCodeAsync(string code);
-        Task<IDataResult<List<SponsorshipCode>>> GetSponsorCodesAsync(int sponsorId);
-        Task<IDataResult<List<SponsorshipCode>>> GetUnusedSponsorCodesAsync(int sponsorId);
-        Task<IDataResult<List<SponsorshipCode>>> GetUnsentSponsorCodesAsync(int sponsorId);
-        Task<IDataResult<List<SponsorshipCode>>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int? sentDaysAgo = null);
+
+        // Paginated code retrieval methods
+        Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50);
+        Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnusedSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50);
+        Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnsentSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50);
+        Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int sentDaysAgo, int page = 1, int pageSize = 50);
+        Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentExpiredCodesAsync(int sponsorId, int page = 1, int pageSize = 50);
+
         Task<IDataResult<List<SponsorshipPurchase>>> GetSponsorPurchasesAsync(int sponsorId);
         Task<IDataResult<object>> GetSponsorshipStatisticsAsync(int sponsorId);
         Task<IDataResult<List<object>>> GetSponsoredFarmersAsync(int sponsorId);

@@ -21,7 +21,7 @@ namespace Business.Handlers.Sponsorship.Commands
         public string InvoiceAddress { get; set; }
         public string TaxNumber { get; set; }
         public string CodePrefix { get; set; } = "AGRI";
-        public int ValidityDays { get; set; } = 365;
+        public int ValidityDays { get; set; } = 30;
         public string Notes { get; set; }
 
         public class PurchaseBulkSponsorshipCommandHandler : IRequestHandler<PurchaseBulkSponsorshipCommand, IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>>

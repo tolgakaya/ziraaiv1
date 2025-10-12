@@ -40,7 +40,7 @@ namespace Business.Handlers.Sponsorship.Commands
                         RecipientName = request.FarmerName,
                         RecipientPhone = request.FarmerPhone,
                         Notes = request.Description,
-                        ExpiryDate = request.ExpiryDate ?? DateTime.Now.AddDays(365),
+                        ExpiryDate = request.ExpiryDate ?? DateTime.Now.AddDays(30),
                         IsActive = true,
                         IsUsed = false,
                         CreatedDate = DateTime.Now,

@@ -2,6 +2,8 @@ using Business.Constants;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Entities.Dtos;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -75,7 +77,7 @@ namespace Business.Services.Sponsorship
                     PaymentCompletedDate = DateTime.Now,
                     CompanyName = sponsor.FullName,
                     CodePrefix = "AGRI",
-                    ValidityDays = 365,
+                    ValidityDays = 30,
                     Status = "Active",
                     CreatedDate = DateTime.Now,
                     CodesGenerated = 0,
@@ -377,59 +379,173 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<List<SponsorshipCode>>> GetSponsorCodesAsync(int sponsorId)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
         {
             try
             {
-                var codes = await _sponsorshipCodeRepository.GetBySponsorIdAsync(sponsorId);
-                return new SuccessDataResult<List<SponsorshipCode>>(codes);
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .OrderByDescending(x => x.CreatedDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result);
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<List<SponsorshipCode>>($"Error fetching sponsor codes: {ex.Message}");
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching sponsor codes: {ex.Message}");
             }
         }
 
-        public async Task<IDataResult<List<SponsorshipCode>>> GetUnusedSponsorCodesAsync(int sponsorId)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnusedSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
         {
             try
             {
-                var codes = await _sponsorshipCodeRepository.GetUnusedCodesBySponsorAsync(sponsorId);
-                return new SuccessDataResult<List<SponsorshipCode>>(codes);
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.IsUsed == false)
+                    .OrderByDescending(x => x.CreatedDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result);
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<List<SponsorshipCode>>($"Error fetching unused codes: {ex.Message}");
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching unused codes: {ex.Message}");
             }
         }
 
-        public async Task<IDataResult<List<SponsorshipCode>>> GetUnsentSponsorCodesAsync(int sponsorId)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnsentSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
         {
             try
             {
-                var codes = await _sponsorshipCodeRepository.GetUnsentCodesBySponsorAsync(sponsorId);
-                return new SuccessDataResult<List<SponsorshipCode>>(codes,
-                    $"{codes.Count} unsent codes available for distribution");
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.DistributionDate == null)
+                    .OrderByDescending(x => x.CreatedDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result,
+                    $"{totalCount} unsent codes available for distribution");
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<List<SponsorshipCode>>($"Error fetching unsent codes: {ex.Message}");
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching unsent codes: {ex.Message}");
             }
         }
 
-        public async Task<IDataResult<List<SponsorshipCode>>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int? sentDaysAgo = null)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int sentDaysAgo, int page = 1, int pageSize = 50)
         {
             try
             {
-                var codes = await _sponsorshipCodeRepository.GetSentButUnusedCodesBySponsorAsync(sponsorId, sentDaysAgo);
-                var message = sentDaysAgo.HasValue
-                    ? $"{codes.Count} codes sent {sentDaysAgo} days ago but still unused"
-                    : $"{codes.Count} codes sent but still unused";
-                return new SuccessDataResult<List<SponsorshipCode>>(codes, message);
+                var cutoffDate = DateTime.Now.AddDays(-sentDaysAgo);
+                
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.DistributionDate != null)
+                    .Where(x => x.DistributionDate.Value.Date == cutoffDate.Date)
+                    .Where(x => x.IsUsed == false)
+                    .OrderByDescending(x => x.DistributionDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                var message = $"{totalCount} codes sent {sentDaysAgo} days ago but still unused";
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result, message);
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<List<SponsorshipCode>>($"Error fetching sent but unused codes: {ex.Message}");
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching sent but unused codes: {ex.Message}");
+            }
+        }
+
+
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentExpiredCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
+        {
+            try
+            {
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.DistributionDate != null)
+                    .Where(x => x.ExpiryDate < DateTime.Now)
+                    .Where(x => x.IsUsed == false)
+                    .OrderByDescending(x => x.ExpiryDate)
+                    .ThenByDescending(x => x.DistributionDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result,
+                    $"{totalCount} codes sent to farmers but expired without being used");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching sent expired codes: {ex.Message}");
             }
         }
 

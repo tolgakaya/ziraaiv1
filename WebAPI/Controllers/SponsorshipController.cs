@@ -183,19 +183,32 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Get sponsorship codes for current sponsor with advanced filtering
+        /// Get sponsorship codes for current sponsor with advanced filtering and pagination
         /// </summary>
         /// <param name="onlyUnused">Return only unused codes (includes both sent and unsent)</param>
         /// <param name="onlyUnsent">Return only codes never sent to farmers (DistributionDate IS NULL) - RECOMMENDED for distribution</param>
         /// <param name="sentDaysAgo">Return codes sent X days ago but still unused (e.g., 7 for codes sent 1 week ago)</param>
-        /// <returns>List of sponsorship codes</returns>
+        /// <param name="onlySentExpired">Return only codes sent to farmers but expired without being used - OPTIMIZED for millions of rows</param>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Items per page (default: 50, max: 200)</param>
+        /// <returns>Paginated list of sponsorship codes with total count and navigation info</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpGet("codes")]
         public async Task<IActionResult> GetSponsorshipCodes(
             [FromQuery] bool onlyUnused = false,
             [FromQuery] bool onlyUnsent = false,
-            [FromQuery] int? sentDaysAgo = null)
+            [FromQuery] int? sentDaysAgo = null,
+            [FromQuery] bool onlySentExpired = false,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
+            // Validate pagination parameters
+            if (page < 1)
+                return BadRequest(new ErrorResult("Page must be greater than 0"));
+            
+            if (pageSize < 1 || pageSize > 200)
+                return BadRequest(new ErrorResult("Page size must be between 1 and 200"));
+
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
@@ -205,7 +218,10 @@ namespace WebAPI.Controllers
                 SponsorId = userId.Value,
                 OnlyUnused = onlyUnused,
                 OnlyUnsent = onlyUnsent,
-                SentDaysAgo = sentDaysAgo
+                SentDaysAgo = sentDaysAgo,
+                OnlySentExpired = onlySentExpired,
+                Page = page,
+                PageSize = pageSize
             };
 
             var result = await Mediator.Send(query);
