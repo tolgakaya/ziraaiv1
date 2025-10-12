@@ -41,7 +41,7 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="dto">Company profile information</param>
         /// <returns>Created sponsor profile</returns>
-        [Authorize(Roles = "Sponsor,Admin")]
+        [Authorize] // Allow any authenticated user (Farmer can become Sponsor)
         [HttpPost("create-profile")]
         public async Task<IActionResult> CreateSponsorProfile([FromBody] CreateSponsorProfileDto dto)
         {
@@ -183,31 +183,54 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Get sponsorship codes for current sponsor
+        /// Get sponsorship codes for current sponsor with advanced filtering and pagination
         /// </summary>
-        /// <param name="onlyUnused">Return only unused codes</param>
-        /// <returns>List of sponsorship codes</returns>
+        /// <param name="onlyUnused">Return only unused codes (includes both sent and unsent)</param>
+        /// <param name="onlyUnsent">Return only codes never sent to farmers (DistributionDate IS NULL) - RECOMMENDED for distribution</param>
+        /// <param name="sentDaysAgo">Return codes sent X days ago but still unused (e.g., 7 for codes sent 1 week ago)</param>
+        /// <param name="onlySentExpired">Return only codes sent to farmers but expired without being used - OPTIMIZED for millions of rows</param>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Items per page (default: 50, max: 200)</param>
+        /// <returns>Paginated list of sponsorship codes with total count and navigation info</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpGet("codes")]
-        public async Task<IActionResult> GetSponsorshipCodes([FromQuery] bool onlyUnused = false)
+        public async Task<IActionResult> GetSponsorshipCodes(
+            [FromQuery] bool onlyUnused = false,
+            [FromQuery] bool onlyUnsent = false,
+            [FromQuery] int? sentDaysAgo = null,
+            [FromQuery] bool onlySentExpired = false,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
+            // Validate pagination parameters
+            if (page < 1)
+                return BadRequest(new ErrorResult("Page must be greater than 0"));
+            
+            if (pageSize < 1 || pageSize > 200)
+                return BadRequest(new ErrorResult("Page size must be between 1 and 200"));
+
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
-                
+
             var query = new GetSponsorshipCodesQuery
             {
                 SponsorId = userId.Value,
-                OnlyUnused = onlyUnused
+                OnlyUnused = onlyUnused,
+                OnlyUnsent = onlyUnsent,
+                SentDaysAgo = sentDaysAgo,
+                OnlySentExpired = onlySentExpired,
+                Page = page,
+                PageSize = pageSize
             };
-            
+
             var result = await Mediator.Send(query);
-            
+
             if (result.Success)
             {
                 return Ok(result);
             }
-            
+
             return BadRequest(result);
         }
 
@@ -276,19 +299,124 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
-                
+
             var query = new GetSponsorshipStatisticsQuery
             {
                 SponsorId = userId.Value
             };
-            
+
             var result = await Mediator.Send(query);
-            
+
             if (result.Success)
             {
                 return Ok(result);
             }
-            
+
+            return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Get comprehensive dashboard summary for mobile app home screen
+        /// Includes sent codes count, total analyses, purchases, and tier-based package breakdowns
+        /// Optimized single endpoint for sponsor dashboard UI
+        /// </summary>
+        /// <returns>Dashboard summary with all key metrics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("dashboard-summary")]
+        public async Task<IActionResult> GetDashboardSummary()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[Dashboard] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("[Dashboard] Fetching dashboard summary for sponsor {SponsorId}", userId.Value);
+
+                var query = new GetSponsorDashboardSummaryQuery
+                {
+                    SponsorId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[Dashboard] Successfully retrieved dashboard summary for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[Dashboard] Failed to retrieve dashboard summary for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Dashboard] Error retrieving dashboard summary for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Dashboard summary retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get package distribution statistics: purchased vs distributed vs redeemed breakdown
+        /// </summary>
+        /// <returns>Detailed package-level distribution statistics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("package-statistics")]
+        public async Task<IActionResult> GetPackageDistributionStatistics()
+        {
+            var userId = GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+
+            var query = new GetPackageDistributionStatisticsQuery
+            {
+                SponsorId = userId.Value
+            };
+
+            var result = await Mediator.Send(query);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Get code-level analysis statistics: which codes generated how many analyses
+        /// </summary>
+        /// <param name="includeAnalysisDetails">Include full analysis list per code (default: true)</param>
+        /// <param name="topCodesCount">Number of top performing codes to show (default: 10)</param>
+        /// <returns>Detailed code-level analysis statistics with drill-down capability</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("code-analysis-statistics")]
+        public async Task<IActionResult> GetCodeAnalysisStatistics(
+            [FromQuery] bool includeAnalysisDetails = true,
+            [FromQuery] int topCodesCount = 10)
+        {
+            var userId = GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized();
+
+            var query = new GetCodeAnalysisStatisticsQuery
+            {
+                SponsorId = userId.Value,
+                IncludeAnalysisDetails = includeAnalysisDetails,
+                TopCodesCount = topCodesCount
+            };
+
+            var result = await Mediator.Send(query);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
             return BadRequest(result);
         }
 
@@ -307,21 +435,21 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
-                
+
             var query = new GetLinkStatisticsQuery
             {
                 SponsorId = userId.Value,
                 StartDate = startDate,
                 EndDate = endDate
             };
-            
+
             var result = await Mediator.Send(query);
-            
+
             if (result.Success)
             {
                 return Ok(result);
             }
-            
+
             return BadRequest(result);
         }
 

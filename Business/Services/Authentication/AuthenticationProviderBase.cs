@@ -9,6 +9,7 @@ using Core.Utilities.Results;
 using Core.Utilities.Toolkit;
 using DataAccess.Abstract;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Business.Services.Authentication
 {
@@ -16,25 +17,49 @@ namespace Business.Services.Authentication
     {
         private readonly IMobileLoginRepository _logins;
         private readonly ISmsService _smsService;
+        protected readonly ILogger _logger;
 
-        protected AuthenticationProviderBase(IMobileLoginRepository logins, ISmsService smsService)
+        protected AuthenticationProviderBase(IMobileLoginRepository logins, ISmsService smsService, ILogger logger = null)
         {
             _logins = logins;
             _smsService = smsService;
+            _logger = logger;
         }
 
         public virtual async Task<IDataResult<DArchToken>> Verify(VerifyOtpCommand command)
         {
             var externalUserId = command.ExternalUserId;
             var date = DateTime.Now;
+
+            _logger?.LogInformation("[AuthProviderBase:Verify] Searching OTP - ExternalUserId: {ExternalUserId}, Code: {Code}, Provider: {Provider}, CurrentTime: {Time}",
+                externalUserId, command.Code, command.Provider, date);
+
+            // Debug: Check all records for this phone
+            var allRecords = await _logins.Query()
+                .Where(m => m.ExternalUserId == externalUserId && m.Provider == command.Provider)
+                .ToListAsync();
+
+            _logger?.LogInformation("[AuthProviderBase:Verify] Found {Count} total OTP records for phone {Phone}",
+                allRecords.Count, externalUserId);
+
+            foreach (var record in allRecords)
+            {
+                var isExpired = record.SendDate.AddMinutes(5) <= date;
+                _logger?.LogInformation("[AuthProviderBase:Verify] Record - Code: {Code}, IsUsed: {IsUsed}, SendDate: {SendDate}, Expired: {Expired}",
+                    record.Code, record.IsUsed, record.SendDate, isExpired);
+            }
+
             var login = await _logins.GetAsync(m => m.Provider == command.Provider && m.Code == command.Code &&
                                                     m.ExternalUserId == externalUserId &&
                                                     m.SendDate.AddMinutes(5) > date);
 
             if (login == null)
             {
+                _logger?.LogWarning("[AuthProviderBase:Verify] No matching OTP found - returning InvalidCode");
                 return new ErrorDataResult<DArchToken>(Messages.InvalidCode);
             }
+
+            _logger?.LogInformation("[AuthProviderBase:Verify] OTP found - proceeding to create token");
 
             var accessToken = await CreateToken(command);
 
@@ -58,14 +83,19 @@ namespace Business.Services.Authentication
 
         protected virtual async Task<LoginUserResult> PrepareOneTimePassword(AuthenticationProviderType providerType, string cellPhone, string externalUserId)
         {
+            var currentTime = DateTime.Now;
             var oneTimePassword = await _logins.Query()
-                .Where(m => m.Provider == providerType && m.ExternalUserId == externalUserId && m.IsUsed == false)
+                .Where(m => m.Provider == providerType &&
+                           m.ExternalUserId == externalUserId &&
+                           m.IsUsed == false &&
+                           m.SendDate.AddMinutes(5) > currentTime) // Only reuse if not expired
                 .Select(m => m.Code)
                 .FirstOrDefaultAsync();
             int mobileCode;
             if (oneTimePassword == default)
             {
                 mobileCode = RandomPassword.RandomNumberGenerator();
+                _logger?.LogInformation("[PrepareOTP] Creating new OTP code {Code} for {Phone}", mobileCode, externalUserId);
                 try
                 {
                     var sendSms = await _smsService.SendAssist(
@@ -91,6 +121,7 @@ namespace Business.Services.Authentication
             else
             {
                 mobileCode = oneTimePassword;
+                _logger?.LogInformation("[PrepareOTP] Reusing existing valid OTP code {Code} for {Phone}", mobileCode, externalUserId);
             }
 
             return new LoginUserResult

@@ -46,6 +46,12 @@ namespace Entities.Concrete
         public bool IsSponsoredSubscription { get; set; } // Is this a sponsored subscription
         public string SponsorshipNotes { get; set; } // Any notes from sponsor
         
+        // Sponsorship Queue System (NO multiple active sponsorships allowed)
+        public SubscriptionQueueStatus QueueStatus { get; set; } = SubscriptionQueueStatus.Active;
+        public DateTime? QueuedDate { get; set; } // When code was redeemed (if queued/pending)
+        public DateTime? ActivatedDate { get; set; } // When subscription actually became active
+        public int? PreviousSponsorshipId { get; set; } // FK to sponsorship this is waiting for
+        
         // Audit fields
         public DateTime CreatedDate { get; set; }
         public DateTime? UpdatedDate { get; set; }
@@ -68,5 +74,8 @@ namespace Entities.Concrete
         
         [JsonIgnore]
         public virtual User Sponsor { get; set; }
+        
+        [JsonIgnore]
+        public virtual UserSubscription PreviousSponsorship { get; set; } // Navigation for queue system
     }
 }

@@ -157,10 +157,11 @@ namespace Business.Handlers.Authorizations.Commands
                     throw; // Re-throw to maintain original behavior
                 }
 
-                // Assign user role based on registration request (Farmer, Sponsor, etc.)
-                Console.WriteLine($"[RegisterUser] Assigning role: {request.UserRole} to user {user.Email}");
+                // Always assign Farmer role on registration (regardless of user input)
+                // Users can become Sponsors later by creating a sponsor profile
+                Console.WriteLine($"[RegisterUser] Assigning Farmer role to user {user.Email}");
                 
-                var requestedRole = request.UserRole ?? "Farmer"; // Default to Farmer if not specified
+                var requestedRole = "Farmer"; // Always force Farmer role on registration
                 var userRoleGroup = await _groupRepository.GetAsync(g => g.GroupName == requestedRole);
                 
                 if (userRoleGroup != null)

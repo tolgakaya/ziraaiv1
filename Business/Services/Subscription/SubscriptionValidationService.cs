@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -289,6 +290,9 @@ namespace Business.Services.Subscription
 
             try
             {
+                // ✨ EVENT-DRIVEN QUEUE ACTIVATION: Process expired subscriptions and activate queued ones
+                await ProcessExpiredSubscriptionsAsync();
+                
                 var statusResult = await CheckSubscriptionStatusAsync(userId);
                 
                 _logger.LogInformation("[USAGE_VALIDATION_STATUS_CHECK] Subscription status checked - UserId: {UserId}, CorrelationId: {CorrelationId}, Success: {Success}, CanMakeRequest: {CanMakeRequest}", 
@@ -491,13 +495,59 @@ namespace Business.Services.Subscription
             var expiredSubscriptions = await _userSubscriptionRepository.GetListAsync(
                 s => s.IsActive && s.EndDate <= now);
 
-            foreach (var subscription in expiredSubscriptions)
+            var expiredList = expiredSubscriptions.ToList();
+
+            foreach (var subscription in expiredList)
             {
                 subscription.IsActive = false;
+                subscription.QueueStatus = SubscriptionQueueStatus.Expired;
                 subscription.Status = "Expired";
                 subscription.UpdatedDate = now;
                 
                 _userSubscriptionRepository.Update(subscription);
+            }
+
+            await _userSubscriptionRepository.SaveChangesAsync();
+
+            // Event-driven queue activation: activate queued sponsorships waiting for expired ones
+            await ActivateQueuedSponsorshipsAsync(expiredList);
+        }
+
+        /// <summary>
+        /// Activate queued sponsorships when their previous sponsorship expires (event-driven)
+        /// </summary>
+        private async Task ActivateQueuedSponsorshipsAsync(List<UserSubscription> expiredSubscriptions)
+        {
+            foreach (var expired in expiredSubscriptions)
+            {
+                // Only process sponsored subscriptions
+                if (!expired.IsSponsoredSubscription) continue;
+
+                // Find queued sponsorship waiting for this one
+                var queued = await _userSubscriptionRepository.GetAsync(s =>
+                    s.QueueStatus == SubscriptionQueueStatus.Pending &&
+                    s.PreviousSponsorshipId == expired.Id);
+
+                if (queued != null)
+                {
+                    _logger.LogInformation("🔄 [SponsorshipQueue] Activating queued sponsorship {QueuedId} for user {UserId} (previous: {ExpiredId})",
+                        queued.Id, queued.UserId, expired.Id);
+
+                    // Activate the queued subscription
+                    queued.QueueStatus = SubscriptionQueueStatus.Active;
+                    queued.ActivatedDate = DateTime.Now;
+                    queued.StartDate = DateTime.Now;
+                    queued.EndDate = DateTime.Now.AddDays(30); // Default 30 days
+                    queued.IsActive = true;
+                    queued.Status = "Active";
+                    queued.PreviousSponsorshipId = null; // Clear queue reference
+                    queued.UpdatedDate = DateTime.Now;
+
+                    _userSubscriptionRepository.Update(queued);
+                    
+                    _logger.LogInformation("✅ [SponsorshipQueue] Activated sponsorship {Id} for user {UserId}",
+                        queued.Id, queued.UserId);
+                }
             }
 
             await _userSubscriptionRepository.SaveChangesAsync();

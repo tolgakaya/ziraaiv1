@@ -11,10 +11,12 @@ using Business.Services.Notification.Models;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.Aspects.Autofac.Validation;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Business.Handlers.Sponsorship.Commands
@@ -25,6 +27,7 @@ namespace Business.Handlers.Sponsorship.Commands
         public List<LinkRecipient> Recipients { get; set; } = new();
         public string Channel { get; set; } = "SMS"; // SMS or WhatsApp
         public string CustomMessage { get; set; } // Optional custom message
+        public bool AllowResendExpired { get; set; } = false; // Allow resending expired codes with renewed expiry date
 
         public class LinkRecipient
         {
@@ -38,18 +41,24 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly IRedemptionService _redemptionService;
             private readonly ISponsorshipCodeRepository _codeRepository;
             private readonly INotificationService _notificationService;
+            private readonly IConfiguration _configuration;
             private readonly ILogger<SendSponsorshipLinkCommandHandler> _logger;
+            private readonly ICacheManager _cacheManager;
 
             public SendSponsorshipLinkCommandHandler(
                 IRedemptionService redemptionService,
                 ISponsorshipCodeRepository codeRepository,
                 INotificationService notificationService,
-                ILogger<SendSponsorshipLinkCommandHandler> logger)
+                IConfiguration configuration,
+                ILogger<SendSponsorshipLinkCommandHandler> logger,
+                ICacheManager cacheManager)
             {
                 _redemptionService = redemptionService;
                 _codeRepository = codeRepository;
                 _notificationService = notificationService;
+                _configuration = configuration;
                 _logger = logger;
+                _cacheManager = cacheManager;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -64,15 +73,39 @@ namespace Business.Handlers.Sponsorship.Commands
 
                     // Validate codes exist and are available
                     var codes = request.Recipients.Select(r => r.Code).ToList();
-                    var validCodes = await _codeRepository.GetListAsync(c => 
-                        codes.Contains(c.Code) && 
-                        c.SponsorId == request.SponsorId && 
-                        !c.IsUsed && 
-                        c.ExpiryDate > DateTime.Now);
+                    
+                    // Fetch codes based on AllowResendExpired flag
+                    var validCodes = request.AllowResendExpired
+                        ? await _codeRepository.GetListAsync(c => 
+                            codes.Contains(c.Code) && 
+                            c.SponsorId == request.SponsorId && 
+                            !c.IsUsed)  // Allow expired codes if AllowResendExpired=true
+                        : await _codeRepository.GetListAsync(c => 
+                            codes.Contains(c.Code) && 
+                            c.SponsorId == request.SponsorId && 
+                            !c.IsUsed && 
+                            c.ExpiryDate > DateTime.Now);  // Only non-expired codes
 
                     var validCodesList = validCodes.ToList();
-                    _logger.LogInformation("📋 Validated {ValidCount}/{TotalCount} codes", 
-                        validCodesList.Count, codes.Count);
+                    _logger.LogInformation("📋 Validated {ValidCount}/{TotalCount} codes (AllowResendExpired: {AllowResend})", 
+                        validCodesList.Count, codes.Count, request.AllowResendExpired);
+
+                    // Renew expiry date for expired codes if AllowResendExpired=true
+                    if (request.AllowResendExpired)
+                    {
+                        var expiredCodes = validCodesList.Where(c => c.ExpiryDate < DateTime.Now).ToList();
+                        if (expiredCodes.Any())
+                        {
+                            _logger.LogInformation("🔄 Renewing expiry date for {Count} expired codes", expiredCodes.Count);
+                            foreach (var expiredCode in expiredCodes)
+                            {
+                                expiredCode.ExpiryDate = DateTime.Now.AddDays(30); // Renew for 30 days
+                                _codeRepository.Update(expiredCode);
+                            }
+                            await _codeRepository.SaveChangesAsync();
+                            _logger.LogInformation("✅ Renewed expiry dates successfully");
+                        }
+                    }
 
                     // Prepare bulk notification recipients
                     var recipients = new List<BulkNotificationRecipientDto>();
@@ -94,8 +127,11 @@ namespace Business.Handlers.Sponsorship.Commands
                             continue;
                         }
 
-                        // Generate redemption link
-                        var redemptionLink = $"https://ziraai.com/redeem/{recipient.Code}";
+                        // Generate redemption link using environment-specific base URL
+                        var baseUrl = _configuration["WebAPI:BaseUrl"] 
+                            ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
+                            ?? throw new InvalidOperationException("WebAPI:BaseUrl must be configured");
+                        var redemptionLink = $"{baseUrl.TrimEnd('/')}/redeem/{recipient.Code}";
 
                         recipients.Add(new BulkNotificationRecipientDto
                         {
@@ -132,33 +168,66 @@ namespace Business.Handlers.Sponsorship.Commands
                             NotificationChannel.SMS);
                     }
 
-                    // Process notification results
+                    // Process notification results and update database
                     if (notificationResult.Success && notificationResult.Data != null)
                     {
                         for (int i = 0; i < recipients.Count; i++)
                         {
                             var recipient = recipients[i];
-                            var originalRecipient = request.Recipients.FirstOrDefault(r => 
+                            var originalRecipient = request.Recipients.FirstOrDefault(r =>
                                 FormatPhoneNumber(r.Phone) == recipient.PhoneNumber);
 
                             if (originalRecipient != null)
                             {
-                                var notificationSuccess = i < notificationResult.Data.Count && 
+                                var notificationSuccess = i < notificationResult.Data.Count &&
                                                         notificationResult.Data[i].Success;
+
+                                // Update database for successful sends
+                                if (notificationSuccess)
+                                {
+                                    var codeEntity = validCodesList.FirstOrDefault(c => c.Code == originalRecipient.Code);
+                                    if (codeEntity != null)
+                                    {
+                                        // Generate redemption link (same logic as before)
+                                        var baseUrl = _configuration["WebAPI:BaseUrl"]
+                                            ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
+                                            ?? "https://ziraai.com";
+                                        var redemptionLink = $"{baseUrl.TrimEnd('/')}/redeem/{originalRecipient.Code}";
+
+                                        // Update code entity
+                                        codeEntity.RedemptionLink = redemptionLink;
+                                        codeEntity.RecipientPhone = recipient.PhoneNumber;
+                                        codeEntity.RecipientName = originalRecipient.Name;
+                                        codeEntity.LinkSentDate = DateTime.Now;
+                                        codeEntity.LinkSentVia = request.Channel;
+                                        codeEntity.LinkDelivered = true;
+                                        codeEntity.DistributionChannel = request.Channel;
+                                        codeEntity.DistributionDate = DateTime.Now;  // ✅ KEY FIELD!
+                                        codeEntity.DistributedTo = $"{originalRecipient.Name} ({recipient.PhoneNumber})";
+
+                                        _codeRepository.Update(codeEntity);
+
+                                        _logger.LogInformation("✅ Updated code {Code} with distribution info", originalRecipient.Code);
+                                    }
+                                }
 
                                 results.Add(new SendResult
                                 {
                                     Code = originalRecipient.Code,
                                     Phone = recipient.PhoneNumber,
                                     Success = notificationSuccess,
-                                    ErrorMessage = notificationSuccess ? null : 
-                                        (i < notificationResult.Data.Count ? 
-                                         notificationResult.Data[i].ErrorDetails : 
+                                    ErrorMessage = notificationSuccess ? null :
+                                        (i < notificationResult.Data.Count ?
+                                         notificationResult.Data[i].ErrorDetails :
                                          "Bildirim gönderimi başarısız"),
                                     DeliveryStatus = notificationSuccess ? "Sent" : "Failed"
                                 });
                             }
                         }
+
+                        // Save all changes to database
+                        await _codeRepository.SaveChangesAsync();
+                        _logger.LogInformation("💾 Saved {Count} code updates to database", results.Count(r => r.Success));
                     }
                     else
                     {
@@ -193,7 +262,16 @@ namespace Business.Handlers.Sponsorship.Commands
                     _logger.LogInformation("📧 Bulk send completed. Success: {Success}, Failed: {Failed}",
                         bulkResult.SuccessCount, bulkResult.FailureCount);
 
-                    return new SuccessDataResult<BulkSendResult>(bulkResult, 
+                    // Invalidate sponsor dashboard cache after successful sends
+                    if (bulkResult.SuccessCount > 0)
+                    {
+                        var cacheKey = $"SponsorDashboard:{request.SponsorId}";
+                        _cacheManager.Remove(cacheKey);
+                        _logger.LogInformation("[DashboardCache] 🗑️ Invalidated cache for sponsor {SponsorId} after sending {Count} links",
+                            request.SponsorId, bulkResult.SuccessCount);
+                    }
+
+                    return new SuccessDataResult<BulkSendResult>(bulkResult,
                         $"📱 {bulkResult.SuccessCount} link başarıyla gönderildi via {request.Channel}");
                 }
                 catch (Exception ex)

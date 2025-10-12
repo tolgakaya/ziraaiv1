@@ -34,7 +34,7 @@ namespace Business.Services.Queue
         public int SubscriptionTierId { get; set; }
         public int Quantity { get; set; }
         public string CodePrefix { get; set; } = "BULK";
-        public int ValidityDays { get; set; } = 365;
+        public int ValidityDays { get; set; } = 30;
         public BulkProcessingOptions Processing { get; set; } = new();
         public List<CodeGenerationBatch> Batches { get; set; } = new();
     }
