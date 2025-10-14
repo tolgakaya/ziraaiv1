@@ -3,6 +3,7 @@ using DataAccess.Abstract;
 using Entities.Concrete;
 using MediatR;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -65,9 +66,18 @@ namespace Business.Handlers.Sponsorship.Commands
 
             private string GenerateUniqueCode()
             {
-                var timestamp = DateTime.Now.ToString("yyyyMMdd");
-                var random = new Random().Next(100000, 999999);
-                return $"SPONSOR-{timestamp}-{random}";
+                // Format: AGRI-YYYY-XXXXXXXX (mobile app compatible format)
+                var year = DateTime.Now.Year;
+                var random = GenerateRandomString(8); // 8 uppercase alphanumeric characters
+                return $"AGRI-{year}-{random}";
+            }
+
+            private string GenerateRandomString(int length)
+            {
+                const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                var random = new Random();
+                return new string(Enumerable.Repeat(chars, length)
+                    .Select(s => s[random.Next(s.Length)]).ToArray());
             }
         }
     }

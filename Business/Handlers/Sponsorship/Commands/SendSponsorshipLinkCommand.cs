@@ -143,9 +143,15 @@ namespace Business.Handlers.Sponsorship.Commands
                         {
                             var formattedPhone = FormatPhoneNumber(recipient.Phone);
 
-                            // Build SMS message with sponsor info and code
+                            // Generate redemption deep link (for SMS)
+                            var baseUrl = _configuration["WebAPI:BaseUrl"]
+                                ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
+                                ?? "https://ziraai.com";
+                            var deepLink = $"{baseUrl.TrimEnd('/')}/redeem/{recipient.Code}";
+
+                            // Build SMS message with sponsor info, code, and deep link
                             var message = request.CustomMessage
-                                ?? BuildSmsMessage(recipient.Name, sponsorCompanyName, recipient.Code, playStoreLink);
+                                ?? BuildSmsMessage(recipient.Name, sponsorCompanyName, recipient.Code, playStoreLink, deepLink);
 
                             // Send SMS or WhatsApp
                             IResult sendResult;
@@ -162,11 +168,8 @@ namespace Business.Handlers.Sponsorship.Commands
 
                             if (sendResult.Success)
                             {
-                                // Generate redemption link
-                                var baseUrl = _configuration["WebAPI:BaseUrl"]
-                                    ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
-                                    ?? "https://ziraai.com";
-                                var redemptionLink = $"{baseUrl.TrimEnd('/')}/redeem/{recipient.Code}";
+                                // Use the deep link we already generated
+                                var redemptionLink = deepLink;
 
                                 // Update code entity
                                 codeEntity.RedemptionLink = redemptionLink;
@@ -257,17 +260,19 @@ namespace Business.Handlers.Sponsorship.Commands
                 }
             }
 
-            private string BuildSmsMessage(string farmerName, string sponsorCompany, string sponsorCode, string playStoreLink)
+            private string BuildSmsMessage(string farmerName, string sponsorCompany, string sponsorCode, string playStoreLink, string deepLink)
             {
                 // SMS-based deferred deep linking: Mobile app will read SMS and auto-extract AGRI-XXXXX code
+                // Deep link allows users to tap and open app directly with code pre-filled
                 return $@"🎁 {sponsorCompany} size sponsorluk paketi hediye etti!
 
 Sponsorluk Kodunuz: {sponsorCode}
 
-Uygulamayı indirin:
-{playStoreLink}
+Hemen kullanmak için tıklayın:
+{deepLink}
 
-Uygulama açıldığında kod otomatik gelecek!";
+Veya uygulamayı indirin:
+{playStoreLink}";
             }
 
             private string FormatPhoneNumber(string phone)

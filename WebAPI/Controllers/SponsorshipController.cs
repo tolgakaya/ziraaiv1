@@ -16,6 +16,7 @@ using DataAccess.Abstract;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -35,15 +36,18 @@ namespace WebAPI.Controllers
         private readonly ILogger<SponsorshipController> _logger;
         private readonly ISponsorshipTierMappingService _tierMappingService;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+        private readonly IConfiguration _configuration;
 
         public SponsorshipController(
             ILogger<SponsorshipController> logger,
             ISponsorshipTierMappingService tierMappingService,
-            ISubscriptionTierRepository subscriptionTierRepository)
+            ISubscriptionTierRepository subscriptionTierRepository,
+            IConfiguration configuration)
         {
             _logger = logger;
             _tierMappingService = tierMappingService;
             _subscriptionTierRepository = subscriptionTierRepository;
+            _configuration = configuration;
         }
         /// <summary>
         /// Get subscription tiers for sponsor package purchase selection
@@ -191,6 +195,33 @@ namespace WebAPI.Controllers
             }
             
             return BadRequest(result);
+        }
+
+        /// <summary>
+        /// Handle deep link from SMS (GET /redeem/{code})
+        /// Tracks when user taps SMS link and redirects to app
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("/redeem/{code}")]
+        public async Task<IActionResult> HandleDeepLink(string code)
+        {
+            try
+            {
+                _logger.LogInformation("📱 Deep link accessed for code: {Code}", code);
+
+                // Track that deep link was opened (optional analytics)
+                // You can add tracking logic here in the future
+                
+                // Redirect to app deep link (Android will intercept this)
+                return Redirect($"ziraai://redeem/{code}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling deep link for code {Code}", code);
+                // Fallback: redirect to Play Store if app not installed
+                var packageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
+                return Redirect($"https://play.google.com/store/apps/details?id={packageName}");
+            }
         }
 
         /// <summary>
