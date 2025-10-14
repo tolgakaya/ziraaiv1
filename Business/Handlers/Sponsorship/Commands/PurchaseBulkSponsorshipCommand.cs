@@ -42,13 +42,18 @@ namespace Business.Handlers.Sponsorship.Commands
                 try
                 {
                     Console.WriteLine($"[PurchaseBulkSponsorship] Starting bulk purchase for SponsorId: {request.SponsorId}, TierId: {request.SubscriptionTierId}, Quantity: {request.Quantity}");
-                    
+                    Console.WriteLine($"[PurchaseBulkSponsorship] Invoice Info - Company: {request.CompanyName}, Tax: {request.TaxNumber}");
+
                     var result = await _sponsorshipService.PurchaseBulkSubscriptionsAsync(
                         request.SponsorId,
                         request.SubscriptionTierId,
                         request.Quantity,
                         request.TotalAmount,
-                        request.PaymentReference
+                        request.PaymentMethod,
+                        request.PaymentReference,
+                        request.CompanyName,
+                        request.InvoiceAddress,
+                        request.TaxNumber
                     );
 
                     // Invalidate sponsor dashboard cache after successful purchase
