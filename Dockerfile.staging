@@ -44,6 +44,9 @@ COPY --from=build /src/WebAPI/appsettings.Production.json .
 RUN mkdir -p /app/wwwroot/uploads/plant-images && \
     chmod 755 /app/wwwroot/uploads/plant-images
 
+# Copy .well-known directory for Android Universal Links
+COPY --from=build /src/WebAPI/.well-known /app/.well-known
+
 # Install ICU libraries for Turkish culture support and debugging tools
 RUN apt-get update && apt-get install -y libicu-dev netcat-traditional curl && rm -rf /var/lib/apt/lists/*
 
