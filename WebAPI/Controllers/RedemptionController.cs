@@ -9,6 +9,14 @@ using Microsoft.Extensions.Logging;
 
 namespace WebAPI.Controllers
 {
+    /// <summary>
+    /// Request model for code redemption
+    /// </summary>
+    public class RedeemCodeRequest
+    {
+        public string Code { get; set; }
+    }
+
     [ApiController]
     [AllowAnonymous]
     public class RedemptionController : ControllerBase
@@ -28,99 +36,152 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Redeem a sponsorship code via public link (no authentication required)
+        /// Handle deep link from SMS - ONLY redirects to mobile app (does NOT redeem code)
+        /// The actual redemption happens in mobile app via POST /api/v1/redemption/redeem-code
         /// </summary>
-        /// <param name="code">The sponsorship code to redeem</param>
-        /// <returns>HTML page with redemption result and auto-login if successful</returns>
-
+        /// <param name="code">The sponsorship code from the deep link</param>
+        /// <returns>Redirects to mobile app with code parameter</returns>
         [HttpGet("~/redeem/{code}")] // Direct access without /api/v1/ prefix for easier link sharing
-        public async Task<IActionResult> RedeemSponsorshipCode(string code)
+        public async Task<IActionResult> HandleDeepLink(string code)
         {
             try
             {
-                _logger.LogInformation("Redemption link clicked for code: {Code}", code);
-                
+                _logger.LogInformation("📱 Deep link accessed for code: {Code}", code);
+
                 // Get client IP for tracking
                 var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-                
-                // Log user agent and authorization header for debugging
+
+                // Log user agent for debugging
                 var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
-                var authHeader = HttpContext.Request.Headers["Authorization"].ToString();
-                _logger.LogInformation("User-Agent: {UserAgent}, Auth Header Present: {HasAuth}", 
-                    userAgent, !string.IsNullOrEmpty(authHeader));
-                
-                // Track link click
+                _logger.LogInformation("User-Agent: {UserAgent}", userAgent);
+
+                // Track link click (analytics only, does NOT redeem code)
                 await _redemptionService.TrackLinkClickAsync(code, clientIp);
-                
-                // Validate code (including sponsor self-redemption check)
-                var validationResult = await _redemptionService.ValidateCodeWithUserAsync(code, HttpContext);
-                if (!validationResult.Success)
+
+                // Basic validation: Check if code format is valid (AGRI-YYYY-XXXXXXXX)
+                if (string.IsNullOrWhiteSpace(code) || !code.StartsWith("AGRI-"))
                 {
-                    _logger.LogWarning("Code validation failed for {Code}: {Message}", 
-                        code, validationResult.Message);
-                    return RedirectToAction("Error", new { message = validationResult.Message });
+                    _logger.LogWarning("❌ Invalid code format: {Code}", code);
+                    return BadRequest("Geçersiz kod formatı");
                 }
-
-                // Check if user exists (via phone number in code)
-                var existingUser = await _redemptionService.FindUserByCodeAsync(code);
-                
-                // Create account if needed
-                if (existingUser == null)
-                {
-                    _logger.LogInformation("Creating new account for code: {Code}", code);
-                    var accountResult = await _redemptionService.CreateAccountFromCodeAsync(code);
-                    if (!accountResult.Success)
-                    {
-                        _logger.LogError("Account creation failed for code {Code}: {Message}", 
-                            code, accountResult.Message);
-                        return RedirectToAction("Error", new { message = accountResult.Message });
-                    }
-                    existingUser = accountResult.Data;
-                    _logger.LogInformation("Account created successfully for user ID: {UserId}", 
-                        existingUser.UserId);
-                }
-
-                // Activate subscription
-                var subscriptionResult = await _redemptionService.ActivateSubscriptionAsync(
-                    code, existingUser.UserId);
-                if (!subscriptionResult.Success)
-                {
-                    _logger.LogError("Subscription activation failed for code {Code}: {Message}", 
-                        code, subscriptionResult.Message);
-                    return RedirectToAction("Error", new { message = subscriptionResult.Message });
-                }
-
-                _logger.LogInformation("Subscription activated successfully for user {UserId} with code {Code}", 
-                    existingUser.UserId, code);
-
-                // Generate auto-login token
-                var loginToken = await _redemptionService.GenerateAutoLoginTokenAsync(existingUser.UserId);
 
                 // Get deep link URL from configuration (environment-aware)
-                // Priority: 1. appsettings.json (environment-specific), 2. Fallback
                 var deepLinkUrl = _configuration["Redemption:DeepLinkBaseUrl"];
-
                 if (string.IsNullOrWhiteSpace(deepLinkUrl))
                 {
                     deepLinkUrl = _configuration["Redemption:FallbackDeepLinkBaseUrl"]
                         ?? throw new InvalidOperationException("Redemption:DeepLinkBaseUrl or Redemption:FallbackDeepLinkBaseUrl must be configured");
                 }
 
-                _logger.LogInformation("Redirecting to: {Url}", deepLinkUrl);
+                // Redirect to mobile app with code
+                // Mobile app will:
+                // 1. Prompt user to login/register
+                // 2. Call POST /api/v1/redemption/redeem-code to actually redeem
+                var redirectUrl = $"{deepLinkUrl}/{code}";
 
-                // Redirect to mobile app deep link with auto-login token
-                return Redirect($"{deepLinkUrl}?token={loginToken}&subscription={subscriptionResult.Data.SubscriptionTier.DisplayName}");
+                _logger.LogInformation("✅ Redirecting to mobile app: {Url}", redirectUrl);
+
+                return Redirect(redirectUrl);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error redeeming sponsorship code: {Code}", code);
-                var errorMessage = ex.Message;
-                if (ex.InnerException != null)
+                _logger.LogError(ex, "❌ Error handling deep link for code {Code}", code);
+                return BadRequest($"Link işlenirken hata oluştu: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Redeem a sponsorship code - ACTUAL redemption (called by mobile app after deep link)
+        /// This endpoint does the real work: validates, creates account, activates subscription
+        /// </summary>
+        /// <param name="request">Redemption request with code and optional user info</param>
+        /// <returns>JWT token and subscription details for auto-login</returns>
+        [HttpPost("~/api/v1/redemption/redeem-code")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RedeemCode([FromBody] RedeemCodeRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("🎁 Code redemption started for: {Code}", request.Code);
+
+                // Get client IP for tracking
+                var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+
+                // Validate code (including sponsor self-redemption check)
+                var validationResult = await _redemptionService.ValidateCodeWithUserAsync(request.Code, HttpContext);
+                if (!validationResult.Success)
                 {
-                    errorMessage += " Inner: " + ex.InnerException.Message;
-                    _logger.LogError("Inner Exception: {InnerException}", ex.InnerException.Message);
+                    _logger.LogWarning("❌ Code validation failed for {Code}: {Message}",
+                        request.Code, validationResult.Message);
+                    return BadRequest(new { success = false, message = validationResult.Message });
                 }
-                return RedirectToAction("Error", new { message = $"Beklenmeyen bir hata oluştu: {errorMessage}" });
+
+                // Check if user exists (via phone number in code)
+                var existingUser = await _redemptionService.FindUserByCodeAsync(request.Code);
+
+                // Create account if needed
+                if (existingUser == null)
+                {
+                    _logger.LogInformation("📝 Creating new account for code: {Code}", request.Code);
+                    var accountResult = await _redemptionService.CreateAccountFromCodeAsync(request.Code);
+                    if (!accountResult.Success)
+                    {
+                        _logger.LogError("❌ Account creation failed for code {Code}: {Message}",
+                            request.Code, accountResult.Message);
+                        return BadRequest(new { success = false, message = accountResult.Message });
+                    }
+                    existingUser = accountResult.Data;
+                    _logger.LogInformation("✅ Account created successfully for user ID: {UserId}",
+                        existingUser.UserId);
+                }
+
+                // Activate subscription
+                var subscriptionResult = await _redemptionService.ActivateSubscriptionAsync(
+                    request.Code, existingUser.UserId);
+                if (!subscriptionResult.Success)
+                {
+                    _logger.LogError("❌ Subscription activation failed for code {Code}: {Message}",
+                        request.Code, subscriptionResult.Message);
+                    return BadRequest(new { success = false, message = subscriptionResult.Message });
+                }
+
+                _logger.LogInformation("✅ Subscription activated successfully for user {UserId} with code {Code}",
+                    existingUser.UserId, request.Code);
+
+                // Generate auto-login token
+                var loginToken = await _redemptionService.GenerateAutoLoginTokenAsync(existingUser.UserId);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Sponsorluk kodu başarıyla kullanıldı",
+                    data = new
+                    {
+                        token = loginToken,
+                        userId = existingUser.UserId,
+                        subscription = new
+                        {
+                            tier = subscriptionResult.Data.SubscriptionTier.DisplayName,
+                            tierId = subscriptionResult.Data.SubscriptionTier.Id,
+                            validUntil = subscriptionResult.Data.EndDate
+                        },
+                        user = new
+                        {
+                            fullName = existingUser.FullName,
+                            email = existingUser.Email,
+                            mobilePhones = existingUser.MobilePhones
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error redeeming sponsorship code: {Code}", request.Code);
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = $"Beklenmeyen bir hata oluştu: {ex.Message}"
+                });
             }
         }
 
@@ -129,7 +190,7 @@ namespace WebAPI.Controllers
         /// </summary>
         [HttpGet]
         [Route("~/redeem/success")]
-        [Route("~/api/v{version:apiVersion}/redeem/success")]
+        [Route("~/api/v1/redemption/success")]
         [ApiVersion("1.0")]
         [ApiVersionNeutral]
         public IActionResult Success([FromQuery] string token, [FromQuery] string subscription)
