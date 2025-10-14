@@ -38,6 +38,9 @@ ARG TARGET_ENVIRONMENT
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+# Copy .well-known directory for Android Universal Links (assetlinks.json)
+COPY --from=build /src/WebAPI/.well-known /app/.well-known
+
 # Create config directory for backup files
 RUN mkdir -p /app/config
 
