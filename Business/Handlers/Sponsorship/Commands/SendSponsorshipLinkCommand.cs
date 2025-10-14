@@ -40,6 +40,7 @@ namespace Business.Handlers.Sponsorship.Commands
         {
             private readonly IRedemptionService _redemptionService;
             private readonly ISponsorshipCodeRepository _codeRepository;
+            private readonly ISponsorProfileRepository _sponsorProfileRepository;
             private readonly INotificationService _notificationService;
             private readonly IConfiguration _configuration;
             private readonly ILogger<SendSponsorshipLinkCommandHandler> _logger;
@@ -48,6 +49,7 @@ namespace Business.Handlers.Sponsorship.Commands
             public SendSponsorshipLinkCommandHandler(
                 IRedemptionService redemptionService,
                 ISponsorshipCodeRepository codeRepository,
+                ISponsorProfileRepository sponsorProfileRepository,
                 INotificationService notificationService,
                 IConfiguration configuration,
                 ILogger<SendSponsorshipLinkCommandHandler> logger,
@@ -55,6 +57,7 @@ namespace Business.Handlers.Sponsorship.Commands
             {
                 _redemptionService = redemptionService;
                 _codeRepository = codeRepository;
+                _sponsorProfileRepository = sponsorProfileRepository;
                 _notificationService = notificationService;
                 _configuration = configuration;
                 _logger = logger;
@@ -107,6 +110,17 @@ namespace Business.Handlers.Sponsorship.Commands
                         }
                     }
 
+                    // Get sponsor profile information for SMS template
+                    var sponsorProfile = await _sponsorProfileRepository.GetAsync(sp => sp.SponsorId == request.SponsorId);
+                    var sponsorCompanyName = sponsorProfile?.CompanyName ?? "ZiraAI Sponsor";
+                    
+                    // Get Play Store package name from configuration
+                    var playStorePackageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
+                    var playStoreLink = $"https://play.google.com/store/apps/details?id={playStorePackageName}";
+
+                    _logger.LogInformation("📱 Using sponsor company: {CompanyName}, Play Store: {PackageName}", 
+                        sponsorCompanyName, playStorePackageName);
+
                     // Prepare bulk notification recipients
                     var recipients = new List<BulkNotificationRecipientDto>();
                     var results = new List<SendResult>();
@@ -141,9 +155,11 @@ namespace Business.Handlers.Sponsorship.Commands
                             Parameters = new Dictionary<string, object>
                             {
                                 { "farmer_name", recipient.Name },
+                                { "sponsor_company", sponsorCompanyName },
                                 { "sponsor_code", recipient.Code },
+                                { "play_store_link", playStoreLink },
                                 { "redemption_link", redemptionLink },
-                                { "tier_name", "Premium" }, // Will be updated with proper tier lookup
+                                { "tier_name", "Premium" },
                                 { "custom_message", request.CustomMessage ?? "" }
                             }
                         });
