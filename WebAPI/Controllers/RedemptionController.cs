@@ -36,11 +36,12 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Handle deep link from SMS - ONLY redirects to mobile app (does NOT redeem code)
-        /// The actual redemption happens in mobile app via POST /api/v1/redemption/redeem-code
+        /// Handle deep link from SMS - Android Universal Links intercepts this!
+        /// This endpoint should NOT redirect - Android opens the app directly.
+        /// Mobile app extracts code from the HTTPS URL path.
         /// </summary>
         /// <param name="code">The sponsorship code from the deep link</param>
-        /// <returns>Redirects to mobile app with code parameter</returns>
+        /// <returns>Simple HTML page with instructions and fallback</returns>
         [HttpGet("~/redeem/{code}")] // Direct access without /api/v1/ prefix for easier link sharing
         public async Task<IActionResult> HandleDeepLink(string code)
         {
@@ -65,23 +66,204 @@ namespace WebAPI.Controllers
                     return BadRequest("Geçersiz kod formatı");
                 }
 
-                // Get deep link URL from configuration (environment-aware)
-                var deepLinkUrl = _configuration["Redemption:DeepLinkBaseUrl"];
-                if (string.IsNullOrWhiteSpace(deepLinkUrl))
+                // Check if this is an Android device (app should handle it)
+                var isAndroid = userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase);
+                var isMobile = userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase);
+
+                if (isAndroid && isMobile)
                 {
-                    deepLinkUrl = _configuration["Redemption:FallbackDeepLinkBaseUrl"]
-                        ?? throw new InvalidOperationException("Redemption:DeepLinkBaseUrl or Redemption:FallbackDeepLinkBaseUrl must be configured");
+                    _logger.LogInformation("🤖 Android device detected - app should handle this");
+                    
+                    // For Android with app installed: This response shouldn't be seen!
+                    // Android intercepts the URL and opens app before reaching here.
+                    // If we reach here, it means:
+                    // 1. App is not installed, OR
+                    // 2. assetlinks.json verification failed, OR
+                    // 3. User clicked "Open in browser" option
+
+                    // Get Play Store package name from configuration
+                    var playStorePackageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
+                    var playStoreLink = $"https://play.google.com/store/apps/details?id={playStorePackageName}";
+                    var customSchemeLink = $"ziraai://redemption-success/{code}";
+
+                    // Return HTML with fallback options
+                    var html = $@"
+<!DOCTYPE html>
+<html lang='tr'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>ZiraAI Sponsorluk Kodu</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }}
+        .container {{
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }}
+        .icon {{ font-size: 64px; margin-bottom: 1rem; }}
+        h1 {{ color: #1f2937; margin-bottom: 0.5rem; font-size: 1.5rem; }}
+        .code {{
+            background: #f3f4f6;
+            color: #667eea;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 1.5rem 0;
+            letter-spacing: 2px;
+        }}
+        .btn {{
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            transition: transform 0.2s;
+        }}
+        .btn:active {{ transform: scale(0.98); }}
+        .btn-primary {{ background: #667eea; }}
+        .btn-secondary {{ background: #10b981; }}
+        .message {{
+            color: #6b7280;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='icon'>🎁</div>
+        <h1>Sponsorluk Kodunuz</h1>
+        <div class='code'>{code}</div>
+        
+        <a href='{customSchemeLink}' class='btn btn-primary'>
+            📱 ZiraAI Uygulamasını Aç
+        </a>
+        
+        <a href='{playStoreLink}' class='btn btn-secondary'>
+            📥 Uygulamayı İndir
+        </a>
+        
+        <p class='message'>
+            ZiraAI uygulaması kurulu değilse önce indirin. 
+            Kurulu ise üstteki butona tıklayarak kodu kullanabilirsiniz.
+        </p>
+    </div>
+    
+    <script>
+        // Try to open app immediately (fallback for Android)
+        setTimeout(() => {{
+            window.location.href = '{customSchemeLink}';
+        }}, 500);
+    </script>
+</body>
+</html>";
+
+                    return Content(html, "text/html");
                 }
 
-                // Redirect to mobile app with code
-                // Mobile app will:
-                // 1. Prompt user to login/register
-                // 2. Call POST /api/v1/redemption/redeem-code to actually redeem
-                var redirectUrl = $"{deepLinkUrl}/{code}";
+                // For non-Android devices (iOS, Desktop, etc.)
+                _logger.LogInformation("🌐 Non-Android device - showing web instructions");
+                
+                var webHtml = $@"
+<!DOCTYPE html>
+<html lang='tr'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>ZiraAI Sponsorluk Kodu</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }}
+        .container {{
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }}
+        .icon {{ font-size: 64px; margin-bottom: 1rem; }}
+        h1 {{ color: #1f2937; margin-bottom: 1rem; }}
+        .code {{
+            background: #f3f4f6;
+            color: #667eea;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 1.5rem 0;
+            letter-spacing: 2px;
+        }}
+        .steps {{
+            text-align: left;
+            margin: 1.5rem 0;
+            color: #4b5563;
+        }}
+        .step {{
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }}
+        .qr-hint {{
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='icon'>📱</div>
+        <h1>Android Cihazınızdan Erişin</h1>
+        <p>Bu sponsorluk kodu Android ZiraAI uygulamasında kullanılabilir.</p>
+        
+        <div class='code'>{code}</div>
+        
+        <div class='steps'>
+            <div class='step'>1️⃣ Bu kodu not alın veya ekran görüntüsü alın</div>
+            <div class='step'>2️⃣ Android cihazınızda ZiraAI uygulamasını açın</div>
+            <div class='step'>3️⃣ Sponsorluk kodu bölümüne gidin</div>
+            <div class='step'>4️⃣ Kodu girerek aktifleştirin</div>
+        </div>
+        
+        <p class='qr-hint'>
+            💡 İpucu: Bu sayfanın linkini Android cihazınıza gönderin veya SMS'inizi kontrol edin.
+        </p>
+    </div>
+</body>
+</html>";
 
-                _logger.LogInformation("✅ Redirecting to mobile app: {Url}", redirectUrl);
-
-                return Redirect(redirectUrl);
+                return Content(webHtml, "text/html");
             }
             catch (Exception ex)
             {
