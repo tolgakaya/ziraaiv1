@@ -197,32 +197,9 @@ namespace WebAPI.Controllers
             return BadRequest(result);
         }
 
-        /// <summary>
-        /// Handle deep link from SMS (GET /redeem/{code})
-        /// Tracks when user taps SMS link and redirects to app
-        /// </summary>
-        [AllowAnonymous]
-        [HttpGet("/redeem/{code}")]
-        public async Task<IActionResult> HandleDeepLink(string code)
-        {
-            try
-            {
-                _logger.LogInformation("📱 Deep link accessed for code: {Code}", code);
-
-                // Track that deep link was opened (optional analytics)
-                // You can add tracking logic here in the future
-                
-                // Redirect to app deep link (Android will intercept this)
-                return Redirect($"ziraai://redeem/{code}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling deep link for code {Code}", code);
-                // Fallback: redirect to Play Store if app not installed
-                var packageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
-                return Redirect($"https://play.google.com/store/apps/details?id={packageName}");
-            }
-        }
+        // NOTE: Deep link handling moved to RedemptionController.cs
+        // GET /redeem/{code} is handled by RedemptionController.RedeemSponsorshipCode
+        // which provides complete redemption flow with account creation and auto-login
 
         /// <summary>
         /// Create individual sponsorship code
