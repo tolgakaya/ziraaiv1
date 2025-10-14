@@ -338,11 +338,16 @@ namespace WebAPI
             CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
             // Serve .well-known directory for Android Universal Links (assetlinks.json)
-            var wellKnownPath = Path.Combine(env.ContentRootPath, ".well-known");
+            // Docker: /app/.well-known | Local: ContentRootPath/.well-known
+            var wellKnownPath = Directory.Exists("/app/.well-known")
+                ? "/app/.well-known"
+                : Path.Combine(env.ContentRootPath, ".well-known");
+
             if (!Directory.Exists(wellKnownPath))
             {
                 Directory.CreateDirectory(wellKnownPath);
             }
+
             app.UseStaticFiles(new StaticFileOptions
             {
                 FileProvider = new PhysicalFileProvider(wellKnownPath),
