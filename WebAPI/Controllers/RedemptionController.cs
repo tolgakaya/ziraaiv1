@@ -95,12 +95,21 @@ namespace WebAPI.Controllers
 
                 // Generate auto-login token
                 var loginToken = await _redemptionService.GenerateAutoLoginTokenAsync(existingUser.UserId);
-                
-                // Get frontend URL from configuration
-                var frontendUrl = _configuration["RedemptionSettings:FrontendUrl"] ?? "https://localhost:5001";
-                
-                // Redirect to success page with token
-                return Redirect($"{frontendUrl}/redemption-success?token={loginToken}&subscription={subscriptionResult.Data.SubscriptionTier.DisplayName}");
+
+                // Get deep link URL from configuration (environment-aware)
+                // Priority: 1. appsettings.json (environment-specific), 2. Fallback
+                var deepLinkUrl = _configuration["Redemption:DeepLinkBaseUrl"];
+
+                if (string.IsNullOrWhiteSpace(deepLinkUrl))
+                {
+                    deepLinkUrl = _configuration["Redemption:FallbackDeepLinkBaseUrl"]
+                        ?? throw new InvalidOperationException("Redemption:DeepLinkBaseUrl or Redemption:FallbackDeepLinkBaseUrl must be configured");
+                }
+
+                _logger.LogInformation("Redirecting to: {Url}", deepLinkUrl);
+
+                // Redirect to mobile app deep link with auto-login token
+                return Redirect($"{deepLinkUrl}?token={loginToken}&subscription={subscriptionResult.Data.SubscriptionTier.DisplayName}");
             }
             catch (Exception ex)
             {
