@@ -16,6 +16,7 @@ using DataAccess.Abstract;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -35,15 +36,18 @@ namespace WebAPI.Controllers
         private readonly ILogger<SponsorshipController> _logger;
         private readonly ISponsorshipTierMappingService _tierMappingService;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+        private readonly IConfiguration _configuration;
 
         public SponsorshipController(
             ILogger<SponsorshipController> logger,
             ISponsorshipTierMappingService tierMappingService,
-            ISubscriptionTierRepository subscriptionTierRepository)
+            ISubscriptionTierRepository subscriptionTierRepository,
+            IConfiguration configuration)
         {
             _logger = logger;
             _tierMappingService = tierMappingService;
             _subscriptionTierRepository = subscriptionTierRepository;
+            _configuration = configuration;
         }
         /// <summary>
         /// Get subscription tiers for sponsor package purchase selection
@@ -192,6 +196,10 @@ namespace WebAPI.Controllers
             
             return BadRequest(result);
         }
+
+        // NOTE: Deep link handling moved to RedemptionController.cs
+        // GET /redeem/{code} is handled by RedemptionController.RedeemSponsorshipCode
+        // which provides complete redemption flow with account creation and auto-login
 
         /// <summary>
         /// Create individual sponsorship code
