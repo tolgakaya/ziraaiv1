@@ -173,7 +173,10 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<SponsorshipService>().As<ISponsorshipService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<SponsorshipTierMappingService>().As<ISponsorshipTierMappingService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<RedemptionService>().As<IRedemptionService>()
                 .InstancePerLifetimeScope();
             
@@ -261,7 +264,8 @@ namespace Business.DependencyResolvers
                 c.Resolve<IUserRepository>(),
                 c.Resolve<IMobileLoginRepository>(),
                 c.Resolve<ITokenHelper>(),
-                c.Resolve<Business.Adapters.SmsService.ISmsService>()
+                c.Resolve<Business.Adapters.SmsService.ISmsService>(),
+                c.Resolve<ILogger<Business.Services.Authentication.PhoneAuthenticationProvider>>()
             )).InstancePerLifetimeScope();
             
             

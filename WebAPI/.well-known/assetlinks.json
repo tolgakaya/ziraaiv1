@@ -1,0 +1,30 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ziraai.app.staging",
+    "sha256_cert_fingerprints": [
+      "E2:9C:97:6A:A8:82:5A:02:44:71:A1:97:B1:B6:AA:06:94:95:D4:C2:22:78:0E:A9:65:6E:17:0F:1F:AE:0B:67"
+    ]
+  }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ziraai.app.dev",
+    "sha256_cert_fingerprints": [
+      "E2:9C:97:6A:A8:82:5A:02:44:71:A1:97:B1:B6:AA:06:94:95:D4:C2:22:78:0E:A9:65:6E:17:0F:1F:AE:0B:67"
+    ]
+  }
+},
+{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.ziraai.app",
+    "sha256_cert_fingerprints": [
+      "PRODUCTION_SHA256_WILL_BE_PROVIDED_LATER"
+    ]
+  }
+}]

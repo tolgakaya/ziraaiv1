@@ -13,6 +13,8 @@ namespace DataAccess.Abstract
         Task<List<SponsorshipCode>> GetByPurchaseIdAsync(int purchaseId);
         Task<List<SponsorshipCode>> GetUnusedCodesBySponsorAsync(int sponsorId);
         Task<List<SponsorshipCode>> GetUsedCodesBySponsorAsync(int sponsorId);
+        Task<List<SponsorshipCode>> GetUnsentCodesBySponsorAsync(int sponsorId);
+        Task<List<SponsorshipCode>> GetSentButUnusedCodesBySponsorAsync(int sponsorId, int? sentDaysAgo = null);
         Task<int> GetUsedCountByPurchaseAsync(int purchaseId);
         Task<bool> IsCodeValidAsync(string code);
         Task<bool> MarkAsUsedAsync(string code, int userId, int subscriptionId);

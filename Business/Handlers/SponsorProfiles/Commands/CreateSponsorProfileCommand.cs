@@ -7,6 +7,7 @@ using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Core.Entities.Concrete;
 using MediatR;
 using System;
 using System.Threading;
@@ -26,14 +27,25 @@ namespace Business.Handlers.SponsorProfiles.Commands
         public string ContactPerson { get; set; }
         public string CompanyType { get; set; }
         public string BusinessModel { get; set; }
+        public string Password { get; set; } // Optional: For phone-registered users to enable email+password login
 
         public class CreateSponsorProfileCommandHandler : IRequestHandler<CreateSponsorProfileCommand, IResult>
         {
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
+            private readonly IGroupRepository _groupRepository;
+            private readonly IUserRepository _userRepository;
 
-            public CreateSponsorProfileCommandHandler(ISponsorProfileRepository sponsorProfileRepository)
+            public CreateSponsorProfileCommandHandler(
+                ISponsorProfileRepository sponsorProfileRepository,
+                IUserGroupRepository userGroupRepository,
+                IGroupRepository groupRepository,
+                IUserRepository userRepository)
             {
                 _sponsorProfileRepository = sponsorProfileRepository;
+                _userGroupRepository = userGroupRepository;
+                _groupRepository = groupRepository;
+                _userRepository = userRepository;
             }
 
             [ValidationAspect(typeof(CreateSponsorProfileValidator), Priority = 1)]
@@ -69,6 +81,73 @@ namespace Business.Handlers.SponsorProfiles.Commands
 
                 _sponsorProfileRepository.Add(sponsorProfile);
                 await _sponsorProfileRepository.SaveChangesAsync();
+
+                // Update user's email and password (if provided) for phone-registered users
+                // This allows sponsors to login with their business email + password
+                var user = await _userRepository.GetAsync(u => u.UserId == request.SponsorId);
+                if (user != null)
+                {
+                    bool needsUpdate = false;
+
+                    // Only update if current email is auto-generated from phone
+                    if (user.Email.Contains("@phone.ziraai.com"))
+                    {
+                        // Check if the new email is already in use by another user
+                        var emailExists = await _userRepository.GetAsync(u =>
+                            u.Email == request.ContactEmail && u.UserId != request.SponsorId);
+
+                        if (emailExists == null)
+                        {
+                            user.Email = request.ContactEmail;
+                            needsUpdate = true;
+                        }
+                        // If email already exists, keep the auto-generated one (don't fail profile creation)
+                    }
+
+                    // Update password if provided (for phone-registered users who don't have a password)
+                    if (!string.IsNullOrWhiteSpace(request.Password))
+                    {
+                        // Check if user currently has no password (phone registration)
+                        if (user.PasswordHash == null || user.PasswordHash.Length == 0)
+                        {
+                            Core.Utilities.Security.Hashing.HashingHelper.CreatePasswordHash(
+                                request.Password,
+                                out byte[] passwordSalt,
+                                out byte[] passwordHash);
+
+                            user.PasswordHash = passwordHash;
+                            user.PasswordSalt = passwordSalt;
+                            needsUpdate = true;
+                        }
+                    }
+
+                    if (needsUpdate)
+                    {
+                        _userRepository.Update(user);
+                        await _userRepository.SaveChangesAsync();
+                    }
+                }
+
+                // Assign Sponsor role to user (in addition to existing Farmer role)
+                var sponsorGroup = await _groupRepository.GetAsync(g => g.GroupName == "Sponsor");
+                if (sponsorGroup != null)
+                {
+                    // Check if user already has Sponsor role (idempotent operation)
+                    var existingUserGroup = await _userGroupRepository.GetAsync(
+                        ug => ug.UserId == request.SponsorId && ug.GroupId == sponsorGroup.Id);
+                    
+                    if (existingUserGroup == null)
+                    {
+                        var userGroup = new UserGroup
+                        {
+                            UserId = request.SponsorId,
+                            GroupId = sponsorGroup.Id
+                        };
+                        _userGroupRepository.Add(userGroup);
+                        await _userGroupRepository.SaveChangesAsync();
+                    }
+                }
+
                 return new SuccessResult(Messages.SponsorProfileCreated);
             }
 

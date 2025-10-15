@@ -59,6 +59,39 @@ namespace DataAccess.Concrete.EntityFramework
                 .ToListAsync();
         }
 
+        public async Task<List<SponsorshipCode>> GetUnsentCodesBySponsorAsync(int sponsorId)
+        {
+            return await Context.SponsorshipCodes
+                .Where(sc => sc.SponsorId == sponsorId &&
+                            !sc.IsUsed &&
+                            sc.IsActive &&
+                            sc.ExpiryDate > DateTime.Now &&
+                            !sc.DistributionDate.HasValue)  // KEY: Never sent (DistributionDate IS NULL)
+                .OrderBy(sc => sc.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<SponsorshipCode>> GetSentButUnusedCodesBySponsorAsync(int sponsorId, int? sentDaysAgo = null)
+        {
+            var query = Context.SponsorshipCodes
+                .Where(sc => sc.SponsorId == sponsorId &&
+                            !sc.IsUsed &&
+                            sc.IsActive &&
+                            sc.ExpiryDate > DateTime.Now &&
+                            sc.DistributionDate.HasValue);  // KEY: Has been sent (DistributionDate IS NOT NULL)
+
+            // If sentDaysAgo is specified, filter codes sent at least X days ago
+            if (sentDaysAgo.HasValue)
+            {
+                var cutoffDate = DateTime.Now.AddDays(-sentDaysAgo.Value);
+                query = query.Where(sc => sc.DistributionDate <= cutoffDate);
+            }
+
+            return await query
+                .OrderByDescending(sc => sc.DistributionDate)
+                .ToListAsync();
+        }
+
         public async Task<int> GetUsedCountByPurchaseAsync(int purchaseId)
         {
             return await Context.SponsorshipCodes

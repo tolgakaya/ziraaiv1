@@ -20,15 +20,21 @@ namespace Business.Handlers.PlantAnalyses.Commands
         {
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
             private readonly IPlantAnalysisService _plantAnalysisService;
+            private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+            private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
             private readonly IMediator _mediator;
 
             public CreatePlantAnalysisCommandHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
                 IPlantAnalysisService plantAnalysisService,
+                IUserSubscriptionRepository userSubscriptionRepository,
+                ISponsorshipCodeRepository sponsorshipCodeRepository,
                 IMediator mediator)
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _plantAnalysisService = plantAnalysisService;
+                _userSubscriptionRepository = userSubscriptionRepository;
+                _sponsorshipCodeRepository = sponsorshipCodeRepository;
                 _mediator = mediator;
             }
 
@@ -103,6 +109,9 @@ namespace Business.Handlers.PlantAnalyses.Commands
                         CreatedDate = DateTime.Now,
                         ProcessingTimestamp = DateTime.Now
                     };
+
+                    // Capture active sponsor attribution (critical for logo display, access control, messaging)
+                    await CaptureActiveSponsorAsync(plantAnalysis, request.UserId);
 
                     _plantAnalysisRepository.Add(plantAnalysis);
                     
@@ -358,6 +367,45 @@ namespace Business.Handlers.PlantAnalyses.Commands
                 catch (Exception ex)
                 {
                     return new ErrorDataResult<PlantAnalysisResponseDto>($"An error occurred: {ex.Message}");
+                }
+            }
+
+            /// <summary>
+            /// Capture active sponsor attribution for this analysis
+            /// Critical for: logo display, sponsor access control, messaging permissions
+            /// </summary>
+            private async Task CaptureActiveSponsorAsync(PlantAnalysis analysis, int? userId)
+            {
+                if (!userId.HasValue) return;
+
+                try
+                {
+                    // Get active sponsored subscription
+                    var activeSponsorship = await _userSubscriptionRepository.GetAsync(s =>
+                        s.UserId == userId.Value &&
+                        s.IsSponsoredSubscription &&
+                        s.QueueStatus == SubscriptionQueueStatus.Active &&
+                        s.IsActive &&
+                        s.EndDate > DateTime.Now);
+
+                    if (activeSponsorship == null) return;
+
+                    // Get sponsor company ID from the code
+                    var code = await _sponsorshipCodeRepository.GetAsync(c => 
+                        c.Id == activeSponsorship.SponsorshipCodeId);
+
+                    if (code != null)
+                    {
+                        analysis.ActiveSponsorshipId = activeSponsorship.Id;
+                        analysis.SponsorCompanyId = code.SponsorId; // Denormalized for performance
+                        
+                        Console.WriteLine($"[SponsorAttribution] Analysis {analysis.Id} attributed to sponsor {code.SponsorId} (subscription {activeSponsorship.Id})");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[SponsorAttribution] Error capturing sponsor for analysis: {ex.Message}");
+                    // Don't fail analysis creation if sponsor capture fails
                 }
             }
         }

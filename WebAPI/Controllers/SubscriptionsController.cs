@@ -1,5 +1,6 @@
 using Business.Services.Subscription;
 using DataAccess.Abstract;
+using Entities.Concrete;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -55,6 +56,9 @@ namespace WebAPI.Controllers
                 MonthlyPrice = t.MonthlyPrice,
                 YearlyPrice = t.YearlyPrice,
                 Currency = t.Currency,
+                MinPurchaseQuantity = t.MinPurchaseQuantity,
+                MaxPurchaseQuantity = t.MaxPurchaseQuantity,
+                RecommendedQuantity = t.RecommendedQuantity,
                 PrioritySupport = t.PrioritySupport,
                 AdvancedAnalytics = t.AdvancedAnalytics,
                 ApiAccess = t.ApiAccess,
@@ -79,9 +83,15 @@ namespace WebAPI.Controllers
                 return Unauthorized();
 
             var subscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId.Value);
-            
+
             if (subscription == null)
                 return NotFound(new ErrorResult("No active subscription found"));
+
+            // Get queued subscriptions (pending sponsorships waiting to activate)
+            var queuedSubscriptions = await _userSubscriptionRepository.GetListAsync(
+                s => s.UserId == userId.Value &&
+                     s.QueueStatus == SubscriptionQueueStatus.Pending &&
+                     !s.IsActive);
 
             var dto = new UserSubscriptionDto
             {
@@ -102,7 +112,22 @@ namespace WebAPI.Controllers
                 LastUsageResetDate = subscription.LastUsageResetDate,
                 MonthlyUsageResetDate = subscription.MonthlyUsageResetDate,
                 IsTrialSubscription = subscription.IsTrialSubscription,
-                TrialEndDate = subscription.TrialEndDate
+                TrialEndDate = subscription.TrialEndDate,
+                QueueStatus = subscription.QueueStatus,
+                QueuedDate = subscription.QueuedDate,
+                PreviousSponsorshipId = subscription.PreviousSponsorshipId,
+                QueuedSubscriptions = queuedSubscriptions.Select(q => new QueuedSubscriptionDto
+                {
+                    Id = q.Id,
+                    SubscriptionTierId = q.SubscriptionTierId,
+                    TierName = q.SubscriptionTier?.TierName,
+                    TierDisplayName = q.SubscriptionTier?.DisplayName,
+                    QueueStatus = q.QueueStatus,
+                    QueuedDate = q.QueuedDate ?? DateTime.Now,
+                    PreviousSponsorshipId = q.PreviousSponsorshipId,
+                    Status = q.Status,
+                    IsSponsoredSubscription = q.IsSponsoredSubscription
+                }).ToList()
             };
 
             return Ok(new SuccessDataResult<UserSubscriptionDto>(dto));
