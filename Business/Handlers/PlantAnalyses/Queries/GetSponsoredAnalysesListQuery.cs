@@ -213,12 +213,24 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // 100% Access Fields (XL tier)
                 if (accessPercentage >= 100)
                 {
-                    // Farmer contact info would need to be fetched from User entity
-                    // For now, we'll mark it as available but not populate
-                    // This would be populated in a real implementation by joining with Users table
-                    dto.FarmerName = "Available with XL tier";
-                    dto.FarmerPhone = analysis.ContactPhone;
-                    dto.FarmerEmail = analysis.ContactEmail;
+                    // Fetch farmer info from User entity if available
+                    if (analysis.UserId.HasValue)
+                    {
+                        var farmer = _userRepository.Get(u => u.UserId == analysis.UserId.Value);
+                        if (farmer != null)
+                        {
+                            dto.FarmerName = farmer.FullName;
+                            dto.FarmerPhone = farmer.MobilePhones ?? analysis.ContactPhone;
+                            dto.FarmerEmail = farmer.Email ?? analysis.ContactEmail;
+                        }
+                    }
+
+                    // Fallback to analysis contact info if User not found
+                    if (string.IsNullOrEmpty(dto.FarmerName))
+                    {
+                        dto.FarmerPhone = analysis.ContactPhone;
+                        dto.FarmerEmail = analysis.ContactEmail;
+                    }
                 }
 
                 return dto;

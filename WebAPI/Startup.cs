@@ -79,6 +79,8 @@ namespace WebAPI
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+                    // CRITICAL: Use camelCase for property names (mobile team expects camelCase JSON)
+                    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
                 });
 
             services.AddApiVersioning(v =>
