@@ -197,7 +197,10 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     dto.PlantSpecies = analysis.PlantSpecies;
                     dto.PlantVariety = analysis.PlantVariety;
                     dto.GrowthStage = analysis.GrowthStage;
-                    dto.ImageThumbnailUrl = analysis.ImagePath;
+                    // Use ImageUrl (original) or ImagePath (thumbnail) - prefer original for better quality
+                    dto.ImageUrl = !string.IsNullOrEmpty(analysis.ImageUrl)
+                        ? analysis.ImageUrl
+                        : analysis.ImagePath;
                 }
 
                 // 60% Access Fields (L tier)
@@ -207,7 +210,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     dto.HealthSeverity = analysis.HealthSeverity;
                     dto.PrimaryConcern = analysis.PrimaryConcern;
                     dto.Location = analysis.Location;
-                    dto.Recommendations = analysis.Recommendations;
+                    // Recommendations removed from list view - too large for list display
+                    // Use GET /api/v1/sponsorship/analyses/{id} for full details including recommendations
                 }
 
                 // 100% Access Fields (XL tier)

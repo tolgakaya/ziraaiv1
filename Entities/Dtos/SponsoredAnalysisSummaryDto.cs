@@ -19,14 +19,14 @@ namespace Entities.Dtos
         public string PlantSpecies { get; set; }
         public string PlantVariety { get; set; }
         public string GrowthStage { get; set; }
-        public string ImageThumbnailUrl { get; set; }
+        public string ImageUrl { get; set; } // Analysis image URL for display in list
 
         // 60% Access Fields (L tier)
         public decimal? VigorScore { get; set; }
         public string HealthSeverity { get; set; }
         public string PrimaryConcern { get; set; }
         public string Location { get; set; }
-        public string Recommendations { get; set; }
+        // Note: Recommendations removed from list view (too large, use detail endpoint instead)
 
         // 100% Access Fields (XL tier)
         public string FarmerName { get; set; }
