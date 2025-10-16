@@ -21,13 +21,16 @@ namespace Business.Handlers.PlantAnalyses.Queries
         {
             private readonly ISponsorDataAccessService _dataAccessService;
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
+            private readonly IMediator _mediator;
 
             public GetFilteredAnalysisForSponsorQueryHandler(
                 ISponsorDataAccessService dataAccessService,
-                ISponsorProfileRepository sponsorProfileRepository)
+                ISponsorProfileRepository sponsorProfileRepository,
+                IMediator mediator)
             {
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
+                _mediator = mediator;
             }
 
             [CacheAspect(5)]
@@ -40,14 +43,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     return new ErrorDataResult<SponsoredAnalysisDetailDto>("Access denied to this analysis");
                 }
 
-                // Get filtered analysis data based on tier
-                var filteredAnalysis = await _dataAccessService.GetFilteredAnalysisDataAsync(request.SponsorId, request.PlantAnalysisId);
+                // Get sponsor's tier information first
+                var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(request.SponsorId);
 
-                if (filteredAnalysis == null)
+                // Get RICH analysis detail (same as farmer endpoint)
+                var detailQuery = new GetPlantAnalysisDetailQuery { Id = request.PlantAnalysisId };
+                var detailResult = await _mediator.Send(detailQuery, cancellationToken);
+
+                if (!detailResult.Success || detailResult.Data == null)
                     return new ErrorDataResult<SponsoredAnalysisDetailDto>("Analysis not found or access denied");
 
-                // Get sponsor's tier information
-                var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(request.SponsorId);
+                // Apply tier-based filtering to the rich DTO
+                var filteredDetail = ApplyTierBasedFiltering(detailResult.Data, accessPercentage);
 
                 // Get sponsor profile for branding info
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(request.SponsorId);
@@ -55,12 +62,12 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // Build response with tier metadata
                 var response = new SponsoredAnalysisDetailDto
                 {
-                    Analysis = filteredAnalysis,
+                    Analysis = filteredDetail,
                     TierMetadata = new AnalysisTierMetadata
                     {
                         TierName = GetTierName(accessPercentage),
                         AccessPercentage = accessPercentage,
-                        CanMessage = accessPercentage >= 30, // M, L, XL tiers (updated: M tier also has messaging)
+                        CanMessage = accessPercentage >= 30, // M, L, XL tiers
                         CanViewLogo = true, // All tiers can see logo on result screen
                         SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
                         {
@@ -92,6 +99,58 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 };
 
                 return new SuccessDataResult<SponsoredAnalysisDetailDto>(response);
+            }
+
+            /// <summary>
+            /// Apply tier-based filtering to PlantAnalysisDetailDto
+            /// Nullifies fields based on sponsor's access level
+            /// </summary>
+            private PlantAnalysisDetailDto ApplyTierBasedFiltering(PlantAnalysisDetailDto detail, int accessPercentage)
+            {
+                // 30% Access: Basic info, health score, images
+                // Fields available: PlantIdentification (basic), Summary.OverallHealthScore, ImageInfo
+
+                // 60% Access: + Detailed health, nutrients, recommendations, location
+                if (accessPercentage < 60)
+                {
+                    // Remove 60% fields
+                    detail.HealthAssessment = null;
+                    detail.NutrientStatus = null;
+                    detail.PestDisease = null;
+                    detail.EnvironmentalStress = null;
+                    detail.Recommendations = null;
+                    detail.CrossFactorInsights = null;
+                    detail.RiskAssessment = null;
+                    detail.Location = null;
+                    detail.Latitude = null;
+                    detail.Longitude = null;
+                    detail.WeatherConditions = null;
+                    detail.Temperature = null;
+                    detail.Humidity = null;
+                    detail.SoilType = null;
+                }
+
+                // 100% Access: + Farmer contact, field data, processing info
+                if (accessPercentage < 100)
+                {
+                    // Remove 100% fields
+                    detail.ContactPhone = null;
+                    detail.ContactEmail = null;
+                    detail.FieldId = null;
+                    detail.PlantingDate = null;
+                    detail.ExpectedHarvestDate = null;
+                    detail.LastFertilization = null;
+                    detail.LastIrrigation = null;
+                    detail.PreviousTreatments = null;
+                    detail.UrgencyLevel = null;
+                    detail.Notes = null;
+                    detail.AdditionalInfo = null;
+                    detail.ProcessingInfo = null;
+                    detail.TokenUsage = null;
+                    detail.RequestMetadata = null;
+                }
+
+                return detail;
             }
 
             private string GetTierName(int accessPercentage)

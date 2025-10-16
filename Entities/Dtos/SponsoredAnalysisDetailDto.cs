@@ -5,15 +5,17 @@ namespace Entities.Dtos
 {
     /// <summary>
     /// Sponsored analysis detail response with tier metadata and permissions
-    /// Wraps filtered PlantAnalysis entity with tier information for mobile UI logic
+    /// Wraps rich PlantAnalysisDetailDto with tier information for mobile UI logic
+    /// Same detailed structure as farmer endpoint, but with tier-based filtering
     /// </summary>
     public class SponsoredAnalysisDetailDto
     {
         /// <summary>
-        /// Filtered plant analysis data based on sponsor's tier
-        /// Fields will be null/empty based on access level (30%, 60%, 100%)
+        /// Rich plant analysis detail with parsed JSON objects
+        /// Same structure as farmer endpoint (PlantAnalysisDetailDto)
+        /// Fields will be null/empty based on sponsor's access level (30%, 60%, 100%)
         /// </summary>
-        public PlantAnalysis Analysis { get; set; }
+        public PlantAnalysisDetailDto Analysis { get; set; }
 
         /// <summary>
         /// Tier information and permissions for UI logic
