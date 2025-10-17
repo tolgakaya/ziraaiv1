@@ -1,6 +1,7 @@
 using Business.Constants;
 using Business.Services.PlantAnalysis;
 using Core.Utilities.Results;
+using Core.CrossCuttingConcerns.Caching;
 using DataAccess.Abstract;
 using Entities.Concrete;
 using Entities.Dtos;
@@ -23,19 +24,22 @@ namespace Business.Handlers.PlantAnalyses.Commands
             private readonly IUserSubscriptionRepository _userSubscriptionRepository;
             private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
             private readonly IMediator _mediator;
+            private readonly ICacheManager _cacheManager;
 
             public CreatePlantAnalysisCommandHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
                 IPlantAnalysisService plantAnalysisService,
                 IUserSubscriptionRepository userSubscriptionRepository,
                 ISponsorshipCodeRepository sponsorshipCodeRepository,
-                IMediator mediator)
+                IMediator mediator,
+                ICacheManager cacheManager)
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _plantAnalysisService = plantAnalysisService;
                 _userSubscriptionRepository = userSubscriptionRepository;
                 _sponsorshipCodeRepository = sponsorshipCodeRepository;
                 _mediator = mediator;
+                _cacheManager = cacheManager;
             }
 
             public async Task<IDataResult<PlantAnalysisResponseDto>> Handle(CreatePlantAnalysisCommand request, CancellationToken cancellationToken)
@@ -378,6 +382,15 @@ namespace Business.Handlers.PlantAnalyses.Commands
             /// Capture active sponsor attribution for this analysis
             /// Critical for: logo display, sponsor access control, messaging permissions
             /// </summary>
+            /// <summary>
+            /// Invalidate sponsor dashboard cache when analysis is created/completed
+            /// </summary>
+            private void InvalidateSponsorDashboardCache(int sponsorId)
+            {
+                var cacheKey = $"SponsorDashboard:{sponsorId}";
+                _cacheManager.Remove(cacheKey);
+            }
+
             private async Task CaptureActiveSponsorAsync(PlantAnalysis analysis, int? userId)
             {
                 if (!userId.HasValue)
@@ -438,6 +451,10 @@ namespace Business.Handlers.PlantAnalyses.Commands
                     analysis.SponsorCompanyId = code.SponsorId;
                     
                     Console.WriteLine($"[SponsorAttribution] ✅ Analysis {analysis.Id} attributed to sponsor {code.SponsorId} (subscription {activeSponsorship.Id})");
+                    
+                    // Invalidate sponsor dashboard cache
+                    InvalidateSponsorDashboardCache(code.SponsorId);
+                    Console.WriteLine($"[SponsorAttribution] 🗑️ Dashboard cache invalidated for sponsor {code.SponsorId}");
                 }
                 catch (Exception ex)
                 {

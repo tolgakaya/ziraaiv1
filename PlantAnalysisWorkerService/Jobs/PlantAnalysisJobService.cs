@@ -1,6 +1,7 @@
 using Business.Services.FileStorage;
 using Business.Services.Notification;
 using Business.Services.Referral;
+using Core.CrossCuttingConcerns.Caching;
 using DataAccess.Abstract;
 using Microsoft.EntityFrameworkCore;
 using Entities.Concrete;
@@ -22,6 +23,7 @@ namespace PlantAnalysisWorkerService.Jobs
         private readonly IReferralRewardService _referralRewardService;
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
+        private readonly ICacheManager _cacheManager;
 
         public PlantAnalysisJobService(
             ILogger<PlantAnalysisJobService> logger,
@@ -32,7 +34,8 @@ namespace PlantAnalysisWorkerService.Jobs
             IReferralTrackingService referralTrackingService,
             IReferralRewardService referralRewardService,
             IUserSubscriptionRepository userSubscriptionRepository,
-            ISponsorshipCodeRepository sponsorshipCodeRepository)
+            ISponsorshipCodeRepository sponsorshipCodeRepository,
+            ICacheManager cacheManager)
         {
             _logger = logger;
             _plantAnalysisRepository = plantAnalysisRepository;
@@ -43,6 +46,7 @@ namespace PlantAnalysisWorkerService.Jobs
             _referralRewardService = referralRewardService;
             _userSubscriptionRepository = userSubscriptionRepository;
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
+            _cacheManager = cacheManager;
         }
 
         [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
@@ -590,6 +594,15 @@ namespace PlantAnalysisWorkerService.Jobs
         /// Capture active sponsor attribution for this analysis
         /// Critical for: logo display, sponsor access control, messaging permissions, dashboard analytics
         /// </summary>
+        /// <summary>
+        /// Invalidate sponsor dashboard cache when analysis is created/completed
+        /// </summary>
+        private void InvalidateSponsorDashboardCache(int sponsorId)
+        {
+            var cacheKey = $"SponsorDashboard:{sponsorId}";
+            _cacheManager.Remove(cacheKey);
+        }
+
         private async Task CaptureActiveSponsorAsync(PlantAnalysis analysis, int? userId)
         {
             if (!userId.HasValue)
@@ -650,6 +663,10 @@ namespace PlantAnalysisWorkerService.Jobs
                 analysis.SponsorCompanyId = code.SponsorId;
                 
                 _logger.LogInformation($"[SponsorAttribution] ✅ Analysis {analysis.Id} attributed to sponsor {code.SponsorId} (subscription {activeSponsorship.Id})");
+                
+                // Invalidate sponsor dashboard cache
+                InvalidateSponsorDashboardCache(code.SponsorId);
+                _logger.LogInformation($"[SponsorAttribution] 🗑️ Dashboard cache invalidated for sponsor {code.SponsorId}");
             }
             catch (Exception ex)
             {
