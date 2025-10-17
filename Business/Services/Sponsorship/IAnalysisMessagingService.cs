@@ -7,6 +7,7 @@ namespace Business.Services.Sponsorship
     public interface IAnalysisMessagingService
     {
         Task<bool> CanSendMessageAsync(int sponsorId);
+        Task<(bool canSend, string errorMessage)> CanSendMessageForAnalysisAsync(int sponsorId, int farmerId, int plantAnalysisId);
         Task<AnalysisMessage> SendMessageAsync(int fromUserId, int toUserId, int plantAnalysisId, string message, string messageType = "Information");
         Task<List<AnalysisMessage>> GetConversationAsync(int fromUserId, int toUserId, int plantAnalysisId);
         Task<List<AnalysisMessage>> GetUnreadMessagesAsync(int userId);

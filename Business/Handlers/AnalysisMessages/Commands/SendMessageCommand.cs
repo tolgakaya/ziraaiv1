@@ -52,11 +52,16 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     // Normalize field names - support both naming conventions
                     var toUserId = request.ToUserId ?? request.FarmerId ?? 0;
                     var messageContent = !string.IsNullOrEmpty(request.Message) ? request.Message : request.MessageContent;
-                    
-                    // Check if sender can send messages (for sponsors)
-                    if (!await _messagingService.CanSendMessageAsync(request.FromUserId))
+
+                    // Comprehensive validation for sponsors (tier, ownership, rate limit, block check)
+                    var (canSend, errorMessage) = await _messagingService.CanSendMessageForAnalysisAsync(
+                        request.FromUserId,
+                        toUserId,
+                        request.PlantAnalysisId);
+
+                    if (!canSend)
                     {
-                        return new ErrorDataResult<AnalysisMessageDto>(Messages.MessagingNotAllowed);
+                        return new ErrorDataResult<AnalysisMessageDto>(errorMessage);
                     }
 
                     var message = await _messagingService.SendMessageAsync(

@@ -1056,5 +1056,113 @@ namespace WebAPI.Controllers
                 });
             }
         }
+
+        // ====== FARMER BLOCK/UNBLOCK SPONSOR ENDPOINTS ======
+
+        /// <summary>
+        /// Farmer blocks a sponsor from sending messages
+        /// </summary>
+        /// <param name="command">Block details (sponsorId, reason)</param>
+        /// <returns>Block confirmation</returns>
+        [Authorize(Roles = "Farmer,Admin")]
+        [HttpPost("messages/block")]
+        public async Task<IActionResult> BlockSponsor([FromBody] Business.Handlers.FarmerSponsorBlock.Commands.BlockSponsorCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                command.FarmerId = userId.Value;
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Farmer {FarmerId} blocked sponsor {SponsorId}", userId.Value, command.SponsorId);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error blocking sponsor for farmer {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Block operation failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Farmer unblocks a sponsor
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID to unblock</param>
+        /// <returns>Unblock confirmation</returns>
+        [Authorize(Roles = "Farmer,Admin")]
+        [HttpDelete("messages/block/{sponsorId}")]
+        public async Task<IActionResult> UnblockSponsor(int sponsorId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.FarmerSponsorBlock.Commands.UnblockSponsorCommand
+                {
+                    FarmerId = userId.Value,
+                    SponsorId = sponsorId
+                };
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Farmer {FarmerId} unblocked sponsor {SponsorId}", userId.Value, sponsorId);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error unblocking sponsor for farmer {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Unblock operation failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get list of blocked sponsors for current farmer
+        /// </summary>
+        /// <returns>List of blocked sponsors</returns>
+        [Authorize(Roles = "Farmer,Admin")]
+        [HttpGet("messages/blocked")]
+        public async Task<IActionResult> GetBlockedSponsors()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new Business.Handlers.FarmerSponsorBlock.Queries.GetBlockedSponsorsQuery
+                {
+                    FarmerId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting blocked sponsors for farmer {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Retrieval failed: {ex.Message}"));
+            }
+        }
     }
 }
