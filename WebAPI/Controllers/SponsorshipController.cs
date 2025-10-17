@@ -666,24 +666,94 @@ namespace WebAPI.Controllers
                 var userId = GetUserId();
                 if (!userId.HasValue)
                     return Unauthorized();
-                    
-                var query = new GetFilteredAnalysisForSponsorQuery 
-                { 
-                    SponsorId = userId.Value, 
-                    PlantAnalysisId = plantAnalysisId 
+
+                var query = new GetFilteredAnalysisForSponsorQuery
+                {
+                    SponsorId = userId.Value,
+                    PlantAnalysisId = plantAnalysisId
                 };
-                
+
                 var result = await Mediator.Send(query);
-                
+
                 if (result.Success)
                     return Ok(result);
-                
+
                 return BadRequest(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting filtered analysis for sponsor {UserId}, analysis {PlantAnalysisId}", GetUserId(), plantAnalysisId);
                 return StatusCode(500, new ErrorResult($"Analysis retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get paginated list of sponsored analyses with tier-based filtering
+        /// Returns summary information for each analysis based on sponsor's tier level
+        /// Includes logo display permissions and messaging capabilities per analysis
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Items per page (default: 20, max: 100)</param>
+        /// <param name="sortBy">Sort field: date, healthScore, cropType (default: date)</param>
+        /// <param name="sortOrder">Sort order: asc, desc (default: desc)</param>
+        /// <param name="filterByTier">Filter by tier: S, M, L, XL (optional)</param>
+        /// <param name="filterByCropType">Filter by crop type (optional)</param>
+        /// <param name="startDate">Filter by start date (optional)</param>
+        /// <param name="endDate">Filter by end date (optional)</param>
+        /// <returns>Paginated list of analysis summaries with tier-based field visibility</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("analyses")]
+        public async Task<IActionResult> GetSponsoredAnalysesList(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string sortBy = "date",
+            [FromQuery] string sortOrder = "desc",
+            [FromQuery] string filterByTier = null,
+            [FromQuery] string filterByCropType = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                // Validate pagination
+                if (page < 1)
+                    return BadRequest(new ErrorResult("Page must be greater than 0"));
+
+                if (pageSize < 1 || pageSize > 100)
+                    return BadRequest(new ErrorResult("Page size must be between 1 and 100"));
+
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetSponsoredAnalysesListQuery
+                {
+                    SponsorId = userId.Value,
+                    Page = page,
+                    PageSize = pageSize,
+                    SortBy = sortBy,
+                    SortOrder = sortOrder,
+                    FilterByTier = filterByTier,
+                    FilterByCropType = filterByCropType,
+                    StartDate = startDate,
+                    EndDate = endDate
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Retrieved {Count} sponsored analyses for sponsor {SponsorId} (page {Page}/{TotalPages})",
+                        result.Data.Items.Length, userId.Value, result.Data.Page, result.Data.TotalPages);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting sponsored analyses list for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Analyses list retrieval failed: {ex.Message}"));
             }
         }
 

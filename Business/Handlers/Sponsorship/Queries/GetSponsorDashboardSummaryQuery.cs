@@ -87,22 +87,12 @@ namespace Business.Handlers.Sponsorship.Queries
                     var sentCodes = allCodes.Count(c => c.DistributionDate.HasValue);
                     var sentCodesPercentage = totalCodes > 0 ? (decimal)sentCodes / totalCodes * 100 : 0;
 
-                    // Calculate total analyses from sponsored subscriptions
-                    var sponsoredSubscriptionIds = allCodes
-                        .Where(c => c.CreatedSubscriptionId.HasValue)
-                        .Select(c => c.CreatedSubscriptionId.Value)
-                        .Distinct()
-                        .ToList();
+                    // Calculate total analyses - SIMPLIFIED using SponsorCompanyId
+                    var totalAnalyses = await _plantAnalysisRepository.GetCountAsync(
+                        pa => pa.SponsorCompanyId.HasValue && 
+                              pa.SponsorCompanyId.Value == request.SponsorId);
 
-                    var totalAnalyses = 0;
-                    if (sponsoredSubscriptionIds.Any())
-                    {
-                        // Count all analyses where ActiveSponsorshipId matches any of our subscription IDs
-                        var analyses = await _plantAnalysisRepository.GetListAsync(
-                            pa => pa.ActiveSponsorshipId.HasValue &&
-                                  sponsoredSubscriptionIds.Contains(pa.ActiveSponsorshipId.Value));
-                        totalAnalyses = analyses.Count();
-                    }
+                    Console.WriteLine($"[DashboardAnalyses] Total analyses for sponsor {request.SponsorId}: {totalAnalyses}");
 
                     // Purchases count
                     var purchasesCount = allPurchases.Count();
@@ -142,7 +132,7 @@ namespace Business.Handlers.Sponsorship.Queries
                             .Distinct()
                             .Count();
 
-                        // Count analyses for this tier's subscriptions
+                        // Count analyses for this tier - SIMPLIFIED using SponsorCompanyId + subscription IDs
                         var tierSubscriptionIds = tierCodes
                             .Where(c => c.CreatedSubscriptionId.HasValue)
                             .Select(c => c.CreatedSubscriptionId.Value)
@@ -151,11 +141,14 @@ namespace Business.Handlers.Sponsorship.Queries
                         var tierAnalysesCount = 0;
                         if (tierSubscriptionIds.Any())
                         {
-                            var tierAnalyses = await _plantAnalysisRepository.GetListAsync(
-                                pa => pa.ActiveSponsorshipId.HasValue &&
+                            tierAnalysesCount = await _plantAnalysisRepository.GetCountAsync(
+                                pa => pa.SponsorCompanyId.HasValue && 
+                                      pa.SponsorCompanyId.Value == request.SponsorId &&
+                                      pa.ActiveSponsorshipId.HasValue &&
                                       tierSubscriptionIds.Contains(pa.ActiveSponsorshipId.Value));
-                            tierAnalysesCount = tierAnalyses.Count();
                         }
+
+                        Console.WriteLine($"[DashboardAnalyses] Tier {tier.TierName} analyses: {tierAnalysesCount}");
 
                         activePackages.Add(new ActivePackageSummary
                         {
