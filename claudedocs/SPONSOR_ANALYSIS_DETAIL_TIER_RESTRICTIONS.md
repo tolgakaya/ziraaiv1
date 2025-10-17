@@ -473,11 +473,11 @@ catch (Exception ex)
 
 ### Detail Endpoint (`/api/v1/sponsorship/analysis/{id}`)
 
-**Purpose**: Full analysis data
-**Entity**: `PlantAnalysis` (filtered)
-**Tier Filtering**: Applied in service using entity field nulling
-**Recommendations**: ✅ Included for L and XL tiers
-**Image Field**: `ImagePath` (original field name)
+**Purpose**: Full analysis data with parsed objects
+**DTO**: `PlantAnalysisDetailDto` (rich parsed DTO, filtered)
+**Tier Filtering**: Applied in handler after getting rich DTO
+**Recommendations**: ✅ Included as parsed object for L and XL tiers
+**Structure**: Same as farmer endpoint, wrapped with tier metadata
 
 ---
 
@@ -521,12 +521,17 @@ catch (Exception ex)
 The detail endpoint's tier-based filtering is **fully implemented and working correctly**. The system:
 
 1. ✅ Determines sponsor's highest tier from purchases
-2. ✅ Filters PlantAnalysis entity fields based on access percentage
-3. ✅ Returns progressively more data as tier increases (30% → 60% → 100%)
-4. ✅ Records access attempts for analytics
-5. ✅ Enforces authorization and validation
-6. ✅ Caches results for performance
+2. ✅ Gets rich `PlantAnalysisDetailDto` (reusing farmer's detail query handler)
+3. ✅ Filters PlantAnalysisDetailDto fields based on access percentage
+4. ✅ Returns progressively more data as tier increases (30% → 60% → 100%)
+5. ✅ Records access attempts for analytics
+6. ✅ Enforces authorization and validation
+7. ✅ Caches results for performance
 
-**Key Difference from List Endpoint**: Detail endpoint returns **full PlantAnalysis entity** (with filtering), while list endpoint returns **lightweight DTO** optimized for lists.
+**Key Benefits**:
+- **Code Reuse**: Uses same `GetPlantAnalysisDetailQuery` as farmer endpoint
+- **Consistent Structure**: Both farmer and sponsor get rich parsed `PlantAnalysisDetailDto`
+- **Frontend Efficiency**: Mobile team can use same data model for both user types
+- **Tier Metadata**: Sponsor response wrapped with tier information for UI logic
 
-**No issues found** - the implementation correctly enforces sponsorship code tier restrictions as designed.
+**Implementation**: Detail endpoint returns **rich PlantAnalysisDetailDto** (same as farmer) with tier-based filtering applied, wrapped with tier metadata. List endpoint returns **lightweight SponsoredAnalysisSummaryDto** optimized for pagination.

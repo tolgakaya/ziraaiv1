@@ -388,7 +388,9 @@ namespace Business.Handlers.PlantAnalyses.Commands
             private void InvalidateSponsorDashboardCache(int sponsorId)
             {
                 var cacheKey = $"SponsorDashboard:{sponsorId}";
+                Console.WriteLine($"[CacheInvalidation] 🔑 Attempting to remove cache key: {cacheKey}");
                 _cacheManager.Remove(cacheKey);
+                Console.WriteLine($"[CacheInvalidation] ✅ Cache.Remove() called for key: {cacheKey}");
             }
 
             private async Task CaptureActiveSponsorAsync(PlantAnalysis analysis, int? userId)

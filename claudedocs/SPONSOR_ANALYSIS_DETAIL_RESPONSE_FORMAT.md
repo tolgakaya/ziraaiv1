@@ -38,7 +38,7 @@ Detail endpoint now returns **wrapped response** with tier metadata, matching li
 ### SponsoredAnalysisDetailDto
 ```typescript
 {
-  analysis: PlantAnalysis,      // Filtered based on tier (30%, 60%, 100%)
+  analysis: PlantAnalysisDetailDto,  // Rich parsed DTO (filtered based on tier: 30%, 60%, 100%)
   tierMetadata: AnalysisTierMetadata  // UI logic and permissions
 }
 ```
@@ -114,27 +114,38 @@ Authorization: Bearer {S_TIER_SPONSOR_TOKEN}
       "sponsorId": "S159",
       "sponsorUserId": 159,
 
-      // 30% Access fields ✅
-      "overallHealthScore": 4,
-      "plantSpecies": "Bilinmiyor (muhtemelen Solanaceae familyasından)",
-      "plantVariety": "bilinmiyor",
-      "growthStage": "vejetatif",
-      "imageUrl": "https://iili.io/KkT78Dg.jpg",
+      // 30% Access fields ✅ - Rich parsed objects
+      "summary": {
+        "overallHealthScore": 4,
+        "overallHealthDescription": "Orta düzey sağlık"
+      },
+      "plantIdentification": {
+        "species": "Bilinmiyor (muhtemelen Solanaceae familyasından)",
+        "variety": "bilinmiyor",
+        "growthStage": "vejetatif",
+        "ageEstimate": "4-6 haftalık"
+      },
+      "imageInfo": {
+        "imageUrl": "https://iili.io/KkT78Dg.jpg",
+        "captureDate": "2025-10-15T19:05:03.863"
+      },
 
-      // 60% Access fields ❌ NULL
-      "vigorScore": null,
-      "healthSeverity": null,
-      "primaryConcern": null,
-      "recommendations": null,
-      "location": null,
+      // 60% Access fields ❌ NULL (parsed objects not available)
+      "healthAssessment": null,
       "nutrientStatus": null,
+      "recommendations": null,
+      "pestDisease": null,
+      "environmentalStress": null,
+      "location": null,
+      "latitude": null,
+      "longitude": null,
 
       // 100% Access fields ❌ NULL
       "contactPhone": null,
       "contactEmail": null,
       "fieldId": null,
       "plantingDate": null,
-      "totalCostUsd": null
+      "processingInfo": null
     },
     "tierMetadata": {
       "tierName": "S/M",
@@ -208,28 +219,48 @@ Authorization: Bearer {L_TIER_SPONSOR_TOKEN}
       "analysisStatus": "Completed",
       "cropType": "Domates",
 
-      // 30% Access ✅
-      "overallHealthScore": 4,
-      "plantSpecies": "Bilinmiyor (muhtemelen Solanaceae familyasından)",
-      "plantVariety": "bilinmiyor",
-      "growthStage": "vejetatif",
-      "imageUrl": "https://iili.io/KkT78Dg.jpg",
+      // 30% Access ✅ - Rich parsed objects
+      "summary": {
+        "overallHealthScore": 4,
+        "overallHealthDescription": "Orta düzey sağlık"
+      },
+      "plantIdentification": {
+        "species": "Bilinmiyor (muhtemelen Solanaceae familyasından)",
+        "variety": "bilinmiyor",
+        "growthStage": "vejetatif"
+      },
+      "imageInfo": {
+        "imageUrl": "https://iili.io/KkT78Dg.jpg"
+      },
 
-      // 60% Access ✅ NOW VISIBLE
-      "vigorScore": 4,
-      "healthSeverity": "orta",
-      "primaryConcern": "potasyum eksikliği ilişkili yaprak kenarı nekrozu",
-      "prognosis": "orta",
-      "recommendations": "{\"immediate\":[{\"action\":\"toprak ve yaprak analizi yaptırın\"}]}",
+      // 60% Access ✅ NOW VISIBLE - Rich parsed objects
+      "healthAssessment": {
+        "vigorScore": 4,
+        "severity": "orta",
+        "primaryConcern": "potasyum eksikliği ilişkili yaprak kenarı nekrozu",
+        "prognosis": "orta"
+      },
+      "nutrientStatus": {
+        "deficiencies": [
+          {"nutrient": "Potasyum", "severity": "Eksik"},
+          {"nutrient": "Azot", "severity": "Eksik"}
+        ],
+        "primaryDeficiency": "potasyum"
+      },
+      "recommendations": {
+        "immediate": [
+          {"action": "Toprak ve yaprak analizi yaptırın", "priority": "Yüksek"}
+        ]
+      },
       "location": "Antalya, Türkiye",
-      "nutrientStatus": "{\"potassium\":\"eksik\",\"nitrogen\":\"eksik\"}",
-      "primaryDeficiency": "potasyum",
+      "latitude": 36.8969,
+      "longitude": 30.7133,
 
       // 100% Access ❌ STILL NULL
       "contactPhone": null,
       "contactEmail": null,
       "fieldId": null,
-      "totalCostUsd": null
+      "processingInfo": null
     },
     "tierMetadata": {
       "tierName": "L",
@@ -287,19 +318,34 @@ Authorization: Bearer {XL_TIER_SPONSOR_TOKEN}
       "analysisStatus": "Completed",
       "cropType": "Domates",
 
-      // 30% Access ✅
-      "overallHealthScore": 4,
-      "plantSpecies": "Bilinmiyor",
-      "plantVariety": "bilinmiyor",
-      "growthStage": "vejetatif",
-      "imageUrl": "https://iili.io/KkT78Dg.jpg",
+      // 30% Access ✅ - Rich parsed objects
+      "summary": {
+        "overallHealthScore": 4,
+        "overallHealthDescription": "Orta düzey sağlık"
+      },
+      "plantIdentification": {
+        "species": "Bilinmiyor",
+        "variety": "bilinmiyor",
+        "growthStage": "vejetatif"
+      },
+      "imageInfo": {
+        "imageUrl": "https://iili.io/KkT78Dg.jpg"
+      },
 
-      // 60% Access ✅
-      "vigorScore": 4,
-      "healthSeverity": "orta",
-      "recommendations": "{...full recommendations JSON...}",
+      // 60% Access ✅ - Rich parsed objects
+      "healthAssessment": {
+        "vigorScore": 4,
+        "severity": "orta"
+      },
+      "nutrientStatus": {
+        "deficiencies": [...]
+      },
+      "recommendations": {
+        "immediate": [...],
+        "shortTerm": [...],
+        "preventive": [...]
+      },
       "location": "Antalya, Türkiye",
-      "nutrientStatus": "{...}",
 
       // 100% Access ✅ ALL FIELDS VISIBLE
       "contactPhone": "+905551234567",
@@ -312,11 +358,13 @@ Authorization: Bearer {XL_TIER_SPONSOR_TOKEN}
       "previousTreatments": "[\"Fertilizer NPK\"]",
       "urgencyLevel": "Medium",
       "notes": "Farmer noted spots last week",
-      "aiModel": "gpt-4o-2024-08-06",
-      "totalTokens": 1250,
-      "totalCostUsd": 0.0375,
-      "totalCostTry": 1.25,
-      "detailedAnalysisData": "{...full AI response...}"
+      "processingInfo": {
+        "aiModel": "gpt-4o-2024-08-06",
+        "totalTokens": 1250,
+        "costUsd": 0.0375,
+        "costTry": 1.25
+      },
+      "additionalInfo": {...}
     },
     "tierMetadata": {
       "tierName": "XL",
@@ -401,17 +449,17 @@ if (response.tierMetadata.accessibleFields.canViewProcessingData) {
 ```
 
 ### Detail Endpoint (`/api/v1/sponsorship/analysis/{id}`)
-- **DTO**: `SponsoredAnalysisDetailDto` (wrapped entity)
+- **DTO**: `SponsoredAnalysisDetailDto` (wrapped rich PlantAnalysisDetailDto)
 - **Tier metadata**: Separate `tierMetadata` object
-- **Purpose**: Complete analysis data
-- **Recommendations**: ✅ Included (L, XL tiers)
-- **Field count**: ~50+ fields (if XL tier)
+- **Purpose**: Complete analysis data with parsed objects
+- **Recommendations**: ✅ Included as parsed object (L, XL tiers)
+- **Field count**: ~50+ parsed fields (if XL tier)
 
 **Example**:
 ```json
 {
   "data": {
-    "analysis": { /* Full PlantAnalysis entity */ },
+    "analysis": { /* Rich PlantAnalysisDetailDto with parsed objects */ },
     "tierMetadata": { /* Tier info + accessible fields */ }
   }
 }
@@ -559,13 +607,21 @@ Requires: canMessage = true (M, L, XL tiers)
 ## 🎯 Summary
 
 Detail endpoint now returns **tier-aware response** with:
-- ✅ Filtered `PlantAnalysis` entity (30%, 60%, 100% fields)
+- ✅ Rich `PlantAnalysisDetailDto` with parsed objects (same as farmer endpoint)
+- ✅ Tier-based filtering applied to parsed DTO (30%, 60%, 100% fields)
 - ✅ Tier metadata (`tierName`, `accessPercentage`)
 - ✅ Sponsor branding info (`sponsorInfo`)
 - ✅ Explicit permission flags (`accessibleFields`)
 - ✅ Feature toggles (`canMessage`, `canViewLogo`)
 
+**Key Benefits**:
+- Same rich data structure as farmer endpoint (frontend code reuse)
+- Parsed JSON objects instead of raw strings
+- Consistent tier metadata across list and detail endpoints
+
 **Mobile team can now**:
+- Use same data model for farmer and sponsor analysis details
+- Parse JSON once in shared code, not per-screen
 - Render UI sections based on permission flags
 - Show upgrade prompts for restricted features
 - Display sponsor branding consistently

@@ -600,7 +600,9 @@ namespace PlantAnalysisWorkerService.Jobs
         private void InvalidateSponsorDashboardCache(int sponsorId)
         {
             var cacheKey = $"SponsorDashboard:{sponsorId}";
+            _logger.LogInformation($"[CacheInvalidation] 🔑 Attempting to remove cache key: {cacheKey}");
             _cacheManager.Remove(cacheKey);
+            _logger.LogInformation($"[CacheInvalidation] ✅ Cache.Remove() called for key: {cacheKey}");
         }
 
         private async Task CaptureActiveSponsorAsync(PlantAnalysis analysis, int? userId)
