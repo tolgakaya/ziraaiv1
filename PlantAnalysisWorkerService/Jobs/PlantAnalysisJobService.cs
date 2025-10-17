@@ -5,7 +5,6 @@ using DataAccess.Abstract;
 using Microsoft.EntityFrameworkCore;
 using Entities.Concrete;
 using Entities.Dtos;
-using Entities.Concrete.Enums;
 using Hangfire;
 using Newtonsoft.Json;
 using System.Net.Http.Json;
