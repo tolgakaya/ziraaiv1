@@ -270,7 +270,7 @@ pm.sendRequest({
 
 **API Request**:
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorS_token}}
 Content-Type: application/json
 
@@ -427,7 +427,7 @@ WHERE UserId = {{sponsorL_userId}} AND Tier < 3;
 
 **API Request**:
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorXL_token}}
 Content-Type: application/json
 
@@ -496,7 +496,7 @@ POST /api/PlantAnalyses
 // Creates PlantAnalysis with SponsorUserId = 50
 
 // 4. Sponsor sends message
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 {
   "plantAnalysisId": 15,
   "toUserId": 100,  // Farmer ID
@@ -684,7 +684,7 @@ WHERE FromUserId = {{sponsorL_userId}}
 
 **API Request**:
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorL_token}}
 Content-Type: application/json
 
@@ -962,7 +962,7 @@ WHERE FromUserId = {{farmerId}} AND SenderRole = 'Farmer'
 **API Requests**:
 ```http
 # 1. Farmer blocks sponsor
-POST /api/Sponsorship/messages/block
+POST /api/v1/sponsorship/messages/block
 Authorization: Bearer {{farmer1_token}}
 Content-Type: application/json
 
@@ -978,7 +978,7 @@ Content-Type: application/json
 }
 
 # 2. Sponsor tries to send message
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorL_token}}
 Content-Type: application/json
 
@@ -1037,7 +1037,7 @@ WHERE FromUserId = 50 AND ToUserId = 100
 **API Requests**:
 ```http
 # 1. Farmer unblocks sponsor
-DELETE /api/Sponsorship/messages/block/50
+DELETE /api/v1/sponsorship/messages/block/50
 Authorization: Bearer {{farmer1_token}}
 
 # Response:
@@ -1047,7 +1047,7 @@ Authorization: Bearer {{farmer1_token}}
 }
 
 # 2. Sponsor sends message - should succeed now
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorL_token}}
 Content-Type: application/json
 
@@ -1133,7 +1133,7 @@ ORDER BY SentDate DESC LIMIT 1;
 
 **API Request**:
 ```http
-GET /api/Sponsorship/messages/blocked
+GET /api/v1/sponsorship/messages/blocked
 Authorization: Bearer {{farmer1_token}}
 ```
 
@@ -1352,7 +1352,7 @@ WHERE FromUserId = 50 AND SentDate >= CURRENT_DATE;
 
 **API Request**:
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorL_token}}
 Content-Type: application/json
 
@@ -1435,7 +1435,7 @@ Authorization: Bearer {{admin_token}}
 
 **Second Message**:
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorL_token}}
 Content-Type: application/json
 
@@ -1567,7 +1567,7 @@ GROUP BY PlantAnalysisId;
 **Test Flow**:
 ```http
 # 1. Sponsor first message
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorL_token}}
 {
   "plantAnalysisId": 10,
@@ -1577,7 +1577,7 @@ Authorization: Bearer {{sponsorL_token}}
 # Response: IsApproved = false
 
 # 2. Farmer replies
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{farmer1_token}}
 {
   "plantAnalysisId": 10,
@@ -1691,7 +1691,7 @@ WHERE PlantAnalysisId = 10
 **Test Flow**:
 ```http
 # 1. Sponsor sends first message
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorL_token}}
 Content-Type: application/json
 
@@ -1714,7 +1714,7 @@ Content-Type: application/json
 }
 
 # 2. Farmer replies
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{farmer1_token}}
 Content-Type: application/json
 
@@ -1737,7 +1737,7 @@ Content-Type: application/json
 }
 
 # 3. Sponsor replies again
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorL_token}}
 Content-Type: application/json
 
@@ -1790,7 +1790,7 @@ ORDER BY SentDate;
 **Test Flow**:
 ```http
 # Farmer B tries to message on Farmer A's analysis
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{farmer2_token}}
 Content-Type: application/json
 
@@ -2120,7 +2120,7 @@ Authorization: Bearer {{sponsor_token}}
 
 **Step 6: Sponsor Sends First Message**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsor_token}}
 Content-Type: application/json
 
@@ -2182,7 +2182,7 @@ Authorization: Bearer {{farmer_token}}
   ]
 }
 
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{farmer_token}}
 Content-Type: application/json
 
@@ -2277,7 +2277,7 @@ SELECT * FROM AnalysisMessages WHERE PlantAnalysisId = 15 ORDER BY SentDate OFFS
 
 **Step 3: Farmer Blocks Sponsor**
 ```http
-POST /api/Sponsorship/messages/block
+POST /api/v1/sponsorship/messages/block
 Authorization: Bearer {{farmer_token}}
 Content-Type: application/json
 
@@ -2296,7 +2296,7 @@ Content-Type: application/json
 **Step 4: Sponsor Attempts Blocked**
 ```http
 # Attempt 1: New message
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsor_token}}
 {
   "plantAnalysisId": 15,
@@ -2306,7 +2306,7 @@ Authorization: Bearer {{sponsor_token}}
 # Response: "This farmer has blocked messages from you"
 
 # Attempt 2: Different analysis
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsor_token}}
 {
   "plantAnalysisId": 16,
@@ -2320,7 +2320,7 @@ Authorization: Bearer {{sponsor_token}}
 
 **Step 5: Farmer Unblocks**
 ```http
-DELETE /api/Sponsorship/messages/block/50
+DELETE /api/v1/sponsorship/messages/block/50
 Authorization: Bearer {{farmer_token}}
 
 # Response:
@@ -2332,7 +2332,7 @@ Authorization: Bearer {{farmer_token}}
 
 **Step 6: Sponsor Can Message Again**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsor_token}}
 {
   "plantAnalysisId": 15,
@@ -2476,7 +2476,7 @@ Authorization: Bearer {{sponsor_token}}
 }
 
 # Can message Farmer 1 again
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 {
   "plantAnalysisId": 15,
   "toUserId": 100,
@@ -2608,7 +2608,7 @@ pm.sendRequest({
 
 ### 6.1 Send Message Endpoint
 
-**Endpoint**: `POST /api/Sponsorship/messages/send`  
+**Endpoint**: `POST /api/v1/sponsorship/messages`  
 **Authorization**: Required (Sponsor or Farmer)
 
 **Test Cases**:
@@ -2628,7 +2628,7 @@ pm.sendRequest({
 
 **Detailed Test: API-MSG-001**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{valid_L_sponsor_token}}
 Content-Type: application/json
 
@@ -2679,8 +2679,8 @@ Content-Type: application/json
 
 ### 6.3 Block/Unblock Endpoints
 
-**Block Endpoint**: `POST /api/Sponsorship/messages/block`  
-**Unblock Endpoint**: `DELETE /api/Sponsorship/messages/block/{sponsorId}`  
+**Block Endpoint**: `POST /api/v1/sponsorship/messages/block`  
+**Unblock Endpoint**: `DELETE /api/v1/sponsorship/messages/block/{sponsorId}`  
 **Authorization**: Farmer only
 
 **Test Cases**:
@@ -2969,7 +2969,7 @@ GROUP BY pa.Id;
 
 **Test Example: ERROR-001 - Tier Validation**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{s_tier_sponsor_token}}
 Content-Type: application/json
 
@@ -3014,7 +3014,7 @@ Content-Type: application/json
 
 **Test 1: Empty Message**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 {
   "plantAnalysisId": 10,
   "toUserId": 100,
@@ -3025,7 +3025,7 @@ POST /api/Sponsorship/messages/send
 
 **Test 2: Message Too Long**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 {
   "plantAnalysisId": 10,
   "toUserId": 100,
@@ -3036,7 +3036,7 @@ POST /api/Sponsorship/messages/send
 
 **Test 3: Invalid PlantAnalysisId**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 {
   "plantAnalysisId": -1,
   "toUserId": 100,
@@ -3047,7 +3047,7 @@ POST /api/Sponsorship/messages/send
 
 **Test 4: Missing Required Field**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 {
   "toUserId": 100,
   "message": "Test"
@@ -3068,7 +3068,7 @@ POST /api/Sponsorship/messages/send
 
 **Test 1: Expired Token**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.expired.token
 
 # Expected: 401 Unauthorized
@@ -3076,7 +3076,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.expired.token
 
 **Test 2: Invalid Signature**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{valid_token}}.invalid_signature
 
 # Expected: 401 Unauthorized
@@ -3084,7 +3084,7 @@ Authorization: Bearer {{valid_token}}.invalid_signature
 
 **Test 3: Missing Token**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 # No Authorization header
 
 # Expected: 401 Unauthorized
@@ -3092,7 +3092,7 @@ POST /api/Sponsorship/messages/send
 
 **Test 4: Wrong Role Token**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{admin_token}}  // Admin trying to send as sponsor
 
 # Expected: 403 Forbidden (or role-specific error)
@@ -3118,7 +3118,7 @@ Authorization: Bearer {{admin_token}}  // Admin trying to send as sponsor
 
 **Test Example: Farmer Cannot Block as Sponsor**
 ```http
-POST /api/Sponsorship/messages/block
+POST /api/v1/sponsorship/messages/block
 Authorization: Bearer {{sponsor_token}}
 {
   "sponsorId": 60,
@@ -3148,7 +3148,7 @@ Authorization: Bearer {{farmerA_token}}
 
 **Test 2: Sponsor A Cannot Message For Sponsor B's Analysis**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 Authorization: Bearer {{sponsorA_token}}
 {
   "plantAnalysisId": 30,  // Sponsored by Sponsor B
@@ -3161,7 +3161,7 @@ Authorization: Bearer {{sponsorA_token}}
 
 **Test 3: SQL Injection Prevention**
 ```http
-POST /api/Sponsorship/messages/send
+POST /api/v1/sponsorship/messages
 {
   "plantAnalysisId": "10; DROP TABLE AnalysisMessages;--",
   "toUserId": 100,

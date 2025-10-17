@@ -533,17 +533,29 @@ if (!await CanSendByRateLimit(sponsorId, farmerId))
 ### 1. Send Message (Sponsor to Farmer)
 
 ```http
-POST /api/v1/sponsorship/messages
+POST /api/v{version}/sponsorship/messages
 Authorization: Bearer {jwt_token}
 Roles: Sponsor, Admin
 
-Request Body:
+Request Body (Multiple field name support for backward compatibility):
 {
-  "toUserId": 789,              // Farmer user ID
-  "plantAnalysisId": 123,        // Analysis context
+  // User IDs (use either toUserId OR farmerId)
+  "toUserId": 789,              // Farmer user ID (preferred)
+  "farmerId": 789,              // Alternative field name (backward compat)
+  
+  // Message content (use either message OR messageContent)
   "message": "Hello! I reviewed your tomato analysis...",
-  "messageType": "Information",  // Question, Answer, Recommendation, Information
-  "priority": "Normal"           // Low, Normal, High, Urgent
+  "messageContent": "Hello! I reviewed your tomato analysis...",  // Alternative
+  
+  // Required fields
+  "plantAnalysisId": 123,       // Analysis context
+  "fromUserId": 456,            // Set by server from JWT token
+  
+  // Optional fields
+  "messageType": "Information", // Question, Answer, Recommendation, Information
+  "subject": "Plant Health Tips",
+  "priority": "Normal",         // Low, Normal, High, Urgent
+  "category": "General"         // Disease, Pest, Nutrient, General, Product
 }
 
 Success Response (200 OK):
@@ -553,17 +565,21 @@ Success Response (200 OK):
   "data": {
     "id": 456,
     "plantAnalysisId": 123,
-    "fromUserId": 456,           // Sponsor ID
-    "toUserId": 789,             // Farmer ID
+    "fromUserId": 456,          // Sponsor ID
+    "toUserId": 789,            // Farmer ID
     "message": "Hello! I reviewed your tomato analysis...",
     "messageType": "Information",
+    "subject": "Plant Health Tips",
     "isRead": false,
     "sentDate": "2025-10-17T10:30:00Z",
+    "readDate": null,
     "senderRole": "Sponsor",
     "senderName": "TarimTech Solutions",
     "senderCompany": "TarimTech",
-    "priority": "Normal"
+    "priority": "Normal",
+    "category": "General"
   }
+}
 }
 
 Error Responses:
@@ -596,7 +612,7 @@ Error Responses:
 ### 2. Get Conversation
 
 ```http
-GET /api/v1/sponsorship/messages/conversation?farmerId=789&plantAnalysisId=123
+GET /api/v{version}/sponsorship/messages/conversation?farmerId=789&plantAnalysisId=123
 Authorization: Bearer {jwt_token}
 Roles: Sponsor, Farmer, Admin
 
@@ -611,12 +627,15 @@ Success Response (200 OK):
       "toUserId": 789,
       "message": "Hello! I reviewed your tomato analysis...",
       "messageType": "Information",
+      "subject": "Plant Health Tips",
       "isRead": true,
       "sentDate": "2025-10-17T10:30:00Z",
       "readDate": "2025-10-17T11:00:00Z",
       "senderRole": "Sponsor",
       "senderName": "TarimTech Solutions",
-      "senderCompany": "TarimTech"
+      "senderCompany": "TarimTech",
+      "priority": "Normal",
+      "category": "General"
     },
     {
       "id": 2,
@@ -625,10 +644,15 @@ Success Response (200 OK):
       "toUserId": 456,
       "message": "Thank you for the advice!",
       "messageType": "Answer",
+      "subject": null,
       "isRead": false,
       "sentDate": "2025-10-17T12:00:00Z",
+      "readDate": null,
       "senderRole": "Farmer",
-      "senderName": "Mehmet Yılmaz"
+      "senderName": "Mehmet Yılmaz",
+      "senderCompany": null,
+      "priority": "Normal",
+      "category": "General"
     }
   ]
 }
@@ -637,14 +661,14 @@ Success Response (200 OK):
 ### 3. Block Sponsor (Farmer Only)
 
 ```http
-POST /api/v1/sponsorship/messages/block
+POST /api/v{version}/sponsorship/messages/block
 Authorization: Bearer {jwt_token}
 Roles: Farmer, Admin
 
 Request Body:
 {
   "sponsorId": 456,
-  "reason": "Spam messages"
+  "reason": "Spam messages"  // Optional
 }
 
 Success Response (200 OK):
@@ -657,9 +681,12 @@ Success Response (200 OK):
 ### 4. Unblock Sponsor (Farmer Only)
 
 ```http
-DELETE /api/v1/sponsorship/messages/block/456
+DELETE /api/v{version}/sponsorship/messages/block/{sponsorId}
 Authorization: Bearer {jwt_token}
 Roles: Farmer, Admin
+
+Path Parameters:
+- sponsorId: Sponsor user ID to unblock (e.g., 456)
 
 Success Response (200 OK):
 {
@@ -671,7 +698,7 @@ Success Response (200 OK):
 ### 5. Get Blocked Sponsors (Farmer Only)
 
 ```http
-GET /api/v1/sponsorship/messages/blocked
+GET /api/v{version}/sponsorship/messages/blocked
 Authorization: Bearer {jwt_token}
 Roles: Farmer, Admin
 
