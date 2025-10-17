@@ -374,12 +374,22 @@ namespace Business.Handlers.PlantAnalyses.Commands
             /// Capture active sponsor attribution for this analysis
             /// Critical for: logo display, sponsor access control, messaging permissions
             /// </summary>
+            /// <summary>
+            /// Capture active sponsor attribution for this analysis
+            /// Critical for: logo display, sponsor access control, messaging permissions
+            /// </summary>
             private async Task CaptureActiveSponsorAsync(PlantAnalysis analysis, int? userId)
             {
-                if (!userId.HasValue) return;
+                if (!userId.HasValue)
+                {
+                    Console.WriteLine($"[SponsorAttribution] ⚠️ No userId provided for analysis {analysis.Id} - skipping sponsor capture");
+                    return;
+                }
 
                 try
                 {
+                    Console.WriteLine($"[SponsorAttribution] 🔍 Looking for active sponsorship for user {userId.Value}");
+
                     // Get active sponsored subscription
                     var activeSponsorship = await _userSubscriptionRepository.GetAsync(s =>
                         s.UserId == userId.Value &&
@@ -388,23 +398,51 @@ namespace Business.Handlers.PlantAnalyses.Commands
                         s.IsActive &&
                         s.EndDate > DateTime.Now);
 
-                    if (activeSponsorship == null) return;
+                    if (activeSponsorship == null)
+                    {
+                        Console.WriteLine($"[SponsorAttribution] ❌ No active sponsored subscription found for user {userId.Value}");
+                        
+                        // Debug: Check if user has ANY subscription
+                        var anySubscription = await _userSubscriptionRepository.GetAsync(s => s.UserId == userId.Value);
+                        if (anySubscription != null)
+                        {
+                            Console.WriteLine($"[SponsorAttribution] ℹ️ User has subscription but not active/sponsored:");
+                            Console.WriteLine($"   - IsSponsoredSubscription: {anySubscription.IsSponsoredSubscription}");
+                            Console.WriteLine($"   - QueueStatus: {anySubscription.QueueStatus}");
+                            Console.WriteLine($"   - IsActive: {anySubscription.IsActive}");
+                            Console.WriteLine($"   - EndDate: {anySubscription.EndDate} (Now: {DateTime.Now})");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[SponsorAttribution] ℹ️ User has no subscription at all");
+                        }
+                        return;
+                    }
+
+                    Console.WriteLine($"[SponsorAttribution] ✅ Found active sponsorship: ID={activeSponsorship.Id}, CodeId={activeSponsorship.SponsorshipCodeId}");
 
                     // Get sponsor company ID from the code
                     var code = await _sponsorshipCodeRepository.GetAsync(c => 
                         c.Id == activeSponsorship.SponsorshipCodeId);
 
-                    if (code != null)
+                    if (code == null)
                     {
-                        analysis.ActiveSponsorshipId = activeSponsorship.Id;
-                        analysis.SponsorCompanyId = code.SponsorId; // Denormalized for performance
-                        
-                        Console.WriteLine($"[SponsorAttribution] Analysis {analysis.Id} attributed to sponsor {code.SponsorId} (subscription {activeSponsorship.Id})");
+                        Console.WriteLine($"[SponsorAttribution] ❌ Sponsorship code {activeSponsorship.SponsorshipCodeId} not found!");
+                        return;
                     }
+
+                    Console.WriteLine($"[SponsorAttribution] ✅ Found sponsorship code: {code.Code}, SponsorId={code.SponsorId}");
+
+                    // Set both attribution fields
+                    analysis.ActiveSponsorshipId = activeSponsorship.Id;
+                    analysis.SponsorCompanyId = code.SponsorId;
+                    
+                    Console.WriteLine($"[SponsorAttribution] ✅ Analysis {analysis.Id} attributed to sponsor {code.SponsorId} (subscription {activeSponsorship.Id})");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[SponsorAttribution] Error capturing sponsor for analysis: {ex.Message}");
+                    Console.WriteLine($"[SponsorAttribution] ❌ ERROR capturing sponsor for analysis: {ex.Message}");
+                    Console.WriteLine($"[SponsorAttribution] Stack trace: {ex.StackTrace}");
                     // Don't fail analysis creation if sponsor capture fails
                 }
             }
