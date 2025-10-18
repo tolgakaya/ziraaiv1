@@ -106,6 +106,9 @@ namespace Entities.Dtos
         // Request Metadata
         public RequestMetadataDetails RequestMetadata { get; set; }
 
+        // Sponsorship Metadata (optional - only present if analysis was done with sponsorship code)
+        public AnalysisTierMetadata SponsorshipMetadata { get; set; }
+
         // Success Status
         public bool Success { get; set; }
         public string Message { get; set; }

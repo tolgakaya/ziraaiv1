@@ -7,6 +7,7 @@ using DataAccess.Abstract;
 using Entities.Concrete;
 using Entities.Dtos;
 using MediatR;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,6 +53,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 if (!detailResult.Success || detailResult.Data == null)
                     return new ErrorDataResult<SponsoredAnalysisDetailDto>("Analysis not found or access denied");
+
+                // Record access for messaging validation (CRITICAL FIX)
+                try
+                {
+                    var farmerId = detailResult.Data.UserId ?? 0;
+                    await _dataAccessService.RecordAccessAsync(request.SponsorId, request.PlantAnalysisId, farmerId);
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't fail the request if access recording fails
+                    Console.WriteLine($"[GetFilteredAnalysisForSponsorQuery] Warning: Could not record access: {ex.Message}");
+                }
 
                 // Apply tier-based filtering to the rich DTO
                 var filteredDetail = ApplyTierBasedFiltering(detailResult.Data, accessPercentage);
