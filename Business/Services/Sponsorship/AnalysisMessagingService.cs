@@ -1,6 +1,8 @@
 using Business.Services.Sponsorship;
+using Business.Hubs;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +19,7 @@ namespace Business.Services.Sponsorship
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
         private readonly IFarmerSponsorBlockRepository _blockRepository;
         private readonly IMessageRateLimitService _rateLimitService;
+        private readonly IHubContext<PlantAnalysisHub> _hubContext;
 
         public AnalysisMessagingService(
             IAnalysisMessageRepository messageRepository,
@@ -25,10 +28,12 @@ namespace Business.Services.Sponsorship
             ISponsorAnalysisAccessRepository analysisAccessRepository,
             IPlantAnalysisRepository plantAnalysisRepository,
             IFarmerSponsorBlockRepository blockRepository,
-            IMessageRateLimitService rateLimitService)
+            IMessageRateLimitService rateLimitService,
+            IHubContext<PlantAnalysisHub> hubContext)
         {
             _messageRepository = messageRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
+            _hubContext = hubContext;
             _userRepository = userRepository;
             _analysisAccessRepository = analysisAccessRepository;
             _plantAnalysisRepository = plantAnalysisRepository;
@@ -250,6 +255,31 @@ namespace Business.Services.Sponsorship
 
                 _messageRepository.Add(newMessage);
                 await _messageRepository.SaveChangesAsync();
+
+                // 🔔 Send real-time SignalR notification to recipient
+                try
+                {
+                    await _hubContext.Clients.User(toUserId.ToString()).SendAsync("NewMessage", new
+                    {
+                        messageId = newMessage.Id,
+                        plantAnalysisId = newMessage.PlantAnalysisId,
+                        fromUserId = newMessage.FromUserId,
+                        fromUserName = newMessage.SenderName,
+                        fromUserCompany = newMessage.SenderCompany,
+                        senderRole = newMessage.SenderRole,
+                        message = newMessage.Message,
+                        messageType = newMessage.MessageType,
+                        sentDate = newMessage.SentDate,
+                        isApproved = newMessage.IsApproved,
+                        requiresApproval = isFirstMessage
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't fail if SignalR notification fails
+                    // Message is still saved, notification is best-effort
+                    Console.WriteLine($"[AnalysisMessagingService] Warning: Failed to send SignalR notification: {ex.Message}");
+                }
 
                 return newMessage;
             }
