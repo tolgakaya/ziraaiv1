@@ -23,15 +23,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
             private readonly ISponsorDataAccessService _dataAccessService;
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
+            private readonly IAnalysisMessageRepository _analysisMessageRepository;
             
             public GetPlantAnalysisDetailQueryHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
                 ISponsorDataAccessService dataAccessService,
-                ISponsorProfileRepository sponsorProfileRepository)
+                ISponsorProfileRepository sponsorProfileRepository,
+                IAnalysisMessageRepository analysisMessageRepository)
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
+                _analysisMessageRepository = analysisMessageRepository;
             }
             
             public async Task<IDataResult<PlantAnalysisDetailDto>> Handle(GetPlantAnalysisDetailQuery request, CancellationToken cancellationToken)
@@ -135,11 +138,19 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(analysis.SponsorUserId.Value);
                         var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(analysis.SponsorUserId.Value);
 
+                        // Check if sponsor has sent any message to farmer for this analysis
+                        var farmerId = analysis.UserId ?? 0;
+                        var hasReceivedMessage = await _analysisMessageRepository.GetAsync(
+                            m => m.PlantAnalysisId == analysis.Id &&
+                                 m.FromUserId == analysis.SponsorUserId.Value &&
+                                 m.ToUserId == farmerId);
+
                         detailDto.SponsorshipMetadata = new AnalysisTierMetadata
                         {
                             TierName = GetTierName(accessPercentage),
                             AccessPercentage = accessPercentage,
                             CanMessage = accessPercentage >= 30, // M, L, XL tiers
+                            CanReply = hasReceivedMessage != null, // Farmer can only reply if sponsor sent a message first
                             CanViewLogo = true, // All tiers can see logo on result screen
                             SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
                             {

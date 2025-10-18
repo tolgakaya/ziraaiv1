@@ -45,6 +45,11 @@ namespace Entities.Dtos
         public bool CanMessage { get; set; }
 
         /// <summary>
+        /// Can farmer reply to sponsor's message? (Only if sponsor has sent a message first)
+        /// </summary>
+        public bool CanReply { get; set; }
+
+        /// <summary>
         /// Can sponsor's logo be displayed? (All tiers on result screen)
         /// </summary>
         public bool CanViewLogo { get; set; }

@@ -134,6 +134,59 @@ namespace Business.Services.Sponsorship
         }
 
         /// <summary>
+        /// Validates if farmer can reply to sponsor's message
+        /// Farmers can only reply if sponsor has sent them a message first
+        /// </summary>
+        public async Task<(bool canReply, string errorMessage)> CanFarmerReplyAsync(int farmerId, int sponsorId, int plantAnalysisId)
+        {
+            // 1. Check if analysis exists
+            var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
+            if (analysis == null)
+            {
+                return (false, "Analysis not found");
+            }
+
+            // 2. Verify farmer owns this analysis
+            var analysisFarmerId = analysis.UserId ?? 0;
+            if (analysisFarmerId != farmerId)
+            {
+                return (false, "You can only reply to messages for your own analyses");
+            }
+
+            // 3. Verify analysis was sponsored
+            if (!analysis.SponsorUserId.HasValue)
+            {
+                return (false, "This analysis was not sponsored");
+            }
+
+            // 4. Verify sponsor matches
+            if (analysis.SponsorUserId.Value != sponsorId)
+            {
+                return (false, "Invalid sponsor for this analysis");
+            }
+
+            // 5. Check if sponsor has sent at least one message to farmer
+            var sponsorMessage = await _messageRepository.GetAsync(
+                m => m.PlantAnalysisId == plantAnalysisId &&
+                     m.FromUserId == sponsorId &&
+                     m.ToUserId == farmerId);
+
+            if (sponsorMessage == null)
+            {
+                return (false, "You can only reply after the sponsor sends you a message first");
+            }
+
+            // 6. Check if farmer has blocked this sponsor
+            var isBlocked = await _blockRepository.IsBlockedAsync(farmerId, sponsorId);
+            if (isBlocked)
+            {
+                return (false, "You have blocked this sponsor");
+            }
+
+            return (true, string.Empty);
+        }
+
+        /// <summary>
         /// Checks if this is the first message between sponsor and farmer
         /// First messages require admin approval
         /// </summary>

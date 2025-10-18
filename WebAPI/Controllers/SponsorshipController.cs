@@ -762,7 +762,7 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="command">Message details</param>
         /// <returns>Sent message information</returns>
-        [Authorize(Roles = "Sponsor,Admin")]
+        [Authorize(Roles = "Sponsor,Farmer,Admin")]
         [HttpPost("messages")]
         public async Task<IActionResult> SendMessage([FromBody] SendMessageCommand command)
         {
