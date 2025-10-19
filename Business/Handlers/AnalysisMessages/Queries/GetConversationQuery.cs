@@ -70,7 +70,36 @@ namespace Business.Handlers.AnalysisMessages.Queries
                         
                         // Classification
                         Priority = m.Priority,
-                        Category = m.Category
+                        Category = m.Category,
+                        
+                        // Attachments (Phase 2A)
+                        HasAttachments = m.HasAttachments,
+                        AttachmentCount = m.AttachmentCount,
+                        AttachmentUrls = !string.IsNullOrEmpty(m.AttachmentUrls) 
+                            ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentUrls) 
+                            : null,
+                        AttachmentTypes = !string.IsNullOrEmpty(m.AttachmentTypes)
+                            ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentTypes)
+                            : null,
+                        AttachmentSizes = !string.IsNullOrEmpty(m.AttachmentSizes)
+                            ? System.Text.Json.JsonSerializer.Deserialize<long[]>(m.AttachmentSizes)
+                            : null,
+                        AttachmentNames = !string.IsNullOrEmpty(m.AttachmentNames)
+                            ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentNames)
+                            : null,
+                        
+                        // Voice Messages (Phase 2B)
+                        IsVoiceMessage = !string.IsNullOrEmpty(m.VoiceMessageUrl),
+                        VoiceMessageUrl = m.VoiceMessageUrl,
+                        VoiceMessageDuration = m.VoiceMessageDuration,
+                        VoiceMessageWaveform = m.VoiceMessageWaveform,
+                        
+                        // Edit/Delete/Forward (Phase 4)
+                        IsEdited = m.IsEdited,
+                        EditedDate = m.EditedDate,
+                        IsForwarded = m.IsForwarded,
+                        ForwardedFromMessageId = m.ForwardedFromMessageId,
+                        IsActive = !m.IsDeleted // Assuming IsDeleted field exists, or use true as default
                     });
                 }
 

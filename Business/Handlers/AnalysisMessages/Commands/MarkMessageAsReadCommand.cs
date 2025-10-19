@@ -1,7 +1,9 @@
 using Business.Handlers.AnalysisMessages.ValidationRules;
+using Business.Hubs;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using MediatR;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,10 +19,14 @@ namespace Business.Handlers.AnalysisMessages.Commands
         public class MarkMessageAsReadCommandHandler : IRequestHandler<MarkMessageAsReadCommand, IResult>
         {
             private readonly IAnalysisMessageRepository _messageRepository;
+            private readonly IHubContext<PlantAnalysisHub> _hubContext;
 
-            public MarkMessageAsReadCommandHandler(IAnalysisMessageRepository messageRepository)
+            public MarkMessageAsReadCommandHandler(
+                IAnalysisMessageRepository messageRepository,
+                IHubContext<PlantAnalysisHub> hubContext)
             {
                 _messageRepository = messageRepository;
+                _hubContext = hubContext;
             }
 
             public async Task<IResult> Handle(MarkMessageAsReadCommand request, CancellationToken cancellationToken)
@@ -42,6 +48,15 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     message.MessageStatus = "Read";
 
                     _messageRepository.Update(message);
+
+                    // Send SignalR notification to sender
+                    await _hubContext.Clients.User(message.FromUserId.ToString())
+                        .SendAsync("MessageRead", new
+                        {
+                            MessageId = message.Id,
+                            ReadByUserId = request.UserId,
+                            ReadAt = message.ReadDate
+                        });
                 }
 
                 return new SuccessResult("Message marked as read");
