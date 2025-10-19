@@ -71,15 +71,25 @@ Content-Type: application/json
 **Endpoint**: `GET /api/sponsorship/messages/conversation`
 
 **Query Parameters**:
-- `farmerId` (int, required): The other user's ID (sponsor or farmer)
+- `otherUserId` (int, required): The other participant's user ID (can be sponsor or farmer)
 - `plantAnalysisId` (int, required): Plant analysis ID for this conversation
 
-**Note**: Current user's ID is automatically retrieved from the JWT authentication token.
+**Important Notes**:
+- Current user's ID is automatically retrieved from JWT authentication token
+- `otherUserId` can be either sponsor or farmer - the endpoint works bidirectionally
+- Returns all messages exchanged between the two users (both directions)
 
-**Example Request**:
+**Example Requests**:
 ```http
-GET /api/sponsorship/messages/conversation?farmerId=159&plantAnalysisId=60
-Authorization: Bearer {token}
+# Farmer (userId=165) getting conversation with Sponsor (userId=159)
+GET /api/sponsorship/messages/conversation?otherUserId=159&plantAnalysisId=60
+Authorization: Bearer {farmer_token}
+
+# Sponsor (userId=159) getting conversation with Farmer (userId=165)
+GET /api/sponsorship/messages/conversation?otherUserId=165&plantAnalysisId=60
+Authorization: Bearer {sponsor_token}
+
+# Both requests return the SAME conversation messages (bidirectional)
 ```
 
 **Response Structure**:

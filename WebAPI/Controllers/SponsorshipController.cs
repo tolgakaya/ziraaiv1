@@ -797,23 +797,23 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Get conversation with farmer
+        /// Get conversation between current user and another user
         /// </summary>
-        /// <param name="farmerId">Farmer user ID</param>
+        /// <param name="otherUserId">The other participant's user ID (can be sponsor or farmer)</param>
         /// <param name="plantAnalysisId">Analysis ID for context</param>
         /// <returns>Message conversation</returns>
         [Authorize(Roles = "Sponsor,Farmer,Admin")]
         [HttpGet("messages/conversation")]
-        public async Task<IActionResult> GetConversation(int farmerId, int plantAnalysisId)
+        public async Task<IActionResult> GetConversation(int otherUserId, int plantAnalysisId)
         {
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
-                
+
             var query = new GetConversationQuery
             {
                 FromUserId = userId.Value,
-                ToUserId = farmerId,
+                ToUserId = otherUserId,
                 PlantAnalysisId = plantAnalysisId
             };
             
