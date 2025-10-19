@@ -39,8 +39,9 @@ namespace Business.Handlers.AnalysisMessages.Queries
 
                 foreach (var m in messages)
                 {
-                    // Get sender's avatar URLs
+                    // Get sender's and receiver's user info for avatars
                     var sender = await _userRepository.GetAsync(u => u.UserId == m.FromUserId);
+                    var receiver = await _userRepository.GetAsync(u => u.UserId == m.ToUserId);
 
                     messageDtos.Add(new AnalysisMessageDto
                     {
@@ -51,22 +52,31 @@ namespace Business.Handlers.AnalysisMessages.Queries
                         Message = m.Message,
                         MessageType = m.MessageType,
                         Subject = m.Subject,
-                        
+
                         // Status fields (Phase 1B)
                         MessageStatus = m.MessageStatus ?? "Sent",
                         IsRead = m.IsRead,
                         SentDate = m.SentDate,
                         DeliveredDate = m.DeliveredDate,
                         ReadDate = m.ReadDate,
-                        
+
                         // Sender info
                         SenderRole = m.SenderRole,
                         SenderName = m.SenderName,
                         SenderCompany = m.SenderCompany,
-                        
-                        // Avatar URLs (Phase 1A)
+
+                        // Sender Avatar (Phase 1A)
                         SenderAvatarUrl = sender?.AvatarUrl,
                         SenderAvatarThumbnailUrl = sender?.AvatarThumbnailUrl,
+
+                        // Receiver info (for displaying both participants in chat UI)
+                        ReceiverRole = "", // Role info not available in User entity directly
+                        ReceiverName = receiver?.FullName ?? "",
+                        ReceiverCompany = "", // Company info not available in User entity directly
+
+                        // Receiver Avatar
+                        ReceiverAvatarUrl = receiver?.AvatarUrl,
+                        ReceiverAvatarThumbnailUrl = receiver?.AvatarThumbnailUrl,
                         
                         // Classification
                         Priority = m.Priority,
