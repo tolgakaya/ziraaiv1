@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Business.Handlers.Users.Commands;
 using Business.Handlers.Users.Queries;
 using Core.Entities.Dtos;
+using Core.Utilities.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -144,8 +145,8 @@ namespace WebAPI.Controllers
         /// <returns>Avatar information including full URL, thumbnail URL, and update date</returns>
         [HttpGet("avatar/{userId?}")]
         [Produces("application/json", "text/plain")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserAvatarDto))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<UserAvatarDto>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(IDataResult<UserAvatarDto>))]
         public async Task<IActionResult> GetAvatarUrl(int? userId = null)
         {
             var targetUserId = userId ?? int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");

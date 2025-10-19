@@ -66,18 +66,19 @@ Content-Type: application/json
 
 ### 1. Get Conversation Messages
 
-**Purpose**: Retrieve all messages in a conversation between two users for a specific plant analysis
+**Purpose**: Retrieve all messages in a conversation between authenticated user and another user for a specific plant analysis
 
 **Endpoint**: `GET /api/sponsorship/messages/conversation`
 
 **Query Parameters**:
-- `fromUserId` (int, required): Current user's ID
-- `toUserId` (int, required): Other participant's user ID
+- `farmerId` (int, required): The other user's ID (sponsor or farmer)
 - `plantAnalysisId` (int, required): Plant analysis ID for this conversation
+
+**Note**: Current user's ID is automatically retrieved from the JWT authentication token.
 
 **Example Request**:
 ```http
-GET /api/sponsorship/messages/conversation?fromUserId=165&toUserId=159&plantAnalysisId=60
+GET /api/sponsorship/messages/conversation?farmerId=159&plantAnalysisId=60
 Authorization: Bearer {token}
 ```
 
