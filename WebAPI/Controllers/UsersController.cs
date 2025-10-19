@@ -138,13 +138,13 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Get user avatar URL
+        /// Get user avatar information (URLs and metadata)
         /// </summary>
         /// <param name="userId">User ID (optional, defaults to current user)</param>
-        /// <returns>Avatar URL</returns>
+        /// <returns>Avatar information including full URL, thumbnail URL, and update date</returns>
         [HttpGet("avatar/{userId?}")]
         [Produces("application/json", "text/plain")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UserAvatarDto))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
         public async Task<IActionResult> GetAvatarUrl(int? userId = null)
         {

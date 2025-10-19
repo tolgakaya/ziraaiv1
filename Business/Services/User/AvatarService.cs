@@ -1,6 +1,7 @@
 using Business.Services.FileStorage;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
+using Entities.Dtos;
 using Microsoft.AspNetCore.Http;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
@@ -121,16 +122,24 @@ namespace Business.Services.User
             }
         }
 
-        public async Task<IDataResult<string>> GetAvatarUrlAsync(int userId)
+        public async Task<IDataResult<UserAvatarDto>> GetAvatarUrlAsync(int userId)
         {
             UserEntity user = await _userRepository.GetAsync(u => u.UserId == userId);
             if (user == null)
-                return new ErrorDataResult<string>("User not found");
+                return new ErrorDataResult<UserAvatarDto>("User not found");
 
             if (string.IsNullOrEmpty(user.AvatarUrl))
-                return new SuccessDataResult<string>(null, "No avatar set for this user");
+                return new ErrorDataResult<UserAvatarDto>("No avatar set for this user");
 
-            return new SuccessDataResult<string>(user.AvatarUrl);
+            var avatarDto = new UserAvatarDto
+            {
+                UserId = user.UserId,
+                AvatarUrl = user.AvatarUrl,
+                AvatarThumbnailUrl = user.AvatarThumbnailUrl,
+                AvatarUpdatedDate = user.AvatarUpdatedDate
+            };
+
+            return new SuccessDataResult<UserAvatarDto>(avatarDto, "Avatar retrieved successfully");
         }
 
         public async Task<IResult> DeleteAvatarAsync(int userId)
