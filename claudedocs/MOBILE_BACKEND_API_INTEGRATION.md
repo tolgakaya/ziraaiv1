@@ -851,23 +851,44 @@ setState(() {
 
 ### 2. Get User Avatar
 
-**Purpose**: Retrieve avatar URLs for a specific user
+**Purpose**: Retrieve avatar information for a specific user (or current user if no ID provided)
 
-**Endpoint**: `GET /api/users/{userId}/avatar`
+**Endpoint**: `GET /api/users/avatar/{userId?}`
 
 **Path Parameters**:
-- `userId` (int): User ID
+- `userId` (int, optional): User ID - if not provided, returns current authenticated user's avatar
 
-**Response**:
+**Example Requests**:
+```http
+# Get another user's avatar
+GET /api/users/avatar/159
+Authorization: Bearer {token}
+
+# Get current user's avatar
+GET /api/users/avatar
+Authorization: Bearer {token}
+```
+
+**Success Response**:
 ```json
 {
   "success": true,
   "data": {
-    "userId": 165,
-    "avatarUrl": "https://i.freeimage.host/user_165_638123456789.jpg",
-    "avatarThumbnailUrl": "https://i.freeimage.host/user_165_638123456789_thumb.jpg",
-    "updatedDate": "2025-10-19T10:00:00Z"
-  }
+    "userId": 159,
+    "avatarUrl": "https://i.freeimage.host/user_159_638123456789.jpg",
+    "avatarThumbnailUrl": "https://i.freeimage.host/user_159_638123456789_thumb.jpg",
+    "avatarUpdatedDate": "2025-10-19T10:00:00Z"
+  },
+  "message": "Avatar retrieved successfully"
+}
+```
+
+**Error Response (No Avatar)**:
+```json
+{
+  "success": false,
+  "data": null,
+  "message": "No avatar set for this user"
 }
 ```
 
@@ -1428,6 +1449,42 @@ class MessageModel {
         isForwarded = json['isForwarded'] ?? false,
         forwardedFromMessageId = json['forwardedFromMessageId'],
         isActive = json['isActive'] ?? true;
+}
+```
+
+---
+
+### UserAvatarDto
+
+```dart
+class UserAvatarDto {
+  final int userId;
+  final String avatarUrl;
+  final String avatarThumbnailUrl;
+  final DateTime? avatarUpdatedDate;
+
+  UserAvatarDto.fromJson(Map<String, dynamic> json)
+      : userId = json['userId'],
+        avatarUrl = json['avatarUrl'],
+        avatarThumbnailUrl = json['avatarThumbnailUrl'],
+        avatarUpdatedDate = json['avatarUpdatedDate'] != null
+            ? DateTime.parse(json['avatarUpdatedDate'])
+            : null;
+}
+```
+
+**Usage Example**:
+```dart
+// Get user avatar
+final response = await api.get('/users/avatar/159');
+if (response.success) {
+  final avatar = UserAvatarDto.fromJson(response.data);
+
+  // Use in UI
+  CircleAvatar(
+    backgroundImage: NetworkImage(avatar.avatarThumbnailUrl),
+    radius: 20,
+  );
 }
 ```
 
