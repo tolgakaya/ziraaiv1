@@ -25,7 +25,8 @@
       "mcp__serena__replace_regex",
       "mcp__serena__insert_before_symbol",
       "mcp__serena__find_file",
-      "mcp__serena__think_about_collected_information"
+      "mcp__serena__think_about_collected_information",
+      "mcp__serena__read_memory"
     ],
     "deny": [],
     "ask": [],
