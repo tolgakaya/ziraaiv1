@@ -1,4 +1,5 @@
 using Core.Entities;
+using Core.Entities.Concrete;
 using System;
 using System.Text.Json.Serialization;
 

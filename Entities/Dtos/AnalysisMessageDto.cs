@@ -12,12 +12,24 @@ namespace Entities.Dtos
         public string Message { get; set; }
         public string MessageType { get; set; }
         public string Subject { get; set; }
+        
+        // Message Status
+        public string MessageStatus { get; set; } // Sent, Delivered, Read
         public bool IsRead { get; set; }
         public DateTime SentDate { get; set; }
+        public DateTime? DeliveredDate { get; set; }
         public DateTime? ReadDate { get; set; }
+        
+        // Sender Information
         public string SenderRole { get; set; }
         public string SenderName { get; set; }
         public string SenderCompany { get; set; }
+        
+        // Avatar Support (Phase 1A)
+        public string SenderAvatarUrl { get; set; }
+        public string SenderAvatarThumbnailUrl { get; set; }
+        
+        // Message Classification
         public string Priority { get; set; }
         public string Category { get; set; }
     }

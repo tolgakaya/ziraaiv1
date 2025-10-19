@@ -8,13 +8,17 @@ using Business.Handlers.AnalysisMessages.Queries;
 using Business.Handlers.SmartLinks.Commands;
 using Business.Handlers.SmartLinks.Queries;
 using Business.Handlers.PlantAnalyses.Queries;
+using Business.Handlers.MessagingFeatures.Commands;
+using Business.Handlers.MessagingFeatures.Queries;
 using Business.Services.Sponsorship;
 using Core.Entities.Concrete;
 using Core.Extensions;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
+using WebAPI.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -1129,6 +1133,350 @@ namespace WebAPI.Controllers
                 return StatusCode(500, new ErrorResult($"Unblock operation failed: {ex.Message}"));
             }
         }
+
+        #region Messaging Features
+
+        /// <summary>
+        /// Get messaging features configuration for current user
+        /// Returns feature availability based on user tier and admin toggles
+        /// </summary>
+        /// <returns>Feature configuration with availability flags</returns>
+        [Authorize]
+        [HttpGet("messaging/features")]
+        public async Task<IActionResult> GetMessagingFeatures()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new Business.Handlers.MessagingFeatures.Queries.GetMessagingFeaturesQuery
+                {
+                    UserId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting messaging features for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Failed to retrieve messaging features: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Update messaging feature toggle (Admin only)
+        /// </summary>
+        /// <param name="featureId">Feature ID to update</param>
+        /// <param name="request">Update request with IsEnabled flag</param>
+        /// <returns>Success or error result</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpPatch("admin/messaging/features/{featureId}")]
+        public async Task<IActionResult> UpdateMessagingFeature(int featureId, [FromBody] UpdateMessagingFeatureRequest request)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.MessagingFeatures.Commands.UpdateMessagingFeatureCommand
+                {
+                    FeatureId = featureId,
+                    IsEnabled = request.IsEnabled,
+                    AdminUserId = userId.Value
+                };
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating messaging feature {FeatureId} by admin {UserId}", featureId, GetUserId());
+                return StatusCode(500, new ErrorResult($"Failed to update feature: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Mark a single message as read
+        /// </summary>
+        [Authorize]
+        [HttpPatch("messages/{messageId}/read")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> MarkMessageAsRead(int messageId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.AnalysisMessages.Commands.MarkMessageAsReadCommand
+                {
+                    MessageId = messageId,
+                    UserId = userId.Value
+                };
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking message {MessageId} as read for user {UserId}", messageId, GetUserId());
+                return StatusCode(500, new ErrorResult($"Failed to mark message as read: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Mark multiple messages as read (bulk operation for conversation view)
+        /// </summary>
+        [Authorize]
+        [HttpPatch("messages/read")]
+        [Consumes("application/json")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> MarkMessagesAsRead([FromBody] List<int> messageIds)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.AnalysisMessages.Commands.MarkMessagesAsReadCommand
+                {
+                    MessageIds = messageIds,
+                    UserId = userId.Value
+                };
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking messages as read for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Failed to mark messages as read: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Edit message (M tier+, 1 hour limit) - Phase 4A
+        /// </summary>
+        [Authorize]
+        [HttpPut("messages/{messageId}")]
+        [Produces("application/json")]
+        public async Task<IActionResult> EditMessage(int messageId, [FromBody] string newMessage)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.AnalysisMessages.Commands.EditMessageCommand
+                {
+                    MessageId = messageId,
+                    UserId = userId.Value,
+                    NewMessage = newMessage
+                };
+
+                var result = await Mediator.Send(command);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error editing message {MessageId}", messageId);
+                return StatusCode(500, new ErrorResult($"Failed to edit message: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Delete message (All tiers, 24 hour limit) - Phase 4A
+        /// </summary>
+        [Authorize]
+        [HttpDelete("messages/{messageId}")]
+        [Produces("application/json")]
+        public async Task<IActionResult> DeleteMessage(int messageId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.AnalysisMessages.Commands.DeleteMessageCommand
+                {
+                    MessageId = messageId,
+                    UserId = userId.Value
+                };
+
+                var result = await Mediator.Send(command);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting message {MessageId}", messageId);
+                return StatusCode(500, new ErrorResult($"Failed to delete message: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Forward message (M tier+) - Phase 4B
+        /// </summary>
+        [Authorize]
+        [HttpPost("messages/{messageId}/forward")]
+        [Produces("application/json")]
+        public async Task<IActionResult> ForwardMessage(
+            int messageId,
+            [FromBody] ForwardMessageRequest request)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.AnalysisMessages.Commands.ForwardMessageCommand
+                {
+                    MessageId = messageId,
+                    FromUserId = userId.Value,
+                    ToUserId = request.ToUserId,
+                    PlantAnalysisId = request.PlantAnalysisId
+                };
+
+                var result = await Mediator.Send(command);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error forwarding message {MessageId}", messageId);
+                return StatusCode(500, new ErrorResult($"Failed to forward message: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Send voice message (XL tier only) - Phase 2B
+        /// </summary>
+        [Authorize]
+        [HttpPost("messages/voice")]
+        [Consumes("multipart/form-data")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SendVoiceMessage(
+            [FromForm] int toUserId,
+            [FromForm] int plantAnalysisId,
+            [FromForm] int duration,
+            [FromForm] string waveform,
+            [FromForm] IFormFile voiceFile)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.AnalysisMessages.Commands.SendVoiceMessageCommand
+                {
+                    FromUserId = userId.Value,
+                    ToUserId = toUserId,
+                    PlantAnalysisId = plantAnalysisId,
+                    Duration = duration,
+                    Waveform = waveform,
+                    VoiceFile = voiceFile
+                };
+
+                var result = await Mediator.Send(command);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending voice message for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Failed to send voice message: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Send message with attachments (images/files) - Phase 2A
+        /// </summary>
+        [Authorize]
+        [HttpPost("messages/attachments")]
+        [Consumes("multipart/form-data")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> SendMessageWithAttachments(
+            [FromForm] int toUserId,
+            [FromForm] int plantAnalysisId,
+            [FromForm] string message,
+            [FromForm] string messageType,
+            [FromForm] List<IFormFile> attachments)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new Business.Handlers.AnalysisMessages.Commands.SendMessageWithAttachmentCommand
+                {
+                    FromUserId = userId.Value,
+                    ToUserId = toUserId,
+                    PlantAnalysisId = plantAnalysisId,
+                    Message = message,
+                    MessageType = messageType ?? "Information",
+                    Attachments = attachments
+                };
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending message with attachments for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Failed to send message with attachments: {ex.Message}"));
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Get list of blocked sponsors for current farmer

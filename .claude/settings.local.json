@@ -26,7 +26,8 @@
       "mcp__serena__insert_before_symbol",
       "mcp__serena__find_file",
       "mcp__serena__think_about_collected_information",
-      "mcp__serena__read_memory"
+      "mcp__serena__read_memory",
+      "Bash(dotnet ef migrations add AddMessagingFeaturesTable --project DataAccess --startup-project WebAPI --context ProjectDbContext --output-dir Migrations/Pg)"
     ],
     "deny": [],
     "ask": [],

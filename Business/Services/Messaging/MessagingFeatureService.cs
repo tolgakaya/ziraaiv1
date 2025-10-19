@@ -14,7 +14,8 @@ namespace Business.Services.Messaging
     public class MessagingFeatureService : IMessagingFeatureService
     {
         private readonly IMessagingFeatureRepository _featureRepository;
-        private readonly ISponsorDataAccessService _sponsorDataAccessService;
+        private readonly ISponsorshipPurchaseRepository _sponsorshipPurchaseRepository;
+        private readonly ISubscriptionTierRepository _subscriptionTierRepository;
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly IMemoryCache _memoryCache;
         private const string CACHE_KEY = "MessagingFeatures_All";
@@ -22,12 +23,14 @@ namespace Business.Services.Messaging
 
         public MessagingFeatureService(
             IMessagingFeatureRepository featureRepository,
-            ISponsorDataAccessService sponsorDataAccessService,
+            ISponsorshipPurchaseRepository sponsorshipPurchaseRepository,
+            ISubscriptionTierRepository subscriptionTierRepository,
             IUserSubscriptionRepository userSubscriptionRepository,
             IMemoryCache memoryCache)
         {
             _featureRepository = featureRepository;
-            _sponsorDataAccessService = sponsorDataAccessService;
+            _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
+            _subscriptionTierRepository = subscriptionTierRepository;
             _userSubscriptionRepository = userSubscriptionRepository;
             _memoryCache = memoryCache;
         }
@@ -141,7 +144,7 @@ namespace Business.Services.Messaging
             feature.UpdatedDate = DateTime.Now;
             feature.UpdatedByUserId = adminUserId;
 
-            await _featureRepository.UpdateAsync(feature);
+            _featureRepository.Update(feature);
 
             // Clear cache to force refresh
             _memoryCache.Remove(CACHE_KEY);
@@ -155,7 +158,8 @@ namespace Business.Services.Messaging
         {
             if (!_memoryCache.TryGetValue(CACHE_KEY, out List<MessagingFeature> features))
             {
-                features = await _featureRepository.GetListAsync();
+                var featuresList = await _featureRepository.GetListAsync();
+                features = featuresList.ToList();
                 _memoryCache.Set(CACHE_KEY, features, CACHE_DURATION);
             }
 
@@ -164,16 +168,65 @@ namespace Business.Services.Messaging
 
         private async Task<string> GetUserTierAsync(int userId)
         {
-            // Try to get sponsor tier first
-            var sponsorTier = await _sponsorDataAccessService.GetSponsorTierAsync(userId);
-            if (!string.IsNullOrEmpty(sponsorTier) && sponsorTier != "None")
-                return sponsorTier;
+            // Try to get sponsor tier first from active purchases
+            var purchases = await _sponsorshipPurchaseRepository.GetBySponsorIdAsync(userId);
+            if (purchases != null && purchases.Any())
+            {
+                // Get the highest tier from active purchases
+                string highestTier = "None";
+                int highestTierLevel = 0;
+
+                foreach (var purchase in purchases)
+                {
+                    var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == purchase.SubscriptionTierId);
+                    if (tier != null)
+                    {
+                        var tierLevel = GetTierLevel(tier.TierName);
+                        if (tierLevel > highestTierLevel)
+                        {
+                            highestTier = tier.TierName;
+                            highestTierLevel = tierLevel;
+                        }
+                    }
+                }
+
+                if (highestTierLevel > 0)
+                    return highestTier;
+            }
 
             // Fall back to subscription tier
             var subscription = await _userSubscriptionRepository.GetAsync(
                 us => us.UserId == userId && us.IsActive && us.EndDate > DateTime.Now);
 
-            return subscription?.TierName ?? "None";
+            // Get tier name from subscription tier ID
+            if (subscription != null && subscription.SubscriptionTierId > 0)
+            {
+                // Map subscription tier: Trial=1, S=2, M=3, L=4, XL=5
+                return subscription.SubscriptionTierId switch
+                {
+                    1 => "Trial",
+                    2 => "S",
+                    3 => "M",
+                    4 => "L",
+                    5 => "XL",
+                    _ => "None"
+                };
+            }
+
+            return "None";
+        }
+
+        private int GetTierLevel(string tierName)
+        {
+            return tierName switch
+            {
+                "Trial" => 1,
+                "S" => 2,
+                "M" => 3,
+                "L" => 4,
+                "XL" => 5,
+                _ => 0
+            };
         }
 
         private MessagingFeatureDto MapFeature(List<MessagingFeature> features, string featureName, string userTier)

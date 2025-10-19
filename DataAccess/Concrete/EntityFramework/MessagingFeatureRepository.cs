@@ -5,7 +5,7 @@ using Entities.Concrete;
 
 namespace DataAccess.Concrete.EntityFramework
 {
-    public class MessagingFeatureRepository : EfRepositoryBase<MessagingFeature, ProjectDbContext>, IMessagingFeatureRepository
+    public class MessagingFeatureRepository : EfEntityRepositoryBase<MessagingFeature, ProjectDbContext>, IMessagingFeatureRepository
     {
         public MessagingFeatureRepository(ProjectDbContext context) : base(context)
         {

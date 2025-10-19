@@ -23,9 +23,9 @@ CREATE TABLE IF NOT EXISTS "MessagingFeatures" (
     "CreatedByUserId" INT NULL,
     "UpdatedByUserId" INT NULL,
     CONSTRAINT "FK_MessagingFeatures_CreatedBy" FOREIGN KEY ("CreatedByUserId")
-        REFERENCES "Users"("Id") ON DELETE SET NULL,
+        REFERENCES "Users"("UserId") ON DELETE SET NULL,
     CONSTRAINT "FK_MessagingFeatures_UpdatedBy" FOREIGN KEY ("UpdatedByUserId")
-        REFERENCES "Users"("Id") ON DELETE SET NULL
+        REFERENCES "Users"("UserId") ON DELETE SET NULL
 );
 
 -- Create indexes for performance

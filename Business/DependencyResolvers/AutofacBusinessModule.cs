@@ -139,6 +139,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<FarmerSponsorBlockRepository>().As<IFarmerSponsorBlockRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<MessagingFeatureRepository>().As<IMessagingFeatureRepository>()
+                .InstancePerLifetimeScope();
+
             // Referral System repositories
             builder.RegisterType<ReferralCodeRepository>().As<IReferralCodeRepository>()
                 .InstancePerLifetimeScope();
@@ -228,6 +231,18 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
 
             builder.RegisterType<MessageRateLimitService>().As<IMessageRateLimitService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.Messaging.MessagingFeatureService>()
+                .As<Business.Services.Messaging.IMessagingFeatureService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.User.AvatarService>()
+                .As<Business.Services.User.IAvatarService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.Messaging.AttachmentValidationService>()
+                .As<Business.Services.Messaging.IAttachmentValidationService>()
                 .InstancePerLifetimeScope();
 
             builder.RegisterType<SmartLinkService>().As<ISmartLinkService>()
