@@ -109,6 +109,7 @@ namespace Business.Services.User
                 user.AvatarUpdatedDate = DateTime.Now;
 
                 _userRepository.Update(user);
+                await _userRepository.SaveChangesAsync();
 
                 return new SuccessDataResult<AvatarUploadResult>(new AvatarUploadResult
                 {
@@ -161,6 +162,7 @@ namespace Business.Services.User
                 user.AvatarUpdatedDate = null;
 
                 _userRepository.Update(user);
+                await _userRepository.SaveChangesAsync();
 
                 return new SuccessResult("Avatar deleted successfully");
             }
