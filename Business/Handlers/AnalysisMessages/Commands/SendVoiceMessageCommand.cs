@@ -7,6 +7,7 @@ using Entities.Concrete;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,18 +30,18 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly IAnalysisMessageRepository _messageRepository;
             private readonly IAnalysisMessagingService _messagingService;
             private readonly IMessagingFeatureService _featureService;
-            private readonly IFileStorageService _fileStorage;
+            private readonly LocalFileStorageService _localFileStorage; // Use local storage for audio files (FreeImageHost doesn't support audio)
 
             public SendVoiceMessageCommandHandler(
                 IAnalysisMessageRepository messageRepository,
                 IAnalysisMessagingService messagingService,
                 IMessagingFeatureService featureService,
-                IFileStorageService fileStorage)
+                LocalFileStorageService localFileStorage) // Direct injection of LocalFileStorageService
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
                 _featureService = featureService;
-                _fileStorage = fileStorage;
+                _localFileStorage = localFileStorage;
             }
 
             public async Task<IDataResult<AnalysisMessage>> Handle(SendVoiceMessageCommand request, CancellationToken cancellationToken)
@@ -70,12 +71,15 @@ namespace Business.Handlers.AnalysisMessages.Commands
 
                 try
                 {
-                    // Upload voice file
-                    var fileName = $"voice_msg_{request.FromUserId}_{DateTime.Now.Ticks}.m4a";
-                    var voiceUrl = await _fileStorage.UploadFileAsync(
+                    // Upload voice file to local storage (FreeImageHost doesn't support audio files)
+                    var extension = Path.GetExtension(request.VoiceFile.FileName).ToLowerInvariant();
+                    var fileName = $"voice_msg_{request.FromUserId}_{DateTime.Now.Ticks}{extension}";
+
+                    var voiceUrl = await _localFileStorage.UploadFileAsync(
                         request.VoiceFile.OpenReadStream(),
                         fileName,
-                        request.VoiceFile.ContentType);
+                        request.VoiceFile.ContentType,
+                        "voice-messages"); // Store in voice-messages subfolder
 
                     if (string.IsNullOrEmpty(voiceUrl))
                         return new ErrorDataResult<AnalysisMessage>("Failed to upload voice message");
