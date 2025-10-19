@@ -29,18 +29,21 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly IAnalysisMessageRepository _messageRepository;
             private readonly IAnalysisMessagingService _messagingService;
             private readonly IAttachmentValidationService _attachmentValidation;
-            private readonly IFileStorageService _fileStorage;
+            private readonly IFileStorageService _imageStorage; // FreeImageHost for images
+            private readonly LocalFileStorageService _localStorage; // Local for documents
 
             public SendMessageWithAttachmentCommandHandler(
                 IAnalysisMessageRepository messageRepository,
                 IAnalysisMessagingService messagingService,
                 IAttachmentValidationService attachmentValidation,
-                IFileStorageService fileStorage)
+                IFileStorageService imageStorage, // FreeImageHost via DI
+                LocalFileStorageService localStorage) // Local for non-images
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
                 _attachmentValidation = attachmentValidation;
-                _fileStorage = fileStorage;
+                _imageStorage = imageStorage;
+                _localStorage = localStorage;
             }
 
             public async Task<IDataResult<AnalysisMessage>> Handle(SendMessageWithAttachmentCommand request, CancellationToken cancellationToken)
@@ -70,20 +73,46 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 var attachmentTypes = new List<string>();
                 var attachmentSizes = new List<long>();
                 var attachmentNames = new List<string>();
+                var uploadedFileStorages = new List<bool>(); // Track which storage: true = image, false = local
 
                 try
                 {
                     foreach (var file in request.Attachments)
                     {
                         var fileName = $"msg_attachment_{request.FromUserId}_{DateTime.Now.Ticks}_{file.FileName}";
-                        var url = await _fileStorage.UploadFileAsync(file.OpenReadStream(), fileName, file.ContentType);
+                        
+                        // Select appropriate storage based on MIME type
+                        var isImage = file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+                        var folder = isImage ? null : "attachments"; // Organize non-images in subfolder
+                        
+                        string url;
+                        if (isImage)
+                        {
+                            // Use FreeImageHost for images
+                            url = await _imageStorage.UploadFileAsync(file.OpenReadStream(), fileName, file.ContentType);
+                        }
+                        else
+                        {
+                            // Use local storage for documents, PDFs, etc.
+                            url = await _localStorage.UploadFileAsync(file.OpenReadStream(), fileName, file.ContentType, folder);
+                        }
 
                         if (string.IsNullOrEmpty(url))
                         {
                             // Cleanup uploaded files on failure
-                            foreach (var uploadedUrl in uploadedUrls)
+                            for (int i = 0; i < uploadedUrls.Count; i++)
                             {
-                                await _fileStorage.DeleteFileAsync(uploadedUrl);
+                                try
+                                {
+                                    if (uploadedFileStorages[i])
+                                        await _imageStorage.DeleteFileAsync(uploadedUrls[i]);
+                                    else
+                                        await _localStorage.DeleteFileAsync(uploadedUrls[i]);
+                                }
+                                catch
+                                {
+                                    // Log but don't fail cleanup
+                                }
                             }
                             return new ErrorDataResult<AnalysisMessage>($"Failed to upload {file.FileName}");
                         }
@@ -92,6 +121,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         attachmentTypes.Add(file.ContentType);
                         attachmentSizes.Add(file.Length);
                         attachmentNames.Add(file.FileName);
+                        uploadedFileStorages.Add(isImage);
                     }
 
                     // Create message with attachments
@@ -125,11 +155,14 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 catch (Exception ex)
                 {
                     // Cleanup on error
-                    foreach (var uploadedUrl in uploadedUrls)
+                    for (int i = 0; i < uploadedUrls.Count; i++)
                     {
                         try
                         {
-                            await _fileStorage.DeleteFileAsync(uploadedUrl);
+                            if (uploadedFileStorages[i])
+                                await _imageStorage.DeleteFileAsync(uploadedUrls[i]);
+                            else
+                                await _localStorage.DeleteFileAsync(uploadedUrls[i]);
                         }
                         catch
                         {
