@@ -768,6 +768,10 @@ namespace WebAPI.Controllers
         /// <returns>Sent message information</returns>
         [Authorize(Roles = "Sponsor,Farmer,Admin")]
         [HttpPost("messages")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<AnalysisMessageDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<AnalysisMessageDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> SendMessage([FromBody] SendMessageCommand command)
         {
             try
@@ -804,6 +808,9 @@ namespace WebAPI.Controllers
         /// <returns>Message conversation</returns>
         [Authorize(Roles = "Sponsor,Farmer,Admin")]
         [HttpGet("messages/conversation")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<AnalysisMessageDto>>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<List<AnalysisMessageDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetConversation(int otherUserId, int plantAnalysisId)
         {
             var userId = GetUserId();
