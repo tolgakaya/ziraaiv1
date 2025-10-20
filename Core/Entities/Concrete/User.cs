@@ -68,6 +68,21 @@ namespace Core.Entities.Concrete
         /// </summary>
         public string RegistrationReferralCode { get; set; }
 
+        /// <summary>
+        /// User's profile avatar URL (full size)
+        /// </summary>
+        public string AvatarUrl { get; set; }
+
+        /// <summary>
+        /// User's profile avatar thumbnail URL (optimized for lists/previews)
+        /// </summary>
+        public string AvatarThumbnailUrl { get; set; }
+
+        /// <summary>
+        /// Date when avatar was last updated
+        /// </summary>
+        public DateTime? AvatarUpdatedDate { get; set; }
+
         public bool UpdateMobilePhone(string mobilePhone)
         {
             if (mobilePhone == MobilePhones)

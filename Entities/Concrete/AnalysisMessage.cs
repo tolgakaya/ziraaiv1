@@ -21,11 +21,22 @@ namespace Entities.Concrete
         public int? ParentMessageId { get; set; } // For threaded conversations
         
         // Message Status
+        public string MessageStatus { get; set; } // Sent, Delivered, Read
         public bool IsRead { get; set; }
         public DateTime SentDate { get; set; }
+        public DateTime? DeliveredDate { get; set; }
         public DateTime? ReadDate { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? DeletedDate { get; set; }
+        
+        // Edit Support (Phase 4A)
+        public bool IsEdited { get; set; }
+        public DateTime? EditedDate { get; set; }
+        public string OriginalMessage { get; set; } // Store original before edit
+        
+        // Forward Support (Phase 4B)
+        public int? ForwardedFromMessageId { get; set; }
+        public bool IsForwarded { get; set; }
         public bool IsArchived { get; set; }
         public DateTime? ArchivedDate { get; set; }
         
@@ -34,11 +45,21 @@ namespace Entities.Concrete
         public string SenderName { get; set; } // Cached for display
         public string SenderCompany { get; set; } // For sponsors
         
-        // Attachments and Rich Content
+        // Attachments and Rich Content (Phase 2A)
         public string AttachmentUrls { get; set; } // JSON array of attachment URLs
+        public string AttachmentTypes { get; set; } // JSON array of MIME types (image/jpeg, application/pdf, etc.)
+        public string AttachmentSizes { get; set; } // JSON array of file sizes in bytes
+        public string AttachmentNames { get; set; } // JSON array of original filenames
         public bool HasAttachments { get; set; }
+        public int AttachmentCount { get; set; } // Total number of attachments
+        
+        // Voice Message Support (Phase 2B)
+        public string VoiceMessageUrl { get; set; } // URL to voice message audio file
+        public int? VoiceMessageDuration { get; set; } // Duration in seconds
+        public string VoiceMessageWaveform { get; set; } // JSON array of waveform data points
+        
         public string LinkedProducts { get; set; } // JSON array of product IDs/links
-        public string RecommendedActions { get; set; } // JSON array of action items
+        public string RecommendedActions { get; set; } // JSON array of action items // JSON array of action items
         
         // Priority and Classification
         public string Priority { get; set; } // Low, Normal, High, Urgent

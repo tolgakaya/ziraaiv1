@@ -1,0 +1,694 @@
+{
+	"info": {
+		"name": "ZiraAI - Chat Enhancements & Auth",
+		"description": "Complete Postman collection for ZiraAI messaging features with phone-based authentication.\n\n**Features Included:**\n- Phone-based authentication (SMS OTP)\n- Avatar management\n- Message status & read receipts\n- Attachments (images/files)\n- Voice messages\n- Message edit/delete/forward\n- Feature flags\n- Admin endpoints\n\n**Created**: 2025-10-19\n**Branch**: feature/sponsor-farmer-messaging",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://localhost:5001/api",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "phoneNumber",
+			"value": "+905551234567",
+			"type": "string"
+		},
+		{
+			"key": "otpCode",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "messageId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "plantAnalysisId",
+			"value": "1",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "1.1 Login with Phone (Send OTP)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// OTP code will be in response or SMS",
+									"console.log(\"OTP sent to phone. Check SMS or server logs.\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login-phone",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login-phone"]
+						},
+						"description": "Send OTP code to phone number via SMS.\n\n**Flow**: \n1. User enters phone number\n2. Server sends 6-digit OTP via SMS\n3. Use received OTP in next step\n\n**Response**: Success message"
+					}
+				},
+				{
+					"name": "1.2 Verify Phone OTP (Complete Login)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('token', jsonData.data.token);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"    pm.collectionVariables.set('userId', jsonData.data.userId);",
+									"    console.log('✅ Login successful! Token saved.');",
+									"    console.log('User ID:', jsonData.data.userId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"otpCode\": \"{{otpCode}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-phone-otp",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "verify-phone-otp"]
+						},
+						"description": "Verify OTP code and get JWT tokens.\n\n**Required**: OTP from previous step (check SMS or logs)\n\n**Response**: \n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"token\": \"eyJhbGci...\",\n    \"refreshToken\": \"refresh_token_here\",\n    \"userId\": 123,\n    \"expiration\": \"2025-10-19T12:00:00Z\"\n  }\n}\n```\n\n**Auto-saves**: token, refreshToken, userId to collection variables"
+					}
+				},
+				{
+					"name": "1.3 Register with Phone (Send OTP)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"fullName\": \"Test User\",\n  \"email\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register-phone",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register-phone"]
+						},
+						"description": "Register new user with phone number.\n\n**Step 1**: Send registration data, receive OTP\n**Step 2**: Verify OTP in next endpoint"
+					}
+				},
+				{
+					"name": "1.4 Verify Phone Registration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('token', jsonData.data.token);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"    pm.collectionVariables.set('userId', jsonData.data.userId);",
+									"    console.log('✅ Registration successful! Token saved.');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"otpCode\": \"{{otpCode}}\",\n  \"fullName\": \"Test User\",\n  \"email\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-phone-register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "verify-phone-register"]
+						},
+						"description": "Complete registration with OTP verification."
+					}
+				},
+				{
+					"name": "1.5 Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('token', jsonData.data.token);",
+									"    pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+									"    console.log('✅ Token refreshed successfully!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\"{{refreshToken}}\""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login-refresh-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login-refresh-token"]
+						},
+						"description": "Refresh expired JWT token using refresh token."
+					}
+				}
+			],
+			"description": "Phone-based authentication endpoints with OTP verification."
+		},
+		{
+			"name": "2. Avatar Management (Phase 1A)",
+			"item": [
+				{
+					"name": "2.1 Upload Avatar",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/avatar.jpg",
+									"description": "Image file (JPG, PNG, WEBP, GIF - Max 5MB)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/avatar",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "avatar"]
+						},
+						"description": "Upload user profile avatar.\n\n**Features**:\n- Resizes to 512x512 (full size)\n- Creates 128x128 thumbnail\n- Supported: JPG, PNG, WEBP, GIF\n- Max size: 5MB\n\n**Response**:\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"avatarUrl\": \"https://...\",\n    \"thumbnailUrl\": \"https://...\"\n  }\n}\n```"
+					}
+				},
+				{
+					"name": "2.2 Get Avatar URL",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/avatar/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "avatar", "{{userId}}"]
+						},
+						"description": "Get avatar URL for any user (public endpoint).\n\n**Response**: Avatar URL or null if no avatar"
+					}
+				},
+				{
+					"name": "2.3 Delete Avatar",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/users/avatar",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "avatar"]
+						},
+						"description": "Delete current user's avatar."
+					}
+				}
+			],
+			"description": "User avatar upload, retrieval, and deletion."
+		},
+		{
+			"name": "3. Feature Flags",
+			"item": [
+				{
+					"name": "3.1 Get User Features",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/messaging/features",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "messaging", "features"]
+						},
+						"description": "Get available messaging features for current user based on subscription tier.\n\n**Response Example**:\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"voiceMessages\": {\n      \"enabled\": true,\n      \"available\": false,\n      \"requiredTier\": \"XL\",\n      \"maxFileSize\": 5242880,\n      \"maxDuration\": 60,\n      \"unavailableReason\": \"Voice Messages requires XL tier. Your tier: M\"\n    },\n    \"imageAttachments\": {\n      \"enabled\": true,\n      \"available\": true,\n      \"requiredTier\": \"L\",\n      \"maxFileSize\": 10485760\n    }\n  }\n}\n```"
+					}
+				},
+				{
+					"name": "3.2 Admin - Toggle Feature",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"isEnabled\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/admin/messaging/features/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "admin", "messaging", "features", "1"]
+						},
+						"description": "Admin only: Enable/disable messaging features globally.\n\n**Requires**: Admin role\n**Feature IDs**: 1-9 (VoiceMessages, ImageAttachments, etc.)"
+					}
+				}
+			],
+			"description": "Feature flag management and tier-based access control."
+		},
+		{
+			"name": "4. Message Status (Phase 1B)",
+			"item": [
+				{
+					"name": "4.1 Mark Message as Read",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/messages/{{messageId}}/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "messages", "{{messageId}}", "read"]
+						},
+						"description": "Mark a single message as read.\n\n**Updates**: \n- IsRead = true\n- ReadDate = now\n- MessageStatus = \"Read\"\n\n**Validation**: Only recipient can mark as read"
+					}
+				},
+				{
+					"name": "4.2 Mark Multiple Messages as Read (Bulk)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[1, 2, 3, 4, 5]"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/messages/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "messages", "read"]
+						},
+						"description": "Mark multiple messages as read in one request.\n\n**Body**: Array of message IDs\n**Use case**: Mark entire conversation as read\n\n**Response**: Number of messages marked"
+					}
+				}
+			],
+			"description": "Message read status and read receipts."
+		},
+		{
+			"name": "5. Attachments (Phase 2A)",
+			"item": [
+				{
+					"name": "5.1 Send Message with Attachments",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "toUserId",
+									"value": "2",
+									"type": "text",
+									"description": "Recipient user ID"
+								},
+								{
+									"key": "plantAnalysisId",
+									"value": "{{plantAnalysisId}}",
+									"type": "text",
+									"description": "Analysis context ID"
+								},
+								{
+									"key": "message",
+									"value": "Check these photos",
+									"type": "text",
+									"description": "Optional message text"
+								},
+								{
+									"key": "messageType",
+									"value": "Information",
+									"type": "text",
+									"description": "Message type"
+								},
+								{
+									"key": "attachments",
+									"type": "file",
+									"src": "/path/to/image1.jpg",
+									"description": "First attachment"
+								},
+								{
+									"key": "attachments",
+									"type": "file",
+									"src": "/path/to/document.pdf",
+									"description": "Second attachment"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/messages/attachments",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "messages", "attachments"]
+						},
+						"description": "Send message with image/file attachments.\n\n**Tier Requirements**:\n- **Images** (L tier): JPEG, PNG, WEBP, HEIC - 10MB max\n- **Videos** (XL tier): MP4, MOV - 50MB max\n- **Documents** (L tier): PDF, DOCX, XLSX, TXT - 5MB max\n\n**Features**:\n- Automatic MIME type detection\n- Tier-based validation\n- Multiple files support\n- Cleanup on upload failure\n\n**Response**: Message with attachment metadata"
+					}
+				}
+			],
+			"description": "Image, video, and document attachments with tier validation."
+		},
+		{
+			"name": "6. Voice Messages (Phase 2B)",
+			"item": [
+				{
+					"name": "6.1 Send Voice Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "toUserId",
+									"value": "2",
+									"type": "text"
+								},
+								{
+									"key": "plantAnalysisId",
+									"value": "{{plantAnalysisId}}",
+									"type": "text"
+								},
+								{
+									"key": "duration",
+									"value": "45",
+									"type": "text",
+									"description": "Duration in seconds (max 60)"
+								},
+								{
+									"key": "waveform",
+									"value": "[0.2, 0.5, 0.8, 0.6, 0.3]",
+									"type": "text",
+									"description": "Optional waveform data (JSON array)"
+								},
+								{
+									"key": "voiceFile",
+									"type": "file",
+									"src": "/path/to/voice.m4a",
+									"description": "Audio file (M4A, AAC, MP3)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/messages/voice",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "messages", "voice"]
+						},
+						"description": "Send voice message (XL tier only - premium feature).\n\n**Tier**: **XL only**\n**Limits**: \n- Max duration: 60 seconds\n- Max size: 5MB\n- Formats: M4A, AAC, MP3\n\n**Optional**: Waveform data for visualization"
+					}
+				}
+			],
+			"description": "Voice messaging with waveform support (XL tier premium feature)."
+		},
+		{
+			"name": "7. Edit/Delete Messages (Phase 4A)",
+			"item": [
+				{
+					"name": "7.1 Edit Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "\"Updated message text\""
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/messages/{{messageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "messages", "{{messageId}}"]
+						},
+						"description": "Edit message content (M tier and above).\n\n**Tier**: M, L, XL\n**Time Limit**: 1 hour after sending\n**Validation**: \n- Only sender can edit\n- Cannot edit deleted messages\n- Original message stored\n\n**UI**: Shows \"(edited)\" badge"
+					}
+				},
+				{
+					"name": "7.2 Delete Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/messages/{{messageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "messages", "{{messageId}}"]
+						},
+						"description": "Delete message (soft delete, all tiers).\n\n**Tier**: All tiers\n**Time Limit**: 24 hours after sending\n**Validation**: Only sender can delete\n\n**Note**: Soft delete (IsDeleted = true)"
+					}
+				}
+			],
+			"description": "Message editing and deletion with time limits."
+		},
+		{
+			"name": "8. Forward Messages (Phase 4B)",
+			"item": [
+				{
+					"name": "8.1 Forward Message",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data) {",
+									"    pm.collectionVariables.set('messageId', jsonData.data.id);",
+									"    console.log('✅ Message forwarded. New message ID:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"toUserId\": 3,\n  \"plantAnalysisId\": {{plantAnalysisId}}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/sponsorship/messages/{{messageId}}/forward",
+							"host": ["{{baseUrl}}"],
+							"path": ["sponsorship", "messages", "{{messageId}}", "forward"]
+						},
+						"description": "Forward message to another conversation (M tier+).\n\n**Tier**: M, L, XL\n**Features**:\n- Copies message content\n- Copies all attachments\n- Copies voice message\n- Sets IsForwarded = true\n- Links to original message\n\n**Validation**: \n- Cannot forward deleted messages\n- Sender must have messaging permission with recipient"
+					}
+				}
+			],
+			"description": "Message forwarding with full attachment copy (M tier+)."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

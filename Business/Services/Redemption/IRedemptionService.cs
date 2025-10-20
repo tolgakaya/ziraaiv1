@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
-using Core.Entities.Concrete;
 using Core.Utilities.Results;
 using Entities.Concrete;
+using UserEntity = Core.Entities.Concrete.User;
 
 namespace Business.Services.Redemption
 {
@@ -25,12 +25,12 @@ namespace Business.Services.Redemption
         /// <summary>
         /// Find existing user by sponsorship code (using phone number)
         /// </summary>
-        Task<User> FindUserByCodeAsync(string code);
+        Task<UserEntity> FindUserByCodeAsync(string code);
 
         /// <summary>
         /// Create a new user account from sponsorship code information
         /// </summary>
-        Task<IDataResult<User>> CreateAccountFromCodeAsync(string code);
+        Task<IDataResult<UserEntity>> CreateAccountFromCodeAsync(string code);
 
         /// <summary>
         /// Activate subscription for a user using sponsorship code
