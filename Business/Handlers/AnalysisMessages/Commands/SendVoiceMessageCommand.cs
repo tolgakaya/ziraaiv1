@@ -143,6 +143,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     };
 
                     _messageRepository.Add(message);
+                    await _messageRepository.SaveChangesAsync();
 
                     // Get sender's avatar URLs
                     var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);
