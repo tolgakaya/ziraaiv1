@@ -198,6 +198,8 @@ builder.Services.AddScoped<DataAccess.Abstract.IReferralTrackingRepository, Data
 builder.Services.AddScoped<DataAccess.Abstract.IReferralRewardRepository, DataAccess.Concrete.EntityFramework.ReferralRewardRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository, DataAccess.Concrete.EntityFramework.ReferralConfigurationRepository>();
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
+// Use RedisCacheManager to match API's cache provider for cross-service cache invalidation
+builder.Services.AddSingleton<Core.CrossCuttingConcerns.Caching.ICacheManager, Core.CrossCuttingConcerns.Caching.Redis.RedisCacheManager>();
 builder.Services.AddScoped<Business.Services.FileStorage.IFileStorageService, Business.Services.FileStorage.FreeImageHostStorageService>();
 builder.Services.AddScoped<Business.Services.ImageProcessing.IImageProcessingService, Business.Services.ImageProcessing.ImageProcessingService>();
 builder.Services.AddScoped<Business.Services.PlantAnalysis.IPlantAnalysisService, Business.Services.PlantAnalysis.PlantAnalysisService>();

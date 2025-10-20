@@ -1,6 +1,7 @@
 using Business.Services.FileStorage;
 using Business.Services.Notification;
 using Business.Services.Referral;
+using Core.CrossCuttingConcerns.Caching;
 using DataAccess.Abstract;
 using Microsoft.EntityFrameworkCore;
 using Entities.Concrete;
@@ -20,6 +21,9 @@ namespace PlantAnalysisWorkerService.Jobs
         private readonly IConfiguration _configuration;
         private readonly IReferralTrackingService _referralTrackingService;
         private readonly IReferralRewardService _referralRewardService;
+        private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+        private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
+        private readonly ICacheManager _cacheManager;
 
         public PlantAnalysisJobService(
             ILogger<PlantAnalysisJobService> logger,
@@ -28,7 +32,10 @@ namespace PlantAnalysisWorkerService.Jobs
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
             IReferralTrackingService referralTrackingService,
-            IReferralRewardService referralRewardService)
+            IReferralRewardService referralRewardService,
+            IUserSubscriptionRepository userSubscriptionRepository,
+            ISponsorshipCodeRepository sponsorshipCodeRepository,
+            ICacheManager cacheManager)
         {
             _logger = logger;
             _plantAnalysisRepository = plantAnalysisRepository;
@@ -37,6 +44,9 @@ namespace PlantAnalysisWorkerService.Jobs
             _configuration = configuration;
             _referralTrackingService = referralTrackingService;
             _referralRewardService = referralRewardService;
+            _userSubscriptionRepository = userSubscriptionRepository;
+            _sponsorshipCodeRepository = sponsorshipCodeRepository;
+            _cacheManager = cacheManager;
         }
 
         [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
@@ -301,6 +311,9 @@ namespace PlantAnalysisWorkerService.Jobs
                     existingAnalysis.ElementDeficiencies = JsonConvert.SerializeObject(result.NutrientStatus);
                     existingAnalysis.Diseases = JsonConvert.SerializeObject(result.PestDisease?.DiseasesDetected ?? new object[0]);
                     existingAnalysis.Pests = JsonConvert.SerializeObject(result.PestDisease?.PestsDetected ?? new object[0]);
+                    
+                    // 🔥 CRITICAL: Capture active sponsor attribution
+                    await CaptureActiveSponsorAsync(existingAnalysis, existingAnalysis.UserId);
                     
                     _plantAnalysisRepository.Update(existingAnalysis);
                 }
@@ -573,6 +586,95 @@ namespace PlantAnalysisWorkerService.Jobs
             {
                 _logger.LogWarning($"Failed to convert image path to URL: {ex.Message}");
                 return imagePath;
+            }
+        }
+
+
+        /// <summary>
+        /// Capture active sponsor attribution for this analysis
+        /// Critical for: logo display, sponsor access control, messaging permissions, dashboard analytics
+        /// </summary>
+        /// <summary>
+        /// Invalidate sponsor dashboard cache when analysis is created/completed
+        /// </summary>
+        private void InvalidateSponsorDashboardCache(int sponsorId)
+        {
+            var cacheKey = $"SponsorDashboard:{sponsorId}";
+            _logger.LogInformation($"[CacheInvalidation] 🔑 Attempting to remove cache key: {cacheKey}");
+            _cacheManager.Remove(cacheKey);
+            _logger.LogInformation($"[CacheInvalidation] ✅ Cache.Remove() called for key: {cacheKey}");
+        }
+
+        private async Task CaptureActiveSponsorAsync(PlantAnalysis analysis, int? userId)
+        {
+            if (!userId.HasValue)
+            {
+                _logger.LogInformation($"[SponsorAttribution] ⚠️ No userId provided for analysis {analysis.Id} - skipping sponsor capture");
+                return;
+            }
+
+            try
+            {
+                _logger.LogInformation($"[SponsorAttribution] 🔍 Looking for active sponsorship for user {userId.Value}");
+
+                // Get active sponsored subscription
+                var activeSponsorship = await _userSubscriptionRepository.GetAsync(s =>
+                    s.UserId == userId.Value &&
+                    s.IsSponsoredSubscription &&
+                    s.QueueStatus == SubscriptionQueueStatus.Active &&
+                    s.IsActive &&
+                    s.EndDate > DateTime.Now);
+
+                if (activeSponsorship == null)
+                {
+                    _logger.LogWarning($"[SponsorAttribution] ❌ No active sponsored subscription found for user {userId.Value}");
+                    
+                    // Debug: Check if user has ANY subscription
+                    var anySubscription = await _userSubscriptionRepository.GetAsync(s => s.UserId == userId.Value);
+                    if (anySubscription != null)
+                    {
+                        _logger.LogInformation($"[SponsorAttribution] ℹ️ User has subscription but not active/sponsored:");
+                        _logger.LogInformation($"   - IsSponsoredSubscription: {anySubscription.IsSponsoredSubscription}");
+                        _logger.LogInformation($"   - QueueStatus: {anySubscription.QueueStatus}");
+                        _logger.LogInformation($"   - IsActive: {anySubscription.IsActive}");
+                        _logger.LogInformation($"   - EndDate: {anySubscription.EndDate} (Now: {DateTime.Now})");
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"[SponsorAttribution] ℹ️ User has no subscription at all");
+                    }
+                    return;
+                }
+
+                _logger.LogInformation($"[SponsorAttribution] ✅ Found active sponsorship: ID={activeSponsorship.Id}, CodeId={activeSponsorship.SponsorshipCodeId}");
+
+                // Get sponsor company ID from the code
+                var code = await _sponsorshipCodeRepository.GetAsync(c => 
+                    c.Id == activeSponsorship.SponsorshipCodeId);
+
+                if (code == null)
+                {
+                    _logger.LogWarning($"[SponsorAttribution] ❌ Sponsorship code {activeSponsorship.SponsorshipCodeId} not found!");
+                    return;
+                }
+
+                _logger.LogInformation($"[SponsorAttribution] ✅ Found sponsorship code: {code.Code}, SponsorId={code.SponsorId}");
+
+                // Set both attribution fields
+                analysis.ActiveSponsorshipId = activeSponsorship.Id;
+                analysis.SponsorCompanyId = code.SponsorId;
+                
+                _logger.LogInformation($"[SponsorAttribution] ✅ Analysis {analysis.Id} attributed to sponsor {code.SponsorId} (subscription {activeSponsorship.Id})");
+                
+                // Invalidate sponsor dashboard cache
+                InvalidateSponsorDashboardCache(code.SponsorId);
+                _logger.LogInformation($"[SponsorAttribution] 🗑️ Dashboard cache invalidated for sponsor {code.SponsorId}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[SponsorAttribution] ❌ ERROR capturing sponsor for analysis: {ex.Message}");
+                _logger.LogError($"[SponsorAttribution] Stack trace: {ex.StackTrace}");
+                // Don't fail analysis completion if sponsor capture fails
             }
         }
     }
