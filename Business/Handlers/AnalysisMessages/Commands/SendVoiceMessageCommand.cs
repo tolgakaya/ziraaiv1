@@ -7,7 +7,9 @@ using Entities.Concrete;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,29 +33,61 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly IAnalysisMessagingService _messagingService;
             private readonly IMessagingFeatureService _featureService;
             private readonly LocalFileStorageService _localFileStorage; // Use local storage for audio files (FreeImageHost doesn't support audio)
+            private readonly IUserGroupRepository _userGroupRepository;
+            private readonly IGroupRepository _groupRepository;
 
             public SendVoiceMessageCommandHandler(
                 IAnalysisMessageRepository messageRepository,
                 IAnalysisMessagingService messagingService,
                 IMessagingFeatureService featureService,
-                LocalFileStorageService localFileStorage) // Direct injection of LocalFileStorageService
+                LocalFileStorageService localFileStorage, // Direct injection of LocalFileStorageService
+                IUserGroupRepository userGroupRepository,
+                IGroupRepository groupRepository)
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
                 _featureService = featureService;
                 _localFileStorage = localFileStorage;
+                _userGroupRepository = userGroupRepository;
+                _groupRepository = groupRepository;
             }
 
             public async Task<IDataResult<AnalysisMessage>> Handle(SendVoiceMessageCommand request, CancellationToken cancellationToken)
             {
-                // Validate messaging permission
-                var canSend = await _messagingService.CanSendMessageForAnalysisAsync(
-                    request.FromUserId,
-                    request.ToUserId,
-                    request.PlantAnalysisId);
+                // Determine user role
+                var userGroups = await _userGroupRepository.GetListAsync(ug => ug.UserId == request.FromUserId);
+                var groupIds = userGroups.Select(ug => ug.GroupId).ToList();
+                var groups = await _groupRepository.GetListAsync(g => groupIds.Contains(g.Id));
+                var isSponsor = groups.Any(g => g.GroupName == "Sponsor");
+                var isFarmer = groups.Any(g => g.GroupName == "Farmer");
 
-                if (!canSend.canSend)
-                    return new ErrorDataResult<AnalysisMessage>(canSend.errorMessage);
+                // Role-based validation
+                if (isSponsor)
+                {
+                    // Sponsor sending to farmer
+                    var canSend = await _messagingService.CanSendMessageForAnalysisAsync(
+                        request.FromUserId,
+                        request.ToUserId,
+                        request.PlantAnalysisId);
+
+                    if (!canSend.canSend)
+                        return new ErrorDataResult<AnalysisMessage>(canSend.errorMessage);
+                }
+                else if (isFarmer)
+                {
+                    // Farmer replying to sponsor
+                    var canReply = await _messagingService.CanFarmerReplyAsync(
+                        request.FromUserId,
+                        request.ToUserId,
+                        request.PlantAnalysisId);
+
+                    if (!canReply.canReply)
+                        return new ErrorDataResult<AnalysisMessage>(canReply.errorMessage);
+                }
+                else
+                {
+                    return new ErrorDataResult<AnalysisMessage>("Only sponsors and farmers can send messages");
+                }
 
                 // Validate voice message feature access (XL tier only)
                 var featureValidation = await _featureService.ValidateFeatureAccessAsync(

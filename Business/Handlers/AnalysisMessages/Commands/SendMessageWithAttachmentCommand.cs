@@ -31,31 +31,63 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly IAttachmentValidationService _attachmentValidation;
             private readonly IFileStorageService _imageStorage; // FreeImageHost for images
             private readonly LocalFileStorageService _localStorage; // Local for documents
+            private readonly IUserGroupRepository _userGroupRepository;
+            private readonly IGroupRepository _groupRepository;
 
             public SendMessageWithAttachmentCommandHandler(
                 IAnalysisMessageRepository messageRepository,
                 IAnalysisMessagingService messagingService,
                 IAttachmentValidationService attachmentValidation,
                 IFileStorageService imageStorage, // FreeImageHost via DI
-                LocalFileStorageService localStorage) // Local for non-images
+                LocalFileStorageService localStorage, // Local for non-images
+                IUserGroupRepository userGroupRepository,
+                IGroupRepository groupRepository)
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
                 _attachmentValidation = attachmentValidation;
                 _imageStorage = imageStorage;
                 _localStorage = localStorage;
+                _userGroupRepository = userGroupRepository;
+                _groupRepository = groupRepository;
             }
 
             public async Task<IDataResult<AnalysisMessage>> Handle(SendMessageWithAttachmentCommand request, CancellationToken cancellationToken)
             {
-                // Validate messaging permission
-                var canSend = await _messagingService.CanSendMessageForAnalysisAsync(
-                    request.FromUserId,
-                    request.ToUserId,
-                    request.PlantAnalysisId);
+                // Determine user role
+                var userGroups = await _userGroupRepository.GetListAsync(ug => ug.UserId == request.FromUserId);
+                var groupIds = userGroups.Select(ug => ug.GroupId).ToList();
+                var groups = await _groupRepository.GetListAsync(g => groupIds.Contains(g.Id));
+                var isSponsor = groups.Any(g => g.GroupName == "Sponsor");
+                var isFarmer = groups.Any(g => g.GroupName == "Farmer");
 
-                if (!canSend.canSend)
-                    return new ErrorDataResult<AnalysisMessage>(canSend.errorMessage);
+                // Role-based validation
+                if (isSponsor)
+                {
+                    // Sponsor sending to farmer
+                    var canSend = await _messagingService.CanSendMessageForAnalysisAsync(
+                        request.FromUserId,
+                        request.ToUserId,
+                        request.PlantAnalysisId);
+
+                    if (!canSend.canSend)
+                        return new ErrorDataResult<AnalysisMessage>(canSend.errorMessage);
+                }
+                else if (isFarmer)
+                {
+                    // Farmer replying to sponsor
+                    var canReply = await _messagingService.CanFarmerReplyAsync(
+                        request.FromUserId,
+                        request.ToUserId,
+                        request.PlantAnalysisId);
+
+                    if (!canReply.canReply)
+                        return new ErrorDataResult<AnalysisMessage>(canReply.errorMessage);
+                }
+                else
+                {
+                    return new ErrorDataResult<AnalysisMessage>("Only sponsors and farmers can send messages");
+                }
 
                 // Validate attachments
                 if (request.Attachments == null || !request.Attachments.Any())
