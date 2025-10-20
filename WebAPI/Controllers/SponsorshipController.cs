@@ -10,6 +10,7 @@ using Business.Handlers.SmartLinks.Queries;
 using Business.Handlers.PlantAnalyses.Queries;
 using Business.Handlers.MessagingFeatures.Commands;
 using Business.Handlers.MessagingFeatures.Queries;
+using Business.Handlers.FarmerSponsorBlock.Queries;
 using Business.Services.Sponsorship;
 using Core.Entities.Concrete;
 using Core.Extensions;
@@ -60,6 +61,8 @@ namespace WebAPI.Controllers
         /// <returns>List of available tiers with sponsorship features</returns>
         [AllowAnonymous] // Public endpoint for purchase preview
         [HttpGet("tiers-for-purchase")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SuccessDataResult<List<SponsorshipTierComparisonDto>>))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResult))]
         public async Task<IActionResult> GetTiersForPurchase()
         {
             try
@@ -96,6 +99,10 @@ namespace WebAPI.Controllers
         /// <returns>Created sponsor profile</returns>
         [Authorize] // Allow any authenticated user (Farmer can become Sponsor)
         [HttpPost("create-profile")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<SponsorProfileDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> CreateSponsorProfile([FromBody] CreateSponsorProfileDto dto)
         {
             try
@@ -1077,6 +1084,9 @@ namespace WebAPI.Controllers
         /// <returns>Block confirmation</returns>
         [Authorize(Roles = "Farmer,Admin")]
         [HttpPost("messages/block")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> BlockSponsor([FromBody] Business.Handlers.FarmerSponsorBlock.Commands.BlockSponsorCommand command)
         {
             try
@@ -1364,6 +1374,9 @@ namespace WebAPI.Controllers
         [Authorize]
         [HttpPost("messages/{messageId}/forward")]
         [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> ForwardMessage(
             int messageId,
             [FromBody] ForwardMessageRequest request)
@@ -1491,6 +1504,8 @@ namespace WebAPI.Controllers
         /// <returns>List of blocked sponsors</returns>
         [Authorize(Roles = "Farmer,Admin")]
         [HttpGet("messages/blocked")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<BlockedSponsorDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetBlockedSponsors()
         {
             try
