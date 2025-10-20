@@ -224,7 +224,11 @@ namespace Business.Services.FileStorage
 
             // Get current base URL (dynamic)
             var currentBaseUrl = GetBaseUrl();
-            return $"{currentBaseUrl}/{urlPath}";
+            
+            // Add 'uploads' prefix since UseStaticFiles serves from wwwroot
+            // File path: wwwroot/uploads/voice-messages/file.m4a
+            // URL should be: {baseUrl}/uploads/voice-messages/file.m4a
+            return $"{currentBaseUrl}/uploads/{urlPath}";
         }
 
         private string GetBaseUrl()
