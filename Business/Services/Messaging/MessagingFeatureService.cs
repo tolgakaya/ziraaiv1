@@ -38,25 +38,25 @@ namespace Business.Services.Messaging
             _memoryCache = memoryCache;
         }
 
-        public async Task<IDataResult<MessagingFeaturesDto>> GetUserFeaturesAsync(int userId)
+        public async Task<IDataResult<MessagingFeaturesDto>> GetUserFeaturesAsync(int plantAnalysisId)
         {
-            // Get user tier
-            var userTier = await GetUserTierAsync(userId);
+            // Get ANALYSIS tier (not user tier)
+            var analysisTier = await GetAnalysisTierAsync(plantAnalysisId);
 
             // Get all features from cache or database
             var features = await GetCachedFeaturesAsync();
 
             var dto = new MessagingFeaturesDto
             {
-                VoiceMessages = MapFeature(features, "VoiceMessages", userTier),
-                ImageAttachments = MapFeature(features, "ImageAttachments", userTier),
-                VideoAttachments = MapFeature(features, "VideoAttachments", userTier),
-                FileAttachments = MapFeature(features, "FileAttachments", userTier),
-                MessageEdit = MapFeature(features, "MessageEdit", userTier),
-                MessageDelete = MapFeature(features, "MessageDelete", userTier),
-                MessageForward = MapFeature(features, "MessageForward", userTier),
-                TypingIndicator = MapFeature(features, "TypingIndicator", userTier),
-                LinkPreview = MapFeature(features, "LinkPreview", userTier)
+                VoiceMessages = MapFeature(features, "VoiceMessages", analysisTier),
+                ImageAttachments = MapFeature(features, "ImageAttachments", analysisTier),
+                VideoAttachments = MapFeature(features, "VideoAttachments", analysisTier),
+                FileAttachments = MapFeature(features, "FileAttachments", analysisTier),
+                MessageEdit = MapFeature(features, "MessageEdit", analysisTier),
+                MessageDelete = MapFeature(features, "MessageDelete", analysisTier),
+                MessageForward = MapFeature(features, "MessageForward", analysisTier),
+                TypingIndicator = MapFeature(features, "TypingIndicator", analysisTier),
+                LinkPreview = MapFeature(features, "LinkPreview", analysisTier)
             };
 
             return new SuccessDataResult<MessagingFeaturesDto>(dto, "Features retrieved successfully");

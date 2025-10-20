@@ -15,7 +15,11 @@ namespace Business.Services.Messaging
         /// Get all messaging features configuration for a specific user
         /// Returns feature availability based on user tier and admin toggles
         /// </summary>
-        Task<IDataResult<MessagingFeaturesDto>> GetUserFeaturesAsync(int userId);
+        /// <summary>
+    /// Get all messaging features for a specific analysis
+    /// Returns feature availability based on ANALYSIS tier, not user tier
+    /// </summary>
+    Task<IDataResult<MessagingFeaturesDto>> GetUserFeaturesAsync(int plantAnalysisId);
 
         /// <summary>
         /// Check if a specific feature is available for a user

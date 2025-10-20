@@ -1167,23 +1167,23 @@ namespace WebAPI.Controllers
         #region Messaging Features
 
         /// <summary>
-        /// Get messaging features configuration for current user
-        /// Returns feature availability based on user tier and admin toggles
+        /// Get messaging features configuration for a specific analysis
+        /// Returns feature availability based on analysis tier and admin toggles
         /// </summary>
+        /// <param name="plantAnalysisId">The plant analysis ID to check features for</param>
         /// <returns>Feature configuration with availability flags</returns>
         [Authorize]
         [HttpGet("messaging/features")]
-        public async Task<IActionResult> GetMessagingFeatures()
+        public async Task<IActionResult> GetMessagingFeatures([FromQuery] int plantAnalysisId)
         {
             try
             {
-                var userId = GetUserId();
-                if (!userId.HasValue)
-                    return Unauthorized();
+                if (plantAnalysisId <= 0)
+                    return BadRequest(new ErrorResult("Plant analysis ID is required"));
 
                 var query = new Business.Handlers.MessagingFeatures.Queries.GetMessagingFeaturesQuery
                 {
-                    UserId = userId.Value
+                    PlantAnalysisId = plantAnalysisId
                 };
 
                 var result = await Mediator.Send(query);
