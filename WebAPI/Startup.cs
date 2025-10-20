@@ -166,6 +166,9 @@ namespace WebAPI
                 
                 // CRITICAL FIX: Use full type name including namespace to avoid schema conflicts
                 c.CustomSchemaIds(type => type.FullName);
+                
+                // Add operation filter to handle file upload endpoints
+                c.OperationFilter<Swagger.FileUploadOperationFilter>();
             });
 
             services.AddTransient<FileLogger>();
