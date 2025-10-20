@@ -19,7 +19,7 @@ namespace Business.Handlers.AnalysisMessages.Queries
         
         // Pagination parameters
         public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 50;
+        public int PageSize { get; set; } = 20;
 
         public class GetConversationQueryHandler : IRequestHandler<GetConversationQuery, PaginatedResult<List<AnalysisMessageDto>>>
         {

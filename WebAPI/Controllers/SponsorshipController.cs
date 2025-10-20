@@ -813,7 +813,7 @@ namespace WebAPI.Controllers
         /// <param name="otherUserId">The other participant's user ID (can be sponsor or farmer)</param>
         /// <param name="plantAnalysisId">Analysis ID for context</param>
         /// <param name="page">Page number (default: 1)</param>
-        /// <param name="pageSize">Number of messages per page (default: 50, max: 100)</param>
+        /// <param name="pageSize">Number of messages per page (default: 20, max: 100)</param>
         /// <returns>Paginated message conversation</returns>
         [Authorize(Roles = "Sponsor,Farmer,Admin")]
         [HttpGet("messages/conversation")]
@@ -824,7 +824,7 @@ namespace WebAPI.Controllers
             int otherUserId, 
             int plantAnalysisId,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 50)
+            [FromQuery] int pageSize = 20)
         {
             var userId = GetUserId();
             if (!userId.HasValue)
@@ -832,7 +832,7 @@ namespace WebAPI.Controllers
 
             // Validate and limit page size
             if (pageSize > 100) pageSize = 100;
-            if (pageSize < 1) pageSize = 50;
+            if (pageSize < 1) pageSize = 20;
             if (page < 1) page = 1;
 
             var query = new GetConversationQuery
