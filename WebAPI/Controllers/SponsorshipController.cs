@@ -1414,12 +1414,7 @@ namespace WebAPI.Controllers
         [Produces("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> SendVoiceMessage(
-            [FromForm] int toUserId,
-            [FromForm] int plantAnalysisId,
-            [FromForm] int duration,
-            [FromForm] string waveform,
-            [FromForm] IFormFile voiceFile)
+        public async Task<IActionResult> SendVoiceMessage([FromForm] SendVoiceMessageDto dto)
         {
             try
             {
@@ -1430,11 +1425,11 @@ namespace WebAPI.Controllers
                 var command = new Business.Handlers.AnalysisMessages.Commands.SendVoiceMessageCommand
                 {
                     FromUserId = userId.Value,
-                    ToUserId = toUserId,
-                    PlantAnalysisId = plantAnalysisId,
-                    Duration = duration,
-                    Waveform = waveform,
-                    VoiceFile = voiceFile
+                    ToUserId = dto.ToUserId,
+                    PlantAnalysisId = dto.PlantAnalysisId,
+                    Duration = dto.Duration,
+                    Waveform = dto.Waveform,
+                    VoiceFile = dto.VoiceFile
                 };
 
                 var result = await Mediator.Send(command);
@@ -1457,12 +1452,7 @@ namespace WebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> SendMessageWithAttachments(
-            [FromForm] int toUserId,
-            [FromForm] int plantAnalysisId,
-            [FromForm] string message,
-            [FromForm] string messageType,
-            [FromForm] List<IFormFile> attachments)
+        public async Task<IActionResult> SendMessageWithAttachments([FromForm] SendMessageWithAttachmentsDto dto)
         {
             try
             {
@@ -1473,11 +1463,11 @@ namespace WebAPI.Controllers
                 var command = new Business.Handlers.AnalysisMessages.Commands.SendMessageWithAttachmentCommand
                 {
                     FromUserId = userId.Value,
-                    ToUserId = toUserId,
-                    PlantAnalysisId = plantAnalysisId,
-                    Message = message,
-                    MessageType = messageType ?? "Information",
-                    Attachments = attachments
+                    ToUserId = dto.ToUserId,
+                    PlantAnalysisId = dto.PlantAnalysisId,
+                    Message = dto.Message,
+                    MessageType = dto.MessageType ?? "Information",
+                    Attachments = dto.Attachments
                 };
 
                 var result = await Mediator.Send(command);
