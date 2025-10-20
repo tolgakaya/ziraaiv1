@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace WebAPI.Swagger
 {
+    /// <summary>
+    /// Swagger operation filter to properly handle IFormFile parameters in file upload endpoints
+    /// </summary>
     /// <summary>
     /// Swagger operation filter to properly handle IFormFile parameters in file upload endpoints
     /// </summary>
@@ -13,16 +18,63 @@ namespace WebAPI.Swagger
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
             var formFileParameters = context.ApiDescription.ParameterDescriptions
-                .Where(p => p.ModelMetadata?.ModelType == typeof(IFormFile))
+                .Where(p => p.ModelMetadata != null && 
+                           (p.ModelMetadata.ModelType == typeof(IFormFile) || 
+                            p.ModelMetadata.ModelType == typeof(IEnumerable<IFormFile>) ||
+                            p.ModelMetadata.ModelType == typeof(List<IFormFile>)))
                 .ToList();
 
             if (!formFileParameters.Any())
                 return;
 
-            // Clear existing parameters
-            operation.Parameters?.Clear();
+            // Get all parameters from the endpoint
+            var allParameters = context.ApiDescription.ParameterDescriptions.ToList();
+            
+            // Create schema properties
+            var properties = new Dictionary<string, OpenApiSchema>();
+            var required = new HashSet<string>();
 
-            // Set request body to multipart/form-data
+            foreach (var param in allParameters)
+            {
+                var paramType = param.ModelMetadata?.ModelType;
+                
+                if (paramType == typeof(IFormFile))
+                {
+                    properties[param.Name] = new OpenApiSchema
+                    {
+                        Type = "string",
+                        Format = "binary"
+                    };
+                }
+                else if (paramType == typeof(IEnumerable<IFormFile>) || paramType == typeof(List<IFormFile>))
+                {
+                    properties[param.Name] = new OpenApiSchema
+                    {
+                        Type = "array",
+                        Items = new OpenApiSchema
+                        {
+                            Type = "string",
+                            Format = "binary"
+                        }
+                    };
+                }
+                else
+                {
+                    properties[param.Name] = new OpenApiSchema
+                    {
+                        Type = GetSchemaType(paramType)
+                    };
+                }
+
+                if (param.IsRequired)
+                {
+                    required.Add(param.Name);
+                }
+            }
+
+            // Clear parameters and set request body
+            operation.Parameters?.Clear();
+            
             operation.RequestBody = new OpenApiRequestBody
             {
                 Content =
@@ -32,31 +84,15 @@ namespace WebAPI.Swagger
                         Schema = new OpenApiSchema
                         {
                             Type = "object",
-                            Properties = context.ApiDescription.ParameterDescriptions
-                                .ToDictionary(
-                                    p => p.Name,
-                                    p => p.ModelMetadata?.ModelType == typeof(IFormFile)
-                                        ? new OpenApiSchema
-                                        {
-                                            Type = "string",
-                                            Format = "binary"
-                                        }
-                                        : new OpenApiSchema
-                                        {
-                                            Type = GetSchemaType(p.ModelMetadata?.ModelType)
-                                        }
-                                ),
-                            Required = context.ApiDescription.ParameterDescriptions
-                                .Where(p => p.IsRequired)
-                                .Select(p => p.Name)
-                                .ToHashSet()
+                            Properties = properties,
+                            Required = required
                         }
                     }
                 }
             };
         }
 
-        private static string GetSchemaType(System.Type type)
+        private static string GetSchemaType(Type type)
         {
             if (type == null) return "string";
             

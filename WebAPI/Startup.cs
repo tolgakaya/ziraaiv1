@@ -167,6 +167,13 @@ namespace WebAPI
                 // CRITICAL FIX: Use full type name including namespace to avoid schema conflicts
                 c.CustomSchemaIds(type => type.FullName);
                 
+                // Map IFormFile to prevent Swagger generation errors
+                c.MapType<IFormFile>(() => new OpenApiSchema
+                {
+                    Type = "string",
+                    Format = "binary"
+                });
+                
                 // Add operation filter to handle file upload endpoints
                 c.OperationFilter<Swagger.FileUploadOperationFilter>();
             });
