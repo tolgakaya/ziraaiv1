@@ -1,0 +1,18 @@
+1.)  {{base_url}}/api/v{{version}}/Auth/verify-phone-register  endpointinde fullName alanı göndeirlmedği zaman 500 alıyor. Ama aslında burası optional olmalı. Yani fullName alanı payloadda olmasına gerek yok
+
+Bununla login olabiliyor
+{
+  "mobilePhone": "05326866386",
+  "code": 934871,
+  "fullName": "Tolga KAYA"
+}
+
+Ama bununla 500 alınıyor:
+
+{
+  "mobilePhone": "05326866386",
+  "code": 934871,
+}
+
+
+2.) 

@@ -101,6 +101,104 @@ namespace Business.Hubs
         /// <summary>
         /// Unsubscribe from analysis updates
         /// </summary>
+
+        #region Messaging Features (Phase 3)
+
+        /// <summary>
+        /// Notify that user started typing in a conversation
+        /// </summary>
+        public async Task StartTyping(int conversationUserId, int plantAnalysisId)
+        {
+            var userId = Context.User?.FindFirst("userId")?.Value;
+            
+            _logger.LogDebug(
+                "User {UserId} started typing to {RecipientId} in analysis {AnalysisId}",
+                userId,
+                conversationUserId,
+                plantAnalysisId);
+
+            // Send typing notification to the recipient
+            await Clients.User(conversationUserId.ToString())
+                .SendAsync("UserTyping", new
+                {
+                    UserId = userId,
+                    PlantAnalysisId = plantAnalysisId,
+                    IsTyping = true,
+                    Timestamp = DateTime.UtcNow
+                });
+        }
+
+        /// <summary>
+        /// Notify that user stopped typing in a conversation
+        /// </summary>
+        public async Task StopTyping(int conversationUserId, int plantAnalysisId)
+        {
+            var userId = Context.User?.FindFirst("userId")?.Value;
+            
+            _logger.LogDebug(
+                "User {UserId} stopped typing to {RecipientId} in analysis {AnalysisId}",
+                userId,
+                conversationUserId,
+                plantAnalysisId);
+
+            // Send stop typing notification to the recipient
+            await Clients.User(conversationUserId.ToString())
+                .SendAsync("UserTyping", new
+                {
+                    UserId = userId,
+                    PlantAnalysisId = plantAnalysisId,
+                    IsTyping = false,
+                    Timestamp = DateTime.UtcNow
+                });
+        }
+
+        /// <summary>
+        /// Notify that a new message was sent (real-time delivery)
+        /// </summary>
+        public async Task NotifyNewMessage(int recipientUserId, int messageId, int plantAnalysisId)
+        {
+            var userId = Context.User?.FindFirst("userId")?.Value;
+
+            _logger.LogInformation(
+                "New message {MessageId} notification from {SenderId} to {RecipientId}",
+                messageId,
+                userId,
+                recipientUserId);
+
+            await Clients.User(recipientUserId.ToString())
+                .SendAsync("NewMessage", new
+                {
+                    MessageId = messageId,
+                    SenderId = userId,
+                    PlantAnalysisId = plantAnalysisId,
+                    Timestamp = DateTime.UtcNow
+                });
+        }
+
+        /// <summary>
+        /// Notify that a message was read (read receipts)
+        /// </summary>
+        public async Task NotifyMessageRead(int senderUserId, int messageId)
+        {
+            var userId = Context.User?.FindFirst("userId")?.Value;
+
+            _logger.LogDebug(
+                "Message {MessageId} marked as read by {ReaderId}, notifying sender {SenderId}",
+                messageId,
+                userId,
+                senderUserId);
+
+            await Clients.User(senderUserId.ToString())
+                .SendAsync("MessageRead", new
+                {
+                    MessageId = messageId,
+                    ReadByUserId = userId,
+                    ReadAt = DateTime.UtcNow
+                });
+        }
+
+        #endregion
+
         public async Task UnsubscribeFromAnalysis(int analysisId)
         {
             var userId = Context.User?.FindFirst("userId")?.Value;

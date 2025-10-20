@@ -1,4 +1,5 @@
 using Business.Services.Sponsorship;
+using Core.CrossCuttingConcerns.Caching;
 using Core.Utilities.Results;
 using Entities.Concrete;
 using MediatR;
@@ -20,16 +21,20 @@ namespace Business.Handlers.Sponsorship.Commands
         public string InvoiceAddress { get; set; }
         public string TaxNumber { get; set; }
         public string CodePrefix { get; set; } = "AGRI";
-        public int ValidityDays { get; set; } = 365;
+        public int ValidityDays { get; set; } = 30;
         public string Notes { get; set; }
 
         public class PurchaseBulkSponsorshipCommandHandler : IRequestHandler<PurchaseBulkSponsorshipCommand, IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>>
         {
             private readonly ISponsorshipService _sponsorshipService;
+            private readonly ICacheManager _cacheManager;
 
-            public PurchaseBulkSponsorshipCommandHandler(ISponsorshipService sponsorshipService)
+            public PurchaseBulkSponsorshipCommandHandler(
+                ISponsorshipService sponsorshipService,
+                ICacheManager cacheManager)
             {
                 _sponsorshipService = sponsorshipService;
+                _cacheManager = cacheManager;
             }
 
             public async Task<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>> Handle(PurchaseBulkSponsorshipCommand request, CancellationToken cancellationToken)
@@ -37,14 +42,27 @@ namespace Business.Handlers.Sponsorship.Commands
                 try
                 {
                     Console.WriteLine($"[PurchaseBulkSponsorship] Starting bulk purchase for SponsorId: {request.SponsorId}, TierId: {request.SubscriptionTierId}, Quantity: {request.Quantity}");
-                    
+                    Console.WriteLine($"[PurchaseBulkSponsorship] Invoice Info - Company: {request.CompanyName}, Tax: {request.TaxNumber}");
+
                     var result = await _sponsorshipService.PurchaseBulkSubscriptionsAsync(
                         request.SponsorId,
                         request.SubscriptionTierId,
                         request.Quantity,
                         request.TotalAmount,
-                        request.PaymentReference
+                        request.PaymentMethod,
+                        request.PaymentReference,
+                        request.CompanyName,
+                        request.InvoiceAddress,
+                        request.TaxNumber
                     );
+
+                    // Invalidate sponsor dashboard cache after successful purchase
+                    if (result.Success)
+                    {
+                        var cacheKey = $"SponsorDashboard:{request.SponsorId}";
+                        _cacheManager.Remove(cacheKey);
+                        Console.WriteLine($"[DashboardCache] 🗑️ Invalidated cache for sponsor {request.SponsorId} after purchase");
+                    }
 
                     Console.WriteLine($"[PurchaseBulkSponsorship] Service result: Success={result.Success}, Message={result.Message}");
                     return result;

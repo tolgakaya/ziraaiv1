@@ -214,6 +214,11 @@ namespace Business.Handlers.Authorizations.Commands
                 var token = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
                 token.Claims = claims.Select(x => x.Name).ToList();
 
+                // IMPORTANT: Save RefreshToken to user for refresh token flow
+                user.RefreshToken = token.RefreshToken;
+                _userRepository.Update(user);
+                await _userRepository.SaveChangesAsync();
+
                 // NOW mark OTP as used (only after everything succeeded)
                 mobileLogin.IsUsed = true;
                 _mobileLoginRepository.Update(mobileLogin);

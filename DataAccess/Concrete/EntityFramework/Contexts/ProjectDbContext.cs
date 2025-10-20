@@ -77,6 +77,10 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<SponsorAnalysisAccess> SponsorAnalysisAccess { get; set; }
         public DbSet<AnalysisMessage> AnalysisMessages { get; set; }
         public DbSet<SmartLink> SmartLinks { get; set; }
+        public DbSet<FarmerSponsorBlock> FarmerSponsorBlocks { get; set; }
+        
+        // Messaging Features System
+        public DbSet<MessagingFeature> MessagingFeatures { get; set; }
         
         // Deep Links System
         public DbSet<DeepLink> DeepLinks { get; set; }

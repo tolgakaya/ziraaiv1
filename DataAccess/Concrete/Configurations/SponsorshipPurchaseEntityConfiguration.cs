@@ -50,7 +50,7 @@ namespace DataAccess.Concrete.Configurations
                 .HasDefaultValue("AGRI");
             
             builder.Property(x => x.ValidityDays)
-                .HasDefaultValue(365);
+                .HasDefaultValue(30);
             
             builder.Property(x => x.Status)
                 .HasMaxLength(50)

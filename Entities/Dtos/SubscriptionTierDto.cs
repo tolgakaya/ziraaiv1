@@ -13,6 +13,12 @@ namespace Entities.Dtos
         public decimal MonthlyPrice { get; set; }
         public decimal? YearlyPrice { get; set; }
         public string Currency { get; set; }
+        
+        // Sponsorship Purchase Limits
+        public int MinPurchaseQuantity { get; set; }
+        public int MaxPurchaseQuantity { get; set; }
+        public int RecommendedQuantity { get; set; }
+        
         public bool PrioritySupport { get; set; }
         public bool AdvancedAnalytics { get; set; }
         public bool ApiAccess { get; set; }

@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
@@ -78,6 +79,8 @@ namespace WebAPI
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+                    // CRITICAL: Use camelCase for property names (mobile team expects camelCase JSON)
+                    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
                 });
 
             services.AddApiVersioning(v =>
@@ -163,6 +166,16 @@ namespace WebAPI
                 
                 // CRITICAL FIX: Use full type name including namespace to avoid schema conflicts
                 c.CustomSchemaIds(type => type.FullName);
+                
+                // Map IFormFile to prevent Swagger generation errors
+                c.MapType<IFormFile>(() => new OpenApiSchema
+                {
+                    Type = "string",
+                    Format = "binary"
+                });
+                
+                // Add operation filter to handle file upload endpoints
+                c.OperationFilter<Swagger.FileUploadOperationFilter>();
             });
 
             services.AddTransient<FileLogger>();
@@ -335,6 +348,25 @@ namespace WebAPI
 
             CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
             CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
+            // Serve .well-known directory for Android Universal Links (assetlinks.json)
+            // Docker: /app/.well-known | Local: ContentRootPath/.well-known
+            var wellKnownPath = Directory.Exists("/app/.well-known")
+                ? "/app/.well-known"
+                : Path.Combine(env.ContentRootPath, ".well-known");
+
+            if (!Directory.Exists(wellKnownPath))
+            {
+                Directory.CreateDirectory(wellKnownPath);
+            }
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(wellKnownPath),
+                RequestPath = "/.well-known",
+                ServeUnknownFileTypes = true,
+                DefaultContentType = "application/json"
+            });
 
             app.UseStaticFiles();
 

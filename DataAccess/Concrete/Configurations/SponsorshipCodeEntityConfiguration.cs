@@ -51,6 +51,23 @@ namespace DataAccess.Concrete.Configurations
             
             builder.HasIndex(x => new { x.SponsorId, x.IsUsed })
                 .HasDatabaseName("IX_SponsorshipCodes_SponsorId_IsUsed");
+            
+            // Composite index for sent+expired codes query (CRITICAL for performance with millions of rows)
+            // Covers: WHERE SponsorId = X AND DistributionDate IS NOT NULL AND ExpiryDate < NOW AND IsUsed = false
+            // ORDER BY ExpiryDate DESC, DistributionDate DESC
+            builder.HasIndex(x => new { x.SponsorId, x.DistributionDate, x.ExpiryDate, x.IsUsed })
+                .HasDatabaseName("IX_SponsorshipCodes_SentExpired")
+                .HasFilter("\"DistributionDate\" IS NOT NULL AND \"IsUsed\" = false");
+            
+            // Index for unsent codes query optimization
+            builder.HasIndex(x => new { x.SponsorId, x.DistributionDate, x.IsUsed })
+                .HasDatabaseName("IX_SponsorshipCodes_Unsent")
+                .HasFilter("\"DistributionDate\" IS NULL");
+            
+            // Index for sent but unused codes query
+            builder.HasIndex(x => new { x.SponsorId, x.DistributionDate, x.IsUsed })
+                .HasDatabaseName("IX_SponsorshipCodes_SentUnused")
+                .HasFilter("\"DistributionDate\" IS NOT NULL AND \"IsUsed\" = false");
         }
     }
 }

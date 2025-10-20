@@ -135,7 +135,13 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<SmartLinkRepository>().As<ISmartLinkRepository>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<FarmerSponsorBlockRepository>().As<IFarmerSponsorBlockRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<MessagingFeatureRepository>().As<IMessagingFeatureRepository>()
+                .InstancePerLifetimeScope();
+
             // Referral System repositories
             builder.RegisterType<ReferralCodeRepository>().As<IReferralCodeRepository>()
                 .InstancePerLifetimeScope();
@@ -173,7 +179,10 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<SponsorshipService>().As<ISponsorshipService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<SponsorshipTierMappingService>().As<ISponsorshipTierMappingService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<RedemptionService>().As<IRedemptionService>()
                 .InstancePerLifetimeScope();
             
@@ -220,7 +229,22 @@ namespace Business.DependencyResolvers
             // Mobile Integration Services
             builder.RegisterType<AnalysisMessagingService>().As<IAnalysisMessagingService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<MessageRateLimitService>().As<IMessageRateLimitService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.Messaging.MessagingFeatureService>()
+                .As<Business.Services.Messaging.IMessagingFeatureService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.User.AvatarService>()
+                .As<Business.Services.User.IAvatarService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.Messaging.AttachmentValidationService>()
+                .As<Business.Services.Messaging.IAttachmentValidationService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SmartLinkService>().As<ISmartLinkService>()
                 .InstancePerLifetimeScope();
             
@@ -261,7 +285,8 @@ namespace Business.DependencyResolvers
                 c.Resolve<IUserRepository>(),
                 c.Resolve<IMobileLoginRepository>(),
                 c.Resolve<ITokenHelper>(),
-                c.Resolve<Business.Adapters.SmsService.ISmsService>()
+                c.Resolve<Business.Adapters.SmsService.ISmsService>(),
+                c.Resolve<ILogger<Business.Services.Authentication.PhoneAuthenticationProvider>>()
             )).InstancePerLifetimeScope();
             
             

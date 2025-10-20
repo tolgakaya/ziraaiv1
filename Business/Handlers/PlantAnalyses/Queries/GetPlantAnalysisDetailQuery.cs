@@ -1,4 +1,5 @@
 using Business.BusinessAspects;
+using Business.Services.Sponsorship;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
@@ -20,10 +21,20 @@ namespace Business.Handlers.PlantAnalyses.Queries
         public class GetPlantAnalysisDetailQueryHandler : IRequestHandler<GetPlantAnalysisDetailQuery, IDataResult<PlantAnalysisDetailDto>>
         {
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
+            private readonly ISponsorDataAccessService _dataAccessService;
+            private readonly ISponsorProfileRepository _sponsorProfileRepository;
+            private readonly IAnalysisMessageRepository _analysisMessageRepository;
             
-            public GetPlantAnalysisDetailQueryHandler(IPlantAnalysisRepository plantAnalysisRepository)
+            public GetPlantAnalysisDetailQueryHandler(
+                IPlantAnalysisRepository plantAnalysisRepository,
+                ISponsorDataAccessService dataAccessService,
+                ISponsorProfileRepository sponsorProfileRepository,
+                IAnalysisMessageRepository analysisMessageRepository)
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
+                _dataAccessService = dataAccessService;
+                _sponsorProfileRepository = sponsorProfileRepository;
+                _analysisMessageRepository = analysisMessageRepository;
             }
             
             public async Task<IDataResult<PlantAnalysisDetailDto>> Handle(GetPlantAnalysisDetailQuery request, CancellationToken cancellationToken)
@@ -119,7 +130,76 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     ErrorMessage = null
                 };
 
+                // Populate sponsorship metadata if analysis was done with sponsorship code
+                if (analysis.SponsorUserId.HasValue && analysis.SponsorshipCodeId.HasValue)
+                {
+                    try
+                    {
+                        var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(analysis.SponsorUserId.Value);
+                        var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(analysis.SponsorUserId.Value);
+
+                        // Check if sponsor has sent any message to farmer for this analysis
+                        var farmerId = analysis.UserId ?? 0;
+                        var hasReceivedMessage = await _analysisMessageRepository.GetAsync(
+                            m => m.PlantAnalysisId == analysis.Id &&
+                                 m.FromUserId == analysis.SponsorUserId.Value &&
+                                 m.ToUserId == farmerId);
+
+                        detailDto.SponsorshipMetadata = new AnalysisTierMetadata
+                        {
+                            TierName = GetTierName(accessPercentage),
+                            AccessPercentage = accessPercentage,
+                            CanMessage = accessPercentage >= 30, // M, L, XL tiers
+                            CanReply = hasReceivedMessage != null, // Farmer can only reply if sponsor sent a message first
+                            CanViewLogo = true, // All tiers can see logo on result screen
+                            SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
+                            {
+                                SponsorId = sponsorProfile.SponsorId,
+                                CompanyName = sponsorProfile.CompanyName,
+                                LogoUrl = sponsorProfile.SponsorLogoUrl,
+                                WebsiteUrl = sponsorProfile.WebsiteUrl
+                            } : null,
+                            AccessibleFields = new AccessibleFieldsInfo
+                            {
+                                // 30% Access
+                                CanViewBasicInfo = accessPercentage >= 30,
+                                CanViewHealthScore = accessPercentage >= 30,
+                                CanViewImages = accessPercentage >= 30,
+
+                                // 60% Access
+                                CanViewDetailedHealth = accessPercentage >= 60,
+                                CanViewDiseases = accessPercentage >= 60,
+                                CanViewNutrients = accessPercentage >= 60,
+                                CanViewRecommendations = accessPercentage >= 60,
+                                CanViewLocation = accessPercentage >= 60,
+
+                                // 100% Access
+                                CanViewFarmerContact = accessPercentage >= 100,
+                                CanViewFieldData = accessPercentage >= 100,
+                                CanViewProcessingData = accessPercentage >= 100
+                            }
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but don't fail if sponsorship metadata fetch fails
+                        Console.WriteLine($"[GetPlantAnalysisDetailQuery] Warning: Could not fetch sponsorship metadata: {ex.Message}");
+                        detailDto.SponsorshipMetadata = null;
+                    }
+                }
+
                 return new SuccessDataResult<PlantAnalysisDetailDto>(detailDto);
+            }
+
+            private string GetTierName(int accessPercentage)
+            {
+                return accessPercentage switch
+                {
+                    30 => "S/M",
+                    60 => "L",
+                    100 => "XL",
+                    _ => "Unknown"
+                };
             }
 
             private static T TryParseJson<T>(string jsonString) where T : class

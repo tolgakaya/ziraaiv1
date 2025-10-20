@@ -20,10 +20,14 @@ namespace Business.Handlers.AnalysisMessages.Queries
         public class GetConversationQueryHandler : IRequestHandler<GetConversationQuery, IDataResult<List<AnalysisMessageDto>>>
         {
             private readonly IAnalysisMessagingService _messagingService;
+            private readonly DataAccess.Abstract.IUserRepository _userRepository;
 
-            public GetConversationQueryHandler(IAnalysisMessagingService messagingService)
+            public GetConversationQueryHandler(
+                IAnalysisMessagingService messagingService,
+                DataAccess.Abstract.IUserRepository userRepository)
             {
                 _messagingService = messagingService;
+                _userRepository = userRepository;
             }
 
             [LogAspect(typeof(FileLogger))]
@@ -31,24 +35,83 @@ namespace Business.Handlers.AnalysisMessages.Queries
             {
                 var messages = await _messagingService.GetConversationAsync(request.FromUserId, request.ToUserId, request.PlantAnalysisId);
 
-                var messageDtos = messages.Select(m => new AnalysisMessageDto
+                var messageDtos = new List<AnalysisMessageDto>();
+
+                foreach (var m in messages)
                 {
-                    Id = m.Id,
-                    PlantAnalysisId = m.PlantAnalysisId,
-                    FromUserId = m.FromUserId,
-                    ToUserId = m.ToUserId,
-                    Message = m.Message,
-                    MessageType = m.MessageType,
-                    Subject = m.Subject,
-                    IsRead = m.IsRead,
-                    SentDate = m.SentDate,
-                    ReadDate = m.ReadDate,
-                    SenderRole = m.SenderRole,
-                    SenderName = m.SenderName,
-                    SenderCompany = m.SenderCompany,
-                    Priority = m.Priority,
-                    Category = m.Category
-                }).ToList();
+                    // Get sender's and receiver's user info for avatars
+                    var sender = await _userRepository.GetAsync(u => u.UserId == m.FromUserId);
+                    var receiver = await _userRepository.GetAsync(u => u.UserId == m.ToUserId);
+
+                    messageDtos.Add(new AnalysisMessageDto
+                    {
+                        Id = m.Id,
+                        PlantAnalysisId = m.PlantAnalysisId,
+                        FromUserId = m.FromUserId,
+                        ToUserId = m.ToUserId,
+                        Message = m.Message,
+                        MessageType = m.MessageType,
+                        Subject = m.Subject,
+
+                        // Status fields (Phase 1B)
+                        MessageStatus = m.MessageStatus ?? "Sent",
+                        IsRead = m.IsRead,
+                        SentDate = m.SentDate,
+                        DeliveredDate = m.DeliveredDate,
+                        ReadDate = m.ReadDate,
+
+                        // Sender info
+                        SenderRole = m.SenderRole,
+                        SenderName = m.SenderName,
+                        SenderCompany = m.SenderCompany,
+
+                        // Sender Avatar (Phase 1A)
+                        SenderAvatarUrl = sender?.AvatarUrl,
+                        SenderAvatarThumbnailUrl = sender?.AvatarThumbnailUrl,
+
+                        // Receiver info (for displaying both participants in chat UI)
+                        ReceiverRole = "", // Role info not available in User entity directly
+                        ReceiverName = receiver?.FullName ?? "",
+                        ReceiverCompany = "", // Company info not available in User entity directly
+
+                        // Receiver Avatar
+                        ReceiverAvatarUrl = receiver?.AvatarUrl,
+                        ReceiverAvatarThumbnailUrl = receiver?.AvatarThumbnailUrl,
+                        
+                        // Classification
+                        Priority = m.Priority,
+                        Category = m.Category,
+                        
+                        // Attachments (Phase 2A)
+                        HasAttachments = m.HasAttachments,
+                        AttachmentCount = m.AttachmentCount,
+                        AttachmentUrls = !string.IsNullOrEmpty(m.AttachmentUrls) 
+                            ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentUrls) 
+                            : null,
+                        AttachmentTypes = !string.IsNullOrEmpty(m.AttachmentTypes)
+                            ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentTypes)
+                            : null,
+                        AttachmentSizes = !string.IsNullOrEmpty(m.AttachmentSizes)
+                            ? System.Text.Json.JsonSerializer.Deserialize<long[]>(m.AttachmentSizes)
+                            : null,
+                        AttachmentNames = !string.IsNullOrEmpty(m.AttachmentNames)
+                            ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentNames)
+                            : null,
+                        
+                        // Voice Messages (Phase 2B)
+                        IsVoiceMessage = !string.IsNullOrEmpty(m.VoiceMessageUrl),
+                        VoiceMessageUrl = m.VoiceMessageUrl,
+                        VoiceMessageDuration = m.VoiceMessageDuration,
+                        VoiceMessageWaveform = m.VoiceMessageWaveform,
+                        
+                        // Edit/Delete/Forward (Phase 4)
+                        IsEdited = m.IsEdited,
+                        EditedDate = m.EditedDate,
+                        IsForwarded = m.IsForwarded,
+                        ForwardedFromMessageId = m.ForwardedFromMessageId,
+                        IsActive = !m.IsDeleted // Assuming IsDeleted field exists, or use true as default
+                    });
+                }
 
                 return new SuccessDataResult<List<AnalysisMessageDto>>(messageDtos);
             }

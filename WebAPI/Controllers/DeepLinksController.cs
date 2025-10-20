@@ -91,95 +91,9 @@ namespace WebAPI.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Apple App Site Association file for universal links
-        /// </summary>
-        [HttpGet("/.well-known/apple-app-site-association")]
-        [AllowAnonymous]
-        [Produces("application/json")]
-        public async Task<IActionResult> AppleAppSiteAssociation()
-        {
-            var config = await _deepLinkService.GetUniversalLinkConfigAsync();
-            
-            if (!config.Success || !config.Data.IsConfigured)
-            {
-                return NotFound();
-            }
-
-            var appSiteAssociation = new
-            {
-                applinks = new
-                {
-                    details = new object[]
-                    {
-                        new
-                        {
-                            appIDs = new[] { $"TEAMID.{config.Data.AppId}" },
-                            components = new object[]
-                            {
-                                new
-                                {
-                                    comment = "ZiraAI Redemption Links",
-                                    match = "*",
-                                    fragment = "*",
-                                    paths = new[] { "/redeem/*", "/r/*" }
-                                },
-                                new
-                                {
-                                    comment = "ZiraAI Analysis Links", 
-                                    match = "*",
-                                    paths = new[] { "/analysis/*", "/a/*" }
-                                },
-                                new
-                                {
-                                    comment = "ZiraAI Dashboard",
-                                    match = "*", 
-                                    paths = new[] { "/dashboard", "/d" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            return Json(appSiteAssociation);
-        }
-
-        /// <summary>
-        /// Android Asset Links file for app links
-        /// </summary>
-        [HttpGet("/.well-known/assetlinks.json")]
-        [AllowAnonymous]
-        [Produces("application/json")]
-        public async Task<IActionResult> AndroidAssetLinks()
-        {
-            var config = await _deepLinkService.GetUniversalLinkConfigAsync();
-            
-            if (!config.Success || !config.Data.IsConfigured)
-            {
-                return NotFound();
-            }
-
-            var assetLinks = new[]
-            {
-                new
-                {
-                    relation = new[] { "delegate_permission/common.handle_all_urls" },
-                    target = new
-                    {
-                        @namespace = "android_app",
-                        package_name = config.Data.AppId,
-                        sha256_cert_fingerprints = new[]
-                        {
-                            // Production certificate fingerprint
-                            "SHA256_FINGERPRINT_HERE"
-                        }
-                    }
-                }
-            };
-
-            return Json(assetLinks);
-        }
+        // REMOVED: .well-known routes are now served via StaticFileMiddleware in Startup.cs
+        // This prevents route conflicts and allows proper static file serving
+        // Files: WebAPI/.well-known/assetlinks.json, WebAPI/.well-known/apple-app-site-association
 
         /// <summary>
         /// Smart redirect endpoint - detects platform and redirects appropriately

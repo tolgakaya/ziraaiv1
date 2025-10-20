@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Business.Handlers.Users.Commands;
 using Business.Handlers.Users.Queries;
 using Core.Entities.Dtos;
+using Core.Utilities.Results;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Entities.Dtos;
@@ -105,5 +108,77 @@ namespace WebAPI.Controllers
         {
             return GetResponseOnlyResultMessage(await Mediator.Send(new DeleteUserCommand{ UserId = id }));
         }
+
+        #region Avatar Management
+
+        /// <summary>
+        /// Upload user avatar
+        /// </summary>
+        /// <param name="file">Avatar image file (max 5MB, jpg/png/gif/webp)</param>
+        /// <returns>Avatar URLs (full size and thumbnail)</returns>
+        [Authorize]
+        [HttpPost("avatar")]
+        [Consumes("multipart/form-data")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized("User not authenticated");
+
+            var command = new UploadAvatarCommand
+            {
+                UserId = userId,
+                File = file
+            };
+
+            var result = await Mediator.Send(command);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Get user avatar information (URLs and metadata)
+        /// Returns full resolution and thumbnail URLs with last update timestamp
+        /// </summary>
+        /// <param name="userId">User ID (optional, defaults to current user)</param>
+        /// <returns>Avatar information including full URL, thumbnail URL, and update date</returns>
+        [HttpGet("avatar/{userId?}")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<UserAvatarDto>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(IDataResult<UserAvatarDto>))]
+        public async Task<IActionResult> GetAvatarUrl(int? userId = null)
+        {
+            var targetUserId = userId ?? int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (targetUserId == 0)
+                return BadRequest("Invalid user ID");
+
+            var query = new GetAvatarUrlQuery { UserId = targetUserId };
+            var result = await Mediator.Send(query);
+            return result.Success ? Ok(result) : NotFound(result);
+        }
+
+        /// <summary>
+        /// Delete user avatar
+        /// </summary>
+        /// <returns>Success message</returns>
+        [Authorize]
+        [HttpDelete("avatar")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        public async Task<IActionResult> DeleteAvatar()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized("User not authenticated");
+
+            var command = new DeleteAvatarCommand { UserId = userId };
+            var result = await Mediator.Send(command);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        #endregion
     }
 }

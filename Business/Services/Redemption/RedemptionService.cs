@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using System.Security.Claims;
 using Business.Constants;
 using Business.Services.Authentication;
-using Core.Entities.Concrete;
 using Core.Utilities.Results;
 using Core.Utilities.Security.Hashing;
 using Core.Utilities.Security.Jwt;
@@ -13,6 +12,8 @@ using Entities.Concrete;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using HttpContext = Microsoft.AspNetCore.Http.HttpContext;
+using UserEntity = Core.Entities.Concrete.User;
+using UserGroupEntity = Core.Entities.Concrete.UserGroup;
 
 namespace Business.Services.Redemption
 {
@@ -177,7 +178,7 @@ namespace Business.Services.Redemption
             }
         }
 
-        public async Task<User> FindUserByCodeAsync(string code)
+        public async Task<UserEntity> FindUserByCodeAsync(string code)
         {
             try
             {
@@ -200,7 +201,7 @@ namespace Business.Services.Redemption
             }
         }
 
-        public async Task<IDataResult<User>> CreateAccountFromCodeAsync(string code)
+        public async Task<IDataResult<UserEntity>> CreateAccountFromCodeAsync(string code)
         {
             try
             {
@@ -208,7 +209,7 @@ namespace Business.Services.Redemption
                 var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
                 if (sponsorshipCode == null)
                 {
-                    return new ErrorDataResult<User>("Geçersiz kod");
+                    return new ErrorDataResult<UserEntity>("Geçersiz kod");
                 }
 
                 // Extract phone from code or use stored recipient phone
@@ -229,7 +230,7 @@ namespace Business.Services.Redemption
                 if (existingUser != null)
                 {
                     _logger.LogInformation("User already exists with phone {Phone}", phone);
-                    return new SuccessDataResult<User>(existingUser);
+                    return new SuccessDataResult<UserEntity>(existingUser);
                 }
 
                 // Generate unique email and password
@@ -249,7 +250,7 @@ namespace Business.Services.Redemption
                 HashingHelper.CreatePasswordHash(tempPassword, out var passwordSalt, out var passwordHash);
 
                 // Create new farmer account
-                var newUser = new User
+                var newUser = new UserEntity
                 {
                     FullName = name,
                     MobilePhones = phone,
@@ -268,7 +269,7 @@ namespace Business.Services.Redemption
                 var farmerGroup = await _groupRepository.GetAsync(g => g.GroupName == "Farmer");
                 if (farmerGroup != null)
                 {
-                    var userGroup = new UserGroup
+                    var userGroup = new UserGroupEntity
                     {
                         UserId = newUser.UserId,
                         GroupId = farmerGroup.Id
@@ -283,7 +284,7 @@ namespace Business.Services.Redemption
                 // Store the temporary password info (in production, send via SMS)
                 newUser.Notes = $"Temp password: {tempPassword}"; // This should be sent via SMS in production
 
-                return new SuccessDataResult<User>(newUser, "Hesap otomatik oluşturuldu");
+                return new SuccessDataResult<UserEntity>(newUser, "Hesap otomatik oluşturuldu");
             }
             catch (Exception ex)
             {
@@ -293,7 +294,7 @@ namespace Business.Services.Redemption
                 {
                     errorMessage += " Inner: " + ex.InnerException.Message;
                 }
-                return new ErrorDataResult<User>($"Hesap oluşturulurken hata oluştu: {errorMessage}");
+                return new ErrorDataResult<UserEntity>($"Hesap oluşturulurken hata oluştu: {errorMessage}");
             }
         }
 

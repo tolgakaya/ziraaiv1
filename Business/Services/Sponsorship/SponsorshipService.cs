@@ -2,6 +2,8 @@ using Business.Constants;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Entities.Dtos;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,23 +18,34 @@ namespace Business.Services.Sponsorship
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ISponsorProfileRepository _sponsorProfileRepository;
 
         public SponsorshipService(
             ISponsorshipCodeRepository sponsorshipCodeRepository,
             ISponsorshipPurchaseRepository sponsorshipPurchaseRepository,
             IUserSubscriptionRepository userSubscriptionRepository,
             ISubscriptionTierRepository subscriptionTierRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            ISponsorProfileRepository sponsorProfileRepository)
         {
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
             _userSubscriptionRepository = userSubscriptionRepository;
             _subscriptionTierRepository = subscriptionTierRepository;
             _userRepository = userRepository;
+            _sponsorProfileRepository = sponsorProfileRepository;
         }
 
         public async Task<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>> PurchaseBulkSubscriptionsAsync(
-            int sponsorId, int tierId, int quantity, decimal amount, string paymentReference)
+            int sponsorId,
+            int tierId,
+            int quantity,
+            decimal amount,
+            string paymentMethod,
+            string paymentReference,
+            string companyName = null,
+            string invoiceAddress = null,
+            string taxNumber = null)
         {
             try
             {
@@ -46,6 +59,36 @@ namespace Business.Services.Sponsorship
                 if (tier == null)
                     return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>("Subscription tier not found");
 
+                // Validate quantity limits
+                if (quantity < tier.MinPurchaseQuantity)
+                {
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
+                        $"Quantity must be at least {tier.MinPurchaseQuantity} for {tier.DisplayName} tier");
+                }
+
+                if (quantity > tier.MaxPurchaseQuantity)
+                {
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
+                        $"Quantity cannot exceed {tier.MaxPurchaseQuantity} for {tier.DisplayName} tier");
+                }
+
+                // Get invoice information from SponsorProfile or use provided values
+                var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
+
+                // Prioritize provided values, fallback to SponsorProfile, then to User
+                var finalCompanyName = companyName ?? sponsorProfile?.CompanyName ?? sponsor.FullName;
+                var finalInvoiceAddress = invoiceAddress ?? sponsorProfile?.Address;
+                var finalTaxNumber = taxNumber ?? sponsorProfile?.TaxNumber;
+
+                // Validate required invoice fields
+                if (string.IsNullOrWhiteSpace(finalCompanyName))
+                {
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
+                        "Company name is required for invoice");
+                }
+
+                Console.WriteLine($"[Purchase] Invoice Info - Company: {finalCompanyName}, Tax: {finalTaxNumber}, Address: {(finalInvoiceAddress != null ? finalInvoiceAddress.Substring(0, Math.Min(50, finalInvoiceAddress.Length)) : "N/A")}");
+
                 // Create purchase record
                 var purchase = new SponsorshipPurchase
                 {
@@ -56,13 +99,15 @@ namespace Business.Services.Sponsorship
                     TotalAmount = amount,
                     Currency = tier.Currency,
                     PurchaseDate = DateTime.Now,
-                    PaymentMethod = "CreditCard",
+                    PaymentMethod = paymentMethod ?? "CreditCard",
                     PaymentReference = paymentReference,
-                    PaymentStatus = "Completed",
-                    PaymentCompletedDate = DateTime.Now,
-                    CompanyName = sponsor.FullName,
+                    PaymentStatus = "Pending", // Changed from "Completed" - payment not verified yet
+                    PaymentCompletedDate = null, // Will be set when payment is confirmed
+                    CompanyName = finalCompanyName,
+                    InvoiceAddress = finalInvoiceAddress,
+                    TaxNumber = finalTaxNumber,
                     CodePrefix = "AGRI",
-                    ValidityDays = 365,
+                    ValidityDays = 30,
                     Status = "Active",
                     CreatedDate = DateTime.Now,
                     CodesGenerated = 0,
@@ -72,7 +117,14 @@ namespace Business.Services.Sponsorship
                 _sponsorshipPurchaseRepository.Add(purchase);
                 await _sponsorshipPurchaseRepository.SaveChangesAsync();
 
-                // Generate codes
+                // MOCK PAYMENT: Auto-approve for now (real payment gateway integration later)
+                Console.WriteLine($"[Purchase] MOCK PAYMENT: Auto-approving purchase {purchase.Id}");
+                purchase.PaymentStatus = "Completed";
+                purchase.PaymentCompletedDate = DateTime.Now;
+                _sponsorshipPurchaseRepository.Update(purchase);
+                await _sponsorshipPurchaseRepository.SaveChangesAsync();
+
+                // Generate codes after payment "completed"
                 var codes = await _sponsorshipCodeRepository.GenerateCodesAsync(
                     purchase.Id, sponsorId, tierId, quantity, purchase.CodePrefix, purchase.ValidityDays);
 
@@ -178,31 +230,116 @@ namespace Business.Services.Sponsorship
                 if (sponsorshipCode == null)
                     return new ErrorDataResult<UserSubscription>("Invalid or expired sponsorship code");
 
-                // Check if user already has an active subscription
+                // Check for active sponsored subscription (NO multiple active sponsorships allowed)
                 var existingSubscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
+                
+                bool hasActiveSponsorshipOrPaid = existingSubscription != null && 
+                                                   existingSubscription.IsSponsoredSubscription && 
+                                                   existingSubscription.QueueStatus == SubscriptionQueueStatus.Active;
+
+                if (hasActiveSponsorshipOrPaid)
+                {
+                    // Queue the new sponsorship - it will activate when current expires
+                    return await QueueSponsorship(code, userId, sponsorshipCode, existingSubscription.Id);
+                }
+
+                // Allow immediate activation for Trial users or no active subscription
+                return await ActivateSponsorship(code, userId, sponsorshipCode, existingSubscription);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<UserSubscription>($"Error redeeming sponsorship code: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Queue a sponsorship for later activation (when current sponsorship expires)
+        /// </summary>
+        private async Task<IDataResult<UserSubscription>> QueueSponsorship(
+            string code, 
+            int userId, 
+            SponsorshipCode sponsorshipCode, 
+            int previousSponsorshipId)
+        {
+            try
+            {
+                var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == sponsorshipCode.SubscriptionTierId);
+                if (tier == null)
+                    return new ErrorDataResult<UserSubscription>("Subscription tier not found");
+
+                var queuedSubscription = new UserSubscription
+                {
+                    UserId = userId,
+                    SubscriptionTierId = sponsorshipCode.SubscriptionTierId,
+                    QueueStatus = SubscriptionQueueStatus.Pending,
+                    QueuedDate = DateTime.Now,
+                    PreviousSponsorshipId = previousSponsorshipId,
+                    IsActive = false,  // Not active yet
+                    AutoRenew = false,
+                    PaymentMethod = "Sponsorship",
+                    PaymentReference = code,
+                    PaidAmount = 0,
+                    Currency = tier.Currency,
+                    CurrentDailyUsage = 0,
+                    CurrentMonthlyUsage = 0,
+                    Status = "Pending",
+                    IsTrialSubscription = false,
+                    IsSponsoredSubscription = true,
+                    SponsorshipCodeId = sponsorshipCode.Id,
+                    SponsorId = sponsorshipCode.SponsorId,
+                    SponsorshipNotes = $"Queued - Redeemed code: {code}",
+                    CreatedDate = DateTime.Now
+                };
+
+                _userSubscriptionRepository.Add(queuedSubscription);
+                await _userSubscriptionRepository.SaveChangesAsync();
+
+                // Mark code as used
+                await _sponsorshipCodeRepository.MarkAsUsedAsync(code, userId, queuedSubscription.Id);
+
+                Console.WriteLine($"[SponsorshipQueue] ✅ Sponsorship queued for user {userId}. Will activate when subscription {previousSponsorshipId} expires.");
+
+                return new SuccessDataResult<UserSubscription>(queuedSubscription, 
+                    "Sponsorluk kodunuz sıraya alındı. Mevcut sponsorluk bittiğinde otomatik aktif olacak.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[SponsorshipQueue] ❌ Error queueing sponsorship: {ex.Message}");
+                return new ErrorDataResult<UserSubscription>($"Error queueing sponsorship: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Activate a sponsorship immediately (for Trial users or when no active sponsorship exists)
+        /// </summary>
+        private async Task<IDataResult<UserSubscription>> ActivateSponsorship(
+            string code,
+            int userId,
+            SponsorshipCode sponsorshipCode,
+            UserSubscription existingSubscription)
+        {
+            try
+            {
+                // Deactivate existing trial/free subscription if present
                 if (existingSubscription != null)
                 {
-                    // Allow upgrade from Trial or Free tiers via sponsorship
                     var existingTier = await _subscriptionTierRepository.GetAsync(t => t.Id == existingSubscription.SubscriptionTierId);
-                    bool canUpgrade = existingTier != null && 
-                                    (existingTier.TierName == "Trial" || 
-                                     existingTier.MonthlyPrice == 0 || 
-                                     existingSubscription.IsTrialSubscription);
+                    bool isTrial = existingTier != null && 
+                                  (existingTier.TierName == "Trial" || 
+                                   existingTier.MonthlyPrice == 0 || 
+                                   existingSubscription.IsTrialSubscription);
                     
-                    if (!canUpgrade)
+                    if (isTrial)
                     {
-                        return new ErrorDataResult<UserSubscription>(
-                            $"User already has an active {existingTier?.DisplayName} subscription. " +
-                            "Sponsorship codes can only be used to upgrade from Trial subscriptions or free tiers.");
+                        Console.WriteLine($"[SponsorshipRedeem] Deactivating existing {existingTier?.TierName} subscription (ID: {existingSubscription.Id})");
+                        existingSubscription.IsActive = false;
+                        existingSubscription.QueueStatus = SubscriptionQueueStatus.Expired;
+                        existingSubscription.Status = "Upgraded";
+                        existingSubscription.EndDate = DateTime.Now;
+                        existingSubscription.UpdatedDate = DateTime.Now;
+                        _userSubscriptionRepository.Update(existingSubscription);
+                        await _userSubscriptionRepository.SaveChangesAsync();
                     }
-                    
-                    // Deactivate the existing trial/free subscription
-                    Console.WriteLine($"[SponsorshipRedeem] Deactivating existing {existingTier?.TierName} subscription (ID: {existingSubscription.Id})");
-                    existingSubscription.IsActive = false;
-                    existingSubscription.Status = "Upgraded";
-                    existingSubscription.UpdatedDate = DateTime.Now;
-                    _userSubscriptionRepository.Update(existingSubscription);
-                    await _userSubscriptionRepository.SaveChangesAsync();
                 }
 
                 // Get tier information
@@ -210,18 +347,20 @@ namespace Business.Services.Sponsorship
                 if (tier == null)
                     return new ErrorDataResult<UserSubscription>("Subscription tier not found");
 
-                // Create subscription
+                // Create active subscription
                 var subscription = new UserSubscription
                 {
                     UserId = userId,
                     SubscriptionTierId = sponsorshipCode.SubscriptionTierId,
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddDays(30), // Default 30 days for sponsored subscriptions
+                    QueueStatus = SubscriptionQueueStatus.Active,
+                    ActivatedDate = DateTime.Now,
                     IsActive = true,
                     AutoRenew = false,
                     PaymentMethod = "Sponsorship",
                     PaymentReference = code,
-                    PaidAmount = 0, // Sponsored, so no payment from user
+                    PaidAmount = 0,
                     Currency = tier.Currency,
                     CurrentDailyUsage = 0,
                     CurrentMonthlyUsage = 0,
@@ -240,12 +379,15 @@ namespace Business.Services.Sponsorship
                 // Mark code as used
                 await _sponsorshipCodeRepository.MarkAsUsedAsync(code, userId, subscription.Id);
 
+                Console.WriteLine($"[SponsorshipRedeem] ✅ Code {code} successfully activated for user {userId}");
+
                 return new SuccessDataResult<UserSubscription>(subscription, 
-                    "Sponsorship code redeemed successfully");
+                    "Sponsorluk aktivasyonu tamamlandı!");
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<UserSubscription>($"Error redeeming sponsorship code: {ex.Message}");
+                Console.WriteLine($"[SponsorshipRedeem] ❌ Error activating sponsorship: {ex.Message}");
+                return new ErrorDataResult<UserSubscription>($"Error activating sponsorship: {ex.Message}");
             }
         }
 
@@ -274,29 +416,173 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<List<SponsorshipCode>>> GetSponsorCodesAsync(int sponsorId)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
         {
             try
             {
-                var codes = await _sponsorshipCodeRepository.GetBySponsorIdAsync(sponsorId);
-                return new SuccessDataResult<List<SponsorshipCode>>(codes);
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .OrderByDescending(x => x.CreatedDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result);
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<List<SponsorshipCode>>($"Error fetching sponsor codes: {ex.Message}");
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching sponsor codes: {ex.Message}");
             }
         }
 
-        public async Task<IDataResult<List<SponsorshipCode>>> GetUnusedSponsorCodesAsync(int sponsorId)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnusedSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
         {
             try
             {
-                var codes = await _sponsorshipCodeRepository.GetUnusedCodesBySponsorAsync(sponsorId);
-                return new SuccessDataResult<List<SponsorshipCode>>(codes);
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.IsUsed == false)
+                    .OrderByDescending(x => x.CreatedDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result);
             }
             catch (Exception ex)
             {
-                return new ErrorDataResult<List<SponsorshipCode>>($"Error fetching unused codes: {ex.Message}");
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching unused codes: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnsentSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
+        {
+            try
+            {
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.DistributionDate == null)
+                    .OrderByDescending(x => x.CreatedDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result,
+                    $"{totalCount} unsent codes available for distribution");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching unsent codes: {ex.Message}");
+            }
+        }
+
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int sentDaysAgo, int page = 1, int pageSize = 50)
+        {
+            try
+            {
+                var cutoffDate = DateTime.Now.AddDays(-sentDaysAgo);
+                
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.DistributionDate != null)
+                    .Where(x => x.DistributionDate.Value.Date == cutoffDate.Date)
+                    .Where(x => x.IsUsed == false)
+                    .OrderByDescending(x => x.DistributionDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                var message = $"{totalCount} codes sent {sentDaysAgo} days ago but still unused";
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result, message);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching sent but unused codes: {ex.Message}");
+            }
+        }
+
+
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentExpiredCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
+        {
+            try
+            {
+                var query = _sponsorshipCodeRepository.Query()
+                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.DistributionDate != null)
+                    .Where(x => x.ExpiryDate < DateTime.Now)
+                    .Where(x => x.IsUsed == false)
+                    .OrderByDescending(x => x.ExpiryDate)
+                    .ThenByDescending(x => x.DistributionDate);
+
+                var totalCount = await query.CountAsync();
+                var items = await query
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var result = new SponsorshipCodesPaginatedDto
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                };
+
+                return new SuccessDataResult<SponsorshipCodesPaginatedDto>(result,
+                    $"{totalCount} codes sent to farmers but expired without being used");
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDataResult<SponsorshipCodesPaginatedDto>($"Error fetching sent expired codes: {ex.Message}");
             }
         }
 
