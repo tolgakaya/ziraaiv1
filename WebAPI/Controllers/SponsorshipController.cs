@@ -1414,7 +1414,7 @@ namespace WebAPI.Controllers
         [Produces("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> SendVoiceMessage([FromForm] SendVoiceMessageDto dto)
+        public async Task<IActionResult> SendVoiceMessage(SendVoiceMessageDto dto)
         {
             try
             {
@@ -1452,7 +1452,7 @@ namespace WebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> SendMessageWithAttachments([FromForm] SendMessageWithAttachmentsDto dto)
+        public async Task<IActionResult> SendMessageWithAttachments(SendMessageWithAttachmentsDto dto)
         {
             try
             {
