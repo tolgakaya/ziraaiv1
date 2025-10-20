@@ -140,6 +140,7 @@ namespace WebAPI.Controllers
 
         /// <summary>
         /// Get user avatar information (URLs and metadata)
+        /// Returns full resolution and thumbnail URLs with last update timestamp
         /// </summary>
         /// <param name="userId">User ID (optional, defaults to current user)</param>
         /// <returns>Avatar information including full URL, thumbnail URL, and update date</returns>
