@@ -94,10 +94,10 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     return new ErrorDataResult<AnalysisMessageDto>("Only sponsors and farmers can send messages");
                 }
 
-                // Validate voice message feature access (XL tier only)
+                // Validate voice message feature access based on ANALYSIS tier
                 var featureValidation = await _featureService.ValidateFeatureAccessAsync(
                     "VoiceMessages",
-                    request.FromUserId,
+                    request.PlantAnalysisId,
                     request.VoiceFile?.Length,
                     request.Duration);
 

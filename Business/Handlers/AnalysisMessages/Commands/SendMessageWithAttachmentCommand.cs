@@ -93,13 +93,13 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     return new ErrorDataResult<AnalysisMessageDto>("Only sponsors and farmers can send messages");
                 }
 
-                // Validate attachments
+                // Validate attachments based on ANALYSIS tier
                 if (request.Attachments == null || !request.Attachments.Any())
                     return new ErrorDataResult<AnalysisMessageDto>("No attachments provided");
 
                 var validationResult = await _attachmentValidation.ValidateAttachmentsAsync(
                     request.Attachments,
-                    request.FromUserId);
+                    request.PlantAnalysisId);
 
                 if (!validationResult.Success)
                     return new ErrorDataResult<AnalysisMessageDto>(validationResult.Message);

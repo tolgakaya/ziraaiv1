@@ -9,24 +9,26 @@ namespace Business.Services.Messaging
     public interface IAttachmentValidationService
     {
         /// <summary>
-        /// Validate a single attachment based on feature flags and user tier
+        /// Validate a single attachment based on feature flags and ANALYSIS tier
+        /// NOTE: Validation is based on the analysis tier, not user tier
         /// </summary>
-        Task<IResult> ValidateAttachmentAsync(IFormFile file, int userId, string attachmentType);
+        Task<IResult> ValidateAttachmentAsync(IFormFile file, int plantAnalysisId, string attachmentType);
 
         /// <summary>
-        /// Validate multiple attachments
+        /// Validate multiple attachments based on ANALYSIS tier
+        /// NOTE: Validation is based on the analysis tier, not user tier
         /// </summary>
-        Task<IDataResult<List<string>>> ValidateAttachmentsAsync(List<IFormFile> files, int userId);
+        Task<IDataResult<List<string>>> ValidateAttachmentsAsync(List<IFormFile> files, int plantAnalysisId);
 
         /// <summary>
-        /// Get allowed MIME types for user's tier
+        /// Get allowed MIME types for analysis tier
         /// </summary>
-        Task<List<string>> GetAllowedMimeTypesAsync(int userId, string attachmentType);
+        Task<List<string>> GetAllowedMimeTypesAsync(int plantAnalysisId, string attachmentType);
 
         /// <summary>
-        /// Get max file size for user's tier
+        /// Get max file size for analysis tier
         /// </summary>
-        Task<long> GetMaxFileSizeAsync(int userId, string attachmentType);
+        Task<long> GetMaxFileSizeAsync(int plantAnalysisId, string attachmentType);
     }
 
     public class AttachmentValidationResult

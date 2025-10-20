@@ -24,8 +24,13 @@ namespace Business.Services.Messaging
 
         /// <summary>
         /// Validate if user can use a feature (combines enabled check + tier check + limits)
+        /// NOTE: Tier validation is based on the ANALYSIS tier, not user tier
         /// </summary>
-        Task<IResult> ValidateFeatureAccessAsync(string featureName, int userId, long? fileSize = null, int? duration = null);
+        /// <param name="featureName">Name of the feature to validate</param>
+        /// <param name="plantAnalysisId">ID of the plant analysis (determines tier)</param>
+        /// <param name="fileSize">Optional file size for validation</param>
+        /// <param name="duration">Optional duration for validation</param>
+        Task<IResult> ValidateFeatureAccessAsync(string featureName, int plantAnalysisId, long? fileSize = null, int? duration = null);
 
         /// <summary>
         /// Get a specific feature configuration
