@@ -4,12 +4,14 @@ using Business.Services.Sponsorship;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Entities.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,7 +20,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
     /// <summary>
     /// Send voice message (XL tier only - premium feature)
     /// </summary>
-    public class SendVoiceMessageCommand : IRequest<IDataResult<AnalysisMessage>>
+    public class SendVoiceMessageCommand : IRequest<IDataResult<AnalysisMessageDto>>
     {
         public int FromUserId { get; set; }
         public int ToUserId { get; set; }
@@ -27,22 +29,24 @@ namespace Business.Handlers.AnalysisMessages.Commands
         public int Duration { get; set; } // Duration in seconds
         public string Waveform { get; set; } // Optional waveform JSON data
 
-        public class SendVoiceMessageCommandHandler : IRequestHandler<SendVoiceMessageCommand, IDataResult<AnalysisMessage>>
+        public class SendVoiceMessageCommandHandler : IRequestHandler<SendVoiceMessageCommand, IDataResult<AnalysisMessageDto>>
         {
             private readonly IAnalysisMessageRepository _messageRepository;
             private readonly IAnalysisMessagingService _messagingService;
             private readonly IMessagingFeatureService _featureService;
-            private readonly LocalFileStorageService _localFileStorage; // Use local storage for audio files (FreeImageHost doesn't support audio)
+            private readonly LocalFileStorageService _localFileStorage;
             private readonly IUserGroupRepository _userGroupRepository;
             private readonly IGroupRepository _groupRepository;
+            private readonly DataAccess.Abstract.IUserRepository _userRepository;
 
             public SendVoiceMessageCommandHandler(
                 IAnalysisMessageRepository messageRepository,
                 IAnalysisMessagingService messagingService,
                 IMessagingFeatureService featureService,
-                LocalFileStorageService localFileStorage, // Direct injection of LocalFileStorageService
+                LocalFileStorageService localFileStorage,
                 IUserGroupRepository userGroupRepository,
-                IGroupRepository groupRepository)
+                IGroupRepository groupRepository,
+                DataAccess.Abstract.IUserRepository userRepository)
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
@@ -50,9 +54,10 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 _localFileStorage = localFileStorage;
                 _userGroupRepository = userGroupRepository;
                 _groupRepository = groupRepository;
+                _userRepository = userRepository;
             }
 
-            public async Task<IDataResult<AnalysisMessage>> Handle(SendVoiceMessageCommand request, CancellationToken cancellationToken)
+            public async Task<IDataResult<AnalysisMessageDto>> Handle(SendVoiceMessageCommand request, CancellationToken cancellationToken)
             {
                 // Determine user role
                 var userGroups = await _userGroupRepository.GetListAsync(ug => ug.UserId == request.FromUserId);
@@ -71,7 +76,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         request.PlantAnalysisId);
 
                     if (!canSend.canSend)
-                        return new ErrorDataResult<AnalysisMessage>(canSend.errorMessage);
+                        return new ErrorDataResult<AnalysisMessageDto>(canSend.errorMessage);
                 }
                 else if (isFarmer)
                 {
@@ -82,11 +87,11 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         request.PlantAnalysisId);
 
                     if (!canReply.canReply)
-                        return new ErrorDataResult<AnalysisMessage>(canReply.errorMessage);
+                        return new ErrorDataResult<AnalysisMessageDto>(canReply.errorMessage);
                 }
                 else
                 {
-                    return new ErrorDataResult<AnalysisMessage>("Only sponsors and farmers can send messages");
+                    return new ErrorDataResult<AnalysisMessageDto>("Only sponsors and farmers can send messages");
                 }
 
                 // Validate voice message feature access (XL tier only)
@@ -97,11 +102,11 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     request.Duration);
 
                 if (!featureValidation.Success)
-                    return new ErrorDataResult<AnalysisMessage>(featureValidation.Message);
+                    return new ErrorDataResult<AnalysisMessageDto>(featureValidation.Message);
 
                 // Validate voice file
                 if (request.VoiceFile == null || request.VoiceFile.Length == 0)
-                    return new ErrorDataResult<AnalysisMessage>("Voice file is required");
+                    return new ErrorDataResult<AnalysisMessageDto>("Voice file is required");
 
                 try
                 {
@@ -116,7 +121,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         "voice-messages"); // Store in voice-messages subfolder
 
                     if (string.IsNullOrEmpty(voiceUrl))
-                        return new ErrorDataResult<AnalysisMessage>("Failed to upload voice message");
+                        return new ErrorDataResult<AnalysisMessageDto>("Failed to upload voice message");
 
                     // Create message with voice
                     var message = new AnalysisMessage
@@ -139,13 +144,68 @@ namespace Business.Handlers.AnalysisMessages.Commands
 
                     _messageRepository.Add(message);
 
-                    return new SuccessDataResult<AnalysisMessage>(
-                        message,
+                    // Get sender's avatar URLs
+                    var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);
+
+                    var messageDto = new AnalysisMessageDto
+                    {
+                        Id = message.Id,
+                        PlantAnalysisId = message.PlantAnalysisId,
+                        FromUserId = message.FromUserId,
+                        ToUserId = message.ToUserId,
+                        Message = message.Message,
+                        MessageType = message.MessageType,
+                        Subject = message.Subject,
+                        
+                        // Status fields
+                        MessageStatus = message.MessageStatus ?? "Sent",
+                        IsRead = message.IsRead,
+                        SentDate = message.SentDate,
+                        DeliveredDate = message.DeliveredDate,
+                        ReadDate = message.ReadDate,
+                        
+                        // Sender info
+                        SenderRole = message.SenderRole,
+                        SenderName = message.SenderName,
+                        SenderCompany = message.SenderCompany,
+                        
+                        // Avatar URLs
+                        SenderAvatarUrl = sender?.AvatarUrl,
+                        SenderAvatarThumbnailUrl = sender?.AvatarThumbnailUrl,
+                        
+                        // Classification
+                        Priority = message.Priority,
+                        Category = message.Category,
+                        
+                        // Attachments
+                        HasAttachments = false,
+                        AttachmentCount = 0,
+                        AttachmentUrls = null,
+                        AttachmentTypes = null,
+                        AttachmentSizes = null,
+                        AttachmentNames = null,
+                        
+                        // Voice Messages
+                        IsVoiceMessage = true,
+                        VoiceMessageUrl = message.VoiceMessageUrl,
+                        VoiceMessageDuration = message.VoiceMessageDuration,
+                        VoiceMessageWaveform = message.VoiceMessageWaveform,
+                        
+                        // Edit/Delete/Forward
+                        IsEdited = message.IsEdited,
+                        EditedDate = message.EditedDate,
+                        IsForwarded = message.IsForwarded,
+                        ForwardedFromMessageId = message.ForwardedFromMessageId,
+                        IsActive = true
+                    };
+
+                    return new SuccessDataResult<AnalysisMessageDto>(
+                        messageDto,
                         $"Voice message sent ({request.Duration}s)");
                 }
                 catch (Exception ex)
                 {
-                    return new ErrorDataResult<AnalysisMessage>($"Failed to send voice message: {ex.Message}");
+                    return new ErrorDataResult<AnalysisMessageDto>($"Failed to send voice message: {ex.Message}");
                 }
             }
         }
