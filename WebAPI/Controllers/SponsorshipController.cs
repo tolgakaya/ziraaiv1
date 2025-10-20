@@ -812,23 +812,36 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="otherUserId">The other participant's user ID (can be sponsor or farmer)</param>
         /// <param name="plantAnalysisId">Analysis ID for context</param>
-        /// <returns>Message conversation</returns>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Number of messages per page (default: 50, max: 100)</param>
+        /// <returns>Paginated message conversation</returns>
         [Authorize(Roles = "Sponsor,Farmer,Admin")]
         [HttpGet("messages/conversation")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<AnalysisMessageDto>>))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<List<AnalysisMessageDto>>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaginatedResult<List<AnalysisMessageDto>>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(PaginatedResult<List<AnalysisMessageDto>>))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetConversation(int otherUserId, int plantAnalysisId)
+        public async Task<IActionResult> GetConversation(
+            int otherUserId, 
+            int plantAnalysisId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
 
+            // Validate and limit page size
+            if (pageSize > 100) pageSize = 100;
+            if (pageSize < 1) pageSize = 50;
+            if (page < 1) page = 1;
+
             var query = new GetConversationQuery
             {
                 FromUserId = userId.Value,
                 ToUserId = otherUserId,
-                PlantAnalysisId = plantAnalysisId
+                PlantAnalysisId = plantAnalysisId,
+                Page = page,
+                PageSize = pageSize
             };
             
             var result = await Mediator.Send(query);

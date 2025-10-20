@@ -11,13 +11,17 @@ using System.Threading.Tasks;
 
 namespace Business.Handlers.AnalysisMessages.Queries
 {
-    public class GetConversationQuery : IRequest<IDataResult<List<AnalysisMessageDto>>>
+    public class GetConversationQuery : IRequest<PaginatedResult<List<AnalysisMessageDto>>>
     {
         public int FromUserId { get; set; }
         public int ToUserId { get; set; }
         public int PlantAnalysisId { get; set; }
+        
+        // Pagination parameters
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 50;
 
-        public class GetConversationQueryHandler : IRequestHandler<GetConversationQuery, IDataResult<List<AnalysisMessageDto>>>
+        public class GetConversationQueryHandler : IRequestHandler<GetConversationQuery, PaginatedResult<List<AnalysisMessageDto>>>
         {
             private readonly IAnalysisMessagingService _messagingService;
             private readonly DataAccess.Abstract.IUserRepository _userRepository;
@@ -31,9 +35,19 @@ namespace Business.Handlers.AnalysisMessages.Queries
             }
 
             [LogAspect(typeof(FileLogger))]
-            public async Task<IDataResult<List<AnalysisMessageDto>>> Handle(GetConversationQuery request, CancellationToken cancellationToken)
+            public async Task<PaginatedResult<List<AnalysisMessageDto>>> Handle(GetConversationQuery request, CancellationToken cancellationToken)
             {
-                var messages = await _messagingService.GetConversationAsync(request.FromUserId, request.ToUserId, request.PlantAnalysisId);
+                var allMessages = await _messagingService.GetConversationAsync(request.FromUserId, request.ToUserId, request.PlantAnalysisId);
+                
+                // Calculate pagination
+                var totalRecords = allMessages.Count;
+                var totalPages = (int)System.Math.Ceiling((double)totalRecords / request.PageSize);
+                
+                // Apply pagination (skip and take)
+                var messages = allMessages
+                    .Skip((request.Page - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToList();
 
                 var messageDtos = new List<AnalysisMessageDto>();
 
@@ -113,7 +127,11 @@ namespace Business.Handlers.AnalysisMessages.Queries
                     });
                 }
 
-                return new SuccessDataResult<List<AnalysisMessageDto>>(messageDtos);
+                return new PaginatedResult<List<AnalysisMessageDto>>(messageDtos, request.Page, request.PageSize)
+                {
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages
+                };
             }
         }
     }
