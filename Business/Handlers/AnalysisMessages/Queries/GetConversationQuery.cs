@@ -71,15 +71,31 @@ namespace Business.Handlers.AnalysisMessages.Queries
 
                     // Transform attachment URLs from physical paths to API endpoints
                     string[] attachmentUrls = null;
+                    string[] attachmentThumbnails = null;
                     if (m.HasAttachments && !string.IsNullOrEmpty(m.AttachmentUrls))
                     {
                         var physicalUrls = System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentUrls);
                         if (physicalUrls != null && physicalUrls.Length > 0)
                         {
                             attachmentUrls = new string[physicalUrls.Length];
+                            attachmentThumbnails = new string[physicalUrls.Length];
+
+                            // Get attachment types for thumbnail logic
+                            string[] types = null;
+                            if (!string.IsNullOrEmpty(m.AttachmentTypes))
+                            {
+                                types = System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentTypes);
+                            }
+
                             for (int i = 0; i < physicalUrls.Length; i++)
                             {
+                                // Full-size URL
                                 attachmentUrls[i] = $"{baseUrl}/api/v1/files/attachments/{m.Id}/{i}";
+
+                                // Thumbnail URL - same as full-size for now (FilesController will handle resizing)
+                                // For images, FilesController can add thumbnail logic later
+                                // For non-images (PDF, etc), mobile will show icon
+                                attachmentThumbnails[i] = $"{baseUrl}/api/v1/files/attachments/{m.Id}/{i}";
                             }
                         }
                     }
@@ -127,6 +143,7 @@ namespace Business.Handlers.AnalysisMessages.Queries
                         HasAttachments = m.HasAttachments,
                         AttachmentCount = m.AttachmentCount,
                         AttachmentUrls = attachmentUrls,
+                        AttachmentThumbnails = attachmentThumbnails,
                         AttachmentTypes = !string.IsNullOrEmpty(m.AttachmentTypes)
                             ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentTypes)
                             : null,

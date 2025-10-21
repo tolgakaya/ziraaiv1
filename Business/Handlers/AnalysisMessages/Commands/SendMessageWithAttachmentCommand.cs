@@ -189,10 +189,13 @@ namespace Business.Handlers.AnalysisMessages.Commands
 
                     // Generate API endpoint URLs for response (database has physical URLs)
                     var apiAttachmentUrls = new List<string>();
+                    var apiThumbnailUrls = new List<string>();
                     var baseUrl = _localStorage.BaseUrl;
                     for (int i = 0; i < uploadedUrls.Count; i++)
                     {
                         apiAttachmentUrls.Add($"{baseUrl}/api/v1/files/attachments/{message.Id}/{i}");
+                        // Thumbnail URL - same as full-size for now (FilesController will handle resizing)
+                        apiThumbnailUrls.Add($"{baseUrl}/api/v1/files/attachments/{message.Id}/{i}");
                     }
 
                     // Get sender's avatar URLs
@@ -232,6 +235,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         HasAttachments = message.HasAttachments,
                         AttachmentCount = message.AttachmentCount,
                         AttachmentUrls = apiAttachmentUrls.ToArray(),
+                        AttachmentThumbnails = apiThumbnailUrls.ToArray(),
                         AttachmentTypes = !string.IsNullOrEmpty(message.AttachmentTypes)
                             ? JsonSerializer.Deserialize<string[]>(message.AttachmentTypes)
                             : null,
