@@ -64,27 +64,43 @@ public async Task<IActionResult> GetAttachment(int messageId, int attachmentInde
 ### 2. Modified: Business/Handlers/AnalysisMessages/Commands/SendVoiceMessageCommand.cs
 **Changes:**
 - Upload file to storage (gets physical URL)
-- Save message to get ID
-- Update `VoiceMessageUrl` to API endpoint format
-- Return API URL in response DTO
+- Store physical URL in database (for FilesController to locate file)
+- Transform to API endpoint URL in DTO response only
 
-**Before:**
-```csharp
-var voiceUrl = await _localFileStorage.UploadFileAsync(...);
-message.VoiceMessageUrl = voiceUrl; // Physical URL
-```
+**CRITICAL FIX (Commit c80ed62):**
+Previous implementation stored API endpoint URL in database, causing 404 errors.
+FilesController was looking for files at wrong paths like:
+`/app/wwwroot/uploads/api/v1/files/voice-messages/37` (WRONG)
 
-**After:**
+**Before (BROKEN):**
 ```csharp
 var physicalUrl = await _localFileStorage.UploadFileAsync(...);
 message.VoiceMessageUrl = physicalUrl;
 _messageRepository.Add(message);
 await _messageRepository.SaveChangesAsync();
 
-// Convert to API endpoint
-var baseUrl = _localFileStorage.BaseUrl;
+// ❌ WRONG - Overwrites physical URL with API endpoint
 message.VoiceMessageUrl = $"{baseUrl}/api/v1/files/voice-messages/{message.Id}";
 await _messageRepository.SaveChangesAsync();
+```
+
+**After (FIXED):**
+```csharp
+var physicalUrl = await _localFileStorage.UploadFileAsync(...);
+
+// ✅ Store physical URL in database (FilesController needs this)
+message.VoiceMessageUrl = physicalUrl;
+_messageRepository.Add(message);
+await _messageRepository.SaveChangesAsync();
+
+// ✅ Generate API endpoint URL for DTO response only
+var baseUrl = _localFileStorage.BaseUrl;
+var apiVoiceUrl = $"{baseUrl}/api/v1/files/voice-messages/{message.Id}";
+
+var messageDto = new AnalysisMessageDto {
+    VoiceMessageUrl = apiVoiceUrl,  // API endpoint, not physical path
+    ...
+};
 ```
 
 ### 3. Modified: Business/Handlers/AnalysisMessages/Commands/SendMessageWithAttachmentCommand.cs
@@ -93,16 +109,80 @@ await _messageRepository.SaveChangesAsync();
 - Handles multiple attachments with index-based URLs
 - Stores physical paths in database (JSON array)
 - Returns API endpoints in response DTO
+- Removed redundant second SaveChangesAsync call
 
-**URL Generation:**
+**CRITICAL FIX (Commit c80ed62):**
+Cleaned up redundant database save and clarified URL transformation.
+
+**After (FIXED):**
 ```csharp
+// ✅ Store physical URLs in database
+message.AttachmentUrls = JsonSerializer.Serialize(uploadedUrls);
+_messageRepository.Add(message);
+await _messageRepository.SaveChangesAsync();
+
+// ✅ Generate API endpoint URLs for DTO response only
+var apiAttachmentUrls = new List<string>();
+var baseUrl = _localStorage.BaseUrl;
 for (int i = 0; i < uploadedUrls.Count; i++)
 {
     apiAttachmentUrls.Add($"{baseUrl}/api/v1/files/attachments/{message.Id}/{i}");
 }
+
+var messageDto = new AnalysisMessageDto {
+    AttachmentUrls = apiAttachmentUrls.ToArray(),  // API endpoints
+    ...
+};
 ```
 
-### 4. Modified: Business/Services/FileStorage/LocalFileStorageService.cs
+### 4. Modified: Business/Handlers/AnalysisMessages/Queries/GetConversationQuery.cs
+**Changes:**
+- Added LocalFileStorageService dependency
+- Transform voice message URLs from physical paths to API endpoints
+- Transform attachment URLs from physical paths to API endpoints
+- Ensures existing messages in database return secure API URLs
+
+**CRITICAL FIX (Commit c80ed62):**
+GetConversationQuery was returning physical file paths from database directly.
+Now transforms them to API endpoint URLs for secure access.
+
+**After (FIXED):**
+```csharp
+var baseUrl = _localFileStorage.BaseUrl;
+
+foreach (var m in messages)
+{
+    // Transform voice message URL from physical path to API endpoint
+    string voiceMessageUrl = null;
+    if (!string.IsNullOrEmpty(m.VoiceMessageUrl))
+    {
+        voiceMessageUrl = $"{baseUrl}/api/v1/files/voice-messages/{m.Id}";
+    }
+
+    // Transform attachment URLs from physical paths to API endpoints
+    string[] attachmentUrls = null;
+    if (m.HasAttachments && !string.IsNullOrEmpty(m.AttachmentUrls))
+    {
+        var physicalUrls = JsonSerializer.Deserialize<string[]>(m.AttachmentUrls);
+        if (physicalUrls != null && physicalUrls.Length > 0)
+        {
+            attachmentUrls = new string[physicalUrls.Length];
+            for (int i = 0; i < physicalUrls.Length; i++)
+            {
+                attachmentUrls[i] = $"{baseUrl}/api/v1/files/attachments/{m.Id}/{i}";
+            }
+        }
+    }
+
+    messageDtos.Add(new AnalysisMessageDto {
+        VoiceMessageUrl = voiceMessageUrl,      // API endpoint
+        AttachmentUrls = attachmentUrls,        // API endpoints
+        ...
+    });
+}
+```
+
+### 5. Modified: Business/Services/FileStorage/LocalFileStorageService.cs
 **Changes:**
 - Removed `ISignedUrlService` dependency
 - Removed signed URL generation logic
@@ -119,7 +199,14 @@ return _signedUrlService.SignUrl(baseUrl, expiresInMinutes: 15);
 return $"{currentBaseUrl}/uploads/{urlPath}";
 ```
 
-### 5. Modified: WebAPI/Startup.cs
+**Dynamic BaseUrl (Commit 2624f01):**
+Made `BaseUrl` property dynamic instead of cached to fix HTTPS scheme:
+```csharp
+// ✅ Dynamic property, not cached field
+public string BaseUrl => GetBaseUrl();
+```
+
+### 6. Modified: WebAPI/Startup.cs
 **Changes:**
 - Removed `SignedUrlMiddleware` registration
 
@@ -128,7 +215,7 @@ return $"{currentBaseUrl}/uploads/{urlPath}";
 app.UseMiddleware<WebAPI.Middleware.SignedUrlMiddleware>();
 ```
 
-### 6. Modified: Business/DependencyResolvers/AutofacBusinessModule.cs
+### 7. Modified: Business/DependencyResolvers/AutofacBusinessModule.cs
 **Changes:**
 - Removed `SignedUrlService` registration
 
@@ -137,7 +224,7 @@ app.UseMiddleware<WebAPI.Middleware.SignedUrlMiddleware>();
 builder.RegisterType<SignedUrlService>().As<ISignedUrlService>().SingleInstance();
 ```
 
-### 7. Created: claudedocs/MESSAGING_FILE_ACCESS_API.md
+### 8. Created: claudedocs/MESSAGING_FILE_ACCESS_API.md
 **Purpose:** Complete API documentation for mobile developers
 
 **Contents:**
@@ -150,7 +237,7 @@ builder.RegisterType<SignedUrlService>().As<ISignedUrlService>().SingleInstance(
 - Error handling guide
 - Troubleshooting tips
 
-### 8. Created: claudedocs/CONTROLLER_BASED_FILE_SERVING_SUMMARY.md
+### 9. Created: claudedocs/CONTROLLER_BASED_FILE_SERVING_SUMMARY.md
 **Purpose:** Implementation summary (this document)
 
 ## Architecture Decisions
