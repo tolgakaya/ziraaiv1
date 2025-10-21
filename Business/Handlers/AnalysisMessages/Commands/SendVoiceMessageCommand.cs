@@ -114,7 +114,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     var extension = Path.GetExtension(request.VoiceFile.FileName).ToLowerInvariant();
                     var fileName = $"voice_msg_{request.FromUserId}_{DateTime.Now.Ticks}{extension}";
 
-                    // Upload file and get physical storage URL (used internally for file path)
+                    // Upload file and get physical storage URL
                     var physicalUrl = await _localFileStorage.UploadFileAsync(
                         request.VoiceFile.OpenReadStream(),
                         fileName,
@@ -124,7 +124,8 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     if (string.IsNullOrEmpty(physicalUrl))
                         return new ErrorDataResult<AnalysisMessageDto>("Failed to upload voice message");
 
-                    // Create message with voice
+                    // ✅ IMPORTANT: Database stores physical URL for FilesController to locate file
+                    // Response DTO will contain API endpoint URL for secure access
                     var message = new AnalysisMessage
                     {
                         PlantAnalysisId = request.PlantAnalysisId,
@@ -137,7 +138,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         SentDate = DateTime.Now,
                         CreatedDate = DateTime.Now,
 
-                        // Voice message data - store physical URL temporarily
+                        // Store physical URL in database (FilesController extracts path from this)
                         VoiceMessageUrl = physicalUrl,
                         VoiceMessageDuration = request.Duration,
                         VoiceMessageWaveform = request.Waveform
@@ -146,15 +147,12 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     _messageRepository.Add(message);
                     await _messageRepository.SaveChangesAsync();
 
-                    // ✅ IMPORTANT: Update VoiceMessageUrl to API endpoint format
-                    // Format: /api/v1/files/voice-messages/{messageId}
-                    // This provides authorization and audit trail
-                    var baseUrl = _localFileStorage.BaseUrl;
-                    message.VoiceMessageUrl = $"{baseUrl}/api/v1/files/voice-messages/{message.Id}";
-                    await _messageRepository.SaveChangesAsync();
-
                     // Get sender's avatar URLs
                     var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);
+
+                    // Generate API endpoint URL for response (database has physical URL)
+                    var baseUrl = _localFileStorage.BaseUrl;
+                    var apiVoiceUrl = $"{baseUrl}/api/v1/files/voice-messages/{message.Id}";
 
                     var messageDto = new AnalysisMessageDto
                     {
@@ -194,9 +192,9 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         AttachmentSizes = null,
                         AttachmentNames = null,
                         
-                        // Voice Messages
+                        // Voice Messages (API endpoint URL, not physical path)
                         IsVoiceMessage = true,
-                        VoiceMessageUrl = message.VoiceMessageUrl,
+                        VoiceMessageUrl = apiVoiceUrl,
                         VoiceMessageDuration = message.VoiceMessageDuration,
                         VoiceMessageWaveform = message.VoiceMessageWaveform,
                         

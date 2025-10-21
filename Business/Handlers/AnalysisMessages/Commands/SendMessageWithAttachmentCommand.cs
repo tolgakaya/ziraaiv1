@@ -182,24 +182,18 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         AttachmentNames = JsonSerializer.Serialize(attachmentNames)
                     };
 
+                    // ✅ IMPORTANT: Database stores physical URLs (for FilesController to locate files)
+                    // Response DTO will contain API endpoint URLs (for secure access)
                     _messageRepository.Add(message);
                     await _messageRepository.SaveChangesAsync();
 
-                    // ✅ IMPORTANT: Convert attachment URLs to API endpoint format
-                    // Format: /api/v1/files/attachments/{messageId}/{index}
-                    // This provides authorization and audit trail
+                    // Generate API endpoint URLs for response (database has physical URLs)
                     var apiAttachmentUrls = new List<string>();
                     var baseUrl = _localStorage.BaseUrl;
                     for (int i = 0; i < uploadedUrls.Count; i++)
                     {
                         apiAttachmentUrls.Add($"{baseUrl}/api/v1/files/attachments/{message.Id}/{i}");
                     }
-                    
-                    // Store both physical paths (for internal use) and API URLs (for responses)
-                    // AttachmentUrls contains physical paths (needed by FilesController to serve files)
-                    // API responses will use apiAttachmentUrls
-                    message.AttachmentUrls = JsonSerializer.Serialize(uploadedUrls); // Keep physical for serving
-                    await _messageRepository.SaveChangesAsync();
 
                     // Get sender's avatar URLs
                     var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);

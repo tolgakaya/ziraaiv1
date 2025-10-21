@@ -1,3 +1,4 @@
+using Business.Services.FileStorage;
 using Business.Services.Sponsorship;
 using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
@@ -25,13 +26,16 @@ namespace Business.Handlers.AnalysisMessages.Queries
         {
             private readonly IAnalysisMessagingService _messagingService;
             private readonly DataAccess.Abstract.IUserRepository _userRepository;
+            private readonly LocalFileStorageService _localFileStorage;
 
             public GetConversationQueryHandler(
                 IAnalysisMessagingService messagingService,
-                DataAccess.Abstract.IUserRepository userRepository)
+                DataAccess.Abstract.IUserRepository userRepository,
+                LocalFileStorageService localFileStorage)
             {
                 _messagingService = messagingService;
                 _userRepository = userRepository;
+                _localFileStorage = localFileStorage;
             }
 
             [LogAspect(typeof(FileLogger))]
@@ -50,12 +54,35 @@ namespace Business.Handlers.AnalysisMessages.Queries
                     .ToList();
 
                 var messageDtos = new List<AnalysisMessageDto>();
+                var baseUrl = _localFileStorage.BaseUrl;
 
                 foreach (var m in messages)
                 {
                     // Get sender's and receiver's user info for avatars
                     var sender = await _userRepository.GetAsync(u => u.UserId == m.FromUserId);
                     var receiver = await _userRepository.GetAsync(u => u.UserId == m.ToUserId);
+
+                    // Transform voice message URL from physical path to API endpoint
+                    string voiceMessageUrl = null;
+                    if (!string.IsNullOrEmpty(m.VoiceMessageUrl))
+                    {
+                        voiceMessageUrl = $"{baseUrl}/api/v1/files/voice-messages/{m.Id}";
+                    }
+
+                    // Transform attachment URLs from physical paths to API endpoints
+                    string[] attachmentUrls = null;
+                    if (m.HasAttachments && !string.IsNullOrEmpty(m.AttachmentUrls))
+                    {
+                        var physicalUrls = System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentUrls);
+                        if (physicalUrls != null && physicalUrls.Length > 0)
+                        {
+                            attachmentUrls = new string[physicalUrls.Length];
+                            for (int i = 0; i < physicalUrls.Length; i++)
+                            {
+                                attachmentUrls[i] = $"{baseUrl}/api/v1/files/attachments/{m.Id}/{i}";
+                            }
+                        }
+                    }
 
                     messageDtos.Add(new AnalysisMessageDto
                     {
@@ -96,12 +123,10 @@ namespace Business.Handlers.AnalysisMessages.Queries
                         Priority = m.Priority,
                         Category = m.Category,
                         
-                        // Attachments (Phase 2A)
+                        // Attachments (Phase 2A) - Use API endpoint URLs
                         HasAttachments = m.HasAttachments,
                         AttachmentCount = m.AttachmentCount,
-                        AttachmentUrls = !string.IsNullOrEmpty(m.AttachmentUrls) 
-                            ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentUrls) 
-                            : null,
+                        AttachmentUrls = attachmentUrls,
                         AttachmentTypes = !string.IsNullOrEmpty(m.AttachmentTypes)
                             ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentTypes)
                             : null,
@@ -112,9 +137,9 @@ namespace Business.Handlers.AnalysisMessages.Queries
                             ? System.Text.Json.JsonSerializer.Deserialize<string[]>(m.AttachmentNames)
                             : null,
                         
-                        // Voice Messages (Phase 2B)
+                        // Voice Messages (Phase 2B) - Use API endpoint URL
                         IsVoiceMessage = !string.IsNullOrEmpty(m.VoiceMessageUrl),
-                        VoiceMessageUrl = m.VoiceMessageUrl,
+                        VoiceMessageUrl = voiceMessageUrl,
                         VoiceMessageDuration = m.VoiceMessageDuration,
                         VoiceMessageWaveform = m.VoiceMessageWaveform,
                         
