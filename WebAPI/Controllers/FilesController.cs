@@ -81,7 +81,19 @@ namespace WebAPI.Controllers
                 return NotFound(new ErrorResult("Voice file not found"));
             }
 
-            // Extract physical file path
+            // Check if URL is external (e.g., FreeImageHost, ImgBB, etc.) - though voice messages are typically local
+            // This handles edge cases where voice files might be hosted externally
+            if (message.VoiceMessageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                message.VoiceMessageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation(
+                    "Voice message redirect to external storage. User: {UserId}, Message: {MessageId}, Url: {Url}",
+                    userId.Value, messageId, message.VoiceMessageUrl);
+
+                return Redirect(message.VoiceMessageUrl);
+            }
+
+            // Local file - serve from disk
             var filePath = ExtractFilePathFromUrl(message.VoiceMessageUrl);
             var fullPath = GetFullPath(filePath);
 
