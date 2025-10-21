@@ -165,6 +165,19 @@ namespace WebAPI.Controllers
             }
 
             var attachmentUrl = attachmentUrls[attachmentIndex];
+
+            // Check if URL is external (FreeImageHost, ImgBB, etc.) - redirect to external URL
+            if (attachmentUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                attachmentUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation(
+                    "Attachment redirect to external storage. User: {UserId}, Message: {MessageId}, Index: {Index}, Url: {Url}",
+                    userId.Value, messageId, attachmentIndex, attachmentUrl);
+
+                return Redirect(attachmentUrl);
+            }
+
+            // Local file - serve from disk
             var filePath = ExtractFilePathFromUrl(attachmentUrl);
             var fullPath = GetFullPath(filePath);
 
