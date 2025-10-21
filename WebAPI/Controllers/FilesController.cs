@@ -17,7 +17,7 @@ namespace WebAPI.Controllers
     /// Serves voice messages and attachments only to message participants
     /// </summary>
     [Authorize]
-    [Route("api/v{version:apiVersion}/files")]
+    [Route("api/v1/files")]
     [ApiController]
     public class FilesController : BaseApiController
     {
