@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -15,6 +16,7 @@ namespace Business.Services.FileStorage
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<LocalFileStorageService> _logger;
+        private readonly ISignedUrlService _signedUrlService;
         private readonly string _basePath;
         private readonly string _baseUrl;
 
@@ -24,11 +26,13 @@ namespace Business.Services.FileStorage
         public LocalFileStorageService(
             IConfiguration configuration,
             IHttpContextAccessor httpContextAccessor,
-            ILogger<LocalFileStorageService> logger)
+            ILogger<LocalFileStorageService> logger,
+            ISignedUrlService signedUrlService)
         {
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
+            _signedUrlService = signedUrlService;
             
             // Get base path for file storage
             _basePath = _configuration["FileStorage:Local:BasePath"] ?? "wwwroot/uploads";
@@ -225,10 +229,14 @@ namespace Business.Services.FileStorage
             // Get current base URL (dynamic)
             var currentBaseUrl = GetBaseUrl();
             
-            // Add 'uploads' prefix since UseStaticFiles serves from wwwroot
+            // Generate base URL with uploads prefix
             // File path: wwwroot/uploads/voice-messages/file.m4a
             // URL should be: {baseUrl}/uploads/voice-messages/file.m4a
-            return $"{currentBaseUrl}/uploads/{urlPath}";
+            var baseUrl = $"{currentBaseUrl}/uploads/{urlPath}";
+
+            // ✅ SECURITY: Sign the URL with 15 minute expiration
+            // This prevents unauthorized access and URL guessing attacks
+            return _signedUrlService.SignUrl(baseUrl, expiresInMinutes: 15);
         }
 
         private string GetBaseUrl()
