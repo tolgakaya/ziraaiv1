@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -234,15 +233,37 @@ namespace Business.Services.FileStorage
 
         private string GetBaseUrl()
         {
-            // Try to get from HttpContext
+            // Priority 1: Configuration (most reliable for production)
+            var configuredBaseUrl = _configuration["FileStorage:Local:BaseUrl"];
+            if (!string.IsNullOrEmpty(configuredBaseUrl))
+            {
+                // Ensure HTTPS for production/staging environments
+                if (configuredBaseUrl.StartsWith("http://") &&
+                    !configuredBaseUrl.Contains("localhost"))
+                {
+                    configuredBaseUrl = configuredBaseUrl.Replace("http://", "https://");
+                }
+                return configuredBaseUrl;
+            }
+
+            // Priority 2: Try to get from HttpContext
             var request = _httpContextAccessor?.HttpContext?.Request;
             if (request != null)
             {
-                return $"{request.Scheme}://{request.Host}";
+                var scheme = request.Scheme;
+                var host = request.Host.ToString();
+
+                // Force HTTPS for non-localhost environments (Railway SSL termination)
+                if (!host.Contains("localhost") && scheme == "http")
+                {
+                    scheme = "https";
+                }
+
+                return $"{scheme}://{host}";
             }
-            
-            // Fallback to configuration
-            return _configuration["FileStorage:Local:BaseUrl"] ?? "https://localhost:5001";
+
+            // Fallback
+            return "https://localhost:5001";
         }
 
         private string ExtractFilePathFromUrl(string fileUrl)
