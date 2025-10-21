@@ -368,10 +368,6 @@ namespace WebAPI
                 DefaultContentType = "application/json"
             });
 
-            // ✅ SECURITY: Validate signed URLs BEFORE serving static files
-            // This middleware prevents unauthorized access to voice messages and attachments
-            app.UseMiddleware<WebAPI.Middleware.SignedUrlMiddleware>();
-
             app.UseStaticFiles();
 
             // 🆕 Apply CORS for SignalR before endpoints

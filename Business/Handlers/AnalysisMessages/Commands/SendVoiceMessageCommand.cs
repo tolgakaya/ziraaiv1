@@ -114,13 +114,14 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     var extension = Path.GetExtension(request.VoiceFile.FileName).ToLowerInvariant();
                     var fileName = $"voice_msg_{request.FromUserId}_{DateTime.Now.Ticks}{extension}";
 
-                    var voiceUrl = await _localFileStorage.UploadFileAsync(
+                    // Upload file and get physical storage URL (used internally for file path)
+                    var physicalUrl = await _localFileStorage.UploadFileAsync(
                         request.VoiceFile.OpenReadStream(),
                         fileName,
                         request.VoiceFile.ContentType,
                         "voice-messages"); // Store in voice-messages subfolder
 
-                    if (string.IsNullOrEmpty(voiceUrl))
+                    if (string.IsNullOrEmpty(physicalUrl))
                         return new ErrorDataResult<AnalysisMessageDto>("Failed to upload voice message");
 
                     // Create message with voice
@@ -136,13 +137,20 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         SentDate = DateTime.Now,
                         CreatedDate = DateTime.Now,
 
-                        // Voice message data
-                        VoiceMessageUrl = voiceUrl,
+                        // Voice message data - store physical URL temporarily
+                        VoiceMessageUrl = physicalUrl,
                         VoiceMessageDuration = request.Duration,
                         VoiceMessageWaveform = request.Waveform
                     };
 
                     _messageRepository.Add(message);
+                    await _messageRepository.SaveChangesAsync();
+
+                    // ✅ IMPORTANT: Update VoiceMessageUrl to API endpoint format
+                    // Format: /api/v1/files/voice-messages/{messageId}
+                    // This provides authorization and audit trail
+                    var baseUrl = _localFileStorage.BaseUrl;
+                    message.VoiceMessageUrl = $"{baseUrl}/api/v1/files/voice-messages/{message.Id}";
                     await _messageRepository.SaveChangesAsync();
 
                     // Get sender's avatar URLs

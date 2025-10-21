@@ -16,7 +16,6 @@ namespace Business.Services.FileStorage
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<LocalFileStorageService> _logger;
-        private readonly ISignedUrlService _signedUrlService;
         private readonly string _basePath;
         private readonly string _baseUrl;
 
@@ -26,13 +25,11 @@ namespace Business.Services.FileStorage
         public LocalFileStorageService(
             IConfiguration configuration,
             IHttpContextAccessor httpContextAccessor,
-            ILogger<LocalFileStorageService> logger,
-            ISignedUrlService signedUrlService)
+            ILogger<LocalFileStorageService> logger)
         {
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
-            _signedUrlService = signedUrlService;
             
             // Get base path for file storage
             _basePath = _configuration["FileStorage:Local:BasePath"] ?? "wwwroot/uploads";
@@ -229,14 +226,10 @@ namespace Business.Services.FileStorage
             // Get current base URL (dynamic)
             var currentBaseUrl = GetBaseUrl();
             
-            // Generate base URL with uploads prefix
-            // File path: wwwroot/uploads/voice-messages/file.m4a
-            // URL should be: {baseUrl}/uploads/voice-messages/file.m4a
-            var baseUrl = $"{currentBaseUrl}/uploads/{urlPath}";
-
-            // ✅ SECURITY: Sign the URL with 15 minute expiration
-            // This prevents unauthorized access and URL guessing attacks
-            return _signedUrlService.SignUrl(baseUrl, expiresInMinutes: 15);
+            // Return physical URL with uploads prefix
+            // Note: Voice messages and attachments will be served via FilesController
+            // This physical URL is stored internally for file path resolution
+            return $"{currentBaseUrl}/uploads/{urlPath}";
         }
 
         private string GetBaseUrl()

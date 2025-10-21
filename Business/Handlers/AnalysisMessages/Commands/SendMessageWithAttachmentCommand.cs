@@ -185,6 +185,22 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     _messageRepository.Add(message);
                     await _messageRepository.SaveChangesAsync();
 
+                    // ✅ IMPORTANT: Convert attachment URLs to API endpoint format
+                    // Format: /api/v1/files/attachments/{messageId}/{index}
+                    // This provides authorization and audit trail
+                    var apiAttachmentUrls = new List<string>();
+                    var baseUrl = _localStorage.BaseUrl;
+                    for (int i = 0; i < uploadedUrls.Count; i++)
+                    {
+                        apiAttachmentUrls.Add($"{baseUrl}/api/v1/files/attachments/{message.Id}/{i}");
+                    }
+                    
+                    // Store both physical paths (for internal use) and API URLs (for responses)
+                    // AttachmentUrls contains physical paths (needed by FilesController to serve files)
+                    // API responses will use apiAttachmentUrls
+                    message.AttachmentUrls = JsonSerializer.Serialize(uploadedUrls); // Keep physical for serving
+                    await _messageRepository.SaveChangesAsync();
+
                     // Get sender's avatar URLs
                     var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);
 
@@ -218,12 +234,10 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         Priority = message.Priority,
                         Category = message.Category,
                         
-                        // Attachments - deserialize JSON to arrays
+                        // Attachments - use API endpoint URLs (not physical paths)
                         HasAttachments = message.HasAttachments,
                         AttachmentCount = message.AttachmentCount,
-                        AttachmentUrls = !string.IsNullOrEmpty(message.AttachmentUrls)
-                            ? JsonSerializer.Deserialize<string[]>(message.AttachmentUrls)
-                            : null,
+                        AttachmentUrls = apiAttachmentUrls.ToArray(),
                         AttachmentTypes = !string.IsNullOrEmpty(message.AttachmentTypes)
                             ? JsonSerializer.Deserialize<string[]>(message.AttachmentTypes)
                             : null,
