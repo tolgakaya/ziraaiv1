@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace DataAccess.Abstract
 {
+using Entities.Dtos;
+using System.Collections.Generic;
+
     public interface IAnalysisMessageRepository : IEntityRepository<AnalysisMessage>
     {
         Task<List<AnalysisMessage>> GetByAnalysisIdAsync(int plantAnalysisId);
@@ -19,5 +22,16 @@ namespace DataAccess.Abstract
         Task<List<AnalysisMessage>> GetMessagesByPriorityAsync(int userId, string priority);
         Task<List<AnalysisMessage>> GetPendingApprovalAsync();
         Task ApproveMessageAsync(int messageId, int approvedByUserId);
+
+        /// <summary>
+        /// Get messaging status summary for multiple analyses efficiently
+        /// Uses a single query with grouping for optimal performance
+        /// </summary>
+        /// <param name="sponsorId">ID of the sponsor</param>
+        /// <param name="analysisIds">Array of analysis IDs to get status for</param>
+        /// <returns>Dictionary mapping analysis ID to messaging status</returns>
+        Task<Dictionary<int, MessagingStatusDto>> GetMessagingStatusForAnalysesAsync(
+            int sponsorId,
+            int[] analysisIds);
     }
 }

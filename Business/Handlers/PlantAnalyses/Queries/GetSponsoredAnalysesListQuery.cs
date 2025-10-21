@@ -3,9 +3,11 @@ using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
+using Entities.Concrete;
 using Entities.Dtos;
 using MediatR;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +35,23 @@ namespace Business.Handlers.PlantAnalyses.Queries
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
 
+
+        // NEW: Message Status Filters
+        /// <summary>
+        /// Filter by message status: all, contacted, notContacted, hasResponse, noResponse, active, idle
+        /// </summary>
+        public string FilterByMessageStatus { get; set; }
+
+        /// <summary>
+        /// Filter to show only analyses with unread messages from farmer
+        /// </summary>
+        public bool? HasUnreadMessages { get; set; }
+
+        /// <summary>
+        /// Filter to show analyses with at least this many unread messages
+        /// </summary>
+        public int? UnreadMessagesMin { get; set; }
+
         public class GetSponsoredAnalysesListQueryHandler : IRequestHandler<GetSponsoredAnalysesListQuery, IDataResult<SponsoredAnalysesListResponseDto>>
         {
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
@@ -40,19 +59,22 @@ namespace Business.Handlers.PlantAnalyses.Queries
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
             private readonly IUserRepository _userRepository;
             private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+            private readonly IAnalysisMessageRepository _messageRepository; // NEW
 
             public GetSponsoredAnalysesListQueryHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
                 ISponsorDataAccessService dataAccessService,
                 ISponsorProfileRepository sponsorProfileRepository,
                 IUserRepository userRepository,
-                ISubscriptionTierRepository subscriptionTierRepository)
+                ISubscriptionTierRepository subscriptionTierRepository,
+                IAnalysisMessageRepository messageRepository) // NEW
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
                 _userRepository = userRepository;
                 _subscriptionTierRepository = subscriptionTierRepository;
+                _messageRepository = messageRepository; // NEW
             }
 
             [LogAspect(typeof(FileLogger))]
@@ -110,6 +132,39 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 };
 
                 var filteredAnalyses = analysesQuery.ToList();
+
+                // NEW: Fetch messaging status for all analyses (BEFORE pagination)
+                var analysisIds = filteredAnalyses.Select(a => a.Id).ToArray();
+                var messagingStatuses = await _messageRepository.GetMessagingStatusForAnalysesAsync(
+                    request.SponsorId,
+                    analysisIds);
+
+                // NEW: Apply messaging filters
+                if (!string.IsNullOrEmpty(request.FilterByMessageStatus))
+                {
+                    filteredAnalyses = ApplyMessageStatusFilter(
+                        filteredAnalyses,
+                        messagingStatuses,
+                        request.FilterByMessageStatus).ToList();
+                }
+
+                if (request.HasUnreadMessages.HasValue && request.HasUnreadMessages.Value)
+                {
+                    filteredAnalyses = filteredAnalyses
+                        .Where(a => messagingStatuses.ContainsKey(a.Id) &&
+                                   messagingStatuses[a.Id].UnreadCount > 0)
+                        .ToList();
+                }
+
+                if (request.UnreadMessagesMin.HasValue)
+                {
+                    filteredAnalyses = filteredAnalyses
+                        .Where(a => messagingStatuses.ContainsKey(a.Id) &&
+                                   messagingStatuses[a.Id].UnreadCount >= request.UnreadMessagesMin.Value)
+                        .ToList();
+                }
+
+                // Update total count after messaging filters
                 var totalCount = filteredAnalyses.Count;
 
                 // Calculate pagination
@@ -117,12 +172,27 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 var skip = (request.Page - 1) * request.PageSize;
                 var pagedAnalyses = filteredAnalyses.Skip(skip).Take(request.PageSize).ToList();
 
-                // Map to DTOs with tier-based filtering
-                var items = pagedAnalyses.Select(analysis => MapToSummaryDto(
-                    analysis,
-                    accessPercentage,
-                    sponsorProfile
-                )).ToArray();
+                // Map to DTOs with messaging status
+                var items = pagedAnalyses.Select(analysis =>
+                {
+                    var dto = MapToSummaryDto(
+                        analysis,
+                        accessPercentage,
+                        sponsorProfile);
+
+                    // NEW: Add messaging status
+                    dto.MessagingStatus = messagingStatuses.ContainsKey(analysis.Id)
+                        ? messagingStatuses[analysis.Id]
+                        : new MessagingStatusDto
+                        {
+                            HasMessages = false,
+                            TotalMessageCount = 0,
+                            UnreadCount = 0,
+                            ConversationStatus = ConversationStatus.NoContact
+                        };
+
+                    return dto;
+                }).ToArray();
 
                 // Calculate summary statistics
                 var summary = new SponsoredAnalysesListSummaryDto
@@ -140,7 +210,16 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         .ToArray(),
                     AnalysesThisMonth = filteredAnalyses
                         .Count(a => a.AnalysisDate.Month == DateTime.Now.Month &&
-                                    a.AnalysisDate.Year == DateTime.Now.Year)
+                                    a.AnalysisDate.Year == DateTime.Now.Year),
+
+                    // NEW: Messaging statistics
+                    ContactedAnalyses = messagingStatuses.Count(kvp => kvp.Value.HasMessages),
+                    NotContactedAnalyses = totalCount - messagingStatuses.Count(kvp => kvp.Value.HasMessages),
+                    ActiveConversations = messagingStatuses.Count(kvp =>
+                        kvp.Value.ConversationStatus == ConversationStatus.Active),
+                    PendingResponses = messagingStatuses.Count(kvp =>
+                        kvp.Value.ConversationStatus == ConversationStatus.Pending),
+                    TotalUnreadMessages = messagingStatuses.Sum(kvp => kvp.Value.UnreadCount)
                 };
 
                 var response = new SponsoredAnalysesListResponseDto
@@ -238,6 +317,46 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 }
 
                 return dto;
+            }
+
+
+            /// <summary>
+            /// Apply message status filter to analyses list
+            /// </summary>
+            private IEnumerable<Entities.Concrete.PlantAnalysis> ApplyMessageStatusFilter(
+                IEnumerable<Entities.Concrete.PlantAnalysis> analyses,
+                Dictionary<int, MessagingStatusDto> messagingStatuses,
+                string filterValue)
+            {
+                return filterValue?.ToLower() switch
+                {
+                    "contacted" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasMessages),
+
+                    "notcontacted" => analyses.Where(a =>
+                        !messagingStatuses.ContainsKey(a.Id) ||
+                        !messagingStatuses[a.Id].HasMessages),
+
+                    "hasresponse" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasFarmerResponse),
+
+                    "noresponse" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasMessages &&
+                        !messagingStatuses[a.Id].HasFarmerResponse),
+
+                    "active" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].ConversationStatus == ConversationStatus.Active),
+
+                    "idle" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].ConversationStatus == ConversationStatus.Idle),
+
+                    _ => analyses // "all" or invalid value - return unfiltered
+                };
             }
 
             private string GetTierName(int accessPercentage)

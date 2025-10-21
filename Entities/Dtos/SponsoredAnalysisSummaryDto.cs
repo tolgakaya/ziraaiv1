@@ -41,6 +41,11 @@ namespace Entities.Dtos
 
         // Sponsor Display Info
         public SponsorDisplayInfoDto SponsorInfo { get; set; }
+
+        /// <summary>
+        /// Messaging status information for this analysis
+        /// </summary>
+        public MessagingStatusDto MessagingStatus { get; set; }
     }
 
     /// <summary>
@@ -80,5 +85,30 @@ namespace Entities.Dtos
         public decimal AverageHealthScore { get; set; }
         public string[] TopCropTypes { get; set; }
         public int AnalysesThisMonth { get; set; }
+
+        /// <summary>
+        /// Number of analyses where sponsor has sent at least one message
+        /// </summary>
+        public int ContactedAnalyses { get; set; }
+
+        /// <summary>
+        /// Number of analyses where sponsor has not sent any messages
+        /// </summary>
+        public int NotContactedAnalyses { get; set; }
+
+        /// <summary>
+        /// Number of active conversations (two-way, recent activity)
+        /// </summary>
+        public int ActiveConversations { get; set; }
+
+        /// <summary>
+        /// Number of conversations waiting for farmer response
+        /// </summary>
+        public int PendingResponses { get; set; }
+
+        /// <summary>
+        /// Total unread messages across all conversations
+        /// </summary>
+        public int TotalUnreadMessages { get; set; }
     }
 }

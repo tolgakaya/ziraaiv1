@@ -722,7 +722,11 @@ namespace WebAPI.Controllers
             [FromQuery] string filterByTier = null,
             [FromQuery] string filterByCropType = null,
             [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null)
+            [FromQuery] DateTime? endDate = null,
+            // NEW: Message Status Filters
+            [FromQuery] string filterByMessageStatus = null,
+            [FromQuery] bool? hasUnreadMessages = null,
+            [FromQuery] int? unreadMessagesMin = null)
         {
             try
             {
@@ -747,7 +751,11 @@ namespace WebAPI.Controllers
                     FilterByTier = filterByTier,
                     FilterByCropType = filterByCropType,
                     StartDate = startDate,
-                    EndDate = endDate
+                    EndDate = endDate,
+                    // NEW: Pass messaging filters
+                    FilterByMessageStatus = filterByMessageStatus,
+                    HasUnreadMessages = hasUnreadMessages,
+                    UnreadMessagesMin = unreadMessagesMin
                 };
 
                 var result = await Mediator.Send(query);
