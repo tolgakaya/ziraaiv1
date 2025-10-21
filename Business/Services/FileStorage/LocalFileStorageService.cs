@@ -16,10 +16,12 @@ namespace Business.Services.FileStorage
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<LocalFileStorageService> _logger;
         private readonly string _basePath;
-        private readonly string _baseUrl;
 
         public string ProviderType => StorageProviders.Local;
-        public string BaseUrl => _baseUrl;
+
+        // ✅ IMPORTANT: BaseUrl must be dynamic to pick up HTTPS scheme correctly
+        // Railway performs SSL termination, so we need to determine scheme at runtime
+        public string BaseUrl => GetBaseUrl();
 
         public LocalFileStorageService(
             IConfiguration configuration,
@@ -29,18 +31,15 @@ namespace Business.Services.FileStorage
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
-            
+
             // Get base path for file storage
             _basePath = _configuration["FileStorage:Local:BasePath"] ?? "wwwroot/uploads";
-            
+
             // Ensure directory exists
             if (!Directory.Exists(_basePath))
             {
                 Directory.CreateDirectory(_basePath);
             }
-
-            // Get base URL
-            _baseUrl = GetBaseUrl();
         }
 
         public async Task<string> UploadFileAsync(byte[] fileBytes, string fileName, string contentType, string folder = null)
