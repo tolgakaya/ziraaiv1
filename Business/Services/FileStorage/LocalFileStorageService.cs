@@ -16,10 +16,12 @@ namespace Business.Services.FileStorage
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<LocalFileStorageService> _logger;
         private readonly string _basePath;
-        private readonly string _baseUrl;
 
         public string ProviderType => StorageProviders.Local;
-        public string BaseUrl => _baseUrl;
+
+        // ✅ IMPORTANT: BaseUrl must be dynamic to pick up HTTPS scheme correctly
+        // Railway performs SSL termination, so we need to determine scheme at runtime
+        public string BaseUrl => GetBaseUrl();
 
         public LocalFileStorageService(
             IConfiguration configuration,
@@ -29,18 +31,15 @@ namespace Business.Services.FileStorage
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
-            
+
             // Get base path for file storage
             _basePath = _configuration["FileStorage:Local:BasePath"] ?? "wwwroot/uploads";
-            
+
             // Ensure directory exists
             if (!Directory.Exists(_basePath))
             {
                 Directory.CreateDirectory(_basePath);
             }
-
-            // Get base URL
-            _baseUrl = GetBaseUrl();
         }
 
         public async Task<string> UploadFileAsync(byte[] fileBytes, string fileName, string contentType, string folder = null)
@@ -224,20 +223,46 @@ namespace Business.Services.FileStorage
 
             // Get current base URL (dynamic)
             var currentBaseUrl = GetBaseUrl();
-            return $"{currentBaseUrl}/{urlPath}";
+            
+            // Return physical URL with uploads prefix
+            // Note: Voice messages and attachments will be served via FilesController
+            // This physical URL is stored internally for file path resolution
+            return $"{currentBaseUrl}/uploads/{urlPath}";
         }
 
         private string GetBaseUrl()
         {
-            // Try to get from HttpContext
+            // Priority 1: Configuration (most reliable for production)
+            var configuredBaseUrl = _configuration["FileStorage:Local:BaseUrl"];
+            if (!string.IsNullOrEmpty(configuredBaseUrl))
+            {
+                // Ensure HTTPS for production/staging environments
+                if (configuredBaseUrl.StartsWith("http://") &&
+                    !configuredBaseUrl.Contains("localhost"))
+                {
+                    configuredBaseUrl = configuredBaseUrl.Replace("http://", "https://");
+                }
+                return configuredBaseUrl;
+            }
+
+            // Priority 2: Try to get from HttpContext
             var request = _httpContextAccessor?.HttpContext?.Request;
             if (request != null)
             {
-                return $"{request.Scheme}://{request.Host}";
+                var scheme = request.Scheme;
+                var host = request.Host.ToString();
+
+                // Force HTTPS for non-localhost environments (Railway SSL termination)
+                if (!host.Contains("localhost") && scheme == "http")
+                {
+                    scheme = "https";
+                }
+
+                return $"{scheme}://{host}";
             }
-            
-            // Fallback to configuration
-            return _configuration["FileStorage:Local:BaseUrl"] ?? "https://localhost:5001";
+
+            // Fallback
+            return "https://localhost:5001";
         }
 
         private string ExtractFilePathFromUrl(string fileUrl)

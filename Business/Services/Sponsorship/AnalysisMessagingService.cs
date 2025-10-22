@@ -267,11 +267,21 @@ namespace Business.Services.Sponsorship
                         fromUserName = newMessage.SenderName,
                         fromUserCompany = newMessage.SenderCompany,
                         senderRole = newMessage.SenderRole,
+                        senderAvatarUrl = fromUser.AvatarUrl,
+                        senderAvatarThumbnailUrl = fromUser.AvatarThumbnailUrl,
                         message = newMessage.Message,
                         messageType = newMessage.MessageType,
                         sentDate = newMessage.SentDate,
                         isApproved = newMessage.IsApproved,
-                        requiresApproval = isFirstMessage
+                        requiresApproval = isFirstMessage,
+                        hasAttachments = false,
+                        attachmentCount = 0,
+                        attachmentUrls = (string[])null,
+                        attachmentThumbnails = (string[])null,
+                        isVoiceMessage = false,
+                        voiceMessageUrl = (string)null,
+                        voiceMessageDuration = (int?)null,
+                        voiceMessageWaveform = (string)null
                     });
                 }
                 catch (Exception ex)
@@ -286,6 +296,51 @@ namespace Business.Services.Sponsorship
             catch (Exception)
             {
                 throw;
+            }
+        }
+
+        public async Task SendMessageNotificationAsync(
+            AnalysisMessage message, 
+            string senderRole,
+            string[] attachmentUrls = null,
+            string[] attachmentThumbnails = null,
+            string voiceMessageUrl = null,
+            string voiceMessageWaveform = null)
+        {
+            try
+            {
+                var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);
+                var isFirstMessage = !message.IsApproved;
+
+                await _hubContext.Clients.User(message.ToUserId.ToString()).SendAsync("NewMessage", new
+                {
+                    messageId = message.Id,
+                    plantAnalysisId = message.PlantAnalysisId,
+                    fromUserId = message.FromUserId,
+                    fromUserName = sender?.FullName ?? string.Empty,
+                    fromUserCompany = string.Empty,
+                    senderRole = senderRole,
+                    senderAvatarUrl = sender?.AvatarUrl,
+                    senderAvatarThumbnailUrl = sender?.AvatarThumbnailUrl,
+                    message = message.Message,
+                    messageType = message.MessageType,
+                    sentDate = message.SentDate,
+                    isApproved = message.IsApproved,
+                    requiresApproval = isFirstMessage,
+                    hasAttachments = message.HasAttachments,
+                    attachmentCount = message.AttachmentCount,
+                    attachmentUrls = attachmentUrls,
+                    attachmentThumbnails = attachmentThumbnails,
+                    isVoiceMessage = !string.IsNullOrEmpty(message.VoiceMessageUrl),
+                    voiceMessageUrl = voiceMessageUrl,
+                    voiceMessageDuration = message.VoiceMessageDuration,
+                    voiceMessageWaveform = voiceMessageWaveform
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log but don't fail if SignalR notification fails
+                Console.WriteLine($"[AnalysisMessagingService] Warning: Failed to send SignalR notification: {ex.Message}");
             }
         }
 

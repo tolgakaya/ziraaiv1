@@ -346,9 +346,6 @@ namespace Business.DependencyResolvers
             }
 
             // Subscription System Services
-            builder.RegisterType<Business.Services.Subscription.SubscriptionValidationService>()
-                .As<Business.Services.Subscription.ISubscriptionValidationService>()
-                .InstancePerLifetimeScope();
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
                 .Where(t => !t.IsAssignableTo<IFileStorageService>()) // Exclude file storage services to prevent override
@@ -356,6 +353,6 @@ namespace Business.DependencyResolvers
                 {
                     Selector = new AspectInterceptorSelector()
                 }).SingleInstance().InstancePerDependency();
-        }
+                }
     }
 }

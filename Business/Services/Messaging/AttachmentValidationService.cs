@@ -45,32 +45,36 @@ namespace Business.Services.Messaging
             _featureService = featureService;
         }
 
-        public async Task<IResult> ValidateAttachmentAsync(IFormFile file, int userId, string attachmentType)
+        public async Task<IResult> ValidateAttachmentAsync(IFormFile file, int plantAnalysisId, string attachmentType)
         {
             if (file == null || file.Length == 0)
-                return new ErrorResult("File is empty or null");
+                return new ErrorResult("File is required");
 
-            // Determine attachment type from MIME type if not provided
             var mimeType = file.ContentType.ToLowerInvariant();
-            if (string.IsNullOrEmpty(attachmentType))
+
+            // Validate MIME type mapping
+            if (!MimeTypeToFeature.TryGetValue(mimeType, out var mappedType))
             {
-                if (!MimeTypeToFeature.TryGetValue(mimeType, out attachmentType))
-                {
-                    return new ErrorResult($"Unsupported file type: {mimeType}");
-                }
+                return new ErrorResult($"Unsupported file type: {mimeType}");
             }
 
-            // Check feature availability and constraints
+            // Ensure attachment type matches MIME type
+            if (attachmentType != mappedType)
+            {
+                return new ErrorResult($"Attachment type mismatch: expected {mappedType}, got {attachmentType}");
+            }
+
+            // Check feature availability and constraints (based on ANALYSIS tier)
             var validationResult = await _featureService.ValidateFeatureAccessAsync(
                 attachmentType,
-                userId,
+                plantAnalysisId,
                 file.Length);
 
             if (!validationResult.Success)
                 return validationResult;
 
             // Additional MIME type validation
-            var allowedTypes = await GetAllowedMimeTypesAsync(userId, attachmentType);
+            var allowedTypes = await GetAllowedMimeTypesAsync(plantAnalysisId, attachmentType);
             if (!allowedTypes.Contains(mimeType))
             {
                 return new ErrorResult($"File type {mimeType} not allowed for {attachmentType}");
@@ -79,7 +83,7 @@ namespace Business.Services.Messaging
             return new SuccessResult("Attachment validated successfully");
         }
 
-        public async Task<IDataResult<List<string>>> ValidateAttachmentsAsync(List<IFormFile> files, int userId)
+        public async Task<IDataResult<List<string>>> ValidateAttachmentsAsync(List<IFormFile> files, int plantAnalysisId)
         {
             if (files == null || files.Count == 0)
                 return new ErrorDataResult<List<string>>("No files provided");
@@ -96,7 +100,7 @@ namespace Business.Services.Messaging
                     continue;
                 }
 
-                var result = await ValidateAttachmentAsync(file, userId, attachmentType);
+                var result = await ValidateAttachmentAsync(file, plantAnalysisId, attachmentType);
                 if (!result.Success)
                 {
                     errors.Add($"{file.FileName}: {result.Message}");
@@ -119,7 +123,7 @@ namespace Business.Services.Messaging
                 $"{files.Count} attachment(s) validated successfully");
         }
 
-        public async Task<List<string>> GetAllowedMimeTypesAsync(int userId, string attachmentType)
+        public async Task<List<string>> GetAllowedMimeTypesAsync(int plantAnalysisId, string attachmentType)
         {
             var feature = await _featureService.GetFeatureAsync(attachmentType);
 
@@ -135,7 +139,7 @@ namespace Business.Services.Messaging
                 .ToList();
         }
 
-        public async Task<long> GetMaxFileSizeAsync(int userId, string attachmentType)
+        public async Task<long> GetMaxFileSizeAsync(int plantAnalysisId, string attachmentType)
         {
             var feature = await _featureService.GetFeatureAsync(attachmentType);
 

@@ -722,7 +722,11 @@ namespace WebAPI.Controllers
             [FromQuery] string filterByTier = null,
             [FromQuery] string filterByCropType = null,
             [FromQuery] DateTime? startDate = null,
-            [FromQuery] DateTime? endDate = null)
+            [FromQuery] DateTime? endDate = null,
+            // NEW: Message Status Filters
+            [FromQuery] string filterByMessageStatus = null,
+            [FromQuery] bool? hasUnreadMessages = null,
+            [FromQuery] int? unreadMessagesMin = null)
         {
             try
             {
@@ -747,7 +751,11 @@ namespace WebAPI.Controllers
                     FilterByTier = filterByTier,
                     FilterByCropType = filterByCropType,
                     StartDate = startDate,
-                    EndDate = endDate
+                    EndDate = endDate,
+                    // NEW: Pass messaging filters
+                    FilterByMessageStatus = filterByMessageStatus,
+                    HasUnreadMessages = hasUnreadMessages,
+                    UnreadMessagesMin = unreadMessagesMin
                 };
 
                 var result = await Mediator.Send(query);
@@ -812,23 +820,36 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="otherUserId">The other participant's user ID (can be sponsor or farmer)</param>
         /// <param name="plantAnalysisId">Analysis ID for context</param>
-        /// <returns>Message conversation</returns>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Number of messages per page (default: 20, max: 100)</param>
+        /// <returns>Paginated message conversation</returns>
         [Authorize(Roles = "Sponsor,Farmer,Admin")]
         [HttpGet("messages/conversation")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<AnalysisMessageDto>>))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<List<AnalysisMessageDto>>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PaginatedResult<List<AnalysisMessageDto>>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(PaginatedResult<List<AnalysisMessageDto>>))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetConversation(int otherUserId, int plantAnalysisId)
+        public async Task<IActionResult> GetConversation(
+            int otherUserId, 
+            int plantAnalysisId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
 
+            // Validate and limit page size
+            if (pageSize > 100) pageSize = 100;
+            if (pageSize < 1) pageSize = 20;
+            if (page < 1) page = 1;
+
             var query = new GetConversationQuery
             {
                 FromUserId = userId.Value,
                 ToUserId = otherUserId,
-                PlantAnalysisId = plantAnalysisId
+                PlantAnalysisId = plantAnalysisId,
+                Page = page,
+                PageSize = pageSize
             };
             
             var result = await Mediator.Send(query);
@@ -1154,23 +1175,23 @@ namespace WebAPI.Controllers
         #region Messaging Features
 
         /// <summary>
-        /// Get messaging features configuration for current user
-        /// Returns feature availability based on user tier and admin toggles
+        /// Get messaging features configuration for a specific analysis
+        /// Returns feature availability based on analysis tier and admin toggles
         /// </summary>
+        /// <param name="plantAnalysisId">The plant analysis ID to check features for</param>
         /// <returns>Feature configuration with availability flags</returns>
         [Authorize]
         [HttpGet("messaging/features")]
-        public async Task<IActionResult> GetMessagingFeatures()
+        public async Task<IActionResult> GetMessagingFeatures([FromQuery] int plantAnalysisId)
         {
             try
             {
-                var userId = GetUserId();
-                if (!userId.HasValue)
-                    return Unauthorized();
+                if (plantAnalysisId <= 0)
+                    return BadRequest(new ErrorResult("Plant analysis ID is required"));
 
                 var query = new Business.Handlers.MessagingFeatures.Queries.GetMessagingFeaturesQuery
                 {
-                    UserId = userId.Value
+                    PlantAnalysisId = plantAnalysisId
                 };
 
                 var result = await Mediator.Send(query);

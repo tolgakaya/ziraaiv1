@@ -17,6 +17,7 @@ namespace Business.Services.Messaging
         private readonly ISponsorshipPurchaseRepository _sponsorshipPurchaseRepository;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+        private readonly IPlantAnalysisRepository _plantAnalysisRepository;
         private readonly IMemoryCache _memoryCache;
         private const string CACHE_KEY = "MessagingFeatures_All";
         private readonly TimeSpan CACHE_DURATION = TimeSpan.FromHours(24);
@@ -26,34 +27,36 @@ namespace Business.Services.Messaging
             ISponsorshipPurchaseRepository sponsorshipPurchaseRepository,
             ISubscriptionTierRepository subscriptionTierRepository,
             IUserSubscriptionRepository userSubscriptionRepository,
+            IPlantAnalysisRepository plantAnalysisRepository,
             IMemoryCache memoryCache)
         {
             _featureRepository = featureRepository;
             _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
             _subscriptionTierRepository = subscriptionTierRepository;
             _userSubscriptionRepository = userSubscriptionRepository;
+            _plantAnalysisRepository = plantAnalysisRepository;
             _memoryCache = memoryCache;
         }
 
-        public async Task<IDataResult<MessagingFeaturesDto>> GetUserFeaturesAsync(int userId)
+        public async Task<IDataResult<MessagingFeaturesDto>> GetUserFeaturesAsync(int plantAnalysisId)
         {
-            // Get user tier
-            var userTier = await GetUserTierAsync(userId);
+            // Get ANALYSIS tier (not user tier)
+            var analysisTier = await GetAnalysisTierAsync(plantAnalysisId);
 
             // Get all features from cache or database
             var features = await GetCachedFeaturesAsync();
 
             var dto = new MessagingFeaturesDto
             {
-                VoiceMessages = MapFeature(features, "VoiceMessages", userTier),
-                ImageAttachments = MapFeature(features, "ImageAttachments", userTier),
-                VideoAttachments = MapFeature(features, "VideoAttachments", userTier),
-                FileAttachments = MapFeature(features, "FileAttachments", userTier),
-                MessageEdit = MapFeature(features, "MessageEdit", userTier),
-                MessageDelete = MapFeature(features, "MessageDelete", userTier),
-                MessageForward = MapFeature(features, "MessageForward", userTier),
-                TypingIndicator = MapFeature(features, "TypingIndicator", userTier),
-                LinkPreview = MapFeature(features, "LinkPreview", userTier)
+                VoiceMessages = MapFeature(features, "VoiceMessages", analysisTier),
+                ImageAttachments = MapFeature(features, "ImageAttachments", analysisTier),
+                VideoAttachments = MapFeature(features, "VideoAttachments", analysisTier),
+                FileAttachments = MapFeature(features, "FileAttachments", analysisTier),
+                MessageEdit = MapFeature(features, "MessageEdit", analysisTier),
+                MessageDelete = MapFeature(features, "MessageDelete", analysisTier),
+                MessageForward = MapFeature(features, "MessageForward", analysisTier),
+                TypingIndicator = MapFeature(features, "TypingIndicator", analysisTier),
+                LinkPreview = MapFeature(features, "LinkPreview", analysisTier)
             };
 
             return new SuccessDataResult<MessagingFeaturesDto>(dto, "Features retrieved successfully");
@@ -76,7 +79,7 @@ namespace Business.Services.Messaging
             return new SuccessDataResult<bool>(hasAccess);
         }
 
-        public async Task<IResult> ValidateFeatureAccessAsync(string featureName, int userId, long? fileSize = null, int? duration = null)
+        public async Task<IResult> ValidateFeatureAccessAsync(string featureName, int plantAnalysisId, long? fileSize = null, int? duration = null)
         {
             var features = await GetCachedFeaturesAsync();
             var feature = features.FirstOrDefault(f => f.FeatureName == featureName);
@@ -88,11 +91,16 @@ namespace Business.Services.Messaging
             if (!feature.IsEnabled)
                 return new ErrorResult($"{feature.DisplayName ?? featureName} feature is currently disabled");
 
-            // 2. Check user tier
-            var userTier = await GetUserTierAsync(userId);
-            if (!CheckTierAccess(feature.RequiredTier, userTier))
+            // 2. Check ANALYSIS tier (not user tier)
+            var analysisTier = await GetAnalysisTierAsync(plantAnalysisId);
+            if (string.IsNullOrEmpty(analysisTier) || analysisTier == "None")
             {
-                return new ErrorResult($"{feature.DisplayName ?? featureName} requires {feature.RequiredTier} tier. Your tier: {userTier}");
+                return new ErrorResult($"Analysis tier not found for analysis ID {plantAnalysisId}");
+            }
+
+            if (!CheckTierAccess(feature.RequiredTier, analysisTier))
+            {
+                return new ErrorResult($"{feature.DisplayName ?? featureName} requires {feature.RequiredTier} tier. This analysis tier: {analysisTier}");
             }
 
             // 3. Check file size limit
@@ -153,6 +161,39 @@ namespace Business.Services.Messaging
         }
 
         #region Private Helper Methods
+
+        /// <summary>
+        /// Get the tier of an analysis based on sponsorship purchase
+        /// This is the CORRECT way to determine tier for messaging features
+        /// </summary>
+        private async Task<string> GetAnalysisTierAsync(int plantAnalysisId)
+        {
+            // Get the analysis with ActiveSponsorship navigation
+            var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
+            if (analysis == null)
+                return "None";
+
+            // Check if analysis has active sponsorship
+            if (!analysis.ActiveSponsorshipId.HasValue || analysis.ActiveSponsorshipId.Value == 0)
+                return "None";
+
+            // Get the sponsorship subscription
+            var sponsorship = await _userSubscriptionRepository.GetAsync(
+                us => us.Id == analysis.ActiveSponsorshipId.Value);
+
+            if (sponsorship == null || sponsorship.SubscriptionTierId == 0)
+                return "None";
+
+            // Get the tier from SubscriptionTier table
+            var tier = await _subscriptionTierRepository.GetAsync(
+                t => t.Id == sponsorship.SubscriptionTierId);
+
+            if (tier == null)
+                return "None";
+
+            // Return the tier name
+            return tier.TierName;
+        }
 
         private async Task<List<MessagingFeature>> GetCachedFeaturesAsync()
         {

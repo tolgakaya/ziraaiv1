@@ -2,6 +2,7 @@ using Core.DataAccess.EntityFramework;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework.Contexts;
 using Entities.Concrete;
+using Entities.Dtos;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -153,6 +154,90 @@ namespace DataAccess.Concrete.EntityFramework
                 Context.AnalysisMessages.Update(message);
                 await Context.SaveChangesAsync();
             }
+        }
+
+
+        public async Task<Dictionary<int, MessagingStatusDto>> GetMessagingStatusForAnalysesAsync(
+            int sponsorId,
+            int[] analysisIds)
+        {
+            // Single efficient query with grouping
+            var result = await Context.AnalysisMessages
+                .Where(m => analysisIds.Contains(m.PlantAnalysisId) && !m.IsDeleted)
+                .GroupBy(m => m.PlantAnalysisId)
+                .Select(g => new
+                {
+                    AnalysisId = g.Key,
+                    TotalMessageCount = g.Count(),
+                    UnreadCount = g.Count(m => !m.IsRead && m.ToUserId == sponsorId),
+                    LastMessageDate = g.Max(m => m.SentDate),
+                    LastMessage = g.OrderByDescending(m => m.SentDate).FirstOrDefault(),
+                    HasFarmerResponse = g.Any(m => m.ToUserId == sponsorId),
+                    LastFarmerResponseDate = g.Where(m => m.ToUserId == sponsorId)
+                        .Max(m => (DateTime?)m.SentDate)
+                })
+                .ToDictionaryAsync(
+                    x => x.AnalysisId,
+                    x => new MessagingStatusDto
+                    {
+                        HasMessages = true,
+                        TotalMessageCount = x.TotalMessageCount,
+                        UnreadCount = x.UnreadCount,
+                        LastMessageDate = x.LastMessageDate,
+                        LastMessagePreview = x.LastMessage != null && !string.IsNullOrEmpty(x.LastMessage.Message)
+                            ? (x.LastMessage.Message.Length > 50
+                                ? x.LastMessage.Message.Substring(0, 50) + "..."
+                                : x.LastMessage.Message)
+                            : null,
+                        LastMessageBy = x.LastMessage != null
+                            ? (x.LastMessage.FromUserId == sponsorId ? "sponsor" : "farmer")
+                            : null,
+                        HasFarmerResponse = x.HasFarmerResponse,
+                        LastFarmerResponseDate = x.LastFarmerResponseDate,
+                        ConversationStatus = CalculateConversationStatus(
+                            x.TotalMessageCount,
+                            x.HasFarmerResponse,
+                            x.LastMessageDate)
+                    });
+
+            // Add default status for analyses with no messages
+            foreach (var analysisId in analysisIds.Where(id => !result.ContainsKey(id)))
+            {
+                result[analysisId] = new MessagingStatusDto
+                {
+                    HasMessages = false,
+                    TotalMessageCount = 0,
+                    UnreadCount = 0,
+                    LastMessageDate = null,
+                    LastMessagePreview = null,
+                    LastMessageBy = null,
+                    HasFarmerResponse = false,
+                    LastFarmerResponseDate = null,
+                    ConversationStatus = ConversationStatus.NoContact
+                };
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Calculate conversation status based on message counts and dates
+        /// </summary>
+        private static ConversationStatus CalculateConversationStatus(
+            int totalCount,
+            bool hasResponse,
+            DateTime lastMessageDate)
+        {
+            if (totalCount == 0)
+                return ConversationStatus.NoContact;
+
+            if (!hasResponse)
+                return ConversationStatus.Pending;
+
+            var daysSinceLastMessage = (DateTime.Now - lastMessageDate).Days;
+            return daysSinceLastMessage < 7
+                ? ConversationStatus.Active
+                : ConversationStatus.Idle;
         }
     }
 }

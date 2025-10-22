@@ -1,0 +1,609 @@
+{
+	"info": {
+		"_postman_id": "a8f3e4d2-9c7b-4f1a-b5e3-8d9a2f1c4e7b",
+		"name": "ZiraAI - Messaging Status Feature",
+		"description": "Postman collection for testing the new messaging status tracking feature in sponsor analysis list.\n\n**Feature:** Track messaging status, conversation states, and unread messages\n**Date:** 2025-10-21\n**Branch:** feature/chat-improvements\n\n**Setup:**\n1. Import this collection into Postman\n2. Set environment variables:\n   - `base_url`: API base URL (e.g., https://ziraai-api-sit.up.railway.app)\n   - `auth_token`: JWT Bearer token for sponsor user\n3. Run requests to test messaging status features\n\n**New Features:**\n- Filter analyses by message status (contacted, notContacted, hasResponse, etc.)\n- View unread message counts\n- Track conversation states (NoContact, Pending, Active, Idle)\n- See messaging statistics in summary",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Backward Compatibility",
+			"item": [
+				{
+					"name": "Get Analyses List (No Filters)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?page=1&pageSize=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "**Purpose:** Verify backward compatibility - no breaking changes\n\n**Expected:** All analyses with messaging status included in response\n\n**Response includes:**\n- `messagingStatus` object for each analysis (new)\n- All existing fields unchanged\n- `summary` with new messaging statistics"
+					},
+					"response": []
+				}
+			],
+			"description": "Test that existing functionality works without any filters applied"
+		},
+		{
+			"name": "2. Contact Status Filters",
+			"item": [
+				{
+					"name": "Filter - Contacted Only",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=contacted",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "contacted"
+								}
+							]
+						},
+						"description": "**Purpose:** Show only analyses where sponsor has sent at least one message\n\n**Filter Logic:** `messagingStatus.hasMessages = true`\n\n**Use Case:** \"Show me all farmers I've already contacted\""
+					},
+					"response": []
+				},
+				{
+					"name": "Filter - Not Contacted",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=notContacted",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "notContacted"
+								}
+							]
+						},
+						"description": "**Purpose:** Show only analyses where sponsor hasn't sent any messages yet\n\n**Filter Logic:** `messagingStatus.hasMessages = false`\n\n**Use Case:** \"Show me farmers I haven't contacted yet\""
+					},
+					"response": []
+				}
+			],
+			"description": "Filter analyses based on whether sponsor has contacted farmer"
+		},
+		{
+			"name": "3. Response Status Filters",
+			"item": [
+				{
+					"name": "Filter - Has Farmer Response",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=hasResponse",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "hasResponse"
+								}
+							]
+						},
+						"description": "**Purpose:** Show only analyses where farmer has replied\n\n**Filter Logic:** `messagingStatus.hasFarmerResponse = true`\n\n**Use Case:** \"Show me farmers who have responded to my messages\""
+					},
+					"response": []
+				},
+				{
+					"name": "Filter - No Farmer Response",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=noResponse",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "noResponse"
+								}
+							]
+						},
+						"description": "**Purpose:** Show only analyses where sponsor sent messages but farmer hasn't replied\n\n**Filter Logic:** `messagingStatus.hasMessages = true AND messagingStatus.hasFarmerResponse = false`\n\n**Use Case:** \"Show me farmers who haven't responded yet (follow-up needed)\""
+					},
+					"response": []
+				}
+			],
+			"description": "Filter analyses based on whether farmer has responded"
+		},
+		{
+			"name": "4. Conversation Activity Filters",
+			"item": [
+				{
+					"name": "Filter - Active Conversations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=active",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "active"
+								}
+							]
+						},
+						"description": "**Purpose:** Show only analyses with recent two-way conversations (< 7 days)\n\n**Filter Logic:** `messagingStatus.conversationStatus = 'Active'`\n\n**State:** Farmer replied AND last message within 7 days\n\n**Use Case:** \"Show me ongoing conversations\""
+					},
+					"response": []
+				},
+				{
+					"name": "Filter - Idle Conversations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=idle",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "idle"
+								}
+							]
+						},
+						"description": "**Purpose:** Show only analyses with inactive conversations (≥ 7 days)\n\n**Filter Logic:** `messagingStatus.conversationStatus = 'Idle'`\n\n**State:** Farmer replied BUT last message over 7 days ago\n\n**Use Case:** \"Show me conversations that need re-engagement\""
+					},
+					"response": []
+				}
+			],
+			"description": "Filter analyses based on conversation activity level"
+		},
+		{
+			"name": "5. Unread Message Filters",
+			"item": [
+				{
+					"name": "Filter - Has Unread Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?hasUnreadMessages=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "hasUnreadMessages",
+									"value": "true"
+								}
+							]
+						},
+						"description": "**Purpose:** Show only analyses with unread messages from farmer\n\n**Filter Logic:** `messagingStatus.unreadCount > 0`\n\n**Use Case:** \"Show me farmers who sent messages I haven't read yet\""
+					},
+					"response": []
+				},
+				{
+					"name": "Filter - Minimum Unread Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?unreadMessagesMin=3",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "unreadMessagesMin",
+									"value": "3"
+								}
+							]
+						},
+						"description": "**Purpose:** Show only analyses with X or more unread messages\n\n**Filter Logic:** `messagingStatus.unreadCount >= 3`\n\n**Use Case:** \"Show me farmers with multiple unread messages (high priority)\""
+					},
+					"response": []
+				}
+			],
+			"description": "Filter analyses based on unread message counts"
+		},
+		{
+			"name": "6. Combined Filters",
+			"item": [
+				{
+					"name": "Active + Unread Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=active&hasUnreadMessages=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "active"
+								},
+								{
+									"key": "hasUnreadMessages",
+									"value": "true"
+								}
+							]
+						},
+						"description": "**Purpose:** Show active conversations with unread messages (highest priority)\n\n**Filter Logic:** `conversationStatus = 'Active' AND unreadCount > 0`\n\n**Use Case:** \"Show me urgent messages in active conversations\""
+					},
+					"response": []
+				},
+				{
+					"name": "Contacted + Crop Type Filter",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=contacted&filterByCropType=domates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "contacted"
+								},
+								{
+									"key": "filterByCropType",
+									"value": "domates"
+								}
+							]
+						},
+						"description": "**Purpose:** Combine messaging filter with existing crop type filter\n\n**Filter Logic:** `hasMessages = true AND cropType contains 'domates'`\n\n**Use Case:** \"Show me tomato farmers I've already contacted\""
+					},
+					"response": []
+				},
+				{
+					"name": "No Response + Date Range",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=noResponse&startDate=2025-10-01&endDate=2025-10-21",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "noResponse"
+								},
+								{
+									"key": "startDate",
+									"value": "2025-10-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2025-10-21"
+								}
+							]
+						},
+						"description": "**Purpose:** Combine messaging filter with date range\n\n**Filter Logic:** `hasFarmerResponse = false AND analysisDate in range`\n\n**Use Case:** \"Show me October farmers who haven't responded yet\""
+					},
+					"response": []
+				}
+			],
+			"description": "Test combining messaging filters with existing filters"
+		},
+		{
+			"name": "7. Pagination with Filters",
+			"item": [
+				{
+					"name": "Contacted - Page 1",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=contacted&page=1&pageSize=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "contacted"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "**Purpose:** Test pagination with messaging filters\n\n**Expected:** \n- 10 items max\n- `totalCount` = total contacted analyses\n- `totalPages` calculated correctly\n- `hasNextPage` = true if more pages exist"
+					},
+					"response": []
+				},
+				{
+					"name": "Contacted - Page 2",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?filterByMessageStatus=contacted&page=2&pageSize=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "filterByMessageStatus",
+									"value": "contacted"
+								},
+								{
+									"key": "page",
+									"value": "2"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "**Purpose:** Verify correct pagination behavior\n\n**Expected:**\n- Different items than page 1\n- `hasPreviousPage` = true\n- Correct page numbering"
+					},
+					"response": []
+				}
+			],
+			"description": "Test that pagination works correctly with messaging filters"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Common test script for all requests",
+					"",
+					"pm.test(\"Status code is 200\", function () {",
+					"    pm.response.to.have.status(200);",
+					"});",
+					"",
+					"pm.test(\"Response has data structure\", function () {",
+					"    var jsonData = pm.response.json();",
+					"    pm.expect(jsonData).to.have.property('data');",
+					"    pm.expect(jsonData.data).to.have.property('items');",
+					"    pm.expect(jsonData.data).to.have.property('summary');",
+					"});",
+					"",
+					"pm.test(\"Items have messagingStatus\", function () {",
+					"    var jsonData = pm.response.json();",
+					"    if (jsonData.data.items.length > 0) {",
+					"        pm.expect(jsonData.data.items[0]).to.have.property('messagingStatus');",
+					"    }",
+					"});",
+					"",
+					"pm.test(\"Summary has messaging statistics\", function () {",
+					"    var jsonData = pm.response.json();",
+					"    pm.expect(jsonData.data.summary).to.have.property('contactedAnalyses');",
+					"    pm.expect(jsonData.data.summary).to.have.property('notContactedAnalyses');",
+					"    pm.expect(jsonData.data.summary).to.have.property('activeConversations');",
+					"    pm.expect(jsonData.data.summary).to.have.property('pendingResponses');",
+					"    pm.expect(jsonData.data.summary).to.have.property('totalUnreadMessages');",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://ziraai-api-sit.up.railway.app",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "your_jwt_token_here",
+			"type": "string"
+		}
+	]
+}

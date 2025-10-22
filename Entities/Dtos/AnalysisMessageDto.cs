@@ -46,6 +46,7 @@ namespace Entities.Dtos
         public bool HasAttachments { get; set; }
         public int AttachmentCount { get; set; }
         public string[] AttachmentUrls { get; set; }
+        public string[] AttachmentThumbnails { get; set; }
         public string[] AttachmentTypes { get; set; }
         public long[] AttachmentSizes { get; set; }
         public string[] AttachmentNames { get; set; }
