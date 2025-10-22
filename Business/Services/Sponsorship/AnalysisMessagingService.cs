@@ -267,11 +267,21 @@ namespace Business.Services.Sponsorship
                         fromUserName = newMessage.SenderName,
                         fromUserCompany = newMessage.SenderCompany,
                         senderRole = newMessage.SenderRole,
+                        senderAvatarUrl = fromUser.AvatarUrl,
+                        senderAvatarThumbnailUrl = fromUser.AvatarThumbnailUrl,
                         message = newMessage.Message,
                         messageType = newMessage.MessageType,
                         sentDate = newMessage.SentDate,
                         isApproved = newMessage.IsApproved,
-                        requiresApproval = isFirstMessage
+                        requiresApproval = isFirstMessage,
+                        hasAttachments = false,
+                        attachmentCount = 0,
+                        attachmentUrls = (string[])null,
+                        attachmentThumbnails = (string[])null,
+                        isVoiceMessage = false,
+                        voiceMessageUrl = (string)null,
+                        voiceMessageDuration = (int?)null,
+                        voiceMessageWaveform = (string)null
                     });
                 }
                 catch (Exception ex)
