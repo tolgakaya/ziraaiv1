@@ -203,7 +203,11 @@ namespace Business.Handlers.AnalysisMessages.Commands
 
                     // 🔔 Send real-time SignalR notification to recipient
                     var senderRole = isSponsor ? "Sponsor" : "Farmer";
-                    await _messagingService.SendMessageNotificationAsync(message, senderRole);
+                    await _messagingService.SendMessageNotificationAsync(
+                        message, 
+                        senderRole,
+                        attachmentUrls: apiAttachmentUrls.ToArray(),
+                        attachmentThumbnails: apiThumbnailUrls.ToArray());
 
                     var messageDto = new AnalysisMessageDto
                     {

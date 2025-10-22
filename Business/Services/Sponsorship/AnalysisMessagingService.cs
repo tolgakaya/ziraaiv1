@@ -289,7 +289,13 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task SendMessageNotificationAsync(AnalysisMessage message, string senderRole)
+        public async Task SendMessageNotificationAsync(
+            AnalysisMessage message, 
+            string senderRole,
+            string[] attachmentUrls = null,
+            string[] attachmentThumbnails = null,
+            string voiceMessageUrl = null,
+            string voiceMessageWaveform = null)
         {
             try
             {
@@ -311,8 +317,12 @@ namespace Business.Services.Sponsorship
                     requiresApproval = isFirstMessage,
                     hasAttachments = message.HasAttachments,
                     attachmentCount = message.AttachmentCount,
+                    attachmentUrls = attachmentUrls,
+                    attachmentThumbnails = attachmentThumbnails,
                     isVoiceMessage = !string.IsNullOrEmpty(message.VoiceMessageUrl),
-                    voiceMessageDuration = message.VoiceMessageDuration
+                    voiceMessageUrl = voiceMessageUrl,
+                    voiceMessageDuration = message.VoiceMessageDuration,
+                    voiceMessageWaveform = voiceMessageWaveform
                 });
             }
             catch (Exception ex)
