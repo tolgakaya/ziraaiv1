@@ -150,6 +150,10 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     // Get sender's avatar URLs
                     var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);
 
+                    // 🔔 Send real-time SignalR notification to recipient
+                    var senderRole = isSponsor ? "Sponsor" : "Farmer";
+                    await _messagingService.SendMessageNotificationAsync(message, senderRole);
+
                     // Generate API endpoint URL for response (database has physical URL)
                     var baseUrl = _localFileStorage.BaseUrl;
                     var apiVoiceUrl = $"{baseUrl}/api/v1/files/voice-messages/{message.Id}";

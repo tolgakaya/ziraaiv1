@@ -10,6 +10,7 @@ namespace Business.Services.Sponsorship
         Task<(bool canSend, string errorMessage)> CanSendMessageForAnalysisAsync(int sponsorId, int farmerId, int plantAnalysisId);
         Task<(bool canReply, string errorMessage)> CanFarmerReplyAsync(int farmerId, int sponsorId, int plantAnalysisId);
         Task<AnalysisMessage> SendMessageAsync(int fromUserId, int toUserId, int plantAnalysisId, string message, string messageType = "Information");
+        Task SendMessageNotificationAsync(AnalysisMessage message, string senderRole);
         Task<List<AnalysisMessage>> GetConversationAsync(int fromUserId, int toUserId, int plantAnalysisId);
         Task<List<AnalysisMessage>> GetUnreadMessagesAsync(int userId);
         Task<int> GetUnreadCountAsync(int userId);
