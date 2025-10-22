@@ -310,6 +310,8 @@ namespace Business.Services.Sponsorship
                     fromUserName = sender?.FullName ?? string.Empty,
                     fromUserCompany = string.Empty,
                     senderRole = senderRole,
+                    senderAvatarUrl = sender?.AvatarUrl,
+                    senderAvatarThumbnailUrl = sender?.AvatarThumbnailUrl,
                     message = message.Message,
                     messageType = message.MessageType,
                     sentDate = message.SentDate,
