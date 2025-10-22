@@ -50,6 +50,55 @@ namespace Entities.Dtos
         public decimal? TotalCostTry { get; set; }
         public string AiModel { get; set; }
         
+        // ==========================================
+        // 🆕 Messaging Fields (Flat Structure)
+        // For farmers to see messaging status with their sponsors
+        // All fields nullable for backward compatibility
+        // ==========================================
+
+        /// <summary>
+        /// Number of unread messages from sponsor (not read by farmer)
+        /// NULL if messaging feature not available or no messages exist
+        /// </summary>
+        public int? UnreadMessageCount { get; set; }
+
+        /// <summary>
+        /// Total number of messages in this conversation (sponsor + farmer)
+        /// NULL if messaging feature not available
+        /// </summary>
+        public int? TotalMessageCount { get; set; }
+
+        /// <summary>
+        /// Date/time of the last message sent (by either party)
+        /// NULL if no messages exist
+        /// </summary>
+        public DateTime? LastMessageDate { get; set; }
+
+        /// <summary>
+        /// Preview of the last message (max 100 characters)
+        /// NULL if no messages exist
+        /// </summary>
+        public string LastMessagePreview { get; set; }
+
+        /// <summary>
+        /// Role of the last message sender: "sponsor" or "farmer"
+        /// NULL if no messages exist
+        /// </summary>
+        public string LastMessageSenderRole { get; set; }
+
+        /// <summary>
+        /// Whether there are unread messages from sponsor
+        /// Useful for showing notification badges in farmer's list
+        /// NULL if messaging feature not available
+        /// </summary>
+        public bool? HasUnreadFromSponsor { get; set; }
+
+        /// <summary>
+        /// Conversation status: "None", "Active" (&lt; 7 days), "Idle" (&gt;= 7 days)
+        /// NULL if messaging feature not available
+        /// </summary>
+        public string ConversationStatus { get; set; }
+        
         // Mobile-friendly properties
         public bool IsSponsored => !string.IsNullOrEmpty(SponsorId);
         public bool HasResults => OverallHealthScore.HasValue;

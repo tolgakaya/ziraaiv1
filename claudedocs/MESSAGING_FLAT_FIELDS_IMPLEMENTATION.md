@@ -10,7 +10,11 @@
 
 ## 📋 Summary
 
-Successfully converted messaging status fields from nested structure (MessagingStatusDto) to flat fields directly in SponsoredAnalysisSummaryDto, per mobile team's requirement.
+Successfully converted messaging status fields from nested structure (MessagingStatusDto) to flat fields for BOTH sponsor and farmer analysis lists, per mobile team's requirement.
+
+**Implemented for:**
+1. ✅ **Sponsor Analysis List** - `SponsoredAnalysisSummaryDto` (GET /api/v1/sponsorship/analyses)
+2. ✅ **Farmer Analysis List** - `PlantAnalysisListItemDto` (GET /api/v1/PlantAnalyses/list)
 
 ### What Changed
 
@@ -45,9 +49,9 @@ Successfully converted messaging status fields from nested structure (MessagingS
 
 ---
 
-## 📦 Files Modified (2)
+## 📦 Files Modified (4)
 
-### 1. Entities/Dtos/SponsoredAnalysisSummaryDto.cs
+### 1. Entities/Dtos/SponsoredAnalysisSummaryDto.cs (SPONSOR)
 
 **Changes:**
 1. Marked `MessagingStatus` property as `[Obsolete]` (kept for backward compatibility)
@@ -78,7 +82,33 @@ public bool? HasUnreadFromFarmer { get; set; }
 public string ConversationStatus { get; set; }
 ```
 
-### 2. Business/Handlers/PlantAnalyses/Queries/GetSponsoredAnalysesListQuery.cs
+### 2. Business/Handlers/PlantAnalyses/Queries/GetSponsoredAnalysesListQuery.cs (SPONSOR)
+
+### 3. Entities/Dtos/PlantAnalysisListItemDto.cs (FARMER)
+
+**Changes:**
+1. Added 7 new nullable flat fields (same structure as sponsor):
+   - `UnreadMessageCount` (int?)
+   - `TotalMessageCount` (int?)
+   - `LastMessageDate` (DateTime?)
+   - `LastMessagePreview` (string?)
+   - `LastMessageSenderRole` (string?) - "sponsor" or "farmer"
+   - `HasUnreadFromSponsor` (bool?) - **KEY DIFFERENCE**: Farmers check if unread is from SPONSOR
+   - `ConversationStatus` (string?) - "None", "Active", "Idle"
+
+**Code:**
+```csharp
+// 🆕 Messaging Fields (Flat Structure for Farmers)
+public int? UnreadMessageCount { get; set; }
+public int? TotalMessageCount { get; set; }
+public DateTime? LastMessageDate { get; set; }
+public string LastMessagePreview { get; set; }
+public string LastMessageSenderRole { get; set; }
+public bool? HasUnreadFromSponsor { get; set; }  // Different from sponsor's HasUnreadFromFarmer
+public string ConversationStatus { get; set; }
+```
+
+### 4. Business/Handlers/PlantAnalyses/Queries/GetPlantAnalysesForFarmerQuery.cs (FARMER)
 
 **Changes:**
 1. Updated mapping logic to populate both nested and flat fields
@@ -515,12 +545,18 @@ if (analysis.hasUnreadFromFarmer == true) {
 
 ## ✅ Completion Checklist
 
-### Implementation
+### Implementation (SPONSOR)
 - [x] SponsoredAnalysisSummaryDto updated with 7 flat fields
 - [x] SponsoredAnalysesListSummaryDto updated with analysesWithUnread
 - [x] GetSponsoredAnalysesListQueryHandler mapping logic updated
 - [x] hasUnreadFromFarmer calculation implemented
-- [x] Build successful (0 errors, 1 expected warning)
+
+### Implementation (FARMER)
+- [x] PlantAnalysisListItemDto updated with 7 flat fields
+- [x] GetPlantAnalysesForFarmerQueryHandler updated with messaging repository
+- [x] Messaging status fetch logic added (before pagination)
+- [x] hasUnreadFromSponsor calculation implemented (key difference from sponsor)
+- [x] Build successful (0 errors, expected warnings only)
 
 ### Documentation
 - [x] Implementation guide created
@@ -552,6 +588,60 @@ if (analysis.hasUnreadFromFarmer == true) {
 
 ---
 
+## 🔄 Sponsor vs Farmer: Key Differences
+
+| Aspect | Sponsor | Farmer |
+|--------|---------|--------|
+| **Endpoint** | `/api/v1/sponsorship/analyses` | `/api/v1/PlantAnalyses/list` |
+| **DTO** | `SponsoredAnalysisSummaryDto` | `PlantAnalysisListItemDto` |
+| **View** | Analyses they sponsor | Their own analyses |
+| **Messaging Direction** | FROM sponsor TO farmer | FROM sponsor TO farmer (same) |
+| **Unread Check** | `hasUnreadFromFarmer` | `hasUnreadFromSponsor` |
+| **Unread Logic** | `UnreadCount > 0 && LastBy == "farmer"` | `UnreadCount > 0 && LastBy == "sponsor"` |
+| **Use Case** | Sponsor sees if farmer replied | Farmer sees if sponsor messaged |
+
+### Example Scenarios:
+
+**Scenario 1: Sponsor sends message to farmer**
+```json
+// Sponsor's view (GET /sponsorship/analyses)
+{
+  "analysisId": 60,
+  "unreadMessageCount": 0,
+  "lastMessageSenderRole": "sponsor",
+  "hasUnreadFromFarmer": false  // ❌ Sponsor sent it, no farmer reply yet
+}
+
+// Farmer's view (GET /PlantAnalyses/list)
+{
+  "analysisId": 60,
+  "unreadMessageCount": 1,
+  "lastMessageSenderRole": "sponsor",
+  "hasUnreadFromSponsor": true  // ✅ Sponsor sent, farmer hasn't read
+}
+```
+
+**Scenario 2: Farmer replies to sponsor**
+```json
+// Sponsor's view
+{
+  "analysisId": 60,
+  "unreadMessageCount": 1,
+  "lastMessageSenderRole": "farmer",
+  "hasUnreadFromFarmer": true  // ✅ Farmer replied, sponsor hasn't read
+}
+
+// Farmer's view
+{
+  "analysisId": 60,
+  "unreadMessageCount": 0,
+  "lastMessageSenderRole": "farmer",
+  "hasUnreadFromSponsor": false  // ❌ Farmer sent it, no sponsor reply yet
+}
+```
+
+---
+
 **Implementation Complete!** 🚀
 
-**Next Steps:** Deploy to staging → Mobile team tests → Production deployment
+**Next Steps:** Deploy to staging → Mobile team tests (both sponsor & farmer apps) → Production deployment
