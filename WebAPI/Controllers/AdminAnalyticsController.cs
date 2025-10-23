@@ -17,7 +17,12 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="startDate">Start date for filtering (optional)</param>
         /// <param name="endDate">End date for filtering (optional)</param>
-        [HttpGet("users")]
+        /// <summary>
+        /// Get user statistics and metrics
+        /// </summary>
+        /// <param name="startDate">Start date for filtering (optional)</param>
+        /// <param name="endDate">End date for filtering (optional)</param>
+        [HttpGet("user-statistics")]
         public async Task<IActionResult> GetUserStatistics(
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null)
@@ -37,7 +42,12 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="startDate">Start date for filtering (optional)</param>
         /// <param name="endDate">End date for filtering (optional)</param>
-        [HttpGet("subscriptions")]
+        /// <summary>
+        /// Get subscription statistics and metrics
+        /// </summary>
+        /// <param name="startDate">Start date for filtering (optional)</param>
+        /// <param name="endDate">End date for filtering (optional)</param>
+        [HttpGet("subscription-statistics")]
         public async Task<IActionResult> GetSubscriptionStatistics(
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null)
@@ -75,7 +85,10 @@ namespace WebAPI.Controllers
         /// <summary>
         /// Get dashboard overview with all key metrics
         /// </summary>
-        [HttpGet("dashboard")]
+        /// <summary>
+        /// Get dashboard overview with all key metrics
+        /// </summary>
+        [HttpGet("dashboard-overview")]
         public async Task<IActionResult> GetDashboardOverview()
         {
             // Get all statistics in parallel for dashboard

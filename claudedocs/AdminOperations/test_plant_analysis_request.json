@@ -1,0 +1,6 @@
+{
+  "targetUserId": 167,
+  "imageUrl": "https://example.com/test-plant.jpg",
+  "analysisResult": "TEST ANALYSIS: Healthy tomato plant detected. Good leaf color and structure.",
+  "notes": "TEST: Admin-created analysis for User 167"
+}

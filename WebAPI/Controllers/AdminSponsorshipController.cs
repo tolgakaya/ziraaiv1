@@ -1,6 +1,8 @@
 using Business.Handlers.AdminSponsorship.Commands;
 using Business.Handlers.AdminSponsorship.Queries;
+using Business.Handlers.AdminAnalytics.Queries;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,8 +13,6 @@ namespace WebAPI.Controllers
     /// Admin controller for sponsorship management operations
     /// Provides endpoints for managing purchases and codes
     /// </summary>
-using Business.Handlers.AdminSponsorship.Queries;
-using System.Collections.Generic;
 
     [Route("api/admin/sponsorship")]
     public class AdminSponsorshipController : AdminBaseController
@@ -56,6 +56,26 @@ using System.Collections.Generic;
         public async Task<IActionResult> GetPurchaseById(int purchaseId)
         {
             var query = new GetPurchaseByIdQuery { PurchaseId = purchaseId };
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get sponsorship statistics and metrics
+        /// </summary>
+        /// <param name="startDate">Start date for filtering (optional)</param>
+        /// <param name="endDate">End date for filtering (optional)</param>
+        [HttpGet("statistics")]
+        public async Task<IActionResult> GetStatistics(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            var query = new GetSponsorshipStatisticsQuery
+            {
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
             var result = await Mediator.Send(query);
             return GetResponse(result);
         }
@@ -240,7 +260,12 @@ using System.Collections.Generic;
         /// Includes purchase statistics, code distribution, and detailed purchase history
         /// </summary>
         /// <param name="sponsorId">Sponsor ID</param>
-        [HttpGet("sponsor/{sponsorId}/report")]
+        /// <summary>
+        /// Get detailed report for a specific sponsor
+        /// Includes purchase statistics, code distribution, and detailed purchase history
+        /// </summary>
+        /// <param name="sponsorId">Sponsor ID</param>
+        [HttpGet("sponsors/{sponsorId}/detailed-report")]
         public async Task<IActionResult> GetSponsorDetailedReport(int sponsorId)
         {
             var query = new GetSponsorDetailedReportQuery { SponsorId = sponsorId };
