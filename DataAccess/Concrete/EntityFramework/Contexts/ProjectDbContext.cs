@@ -96,6 +96,9 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<ReferralTracking> ReferralTrackings { get; set; }
         public DbSet<ReferralReward> ReferralRewards { get; set; }
         public DbSet<ReferralConfiguration> ReferralConfigurations { get; set; }
+        
+        // Admin Operations & Audit Trail
+        public DbSet<AdminOperationLog> AdminOperationLogs { get; set; }
         protected IConfiguration Configuration { get; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -159,6 +159,10 @@ namespace Business.DependencyResolvers
             builder.RegisterType<DeepLinkRepository>().As<IDeepLinkRepository>()
                 .InstancePerLifetimeScope();
             
+            // Admin Operations repositories
+            builder.RegisterType<AdminOperationLogRepository>().As<IAdminOperationLogRepository>()
+                .InstancePerLifetimeScope();
+            
             builder.RegisterType<PlantAnalysisService>().As<IPlantAnalysisService>()
                 .InstancePerLifetimeScope();
             
@@ -277,6 +281,11 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<Business.Services.Referral.ReferralLinkService>()
                 .As<Business.Services.Referral.IReferralLinkService>()
+                .InstancePerLifetimeScope();
+            
+            // Admin Operations services
+            builder.RegisterType<Business.Services.AdminAudit.AdminAuditService>()
+                .As<Business.Services.AdminAudit.IAdminAuditService>()
                 .InstancePerLifetimeScope();
 
             // Authentication Providers

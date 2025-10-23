@@ -83,6 +83,29 @@ namespace Core.Entities.Concrete
         /// </summary>
         public DateTime? AvatarUpdatedDate { get; set; }
 
+        /// <summary>
+        /// Indicates if user account is active. False means deactivated by admin.
+        /// Default: true (active)
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        /// <summary>
+        /// Timestamp when user was deactivated by admin (null if active)
+        /// </summary>
+        public DateTime? DeactivatedDate { get; set; }
+
+        /// <summary>
+        /// Admin user ID who deactivated this user (null if active)
+        /// References Users.UserId of the admin who performed deactivation
+        /// </summary>
+        public int? DeactivatedBy { get; set; }
+
+        /// <summary>
+        /// Admin-provided reason for deactivation
+        /// Required when deactivating a user for audit purposes
+        /// </summary>
+        public string DeactivationReason { get; set; }
+
         public bool UpdateMobilePhone(string mobilePhone)
         {
             if (mobilePhone == MobilePhones)

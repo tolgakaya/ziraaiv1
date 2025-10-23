@@ -159,7 +159,22 @@ namespace Entities.Concrete
         public string Pests { get; set; } // Legacy field - JSON string
         public string AnalysisResult { get; set; } // Legacy field - JSON string
         public string N8nWebhookResponse { get; set; } // Legacy field - JSON string
+        // Admin On-Behalf-Of Tracking
+        /// <summary>
+        /// Admin user ID who created this analysis on behalf of a farmer
+        /// null = created by farmer directly, not null = created by admin for support
+        /// </summary>
+        public int? CreatedByAdminId { get; set; }
+
+        /// <summary>
+        /// Indicates if this analysis was created by an admin on behalf of a farmer
+        /// Must be true when CreatedByAdminId is not null
+        /// Default: false
+        /// </summary>
+        public bool IsOnBehalfOf { get; set; } = false;
+
         // Navigation properties
+        public virtual User CreatedByAdmin { get; set; }
         public virtual SponsorshipCode SponsorshipCode { get; set; }
         public virtual User SponsorUser { get; set; }
         public virtual UserSubscription ActiveSponsorship { get; set; }

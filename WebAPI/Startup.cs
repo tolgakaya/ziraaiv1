@@ -334,6 +334,10 @@ namespace WebAPI
             app.UseRouting();
 
             app.UseAuthentication();
+            
+            // IMPORTANT: OnBehalfOfMiddleware must come AFTER authentication
+            // but BEFORE authorization to properly set OBO context
+            app.UseMiddleware<WebAPI.Middleware.OnBehalfOfMiddleware>();
 
             app.UseAuthorization();
 
