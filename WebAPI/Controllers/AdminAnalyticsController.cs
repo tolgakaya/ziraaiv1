@@ -110,6 +110,38 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get system activity logs with filtering and pagination
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 10)</param>
+        /// <param name="userId">Filter by user ID (admin or target user)</param>
+        /// <param name="actionType">Filter by action type</param>
+        /// <param name="startDate">Start date for filtering</param>
+        /// <param name="endDate">End date for filtering</param>
+        [HttpGet("activity-logs")]
+        public async Task<IActionResult> GetActivityLogs(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] int? userId = null,
+            [FromQuery] string actionType = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            var query = new GetActivityLogsQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                UserId = userId,
+                ActionType = actionType,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
         /// Export statistics as CSV file
         /// </summary>
         /// <param name="startDate">Start date for filtering (optional)</param>
