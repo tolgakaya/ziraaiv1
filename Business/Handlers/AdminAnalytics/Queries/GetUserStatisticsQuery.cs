@@ -22,10 +22,17 @@ namespace Business.Handlers.AdminAnalytics.Queries
         public class GetUserStatisticsQueryHandler : IRequestHandler<GetUserStatisticsQuery, IDataResult<UserStatisticsDto>>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserClaimRepository _userClaimRepository;
+            private readonly IOperationClaimRepository _operationClaimRepository;
 
-            public GetUserStatisticsQueryHandler(IUserRepository userRepository)
+            public GetUserStatisticsQueryHandler(
+                IUserRepository userRepository,
+                IUserClaimRepository userClaimRepository,
+                IOperationClaimRepository operationClaimRepository)
             {
                 _userRepository = userRepository;
+                _userClaimRepository = userClaimRepository;
+                _operationClaimRepository = operationClaimRepository;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -45,16 +52,48 @@ namespace Business.Handlers.AdminAnalytics.Queries
                     allUsers = allUsers.Where(u => u.RecordDate <= request.EndDate.Value);
                 }
 
+                // Get role-based counts
+                var adminClaimId = _operationClaimRepository.Query()
+                    .Where(c => c.Name == "Admin")
+                    .Select(c => c.Id)
+                    .FirstOrDefault();
+
+                var farmerClaimId = _operationClaimRepository.Query()
+                    .Where(c => c.Name == "Farmer")
+                    .Select(c => c.Id)
+                    .FirstOrDefault();
+
+                var sponsorClaimId = _operationClaimRepository.Query()
+                    .Where(c => c.Name == "Sponsor")
+                    .Select(c => c.Id)
+                    .FirstOrDefault();
+
+                var adminUsers = _userClaimRepository.Query()
+                    .Where(uc => uc.ClaimId == adminClaimId)
+                    .Select(uc => uc.UserId)
+                    .Distinct()
+                    .Count();
+
+                var farmerUsers = _userClaimRepository.Query()
+                    .Where(uc => uc.ClaimId == farmerClaimId)
+                    .Select(uc => uc.UserId)
+                    .Distinct()
+                    .Count();
+
+                var sponsorUsers = _userClaimRepository.Query()
+                    .Where(uc => uc.ClaimId == sponsorClaimId)
+                    .Select(uc => uc.UserId)
+                    .Distinct()
+                    .Count();
+
                 var stats = new UserStatisticsDto
                 {
                     TotalUsers = allUsers.Count(),
                     ActiveUsers = allUsers.Count(u => u.IsActive && u.Status),
                     InactiveUsers = allUsers.Count(u => !u.IsActive || !u.Status),
-                    // Role-based counts would require joining with UserOperationClaim table
-                    // Simplified to just count active/inactive for now
-                    FarmerUsers = 0, // TODO: Implement with proper join
-                    SponsorUsers = 0, // TODO: Implement with proper join
-                    AdminUsers = 0, // TODO: Implement with proper join
+                    FarmerUsers = farmerUsers,
+                    SponsorUsers = sponsorUsers,
+                    AdminUsers = adminUsers,
                     UsersRegisteredToday = allUsers.Count(u => u.RecordDate.Date == DateTime.Now.Date),
                     UsersRegisteredThisWeek = allUsers.Count(u => u.RecordDate >= DateTime.Now.AddDays(-7)),
                     UsersRegisteredThisMonth = allUsers.Count(u => u.RecordDate >= DateTime.Now.AddDays(-30)),
