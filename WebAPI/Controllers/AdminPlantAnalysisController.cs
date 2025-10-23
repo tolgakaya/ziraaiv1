@@ -23,7 +23,6 @@ namespace WebAPI.Controllers
             {
                 TargetUserId = request.TargetUserId,
                 ImageUrl = request.ImageUrl,
-                AnalysisResult = request.AnalysisResult,
                 Notes = request.Notes,
                 AdminUserId = AdminUserId,
                 IpAddress = ClientIpAddress,
@@ -98,11 +97,6 @@ namespace WebAPI.Controllers
         /// Plant image URL
         /// </summary>
         public string ImageUrl { get; set; }
-
-        /// <summary>
-        /// Analysis result/report
-        /// </summary>
-        public string AnalysisResult { get; set; }
 
         /// <summary>
         /// Additional notes
