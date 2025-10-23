@@ -69,6 +69,7 @@ namespace Business
 
             services.AddTransient<IAuthenticationCoordinator, AuthenticationCoordinator>();
             services.AddTransient<Business.Services.Redemption.IRedemptionService, Business.Services.Redemption.RedemptionService>();
+            services.AddTransient<Business.Services.AdminAudit.IAdminAuditService, Business.Services.AdminAudit.AdminAuditService>();
 
             services.AddSingleton<ConfigurationManager>();
 
@@ -167,6 +168,7 @@ namespace Business
             services.AddTransient<ISponsorshipCodeRepository, SponsorshipCodeRepository>();
             services.AddTransient<IUserSubscriptionRepository, UserSubscriptionRepository>();
             services.AddTransient<ISubscriptionTierRepository, SubscriptionTierRepository>();
+            services.AddTransient<IAdminOperationLogRepository, AdminOperationLogRepository>();
 
             services.AddDbContext<ProjectDbContext, DArchInMemory>(ServiceLifetime.Transient);
             services.AddSingleton<MongoDbContextBase, MongoDbContext>();
@@ -193,6 +195,7 @@ namespace Business
             services.AddTransient<ISponsorshipCodeRepository, SponsorshipCodeRepository>();
             services.AddTransient<IUserSubscriptionRepository, UserSubscriptionRepository>();
             services.AddTransient<ISubscriptionTierRepository, SubscriptionTierRepository>();
+            services.AddTransient<IAdminOperationLogRepository, AdminOperationLogRepository>();
             services.AddDbContext<ProjectDbContext>();
 
             services.AddSingleton<MongoDbContextBase, MongoDbContext>();
@@ -218,6 +221,7 @@ namespace Business
             services.AddTransient<ISponsorshipCodeRepository, SponsorshipCodeRepository>();
             services.AddTransient<IUserSubscriptionRepository, UserSubscriptionRepository>();
             services.AddTransient<ISubscriptionTierRepository, SubscriptionTierRepository>();
+            services.AddTransient<IAdminOperationLogRepository, AdminOperationLogRepository>();
 
             services.AddDbContext<ProjectDbContext>();
 
