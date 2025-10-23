@@ -180,8 +180,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         accessPercentage,
                         sponsorProfile);
 
-                    // NEW: Add messaging status
-                    dto.MessagingStatus = messagingStatuses.ContainsKey(analysis.Id)
+                    // Add messaging status (both nested and flat for backward compatibility)
+                    var messagingStatus = messagingStatuses.ContainsKey(analysis.Id)
                         ? messagingStatuses[analysis.Id]
                         : new MessagingStatusDto
                         {
@@ -190,6 +190,32 @@ namespace Business.Handlers.PlantAnalyses.Queries
                             UnreadCount = 0,
                             ConversationStatus = ConversationStatus.NoContact
                         };
+
+                    // Nested format (DEPRECATED but kept for backward compatibility)
+                    dto.MessagingStatus = messagingStatus;
+
+                    // 🆕 Flat fields (Mobile team preference)
+                    if (messagingStatus.HasMessages)
+                    {
+                        dto.UnreadMessageCount = messagingStatus.UnreadCount;
+                        dto.TotalMessageCount = messagingStatus.TotalMessageCount;
+                        dto.LastMessageDate = messagingStatus.LastMessageDate;
+                        dto.LastMessagePreview = messagingStatus.LastMessagePreview;
+                        dto.LastMessageSenderRole = messagingStatus.LastMessageBy;
+                        dto.HasUnreadFromFarmer = messagingStatus.UnreadCount > 0 && messagingStatus.LastMessageBy == "farmer";
+                        dto.ConversationStatus = messagingStatus.ConversationStatus.ToString();
+                    }
+                    else
+                    {
+                        // No messages - all fields null (mobile team requirement)
+                        dto.UnreadMessageCount = 0;
+                        dto.TotalMessageCount = 0;
+                        dto.LastMessageDate = null;
+                        dto.LastMessagePreview = null;
+                        dto.LastMessageSenderRole = null;
+                        dto.HasUnreadFromFarmer = false;
+                        dto.ConversationStatus = "None";
+                    }
 
                     return dto;
                 }).ToArray();
@@ -212,14 +238,16 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         .Count(a => a.AnalysisDate.Month == DateTime.Now.Month &&
                                     a.AnalysisDate.Year == DateTime.Now.Year),
 
-                    // NEW: Messaging statistics
+                    // Messaging statistics
                     ContactedAnalyses = messagingStatuses.Count(kvp => kvp.Value.HasMessages),
                     NotContactedAnalyses = totalCount - messagingStatuses.Count(kvp => kvp.Value.HasMessages),
                     ActiveConversations = messagingStatuses.Count(kvp =>
                         kvp.Value.ConversationStatus == ConversationStatus.Active),
                     PendingResponses = messagingStatuses.Count(kvp =>
                         kvp.Value.ConversationStatus == ConversationStatus.Pending),
-                    TotalUnreadMessages = messagingStatuses.Sum(kvp => kvp.Value.UnreadCount)
+                    TotalUnreadMessages = messagingStatuses.Sum(kvp => kvp.Value.UnreadCount),
+                    // 🆕 Mobile team requirement: count of analyses with unread messages
+                    AnalysesWithUnread = messagingStatuses.Count(kvp => kvp.Value.UnreadCount > 0)
                 };
 
                 var response = new SponsoredAnalysesListResponseDto

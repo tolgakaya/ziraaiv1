@@ -29,13 +29,16 @@ namespace Business.Handlers.PlantAnalyses.Queries
         {
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
             private readonly IFileStorageService _fileStorageService;
+            private readonly IAnalysisMessageRepository _messageRepository;
 
             public GetPlantAnalysesForFarmerQueryHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
-                IFileStorageService fileStorageService)
+                IFileStorageService fileStorageService,
+                IAnalysisMessageRepository messageRepository)
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _fileStorageService = fileStorageService;
+                _messageRepository = messageRepository;
             }
 
             public async Task<IDataResult<PlantAnalysisListResponseDto>> Handle(GetPlantAnalysesForFarmerQuery request, CancellationToken cancellationToken)
@@ -83,6 +86,13 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         .Take(request.PageSize)
                         .ToList();
 
+                    // 🆕 Fetch messaging status for all analyses (BEFORE pagination for farmer's view)
+                    // Farmer sees messages FROM sponsors
+                    var analysisIds = plantAnalyses.Select(a => a.Id).ToArray();
+                    var messagingStatuses = analysisIds.Length > 0
+                        ? await _messageRepository.GetMessagingStatusForAnalysesAsync(request.UserId, analysisIds)
+                        : new Dictionary<int, MessagingStatusDto>();
+
                     var analysisItems = new List<PlantAnalysisListItemDto>();
 
                     foreach (var analysis in plantAnalyses)
@@ -128,6 +138,41 @@ namespace Business.Handlers.PlantAnalyses.Queries
                             TotalCostTry = analysis.TotalCostTry,
                             AiModel = analysis.AiModel
                         };
+
+                        // 🆕 Add messaging status (flat fields for farmer's view)
+                        var messagingStatus = messagingStatuses.ContainsKey(analysis.Id)
+                            ? messagingStatuses[analysis.Id]
+                            : new MessagingStatusDto
+                            {
+                                HasMessages = false,
+                                TotalMessageCount = 0,
+                                UnreadCount = 0,
+                                ConversationStatus = Entities.Concrete.ConversationStatus.NoContact
+                            };
+
+                        // Populate flat messaging fields
+                        if (messagingStatus.HasMessages)
+                        {
+                            listItem.UnreadMessageCount = messagingStatus.UnreadCount;
+                            listItem.TotalMessageCount = messagingStatus.TotalMessageCount;
+                            listItem.LastMessageDate = messagingStatus.LastMessageDate;
+                            listItem.LastMessagePreview = messagingStatus.LastMessagePreview;
+                            listItem.LastMessageSenderRole = messagingStatus.LastMessageBy;
+                            // For farmers: check if unread messages are FROM sponsor
+                            listItem.HasUnreadFromSponsor = messagingStatus.UnreadCount > 0 && messagingStatus.LastMessageBy == "sponsor";
+                            listItem.ConversationStatus = messagingStatus.ConversationStatus.ToString();
+                        }
+                        else
+                        {
+                            // No messages - set defaults
+                            listItem.UnreadMessageCount = 0;
+                            listItem.TotalMessageCount = 0;
+                            listItem.LastMessageDate = null;
+                            listItem.LastMessagePreview = null;
+                            listItem.LastMessageSenderRole = null;
+                            listItem.HasUnreadFromSponsor = false;
+                            listItem.ConversationStatus = "None";
+                        }
 
                         analysisItems.Add(listItem);
                     }
