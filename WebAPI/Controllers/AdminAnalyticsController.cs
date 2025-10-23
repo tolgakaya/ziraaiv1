@@ -95,5 +95,32 @@ namespace WebAPI.Controllers
 
             return Ok(new { Data = dashboardData, Success = true, Message = "Dashboard data retrieved successfully" });
         }
+
+        /// <summary>
+        /// Export statistics as CSV file
+        /// </summary>
+        /// <param name="startDate">Start date for filtering (optional)</param>
+        /// <param name="endDate">End date for filtering (optional)</param>
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportStatistics(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            var query = new ExportStatisticsQuery
+            {
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var result = await Mediator.Send(query);
+            
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            var fileName = $"ziraai-statistics-{DateTime.Now:yyyy-MM-dd-HHmmss}.csv";
+            return File(result.Data, "text/csv", fileName);
+        }
     }
 }
