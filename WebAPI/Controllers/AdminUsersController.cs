@@ -1,5 +1,6 @@
 using Business.Handlers.AdminUsers.Commands;
 using Business.Handlers.AdminUsers.Queries;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
@@ -116,6 +117,27 @@ namespace WebAPI.Controllers
             var result = await Mediator.Send(command);
             return GetResponseOnlyResult(result);
         }
+
+        /// <summary>
+        /// Bulk deactivate multiple users
+        /// </summary>
+        /// <param name="request">Bulk deactivation request</param>
+        [HttpPost("bulk/deactivate")]
+        public async Task<IActionResult> BulkDeactivateUsers([FromBody] BulkDeactivateUsersRequest request)
+        {
+            var command = new BulkDeactivateUsersCommand
+            {
+                UserIds = request.UserIds,
+                Reason = request.Reason,
+                AdminUserId = AdminUserId,
+                IpAddress = ClientIpAddress,
+                UserAgent = UserAgent,
+                RequestPath = RequestPath
+            };
+
+            var result = await Mediator.Send(command);
+            return GetResponseOnlyResult(result);
+        }
     }
 
     /// <summary>
@@ -136,6 +158,22 @@ namespace WebAPI.Controllers
     {
         /// <summary>
         /// Reason for reactivation
+        /// </summary>
+        public string Reason { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for bulk deactivating users
+    /// </summary>
+    public class BulkDeactivateUsersRequest
+    {
+        /// <summary>
+        /// List of user IDs to deactivate
+        /// </summary>
+        public List<int> UserIds { get; set; }
+
+        /// <summary>
+        /// Reason for bulk deactivation
         /// </summary>
         public string Reason { get; set; }
     }

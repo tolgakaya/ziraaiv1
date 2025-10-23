@@ -1,6 +1,7 @@
 using Business.Handlers.AdminSubscriptions.Commands;
 using Business.Handlers.AdminSubscriptions.Queries;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace WebAPI.Controllers
@@ -122,6 +123,27 @@ namespace WebAPI.Controllers
             var result = await Mediator.Send(command);
             return GetResponseOnlyResult(result);
         }
+
+        /// <summary>
+        /// Bulk cancel multiple subscriptions
+        /// </summary>
+        /// <param name="request">Bulk cancellation request</param>
+        [HttpPost("bulk/cancel")]
+        public async Task<IActionResult> BulkCancelSubscriptions([FromBody] BulkCancelSubscriptionsRequest request)
+        {
+            var command = new BulkCancelSubscriptionsCommand
+            {
+                SubscriptionIds = request.SubscriptionIds,
+                CancellationReason = request.CancellationReason,
+                AdminUserId = AdminUserId,
+                IpAddress = ClientIpAddress,
+                UserAgent = UserAgent,
+                RequestPath = RequestPath
+            };
+
+            var result = await Mediator.Send(command);
+            return GetResponseOnlyResult(result);
+        }
     }
 
     /// <summary>
@@ -183,6 +205,22 @@ namespace WebAPI.Controllers
     {
         /// <summary>
         /// Reason for cancellation
+        /// </summary>
+        public string CancellationReason { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for bulk canceling subscriptions
+    /// </summary>
+    public class BulkCancelSubscriptionsRequest
+    {
+        /// <summary>
+        /// List of subscription IDs to cancel
+        /// </summary>
+        public List<int> SubscriptionIds { get; set; }
+
+        /// <summary>
+        /// Reason for bulk cancellation
         /// </summary>
         public string CancellationReason { get; set; }
     }
