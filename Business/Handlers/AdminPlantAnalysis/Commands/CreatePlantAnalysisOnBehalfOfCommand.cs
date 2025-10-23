@@ -58,6 +58,7 @@ namespace Business.Handlers.AdminPlantAnalysis.Commands
                 var now = DateTime.Now;
                 var analysis = new PlantAnalysis
                 {
+                    AnalysisId = Guid.NewGuid().ToString(), // Generate unique AnalysisId
                     UserId = request.TargetUserId,
                     ImageUrl = request.ImageUrl,
                     AnalysisResult = request.AnalysisResult,
@@ -65,10 +66,11 @@ namespace Business.Handlers.AdminPlantAnalysis.Commands
                     Status = true,
                     CreatedDate = now,
                     AnalysisDate = now,
+                    Timestamp = now,
                     IsOnBehalfOf = true,
                     CreatedByAdminId = request.AdminUserId,
-                    Notes = string.IsNullOrEmpty(request.Notes) 
-                        ? "[Created by Admin]" 
+                    Notes = string.IsNullOrEmpty(request.Notes)
+                        ? "[Created by Admin]"
                         : $"[Created by Admin] {request.Notes}"
                 };
 
