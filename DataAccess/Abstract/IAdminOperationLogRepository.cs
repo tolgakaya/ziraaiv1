@@ -11,7 +11,7 @@ namespace DataAccess.Abstract
     /// Repository interface for AdminOperationLog entity
     /// Provides specialized queries for audit trail operations
     /// </summary>
-    public interface IAdminOperationLogRepository : IRepository<AdminOperationLog>
+    public interface IAdminOperationLogRepository : IEntityRepository<AdminOperationLog>
     {
         /// <summary>
         /// Get filtered and paginated admin operation logs
