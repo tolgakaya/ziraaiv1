@@ -159,6 +159,18 @@ namespace Entities.Concrete
         public string Pests { get; set; } // Legacy field - JSON string
         public string AnalysisResult { get; set; } // Legacy field - JSON string
         public string N8nWebhookResponse { get; set; } // Legacy field - JSON string
+
+        // Admin On-Behalf-Of (OBO) Tracking
+        /// <summary>
+        /// Admin user ID who created this analysis on behalf of a farmer
+        /// </summary>
+        public int? CreatedByAdminId { get; set; }
+
+        /// <summary>
+        /// Indicates if this analysis was created by an admin on behalf of a user
+        /// </summary>
+        public bool IsOnBehalfOf { get; set; } = false;
+
         // Navigation properties
         public virtual SponsorshipCode SponsorshipCode { get; set; }
         public virtual User SponsorUser { get; set; }
