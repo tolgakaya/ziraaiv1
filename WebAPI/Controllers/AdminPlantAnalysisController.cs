@@ -68,18 +68,33 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="page">Page number (default: 1)</param>
         /// <param name="pageSize">Page size (default: 50)</param>
+        /// <summary>
+        /// Get all analyses created on behalf of users
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 50)</param>
+        /// <param name="adminUserId">Filter by admin user ID (optional)</param>
+        /// <param name="targetUserId">Filter by target user ID (optional)</param>
+        /// <param name="status">Filter by status (optional)</param>
         [HttpGet("on-behalf-of")]
         public async Task<IActionResult> GetAllOnBehalfOfAnalyses(
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 50)
+            [FromQuery] int pageSize = 50,
+            [FromQuery] int? adminUserId = null,
+            [FromQuery] int? targetUserId = null,
+            [FromQuery] string status = null)
         {
-            // This would require a new query or use existing with filter
-            // For now, returning info message
-            return Ok(new 
-            { 
-                Success = true, 
-                Message = "Use audit logs to view all OBO operations: GET /api/admin/audit/on-behalf-of" 
-            });
+            var query = new GetAllOBOAnalysesQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                AdminUserId = adminUserId,
+                TargetUserId = targetUserId,
+                Status = status
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
         }
     }
 
