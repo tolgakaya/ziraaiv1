@@ -489,3 +489,7 @@ WebAPIlogs/
 
 # Windows null device files
 nul
+
+# Admin user creation scripts (security sensitive - keep local only)
+claudedocs/AdminOperations/CREATE_ADMIN_*.sql
+claudedocs/AdminOperations/CREATE_ADMIN_*.md
