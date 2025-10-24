@@ -726,6 +726,7 @@ namespace WebAPI.Controllers
             // NEW: Message Status Filters
             [FromQuery] string filterByMessageStatus = null,
             [FromQuery] bool? hasUnreadMessages = null,
+            [FromQuery] bool? hasUnreadForCurrentUser = null,
             [FromQuery] int? unreadMessagesMin = null)
         {
             try
@@ -755,6 +756,7 @@ namespace WebAPI.Controllers
                     // NEW: Pass messaging filters
                     FilterByMessageStatus = filterByMessageStatus,
                     HasUnreadMessages = hasUnreadMessages,
+                    HasUnreadForCurrentUser = hasUnreadForCurrentUser,
                     UnreadMessagesMin = unreadMessagesMin
                 };
 

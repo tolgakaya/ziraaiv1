@@ -36,9 +36,16 @@ namespace Business.Handlers.PlantAnalyses.Queries
         public string FilterByMessageStatus { get; set; }
 
         /// <summary>
-        /// Filter to show only analyses with unread messages from sponsor
+        /// Filter to show only analyses with unread messages (from any sender)
         /// </summary>
         public bool? HasUnreadMessages { get; set; }
+
+        /// <summary>
+        /// Filter to show only analyses with unread messages FOR current user (sent TO them)
+        /// For farmers: unread messages FROM sponsor
+        /// For sponsors: unread messages FROM farmer
+        /// </summary>
+        public bool? HasUnreadForCurrentUser { get; set; }
 
         /// <summary>
         /// Filter to show analyses with at least this many unread messages
@@ -113,14 +120,23 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                     if (request.HasUnreadMessages.HasValue && request.HasUnreadMessages.Value)
                     {
-                        filteredAnalyses = filteredAnalyses.Where(a => 
+                        filteredAnalyses = filteredAnalyses.Where(a =>
                             messagingStatuses.ContainsKey(a.Id) &&
                             messagingStatuses[a.Id].UnreadCount > 0);
                     }
 
+                    // 🆕 NEW: Filter for unread messages FOR current user (from sponsor to farmer)
+                    if (request.HasUnreadForCurrentUser.HasValue && request.HasUnreadForCurrentUser.Value)
+                    {
+                        filteredAnalyses = filteredAnalyses.Where(a =>
+                            messagingStatuses.ContainsKey(a.Id) &&
+                            messagingStatuses[a.Id].UnreadCount > 0 &&
+                            messagingStatuses[a.Id].LastMessageBy == "sponsor"); // Farmer receives FROM sponsor
+                    }
+
                     if (request.UnreadMessagesMin.HasValue)
                     {
-                        filteredAnalyses = filteredAnalyses.Where(a => 
+                        filteredAnalyses = filteredAnalyses.Where(a =>
                             messagingStatuses.ContainsKey(a.Id) &&
                             messagingStatuses[a.Id].UnreadCount >= request.UnreadMessagesMin.Value);
                     }

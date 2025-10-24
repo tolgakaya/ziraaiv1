@@ -43,13 +43,20 @@ namespace Business.Handlers.PlantAnalyses.Queries
         public string FilterByMessageStatus { get; set; }
 
         /// <summary>
-        /// Filter to show only analyses with unread messages from farmer
-        /// </summary>
+        /// Filter to show only analyses with unread messages (from any sender)
+        /// &lt;/summary&gt;
         public bool? HasUnreadMessages { get; set; }
 
-        /// <summary>
+        /// &lt;summary&gt;
+        /// Filter to show only analyses with unread messages FOR current user (sent TO them)
+        /// For farmers: unread messages FROM sponsor
+        /// For sponsors: unread messages FROM farmer
+        /// &lt;/summary&gt;
+        public bool? HasUnreadForCurrentUser { get; set; }
+
+        /// &lt;summary&gt;
         /// Filter to show analyses with at least this many unread messages
-        /// </summary>
+        /// &lt;/summary&gt;
         public int? UnreadMessagesMin { get; set; }
 
         public class GetSponsoredAnalysesListQueryHandler : IRequestHandler<GetSponsoredAnalysesListQuery, IDataResult<SponsoredAnalysesListResponseDto>>
@@ -153,6 +160,16 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     filteredAnalyses = filteredAnalyses
                         .Where(a => messagingStatuses.ContainsKey(a.Id) &&
                                    messagingStatuses[a.Id].UnreadCount > 0)
+                        .ToList();
+                }
+
+                // 🆕 NEW: Filter for unread messages FOR current user (from farmer to sponsor)
+                if (request.HasUnreadForCurrentUser.HasValue && request.HasUnreadForCurrentUser.Value)
+                {
+                    filteredAnalyses = filteredAnalyses
+                        .Where(a => messagingStatuses.ContainsKey(a.Id) &&
+                                   messagingStatuses[a.Id].UnreadCount > 0 &&
+                                   messagingStatuses[a.Id].LastMessageBy == "farmer") // Sponsor receives FROM farmer
                         .ToList();
                 }
 

@@ -481,6 +481,7 @@ namespace WebAPI.Controllers
             // 🆕 NEW: Message status filters (backward compatible - all optional)
             [FromQuery] string filterByMessageStatus = null,
             [FromQuery] bool? hasUnreadMessages = null,
+            [FromQuery] bool? hasUnreadForCurrentUser = null,
             [FromQuery] int? unreadMessagesMin = null)
         {
             var userId = GetUserId();
@@ -504,6 +505,7 @@ namespace WebAPI.Controllers
                 SortOrder = sortOrder,
                 FilterByMessageStatus = filterByMessageStatus,
                 HasUnreadMessages = hasUnreadMessages,
+                HasUnreadForCurrentUser = hasUnreadForCurrentUser,
                 UnreadMessagesMin = unreadMessagesMin
             };
             
