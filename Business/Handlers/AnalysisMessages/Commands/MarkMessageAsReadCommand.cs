@@ -43,11 +43,8 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 // Only update if not already read
                 if (!message.IsRead)
                 {
-                    message.IsRead = true;
-                    message.ReadDate = DateTime.Now;
-                    message.MessageStatus = "Read";
-
-                    _messageRepository.Update(message);
+                    // ✅ FIX: Use repository method that includes SaveChanges
+                    await _messageRepository.MarkAsReadAsync(request.MessageId);
 
                     // Send SignalR notification to sender
                     await _hubContext.Clients.User(message.FromUserId.ToString())
@@ -55,7 +52,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         {
                             MessageId = message.Id,
                             ReadByUserId = request.UserId,
-                            ReadAt = message.ReadDate
+                            ReadAt = DateTime.Now
                         });
                 }
 
