@@ -1,0 +1,19 @@
+{
+  "data": {
+    "id": 71,
+    "analysisDate": "2025-10-23T18:49:52.486219",
+    "analysisStatus": "Processing",
+    "status": true,
+    "createdDate": "2025-10-23T18:49:52.3154178+00:00",
+    "analysisId": "async_analysis_20251023_184952_08986436",
+    "timestamp": "2025-10-23T18:49:52.3154178+00:00",
+    "userId": 167,
+    "notes": "[Created by Admin] TEST: Admin async analysis",
+    "imageUrl": "https://i.imgur.com/test.jpg",
+    "imagePath": "https://i.imgur.com/test.jpg",
+    "createdByAdminId": 166,
+    "isOnBehalfOf": true
+  },
+  "success": true,
+  "message": "Plant analysis queued successfully for user Test User General. Analysis ID: async_analysis_20251023_184952_08986436. Status will be updated when processing completes."
+}
