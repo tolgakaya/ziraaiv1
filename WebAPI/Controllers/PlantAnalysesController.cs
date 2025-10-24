@@ -474,7 +474,14 @@ namespace WebAPI.Controllers
             [FromQuery] string status = null,
             [FromQuery] DateTime? fromDate = null,
             [FromQuery] DateTime? toDate = null,
-            [FromQuery] string cropType = null)
+            [FromQuery] string cropType = null,
+            // 🆕 NEW: Sorting parameters (backward compatible - defaults match old behavior)
+            [FromQuery] string sortBy = "date",
+            [FromQuery] string sortOrder = "desc",
+            // 🆕 NEW: Message status filters (backward compatible - all optional)
+            [FromQuery] string filterByMessageStatus = null,
+            [FromQuery] bool? hasUnreadMessages = null,
+            [FromQuery] int? unreadMessagesMin = null)
         {
             var userId = GetUserId();
             
@@ -491,7 +498,13 @@ namespace WebAPI.Controllers
                 Status = status,
                 FromDate = fromDate,
                 ToDate = toDate,
-                CropType = cropType
+                CropType = cropType,
+                // 🆕 NEW: Pass sorting and filtering parameters
+                SortBy = sortBy,
+                SortOrder = sortOrder,
+                FilterByMessageStatus = filterByMessageStatus,
+                HasUnreadMessages = hasUnreadMessages,
+                UnreadMessagesMin = unreadMessagesMin
             };
             
             var result = await _mediator.Send(query);

@@ -25,6 +25,26 @@ namespace Business.Handlers.PlantAnalyses.Queries
         public DateTime? ToDate { get; set; }
         public string CropType { get; set; }
 
+        // 🆕 NEW: Sorting parameters (from sponsor endpoint)
+        public string SortBy { get; set; } = "date"; // date, healthScore, messageCount, unreadCount, lastMessageDate
+        public string SortOrder { get; set; } = "desc"; // asc, desc
+
+        // 🆕 NEW: Message status filters (from sponsor endpoint)
+        /// <summary>
+        /// Filter by message status: all, contacted, notContacted, hasResponse, noResponse, active, idle
+        /// </summary>
+        public string FilterByMessageStatus { get; set; }
+
+        /// <summary>
+        /// Filter to show only analyses with unread messages from sponsor
+        /// </summary>
+        public bool? HasUnreadMessages { get; set; }
+
+        /// <summary>
+        /// Filter to show analyses with at least this many unread messages
+        /// </summary>
+        public int? UnreadMessagesMin { get; set; }
+
         public class GetPlantAnalysesForFarmerQueryHandler : IRequestHandler<GetPlantAnalysesForFarmerQuery, IDataResult<PlantAnalysisListResponseDto>>
         {
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
@@ -76,22 +96,46 @@ namespace Business.Handlers.PlantAnalyses.Queries
                             p.CropType.ToLower().Contains(request.CropType.ToLower()));
                     }
 
-                    // Get total count for pagination
+                    // 🆕 Fetch messaging status for all analyses (BEFORE applying message filters and sorting)
+                    var allAnalysisIds = filteredAnalyses.Select(a => a.Id).ToArray();
+                    var messagingStatuses = allAnalysisIds.Length > 0
+                        ? await _messageRepository.GetMessagingStatusForAnalysesAsync(request.UserId, allAnalysisIds)
+                        : new Dictionary<int, MessagingStatusDto>();
+
+                    // 🆕 NEW: Apply messaging filters (BEFORE pagination)
+                    if (!string.IsNullOrEmpty(request.FilterByMessageStatus))
+                    {
+                        filteredAnalyses = ApplyMessageStatusFilter(
+                            filteredAnalyses,
+                            messagingStatuses,
+                            request.FilterByMessageStatus);
+                    }
+
+                    if (request.HasUnreadMessages.HasValue && request.HasUnreadMessages.Value)
+                    {
+                        filteredAnalyses = filteredAnalyses.Where(a => 
+                            messagingStatuses.ContainsKey(a.Id) &&
+                            messagingStatuses[a.Id].UnreadCount > 0);
+                    }
+
+                    if (request.UnreadMessagesMin.HasValue)
+                    {
+                        filteredAnalyses = filteredAnalyses.Where(a => 
+                            messagingStatuses.ContainsKey(a.Id) &&
+                            messagingStatuses[a.Id].UnreadCount >= request.UnreadMessagesMin.Value);
+                    }
+
+                    // 🆕 NEW: Apply dynamic sorting (BEFORE pagination)
+                    filteredAnalyses = ApplySorting(filteredAnalyses, messagingStatuses, request.SortBy, request.SortOrder);
+
+                    // Get total count AFTER all filters
                     var totalCount = filteredAnalyses.Count();
 
-                    // Order by creation date (newest first) and apply pagination
+                    // Apply pagination
                     var plantAnalyses = filteredAnalyses
-                        .OrderByDescending(p => p.CreatedDate)
                         .Skip((request.Page - 1) * request.PageSize)
                         .Take(request.PageSize)
                         .ToList();
-
-                    // 🆕 Fetch messaging status for all analyses (BEFORE pagination for farmer's view)
-                    // Farmer sees messages FROM sponsors
-                    var analysisIds = plantAnalyses.Select(a => a.Id).ToArray();
-                    var messagingStatuses = analysisIds.Length > 0
-                        ? await _messageRepository.GetMessagingStatusForAnalysesAsync(request.UserId, analysisIds)
-                        : new Dictionary<int, MessagingStatusDto>();
 
                     var analysisItems = new List<PlantAnalysisListItemDto>();
 
@@ -196,6 +240,102 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     return new ErrorDataResult<PlantAnalysisListResponseDto>(
                         $"An error occurred while retrieving plant analyses: {ex.Message}");
                 }
+            }
+
+            /// <summary>
+            /// Apply dynamic sorting based on sortBy and sortOrder parameters
+            /// </summary>
+            private IQueryable<Entities.Concrete.PlantAnalysis> ApplySorting(
+                IQueryable<Entities.Concrete.PlantAnalysis> analyses,
+                Dictionary<int, MessagingStatusDto> messagingStatuses,
+                string sortBy,
+                string sortOrder)
+            {
+                var analysesList = analyses.ToList();
+
+                // For message-based sorting, we need to work with the list
+                if (sortBy?.ToLower() == "messagecount" || 
+                    sortBy?.ToLower() == "unreadcount" || 
+                    sortBy?.ToLower() == "lastmessagedate")
+                {
+                    IEnumerable<Entities.Concrete.PlantAnalysis> sorted = sortBy.ToLower() switch
+                    {
+                        "messagecount" => sortOrder?.ToLower() == "asc"
+                            ? analysesList.OrderBy(a => messagingStatuses.ContainsKey(a.Id) ? messagingStatuses[a.Id].TotalMessageCount : 0)
+                            : analysesList.OrderByDescending(a => messagingStatuses.ContainsKey(a.Id) ? messagingStatuses[a.Id].TotalMessageCount : 0),
+                        
+                        "unreadcount" => sortOrder?.ToLower() == "asc"
+                            ? analysesList.OrderBy(a => messagingStatuses.ContainsKey(a.Id) ? messagingStatuses[a.Id].UnreadCount : 0)
+                            : analysesList.OrderByDescending(a => messagingStatuses.ContainsKey(a.Id) ? messagingStatuses[a.Id].UnreadCount : 0),
+                        
+                        "lastmessagedate" => sortOrder?.ToLower() == "asc"
+                            ? analysesList.OrderBy(a => messagingStatuses.ContainsKey(a.Id) ? messagingStatuses[a.Id].LastMessageDate ?? DateTime.MinValue : DateTime.MinValue)
+                            : analysesList.OrderByDescending(a => messagingStatuses.ContainsKey(a.Id) ? messagingStatuses[a.Id].LastMessageDate ?? DateTime.MinValue : DateTime.MinValue),
+                        
+                        _ => analysesList.OrderByDescending(a => a.CreatedDate)
+                    };
+
+                    return sorted.AsQueryable();
+                }
+
+                // For database-based sorting (healthScore, cropType, date)
+                return sortBy?.ToLower() switch
+                {
+                    "healthscore" => sortOrder?.ToLower() == "asc"
+                        ? analyses.OrderBy(a => a.OverallHealthScore)
+                        : analyses.OrderByDescending(a => a.OverallHealthScore),
+                    
+                    "croptype" => sortOrder?.ToLower() == "asc"
+                        ? analyses.OrderBy(a => a.CropType)
+                        : analyses.OrderByDescending(a => a.CropType),
+                    
+                    _ => sortOrder?.ToLower() == "asc" // default: date
+                        ? analyses.OrderBy(a => a.CreatedDate)
+                        : analyses.OrderByDescending(a => a.CreatedDate)
+                };
+            }
+
+            /// <summary>
+            /// Apply message status filter to analyses list
+            /// </summary>
+            private IQueryable<Entities.Concrete.PlantAnalysis> ApplyMessageStatusFilter(
+                IQueryable<Entities.Concrete.PlantAnalysis> analyses,
+                Dictionary<int, MessagingStatusDto> messagingStatuses,
+                string filterValue)
+            {
+                var analysesList = analyses.ToList();
+
+                var filtered = filterValue?.ToLower() switch
+                {
+                    "contacted" => analysesList.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasMessages),
+
+                    "notcontacted" => analysesList.Where(a =>
+                        !messagingStatuses.ContainsKey(a.Id) ||
+                        !messagingStatuses[a.Id].HasMessages),
+
+                    "hasresponse" => analysesList.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasFarmerResponse),
+
+                    "noresponse" => analysesList.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasMessages &&
+                        !messagingStatuses[a.Id].HasFarmerResponse),
+
+                    "active" => analysesList.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].ConversationStatus == Entities.Concrete.ConversationStatus.Active),
+
+                    "idle" => analysesList.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].ConversationStatus == Entities.Concrete.ConversationStatus.Idle),
+
+                    _ => analysesList // "all" or invalid value - return unfiltered
+                };
+
+                return filtered.AsQueryable();
             }
 
             private string GetImageUrlFromAnalysis(Entities.Concrete.PlantAnalysis analysis)
