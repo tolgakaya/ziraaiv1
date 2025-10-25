@@ -518,6 +518,212 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get comprehensive messaging analytics for current sponsor
+        /// Includes message volumes, response metrics, conversation metrics, content types, and satisfaction ratings
+        /// Optional date range filtering for custom analytics periods
+        /// Cache TTL: 15 minutes for real-time insights
+        /// </summary>
+        /// <param name="startDate">Start date for analytics (optional)</param>
+        /// <param name="endDate">End date for analytics (optional)</param>
+        /// <returns>Messaging analytics with top 10 most active conversations</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("messaging-analytics")]
+        public async Task<IActionResult> GetMessagingAnalytics(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[MessagingAnalytics] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("[MessagingAnalytics] Fetching analytics for sponsor {SponsorId}", userId.Value);
+
+                var query = new GetSponsorMessagingAnalyticsQuery
+                {
+                    SponsorId = userId.Value,
+                    StartDate = startDate,
+                    EndDate = endDate
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[MessagingAnalytics] Successfully retrieved analytics for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[MessagingAnalytics] Failed to retrieve analytics for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[MessagingAnalytics] Error retrieving analytics for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Messaging analytics retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get comprehensive impact analytics for current sponsor
+        /// Includes farmer reach, agricultural impact, geographic coverage, and severity distribution
+        /// Cache TTL: 6 hours for relatively stable impact data
+        /// </summary>
+        /// <returns>Impact analytics with farmer, agricultural, and geographic metrics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("impact-analytics")]
+        public async Task<IActionResult> GetImpactAnalytics()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[ImpactAnalytics] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("[ImpactAnalytics] Fetching analytics for sponsor {SponsorId}", userId.Value);
+
+                var query = new GetSponsorImpactAnalyticsQuery
+                {
+                    SponsorId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[ImpactAnalytics] Successfully retrieved analytics for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[ImpactAnalytics] Failed to retrieve analytics for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[ImpactAnalytics] Error retrieving analytics for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Impact analytics retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get comprehensive temporal analytics for current sponsor
+        /// Includes time-series data with trends, growth metrics, and peak performance
+        /// Supports Day, Week, or Month grouping for flexible analysis periods
+        /// Cache TTL: 1 hour for relatively fresh temporal data
+        /// </summary>
+        /// <param name="startDate">Start date for analytics (optional, defaults to 30 days ago)</param>
+        /// <param name="endDate">End date for analytics (optional, defaults to today)</param>
+        /// <param name="groupBy">Grouping period: Day, Week, or Month (default: Day)</param>
+        /// <returns>Temporal analytics with time-series data, trends, and peak metrics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("temporal-analytics")]
+        public async Task<IActionResult> GetTemporalAnalytics(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string groupBy = "Day")
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[TemporalAnalytics] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                // Validate groupBy parameter
+                var validGroupings = new[] { "Day", "Week", "Month" };
+                if (!validGroupings.Contains(groupBy, StringComparer.OrdinalIgnoreCase))
+                {
+                    return BadRequest(new ErrorResult("Invalid groupBy parameter. Use Day, Week, or Month."));
+                }
+
+                _logger.LogInformation("[TemporalAnalytics] Fetching analytics for sponsor {SponsorId} with grouping {GroupBy}", 
+                    userId.Value, groupBy);
+
+                var query = new GetSponsorTemporalAnalyticsQuery
+                {
+                    SponsorId = userId.Value,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    GroupBy = groupBy
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[TemporalAnalytics] Successfully retrieved analytics for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[TemporalAnalytics] Failed to retrieve analytics for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[TemporalAnalytics] Error retrieving analytics for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Temporal analytics retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get comprehensive ROI (Return on Investment) analytics for current sponsor
+        /// Includes cost/value breakdown, ROI metrics per tier, and efficiency statistics
+        /// Uses database configuration for AnalysisUnitValue (Sponsorship:AnalysisUnitValue key)
+        /// Cache TTL: 12 hours for relatively stable financial data
+        /// </summary>
+        /// <returns>ROI analytics with cost, value, ROI, and efficiency metrics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("roi-analytics")]
+        public async Task<IActionResult> GetROIAnalytics()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[ROIAnalytics] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("[ROIAnalytics] Fetching analytics for sponsor {SponsorId}", userId.Value);
+
+                var query = new GetSponsorROIAnalyticsQuery
+                {
+                    SponsorId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[ROIAnalytics] Successfully retrieved analytics for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[ROIAnalytics] Failed to retrieve analytics for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[ROIAnalytics] Error retrieving analytics for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"ROI analytics retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
         /// Send sponsorship links via SMS or WhatsApp to farmers
         /// </summary>
         /// <param name="command">Link sending details with recipients</param>
