@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
 using Core.Utilities.Security.Jwt;
+using Core.CrossCuttingConcerns.Caching;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
 using DataAccess.Concrete.EntityFramework.Contexts;
@@ -286,7 +287,8 @@ namespace Business.DependencyResolvers
                 c.Resolve<IMobileLoginRepository>(),
                 c.Resolve<ITokenHelper>(),
                 c.Resolve<Business.Adapters.SmsService.ISmsService>(),
-                c.Resolve<ILogger<Business.Services.Authentication.PhoneAuthenticationProvider>>()
+                c.Resolve<ILogger<Business.Services.Authentication.PhoneAuthenticationProvider>>(),
+                c.Resolve<ICacheManager>()
             )).InstancePerLifetimeScope();
             
             

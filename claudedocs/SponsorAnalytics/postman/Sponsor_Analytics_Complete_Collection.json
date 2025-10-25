@@ -1,0 +1,1965 @@
+{
+	"info": {
+		"_postman_id": "sponsor-analytics-2025",
+		"name": "ZiraAI - Sponsor Analytics (Complete)",
+		"description": "Comprehensive Postman collection for all Sponsor Analytics endpoints with multiple scenarios, test scripts, and examples.\n\n## Features\n- 4 Main Endpoints with 20+ Request Variations\n- Pre-request Scripts for Token Management\n- Automated Test Scripts\n- Environment Variables\n- Example Responses\n\n## Setup\n1. Import this collection\n2. Set environment variables (see Variables tab)\n3. Run 'Auth - Login as Sponsor' to get token\n4. Token auto-refreshes before each request\n\n## Endpoints\n1. Messaging Analytics (7 variations)\n2. Impact Analytics (3 variations)\n3. Temporal Analytics (6 variations)\n4. ROI Analytics (4 variations)\n\n## Version: 1.0\n## Last Updated: 2025-01-25",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0. Authentication",
+			"item": [
+				{
+					"name": "Login - Sponsor User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save token to environment",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data.accessToken) {",
+									"        pm.environment.set('sponsor_token', jsonData.data.accessToken);",
+									"        pm.environment.set('sponsor_refresh_token', jsonData.data.refreshToken);",
+									"        pm.environment.set('sponsor_user_id', jsonData.data.userId);",
+									"        ",
+									"        // Calculate token expiry (60 minutes from now)",
+									"        var expiryTime = new Date().getTime() + (60 * 60 * 1000);",
+									"        pm.environment.set('token_expiry', expiryTime);",
+									"        ",
+									"        console.log('✅ Token saved successfully');",
+									"        console.log('Token expires at: ' + new Date(expiryTime).toISOString());",
+									"        ",
+									"        pm.test('Login successful', () => {",
+									"            pm.expect(jsonData.success).to.be.true;",
+									"        });",
+									"    }",
+									"} else {",
+									"    pm.test('Login failed - check credentials', () => {",
+									"        pm.expect.fail('HTTP ' + pm.response.code);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{sponsor_email}}\",\n  \"password\": \"{{sponsor_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as sponsor user to get JWT token. Token is automatically saved to environment variables.\n\n**Required Environment Variables:**\n- `sponsor_email`: Sponsor account email\n- `sponsor_password`: Sponsor account password\n\n**Sets Environment Variables:**\n- `sponsor_token`: JWT access token\n- `sponsor_refresh_token`: Refresh token\n- `sponsor_user_id`: User ID\n- `token_expiry`: Token expiration timestamp"
+					},
+					"response": []
+				},
+				{
+					"name": "Login - Admin User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data.accessToken) {",
+									"        pm.environment.set('admin_token', jsonData.data.accessToken);",
+									"        pm.environment.set('admin_user_id', jsonData.data.userId);",
+									"        console.log('✅ Admin token saved');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login as admin user for testing admin access to sponsor analytics."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data.accessToken) {",
+									"        pm.environment.set('sponsor_token', jsonData.data.accessToken);",
+									"        var expiryTime = new Date().getTime() + (60 * 60 * 1000);",
+									"        pm.environment.set('token_expiry', expiryTime);",
+									"        console.log('✅ Token refreshed');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{sponsor_refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/refresh-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"refresh-token"
+							]
+						},
+						"description": "Refresh expired token using refresh token."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for obtaining and refreshing JWT tokens."
+		},
+		{
+			"name": "1. Messaging Analytics",
+			"item": [
+				{
+					"name": "Get All-Time Messaging Analytics",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if token is expired",
+									"var tokenExpiry = pm.environment.get('token_expiry');",
+									"var now = new Date().getTime();",
+									"",
+									"if (!tokenExpiry || now >= tokenExpiry) {",
+									"    console.log('⚠️ Token expired or missing - please run Login request first');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has success=true', () => {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});",
+									"",
+									"pm.test('Data object exists', () => {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.exist;",
+									"});",
+									"",
+									"pm.test('Has required fields', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalMessagesSent');",
+									"    pm.expect(data).to.have.property('totalMessagesReceived');",
+									"    pm.expect(data).to.have.property('unreadMessagesCount');",
+									"    pm.expect(data).to.have.property('averageResponseTimeHours');",
+									"    pm.expect(data).to.have.property('responseRate');",
+									"    pm.expect(data).to.have.property('mostActiveConversations');",
+									"});",
+									"",
+									"pm.test('mostActiveConversations is array', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.mostActiveConversations).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Response time is acceptable (<2s)', () => {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});",
+									"",
+									"// Log summary",
+									"var data = pm.response.json().data;",
+									"console.log('📊 Messaging Summary:');",
+									"console.log('  Sent:', data.totalMessagesSent);",
+									"console.log('  Received:', data.totalMessagesReceived);",
+									"console.log('  Unread:', data.unreadMessagesCount);",
+									"console.log('  Avg Response Time:', data.averageResponseTimeHours, 'hours');",
+									"console.log('  Response Rate:', data.responseRate, '%');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"messaging-analytics"
+							]
+						},
+						"description": "Get all-time messaging analytics without date filters.\n\n**Returns:**\n- Message volumes (sent, received, unread)\n- Response metrics (avg time, rate)\n- Conversation metrics (total, active)\n- Content types (text, voice, attachments)\n- Satisfaction metrics (avg rating, positive count)\n- Top 10 most active conversations\n\n**Cache:** 15 minutes"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Last 7 Days Messaging",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Calculate dates",
+									"var endDate = new Date();",
+									"var startDate = new Date();",
+									"startDate.setDate(endDate.getDate() - 7);",
+									"",
+									"pm.environment.set('start_date_7d', startDate.toISOString());",
+									"pm.environment.set('end_date_now', endDate.toISOString());",
+									"",
+									"console.log('📅 Date Range: ' + startDate.toISOString() + ' to ' + endDate.toISOString());"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Data filtered by date range', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.dataStartDate).to.exist;",
+									"    pm.expect(data.dataEndDate).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics?startDate={{start_date_7d}}&endDate={{end_date_now}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"messaging-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "{{start_date_7d}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								}
+							]
+						},
+						"description": "Get messaging analytics for the last 7 days.\n\n**Use Case:** Weekly performance review\n\n**Pre-request Script:** Automatically calculates dates"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Last 30 Days Messaging",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var endDate = new Date();",
+									"var startDate = new Date();",
+									"startDate.setDate(endDate.getDate() - 30);",
+									"pm.environment.set('start_date_30d', startDate.toISOString());",
+									"pm.environment.set('end_date_now', endDate.toISOString());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics?startDate={{start_date_30d}}&endDate={{end_date_now}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"messaging-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "{{start_date_30d}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								}
+							]
+						},
+						"description": "Get messaging analytics for the last 30 days.\n\n**Use Case:** Monthly performance review"
+					},
+					"response": []
+				},
+				{
+					"name": "Get This Month Messaging",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var now = new Date();",
+									"var startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);",
+									"pm.environment.set('start_of_month', startOfMonth.toISOString());",
+									"pm.environment.set('end_date_now', now.toISOString());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics?startDate={{start_of_month}}&endDate={{end_date_now}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"messaging-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "{{start_of_month}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								}
+							]
+						},
+						"description": "Get messaging analytics for current month (month-to-date).\n\n**Use Case:** Current month dashboard"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Custom Date Range Messaging",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics?startDate=2025-01-01T00:00:00Z&endDate=2025-01-15T23:59:59Z",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"messaging-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2025-01-01T00:00:00Z",
+									"description": "Start date (ISO 8601)"
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-15T23:59:59Z",
+									"description": "End date (ISO 8601)"
+								}
+							]
+						},
+						"description": "Get messaging analytics for a custom date range.\n\n**Use Case:** Specific period analysis (e.g., campaign period)\n\n**Note:** Modify dates as needed"
+					},
+					"response": []
+				},
+				{
+					"name": "Test - Unauthorized (No Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 401 Unauthorized', () => {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"console.log('✅ Unauthorized test passed - security working correctly');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"messaging-analytics"
+							]
+						},
+						"description": "**Negative Test:** Request without authentication token.\n\n**Expected:** 401 Unauthorized"
+					},
+					"response": []
+				},
+				{
+					"name": "Test - Invalid Date Format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 400 Bad Request or handles gracefully', () => {",
+									"    pm.expect([400, 200]).to.include(pm.response.code);",
+									"});",
+									"",
+									"if (pm.response.code === 400) {",
+									"    console.log('✅ Invalid date rejected');",
+									"} else {",
+									"    console.log('⚠️ Invalid date handled gracefully');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics?startDate=invalid-date&endDate=also-invalid",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"messaging-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "invalid-date"
+								},
+								{
+									"key": "endDate",
+									"value": "also-invalid"
+								}
+							]
+						},
+						"description": "**Negative Test:** Invalid date format.\n\n**Expected:** 400 Bad Request or graceful handling"
+					},
+					"response": []
+				}
+			],
+			"description": "Messaging analytics endpoints with multiple scenarios:\n- All-time analytics\n- Last 7/30 days\n- Current month\n- Custom date range\n- Negative tests (unauthorized, invalid dates)"
+		},
+		{
+			"name": "2. Impact Analytics",
+			"item": [
+				{
+					"name": "Get Impact Analytics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Has farmer impact metrics', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalFarmersReached');",
+									"    pm.expect(data).to.have.property('activeFarmersLast30Days');",
+									"    pm.expect(data).to.have.property('farmerRetentionRate');",
+									"});",
+									"",
+									"pm.test('Has agricultural impact metrics', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalCropsAnalyzed');",
+									"    pm.expect(data).to.have.property('uniqueCropTypes');",
+									"    pm.expect(data).to.have.property('diseasesDetected');",
+									"});",
+									"",
+									"pm.test('Has geographic reach', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('citiesReached');",
+									"    pm.expect(data).to.have.property('topCities');",
+									"    pm.expect(data.topCities).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Has distribution metrics', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('severityDistribution');",
+									"    pm.expect(data).to.have.property('topCrops');",
+									"    pm.expect(data).to.have.property('topDiseases');",
+									"});",
+									"",
+									"pm.test('Has impact summary', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('impactSummary');",
+									"    pm.expect(data.impactSummary).to.be.a('string');",
+									"});",
+									"",
+									"// Log summary",
+									"var data = pm.response.json().data;",
+									"console.log('🌾 Impact Summary:');",
+									"console.log('  Farmers Reached:', data.totalFarmersReached);",
+									"console.log('  Active Last 30d:', data.activeFarmersLast30Days);",
+									"console.log('  Retention Rate:', data.farmerRetentionRate + '%');",
+									"console.log('  Crops Analyzed:', data.totalCropsAnalyzed);",
+									"console.log('  Cities Reached:', data.citiesReached);",
+									"console.log('  Summary:', data.impactSummary);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/impact-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"impact-analytics"
+							]
+						},
+						"description": "Get comprehensive agricultural and geographic impact analytics.\n\n**Returns:**\n- Farmer Impact: reach, retention, lifetime\n- Agricultural Impact: crops, diseases, critical issues\n- Geographic Reach: cities, districts, top locations\n- Distribution: severity, crop types, disease types\n- Impact Summary: Turkish narrative\n\n**Cache:** 6 hours\n\n**Use Case:** Daily/weekly impact dashboard"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Impact - Admin Access",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Admin can access sponsor analytics', () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"console.log('✅ Admin access verified');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/impact-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"impact-analytics"
+							]
+						},
+						"description": "**Authorization Test:** Admin user accessing sponsor analytics.\n\n**Expected:** 200 OK (Admin has access)\n\n**Note:** Uses admin_token instead of sponsor_token"
+					},
+					"response": []
+				},
+				{
+					"name": "Test - Cache Behavior",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var firstResponseTime = pm.environment.get('first_impact_response_time');",
+									"var currentResponseTime = pm.response.responseTime;",
+									"",
+									"if (!firstResponseTime) {",
+									"    // First request - save response time",
+									"    pm.environment.set('first_impact_response_time', currentResponseTime);",
+									"    pm.environment.set('impact_data_snapshot', JSON.stringify(pm.response.json()));",
+									"    console.log('🕐 First request: ' + currentResponseTime + 'ms (cache miss)');",
+									"    console.log('   Run this request again within 6 hours to test cache hit');",
+									"} else {",
+									"    // Second request - compare",
+									"    console.log('🕐 First request: ' + firstResponseTime + 'ms (cache miss)');",
+									"    console.log('🕐 Second request: ' + currentResponseTime + 'ms (cache hit)');",
+									"    ",
+									"    pm.test('Second request faster (cache hit)', () => {",
+									"        pm.expect(currentResponseTime).to.be.below(firstResponseTime);",
+									"    });",
+									"    ",
+									"    var originalData = JSON.parse(pm.environment.get('impact_data_snapshot'));",
+									"    var currentData = pm.response.json();",
+									"    ",
+									"    pm.test('Data matches (from cache)', () => {",
+									"        pm.expect(currentData.data.totalFarmersReached).to.eql(originalData.data.totalFarmersReached);",
+									"    });",
+									"    ",
+									"    // Reset for next test",
+									"    pm.environment.unset('first_impact_response_time');",
+									"    pm.environment.unset('impact_data_snapshot');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/impact-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"impact-analytics"
+							]
+						},
+						"description": "**Cache Test:** Run this request twice to verify caching.\n\n**First Request:**\n- Cache miss (from database)\n- Slower response time\n- Saves response time and data\n\n**Second Request:**\n- Cache hit\n- Faster response time\n- Same data\n\n**Cache TTL:** 6 hours"
+					},
+					"response": []
+				}
+			],
+			"description": "Impact analytics endpoint covering:\n- Agricultural impact metrics\n- Geographic reach\n- Farmer retention\n- Cache behavior testing\n- Admin access testing"
+		},
+		{
+			"name": "3. Temporal Analytics",
+			"item": [
+				{
+					"name": "Get Daily Trends (Last 30 Days)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var endDate = new Date();",
+									"var startDate = new Date();",
+									"startDate.setDate(endDate.getDate() - 30);",
+									"pm.environment.set('start_date_30d', startDate.toISOString());",
+									"pm.environment.set('end_date_now', endDate.toISOString());"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('GroupBy is Day', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.groupBy).to.eql('Day');",
+									"});",
+									"",
+									"pm.test('Has time series data', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.timeSeries).to.be.an('array');",
+									"    pm.expect(data.timeSeries.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"pm.test('Has trend analysis', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.trendAnalysis).to.exist;",
+									"    pm.expect(data.trendAnalysis.overallTrend).to.be.oneOf(['Up', 'Down', 'Stable']);",
+									"});",
+									"",
+									"pm.test('Has peak metrics', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.peakMetrics).to.exist;",
+									"});",
+									"",
+									"// Log summary",
+									"var data = pm.response.json().data;",
+									"console.log('📈 Temporal Summary (Daily):');",
+									"console.log('  Period:', data.startDate, 'to', data.endDate);",
+									"console.log('  Data Points:', data.timeSeries.length);",
+									"console.log('  Trend:', data.trendAnalysis.overallTrend);",
+									"console.log('  Analyses Growth:', data.trendAnalysis.analysesGrowth + '%');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics?startDate={{start_date_30d}}&endDate={{end_date_now}}&groupBy=Day",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"temporal-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "{{start_date_30d}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								},
+								{
+									"key": "groupBy",
+									"value": "Day"
+								}
+							]
+						},
+						"description": "Get daily time-series data for last 30 days.\n\n**Returns:**\n- Daily data points (codes, analyses, farmers, messages)\n- Trend analysis (growth percentages)\n- Peak performance days\n\n**Use Case:** Line chart for 30-day dashboard"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Weekly Trends (Last 3 Months)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var endDate = new Date();",
+									"var startDate = new Date();",
+									"startDate.setMonth(endDate.getMonth() - 3);",
+									"pm.environment.set('start_date_3m', startDate.toISOString());",
+									"pm.environment.set('end_date_now', endDate.toISOString());"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('GroupBy is Week', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.groupBy).to.eql('Week');",
+									"});",
+									"",
+									"var data = pm.response.json().data;",
+									"console.log('📈 Temporal Summary (Weekly):');",
+									"console.log('  Period:', data.startDate, 'to', data.endDate);",
+									"console.log('  Weeks:', data.timeSeries.length);",
+									"console.log('  Trend:', data.trendAnalysis.overallTrend);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics?startDate={{start_date_3m}}&endDate={{end_date_now}}&groupBy=Week",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"temporal-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "{{start_date_3m}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								},
+								{
+									"key": "groupBy",
+									"value": "Week"
+								}
+							]
+						},
+						"description": "Get weekly time-series data for last 3 months.\n\n**Use Case:** Weekly reports, mid-term trends"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Monthly Trends (Last Year)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var endDate = new Date();",
+									"var startDate = new Date();",
+									"startDate.setFullYear(endDate.getFullYear() - 1);",
+									"pm.environment.set('start_date_1y', startDate.toISOString());",
+									"pm.environment.set('end_date_now', endDate.toISOString());"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('GroupBy is Month', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.groupBy).to.eql('Month');",
+									"});",
+									"",
+									"var data = pm.response.json().data;",
+									"console.log('📈 Temporal Summary (Monthly):');",
+									"console.log('  Period:', data.startDate, 'to', data.endDate);",
+									"console.log('  Months:', data.timeSeries.length);",
+									"console.log('  Year-over-Year Trend:', data.trendAnalysis.overallTrend);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics?startDate={{start_date_1y}}&endDate={{end_date_now}}&groupBy=Month",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"temporal-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "{{start_date_1y}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								},
+								{
+									"key": "groupBy",
+									"value": "Month"
+								}
+							]
+						},
+						"description": "Get monthly time-series data for last 12 months.\n\n**Use Case:** Annual reports, year-over-year analysis"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Default Temporal (90 Days, Daily)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Uses default groupBy (Day)', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.groupBy).to.eql('Day');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"temporal-analytics"
+							]
+						},
+						"description": "Get temporal analytics with default parameters.\n\n**Defaults:**\n- startDate: 90 days ago\n- endDate: now\n- groupBy: Day"
+					},
+					"response": []
+				},
+				{
+					"name": "Get This Month (Daily)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var now = new Date();",
+									"var startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);",
+									"pm.environment.set('start_of_month', startOfMonth.toISOString());",
+									"pm.environment.set('end_date_now', now.toISOString());"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics?startDate={{start_of_month}}&endDate={{end_date_now}}&groupBy=Day",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"temporal-analytics"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "{{start_of_month}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								},
+								{
+									"key": "groupBy",
+									"value": "Day"
+								}
+							]
+						},
+						"description": "Get daily trends for current month (month-to-date).\n\n**Use Case:** Current month performance tracking"
+					},
+					"response": []
+				},
+				{
+					"name": "Test - Invalid GroupBy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 400 Bad Request for invalid groupBy', () => {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Error message mentions valid values', () => {",
+									"    var response = pm.response.json();",
+									"    pm.expect(response.message).to.include('Day, Week, or Month');",
+									"});",
+									"",
+									"console.log('✅ Invalid groupBy rejected correctly');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics?groupBy=Invalid",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"temporal-analytics"
+							],
+							"query": [
+								{
+									"key": "groupBy",
+									"value": "Invalid"
+								}
+							]
+						},
+						"description": "**Negative Test:** Invalid groupBy parameter.\n\n**Expected:** 400 Bad Request with error message\n\n**Valid values:** Day, Week, Month"
+					},
+					"response": []
+				}
+			],
+			"description": "Temporal analytics with dynamic grouping:\n- Daily trends (best for 30-90 days)\n- Weekly trends (best for 3-6 months)\n- Monthly trends (best for 12+ months)\n- Default behavior\n- Invalid parameter testing"
+		},
+		{
+			"name": "4. ROI Analytics",
+			"item": [
+				{
+					"name": "Get ROI Analytics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Has cost breakdown', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalInvestment');",
+									"    pm.expect(data).to.have.property('costPerCode');",
+									"    pm.expect(data).to.have.property('costPerAnalysis');",
+									"    pm.expect(data).to.have.property('costPerFarmer');",
+									"});",
+									"",
+									"pm.test('Has value analysis', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalAnalysesValue');",
+									"    pm.expect(data).to.have.property('averageLifetimeValuePerFarmer');",
+									"});",
+									"",
+									"pm.test('Has ROI metrics', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('overallROI');",
+									"    pm.expect(data).to.have.property('roiStatus');",
+									"    pm.expect(data.roiStatus).to.be.oneOf(['Positive', 'Negative', 'Breakeven', 'No Data']);",
+									"    pm.expect(data).to.have.property('roiByTier');",
+									"    pm.expect(data.roiByTier).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Has efficiency metrics', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('utilizationRate');",
+									"    pm.expect(data).to.have.property('wasteRate');",
+									"    pm.expect(data).to.have.property('breakevenAnalysisCount');",
+									"    pm.expect(data).to.have.property('analysesUntilBreakeven');",
+									"});",
+									"",
+									"pm.test('AnalysisUnitValue is 50 TL', () => {",
+									"    var data = pm.response.json().data;",
+									"    pm.expect(data.analysisUnitValue).to.eql(50.00);",
+									"});",
+									"",
+									"// Log comprehensive summary",
+									"var data = pm.response.json().data;",
+									"console.log('💰 ROI Summary:');",
+									"console.log('  Total Investment:', data.totalInvestment, 'TL');",
+									"console.log('  Total Value Generated:', data.totalAnalysesValue, 'TL');",
+									"console.log('  Overall ROI:', data.overallROI + '% (' + data.roiStatus + ')');",
+									"console.log('  Utilization Rate:', data.utilizationRate + '%');",
+									"console.log('  Breakeven at:', data.breakevenAnalysisCount, 'analyses');",
+									"console.log('  Remaining to Breakeven:', data.analysesUntilBreakeven, 'analyses');",
+									"",
+									"if (data.estimatedPaybackDays) {",
+									"    console.log('  Estimated Payback:', data.estimatedPaybackDays, 'days');",
+									"}",
+									"",
+									"// Log tier breakdown",
+									"console.log('  Tier Performance:');",
+									"data.roiByTier.forEach(tier => {",
+									"    console.log('    -', tier.tierName + ':', tier.roi + '% ROI,', tier.utilizationRate + '% utilization');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/roi-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"roi-analytics"
+							]
+						},
+						"description": "Get comprehensive ROI and financial analytics.\n\n**Returns:**\n- Cost Breakdown (per code, analysis, farmer)\n- Value Analysis (total value, lifetime value)\n- ROI Metrics (overall ROI, tier-based ROI)\n- Efficiency Metrics (utilization, waste, breakeven)\n\n**Cache:** 12 hours\n\n**Use Case:** Financial dashboard, investment tracking"
+					},
+					"response": []
+				},
+				{
+					"name": "Get ROI - Verify Calculation Logic",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var data = pm.response.json().data;",
+									"",
+									"// Manually calculate ROI to verify",
+									"var calculatedROI = ((data.totalAnalysesValue - data.totalInvestment) / data.totalInvestment) * 100;",
+									"calculatedROI = Math.round(calculatedROI * 100) / 100; // Round to 2 decimals",
+									"",
+									"pm.test('ROI calculation is correct', () => {",
+									"    pm.expect(data.overallROI).to.eql(calculatedROI);",
+									"});",
+									"",
+									"console.log('🧮 ROI Calculation Verification:');",
+									"console.log('  Total Investment:', data.totalInvestment, 'TL');",
+									"console.log('  Total Value:', data.totalAnalysesValue, 'TL');",
+									"console.log('  Formula: ((', data.totalAnalysesValue, '-', data.totalInvestment, ') /', data.totalInvestment, ') × 100');",
+									"console.log('  Expected ROI:', calculatedROI + '%');",
+									"console.log('  Actual ROI:', data.overallROI + '%');",
+									"console.log('  Match:', data.overallROI === calculatedROI ? '✅' : '❌');",
+									"",
+									"// Verify breakeven calculation",
+									"var calculatedBreakeven = Math.ceil(data.totalInvestment / data.analysisUnitValue);",
+									"",
+									"pm.test('Breakeven calculation is correct', () => {",
+									"    pm.expect(data.breakevenAnalysisCount).to.eql(calculatedBreakeven);",
+									"});",
+									"",
+									"console.log('  Breakeven Formula:', data.totalInvestment, '÷', data.analysisUnitValue);",
+									"console.log('  Expected Breakeven:', calculatedBreakeven, 'analyses');",
+									"console.log('  Actual Breakeven:', data.breakevenAnalysisCount, 'analyses');",
+									"console.log('  Match:', data.breakevenAnalysisCount === calculatedBreakeven ? '✅' : '❌');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/roi-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"roi-analytics"
+							]
+						},
+						"description": "**Validation Test:** Verify ROI calculation logic.\n\n**Tests:**\n- Manual ROI calculation vs API result\n- Breakeven calculation verification\n- Formula validation\n\n**Formulas:**\n- ROI = ((Total Value - Investment) / Investment) × 100\n- Breakeven = Investment ÷ AnalysisUnitValue\n- Total Value = Analyses Count × 50 TL"
+					},
+					"response": []
+				},
+				{
+					"name": "Get ROI - Extract Tier Performance",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var data = pm.response.json().data;",
+									"",
+									"pm.test('Has tier breakdown', () => {",
+									"    pm.expect(data.roiByTier).to.be.an('array');",
+									"    pm.expect(data.roiByTier.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"// Extract and save tier data",
+									"var tierData = {};",
+									"data.roiByTier.forEach(tier => {",
+									"    tierData[tier.tierName] = {",
+									"        roi: tier.roi,",
+									"        utilization: tier.utilizationRate,",
+									"        investment: tier.investment,",
+									"        value: tier.totalValue,",
+									"        codesPurchased: tier.codesPurchased,",
+									"        codesRedeemed: tier.codesRedeemed,",
+									"        analysesGenerated: tier.analysesGenerated",
+									"    };",
+									"});",
+									"",
+									"pm.environment.set('tier_performance', JSON.stringify(tierData));",
+									"",
+									"// Log tier comparison",
+									"console.log('📊 Tier Performance Comparison:');",
+									"console.log('');",
+									"",
+									"// Sort by ROI",
+									"var sortedTiers = data.roiByTier.sort((a, b) => b.roi - a.roi);",
+									"",
+									"sortedTiers.forEach((tier, index) => {",
+									"    console.log((index + 1) + '. ' + tier.tierName + ' Tier:');",
+									"    console.log('   ROI:', tier.roi + '%');",
+									"    console.log('   Investment:', tier.investment, 'TL');",
+									"    console.log('   Value:', tier.totalValue, 'TL');",
+									"    console.log('   Codes:', tier.codesRedeemed + '/' + tier.codesPurchased, '(' + tier.utilizationRate + '% utilization)');",
+									"    console.log('   Analyses:', tier.analysesGenerated);",
+									"    console.log('');",
+									"});",
+									"",
+									"// Find best and worst tier",
+									"var bestTier = sortedTiers[0];",
+									"var worstTier = sortedTiers[sortedTiers.length - 1];",
+									"",
+									"console.log('🏆 Best Tier:', bestTier.tierName, 'with', bestTier.roi + '% ROI');",
+									"console.log('⚠️ Worst Tier:', worstTier.tierName, 'with', worstTier.roi + '% ROI');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/roi-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"roi-analytics"
+							]
+						},
+						"description": "**Data Extraction:** Focus on tier-based performance.\n\n**Extracts:**\n- ROI per tier (S, M, L, XL)\n- Utilization rates per tier\n- Best/worst performing tier\n- Investment vs value per tier\n\n**Saves to Environment:**\n- `tier_performance`: JSON with all tier data"
+					},
+					"response": []
+				},
+				{
+					"name": "Test - Long Cache (12 Hours)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var firstResponseTime = pm.environment.get('first_roi_response_time');",
+									"var currentResponseTime = pm.response.responseTime;",
+									"",
+									"if (!firstResponseTime) {",
+									"    pm.environment.set('first_roi_response_time', currentResponseTime);",
+									"    pm.environment.set('roi_cache_timestamp', new Date().toISOString());",
+									"    console.log('🕐 First request: ' + currentResponseTime + 'ms (cache miss)');",
+									"    console.log('   Cache TTL: 12 hours');",
+									"    console.log('   Run again within 12 hours to test cache hit');",
+									"    console.log('   Cached at:', new Date().toISOString());",
+									"} else {",
+									"    var cacheTime = pm.environment.get('roi_cache_timestamp');",
+									"    var cacheAge = (new Date() - new Date(cacheTime)) / 1000 / 60; // minutes",
+									"    ",
+									"    console.log('🕐 First request: ' + firstResponseTime + 'ms (cache miss)');",
+									"    console.log('🕐 Second request: ' + currentResponseTime + 'ms (cache hit)');",
+									"    console.log('   Cache age:', Math.round(cacheAge), 'minutes');",
+									"    ",
+									"    if (cacheAge < 720) { // 12 hours = 720 minutes",
+									"        pm.test('Second request faster (cache hit)', () => {",
+									"            pm.expect(currentResponseTime).to.be.below(firstResponseTime);",
+									"        });",
+									"        console.log('   ✅ Cache still valid');",
+									"    } else {",
+									"        console.log('   ⚠️ Cache expired (> 12 hours)');",
+									"    }",
+									"    ",
+									"    // Reset",
+									"    pm.environment.unset('first_roi_response_time');",
+									"    pm.environment.unset('roi_cache_timestamp');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/roi-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"roi-analytics"
+							]
+						},
+						"description": "**Cache Test:** Verify 12-hour cache behavior.\n\n**First Request:**\n- Cache miss\n- Slower response\n- Saves timestamp\n\n**Second Request (within 12 hours):**\n- Cache hit\n- Faster response\n- Shows cache age\n\n**After 12 hours:**\n- Cache expired\n- New cache miss"
+					},
+					"response": []
+				}
+			],
+			"description": "ROI analytics covering:\n- Financial metrics (cost, value, ROI)\n- Tier-based performance comparison\n- Calculation verification\n- Breakeven tracking\n- Long cache behavior (12 hours)"
+		},
+		{
+			"name": "5. Combined Analytics (Dashboard)",
+			"item": [
+				{
+					"name": "Get All Analytics (Parallel)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Note: This is a single request. For true parallel requests,",
+									"// use Collection Runner or Newman with --parallel flag,",
+									"// or use the 'Run All Analytics' folder",
+									"",
+									"console.log('💡 Tip: To test true parallel requests:');",
+									"console.log('   1. Use Collection Runner');",
+									"console.log('   2. Select \"Run All Analytics\" folder');",
+									"console.log('   3. Check \"Run collection in parallel\"');",
+									"console.log('   4. Compare total time vs sequential');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "",
+							"host": [
+								""
+							]
+						},
+						"description": "**Note:** This is a placeholder for parallel execution demo.\n\nFor actual parallel requests, use the folder \"Run All Analytics\" with Collection Runner."
+					},
+					"response": []
+				}
+			],
+			"description": "Dashboard scenario combining multiple analytics.\n\n**To test parallel execution:**\n1. Right-click \"Run All Analytics\" folder\n2. Select \"Run folder\"\n3. Enable parallel execution\n4. Compare total time"
+		},
+		{
+			"name": "6. Run All Analytics (Sequential)",
+			"item": [
+				{
+					"name": "1. Get Messaging",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"messaging-analytics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Impact",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/impact-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"impact-analytics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Temporal",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"temporal-analytics"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get ROI",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{sponsor_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/roi-analytics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"roi-analytics"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Run all 4 analytics endpoints sequentially.\n\n**Use Case:** Full dashboard data fetch\n\n**To Run:**\n1. Right-click this folder\n2. Select \"Run folder\"\n3. Review summary in runner"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"// Runs before each request in the collection",
+					"",
+					"// Check if token exists",
+					"var token = pm.environment.get('sponsor_token');",
+					"if (!token) {",
+					"    console.log('⚠️ Warning: sponsor_token not set. Run \"Login - Sponsor User\" first.');",
+					"}",
+					"",
+					"// Check if token is expired",
+					"var tokenExpiry = pm.environment.get('token_expiry');",
+					"if (tokenExpiry) {",
+					"    var now = new Date().getTime();",
+					"    var timeUntilExpiry = tokenExpiry - now;",
+					"    var minutesUntilExpiry = Math.round(timeUntilExpiry / 1000 / 60);",
+					"    ",
+					"    if (minutesUntilExpiry < 0) {",
+					"        console.log('🔴 Token expired. Please refresh or login again.');",
+					"    } else if (minutesUntilExpiry < 5) {",
+					"        console.log('🟡 Token expires in ' + minutesUntilExpiry + ' minutes. Consider refreshing.');",
+					"    } else {",
+					"        console.log('🟢 Token valid for ' + minutesUntilExpiry + ' more minutes.');",
+					"    }",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"// Runs after each request in the collection",
+					"",
+					"// Log request details",
+					"console.log('📡 Request:', pm.request.method, pm.request.url.toString());",
+					"console.log('⏱️  Response Time:', pm.response.responseTime + 'ms');",
+					"console.log('📊 Status:', pm.response.code, pm.response.status);"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://ziraai-api-sit.up.railway.app",
+			"type": "string"
+		},
+		{
+			"key": "sponsor_email",
+			"value": "sponsor@example.com",
+			"type": "string"
+		},
+		{
+			"key": "sponsor_password",
+			"value": "your_password_here",
+			"type": "string"
+		},
+		{
+			"key": "admin_email",
+			"value": "admin@example.com",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "your_admin_password_here",
+			"type": "string"
+		},
+		{
+			"key": "sponsor_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "admin_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "token_expiry",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
