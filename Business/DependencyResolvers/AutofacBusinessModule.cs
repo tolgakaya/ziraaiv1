@@ -143,6 +143,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<MessagingFeatureRepository>().As<IMessagingFeatureRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<DealerInvitationRepository>().As<IDealerInvitationRepository>()
+                .InstancePerLifetimeScope();
+
             // Referral System repositories
             builder.RegisterType<ReferralCodeRepository>().As<IReferralCodeRepository>()
                 .InstancePerLifetimeScope();
