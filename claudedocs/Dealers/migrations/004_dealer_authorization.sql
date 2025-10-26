@@ -13,17 +13,42 @@
 
 -- Insert dealer management operation claims
 -- These will be used by the [SecuredOperation] attribute in handlers
+-- Using WHERE NOT EXISTS for idempotency (no unique constraint on Name)
 
+-- TransferCodesToDealer
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
-VALUES 
-    ('TransferCodesToDealer', 'dealer.transfer', 'Transfer sponsorship codes to dealer'),
-    ('CreateDealerInvitation', 'dealer.invite', 'Create dealer invitation (Invite/AutoCreate)'),
-    ('ReclaimDealerCodes', 'dealer.reclaim', 'Reclaim unused codes from dealer'),
-    ('GetDealerPerformance', 'dealer.analytics', 'View dealer performance analytics'),
-    ('GetDealerSummary', 'dealer.summary', 'View all dealers summary'),
-    ('GetDealerInvitations', 'dealer.invitations', 'List dealer invitations'),
-    ('SearchDealerByEmail', 'dealer.search', 'Search dealer by email')
-ON CONFLICT ("Name") DO NOTHING;
+SELECT 'TransferCodesToDealer', 'dealer.transfer', 'Transfer sponsorship codes to dealer'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'TransferCodesToDealer');
+
+-- CreateDealerInvitation
+INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
+SELECT 'CreateDealerInvitation', 'dealer.invite', 'Create dealer invitation (Invite/AutoCreate)'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'CreateDealerInvitation');
+
+-- ReclaimDealerCodes
+INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
+SELECT 'ReclaimDealerCodes', 'dealer.reclaim', 'Reclaim unused codes from dealer'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'ReclaimDealerCodes');
+
+-- GetDealerPerformance
+INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
+SELECT 'GetDealerPerformance', 'dealer.analytics', 'View dealer performance analytics'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerPerformance');
+
+-- GetDealerSummary
+INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
+SELECT 'GetDealerSummary', 'dealer.summary', 'View all dealers summary'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerSummary');
+
+-- GetDealerInvitations
+INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
+SELECT 'GetDealerInvitations', 'dealer.invitations', 'List dealer invitations'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerInvitations');
+
+-- SearchDealerByEmail
+INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
+SELECT 'SearchDealerByEmail', 'dealer.search', 'Search dealer by email'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'SearchDealerByEmail');
 
 -- =====================================================
 -- PART 2: Assign Claims to Groups
@@ -33,10 +58,11 @@ ON CONFLICT ("Name") DO NOTHING;
 -- Then assign them to both Sponsor (GroupId=3) and Admin (GroupId=1) groups
 
 -- Assign to Sponsor group (GroupId = 3)
+-- Using INSERT ... WHERE NOT EXISTS for compatibility
 INSERT INTO public."GroupClaims" ("GroupId", "ClaimId")
-SELECT 3, "Id" 
-FROM public."OperationClaims" 
-WHERE "Name" IN (
+SELECT 3, oc."Id"
+FROM public."OperationClaims" oc
+WHERE oc."Name" IN (
     'TransferCodesToDealer',
     'CreateDealerInvitation',
     'ReclaimDealerCodes',
@@ -45,13 +71,17 @@ WHERE "Name" IN (
     'GetDealerInvitations',
     'SearchDealerByEmail'
 )
-ON CONFLICT ("GroupId", "ClaimId") DO NOTHING;
+AND NOT EXISTS (
+    SELECT 1 FROM public."GroupClaims" gc 
+    WHERE gc."GroupId" = 3 AND gc."ClaimId" = oc."Id"
+);
 
 -- Assign to Admin group (GroupId = 1)
+-- Using INSERT ... WHERE NOT EXISTS for compatibility
 INSERT INTO public."GroupClaims" ("GroupId", "ClaimId")
-SELECT 1, "Id" 
-FROM public."OperationClaims" 
-WHERE "Name" IN (
+SELECT 1, oc."Id"
+FROM public."OperationClaims" oc
+WHERE oc."Name" IN (
     'TransferCodesToDealer',
     'CreateDealerInvitation',
     'ReclaimDealerCodes',
@@ -60,7 +90,10 @@ WHERE "Name" IN (
     'GetDealerInvitations',
     'SearchDealerByEmail'
 )
-ON CONFLICT ("GroupId", "ClaimId") DO NOTHING;
+AND NOT EXISTS (
+    SELECT 1 FROM public."GroupClaims" gc 
+    WHERE gc."GroupId" = 1 AND gc."ClaimId" = oc."Id"
+);
 
 -- =====================================================
 -- PART 3: Verification Queries
@@ -103,6 +136,6 @@ ORDER BY oc."Name";
 -- =====================================================
 -- 1. These claims should be added via [SecuredOperation] attributes in handlers
 -- 2. Controller endpoints already use [Authorize(Roles = "Sponsor,Admin")]
--- 3. ON CONFLICT clauses ensure idempotent execution (safe to run multiple times)
+-- 3. WHERE NOT EXISTS clauses ensure idempotent execution (safe to run multiple times)
 -- 4. Verification queries help confirm successful setup
 -- =====================================================
