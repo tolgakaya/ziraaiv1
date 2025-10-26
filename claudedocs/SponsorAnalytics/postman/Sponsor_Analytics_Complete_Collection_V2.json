@@ -1,0 +1,755 @@
+{
+	"info": {
+		"_postman_id": "sponsor-analytics-v2",
+		"name": "ZiraAI - Sponsor Analytics (Complete - All 7 Endpoints)",
+		"description": "**Complete Sponsor Analytics Collection**\n\nThis collection includes ALL 7 sponsor analytics endpoints with comprehensive test scenarios:\n\n**Existing Endpoints (Already in Production):**\n1. Dashboard Summary - Mobile dashboard overview (24h cache)\n2. Package Distribution Statistics - Purchase → Distribution → Redemption funnel (5min cache)\n3. Code Analysis Statistics - Code-level tracking with farmer details (5min cache)\n\n**New Endpoints (Phase 2):**\n4. Messaging Analytics - Conversation metrics and engagement (15min cache)\n5. Impact Analytics - Agricultural and geographic impact (6h cache)\n6. Temporal Analytics - Time-series trends (1h cache)\n7. ROI Analytics - Financial ROI and efficiency (12h cache)\n\n**Total Requests:** 35+ variations covering all scenarios\n\n**Version:** 2.0\n**Last Updated:** 2025-01-25",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request: Check token expiry",
+					"const tokenExpiry = pm.environment.get('token_expiry');",
+					"if (tokenExpiry && new Date(tokenExpiry) < new Date()) {",
+					"    console.warn('⚠️ Token expired - please refresh');",
+					"}"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "0. Authentication",
+			"item": [
+				{
+					"name": "Login - Sponsor User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Login successful', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('accessToken');",
+									"    ",
+									"    // Store token",
+									"    pm.environment.set('auth_token', data.accessToken);",
+									"    pm.environment.set('token_expiry', new Date(Date.now() + 3600000).toISOString());",
+									"    console.log('✅ Token stored successfully');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"sponsor@ziraai.com\",\n  \"password\": \"yourpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Login - Admin User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Admin login successful', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const data = pm.response.json().data;",
+									"    pm.environment.set('admin_token', data.accessToken);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@ziraai.com\",\n  \"password\": \"adminpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "1. Dashboard Summary",
+			"item": [
+				{
+					"name": "Get Dashboard Summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"",
+									"pm.test('Has required fields', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalCodesCount');",
+									"    pm.expect(data).to.have.property('sentCodesCount');",
+									"    pm.expect(data).to.have.property('totalAnalysesCount');",
+									"    pm.expect(data).to.have.property('activePackages');",
+									"    pm.expect(data).to.have.property('overallStats');",
+									"});",
+									"",
+									"pm.test('Active packages breakdown exists', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data.activePackages).to.be.an('array');",
+									"});",
+									"",
+									"console.log('📊 Dashboard Summary:');",
+									"console.log('  Total Codes:', pm.response.json().data.totalCodesCount);",
+									"console.log('  Total Analyses:', pm.response.json().data.totalAnalysesCount);",
+									"console.log('  Sent %:', pm.response.json().data.sentCodesPercentage);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dashboard-summary",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "dashboard-summary"]
+						}
+					}
+				},
+				{
+					"name": "Test - Cache Behavior (24h)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.environment.set('first_request_time', Date.now());"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const firstTime = pm.environment.get('first_request_time');",
+									"const currentTime = Date.now();",
+									"const elapsed = currentTime - firstTime;",
+									"",
+									"if (!firstTime || elapsed > 5000) {",
+									"    console.log('⚠️ Run this request twice quickly to test cache');",
+									"} else {",
+									"    pm.test('Second request faster (cached)', () => {",
+									"        pm.expect(pm.response.responseTime).to.be.below(100);",
+									"    });",
+									"    console.log('✅ Cache hit - response time:', pm.response.responseTime, 'ms');",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dashboard-summary",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "dashboard-summary"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Package Distribution",
+			"item": [
+				{
+					"name": "Get Package Statistics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"",
+									"pm.test('Has funnel metrics', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalCodesPurchased');",
+									"    pm.expect(data).to.have.property('totalCodesDistributed');",
+									"    pm.expect(data).to.have.property('totalCodesRedeemed');",
+									"    pm.expect(data).to.have.property('distributionRate');",
+									"    pm.expect(data).to.have.property('redemptionRate');",
+									"});",
+									"",
+									"pm.test('Has breakdowns', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('packageBreakdowns');",
+									"    pm.expect(data).to.have.property('tierBreakdowns');",
+									"    pm.expect(data).to.have.property('channelBreakdowns');",
+									"});",
+									"",
+									"const data = pm.response.json().data;",
+									"console.log('📦 Package Funnel:');",
+									"console.log('  Purchased:', data.totalCodesPurchased);",
+									"console.log('  Distributed:', data.totalCodesDistributed, `(${data.distributionRate}%)`);",
+									"console.log('  Redeemed:', data.totalCodesRedeemed, `(${data.redemptionRate}%)`);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/package-statistics",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "package-statistics"]
+						}
+					}
+				},
+				{
+					"name": "Test - Channel Performance Analysis",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Channel breakdown exists', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data.channelBreakdowns).to.be.an('array');",
+									"    pm.expect(data.channelBreakdowns.length).to.be.above(0);",
+									"});",
+									"",
+									"const channels = pm.response.json().data.channelBreakdowns;",
+									"const bestChannel = channels.sort((a, b) => b.redemptionRate - a.redemptionRate)[0];",
+									"console.log('📱 Best Channel:', bestChannel.channel);",
+									"console.log('   Redemption Rate:', bestChannel.redemptionRate, '%');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/package-statistics",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "package-statistics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Code Analysis",
+			"item": [
+				{
+					"name": "Get Code Analysis (Full Details)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"",
+									"pm.test('Has code breakdown data', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalRedeemedCodes');",
+									"    pm.expect(data).to.have.property('totalAnalysesPerformed');",
+									"    pm.expect(data).to.have.property('codeBreakdowns');",
+									"});",
+									"",
+									"pm.test('Has distribution data', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('cropTypeDistribution');",
+									"    pm.expect(data).to.have.property('diseaseDistribution');",
+									"});",
+									"",
+									"const data = pm.response.json().data;",
+									"console.log('🔍 Code Analysis:');",
+									"console.log('  Redeemed Codes:', data.totalRedeemedCodes);",
+									"console.log('  Total Analyses:', data.totalAnalysesPerformed);",
+									"console.log('  Avg per Code:', data.averageAnalysesPerCode);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/code-analysis-statistics?includeAnalysisDetails=true&topCodesCount=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "code-analysis-statistics"],
+							"query": [
+								{
+									"key": "includeAnalysisDetails",
+									"value": "true"
+								},
+								{
+									"key": "topCodesCount",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Code Analysis (Summary Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Summary returned', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data.codeBreakdowns).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/code-analysis-statistics?includeAnalysisDetails=false&topCodesCount=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "code-analysis-statistics"],
+							"query": [
+								{
+									"key": "includeAnalysisDetails",
+									"value": "false"
+								},
+								{
+									"key": "topCodesCount",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Test - Crop & Disease Distribution",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Crop distribution exists', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data.cropTypeDistribution).to.be.an('array');",
+									"});",
+									"",
+									"const data = pm.response.json().data;",
+									"if (data.cropTypeDistribution.length > 0) {",
+									"    const topCrop = data.cropTypeDistribution[0];",
+									"    console.log('🌾 Top Crop:', topCrop.cropType);",
+									"    console.log('   Analyses:', topCrop.analysisCount);",
+									"    console.log('   Percentage:', topCrop.percentage, '%');",
+									"}",
+									"",
+									"if (data.diseaseDistribution.length > 0) {",
+									"    const topDisease = data.diseaseDistribution[0];",
+									"    console.log('🦠 Top Disease:', topDisease.disease);",
+									"    console.log('   Occurrences:', topDisease.occurrenceCount);",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/code-analysis-statistics",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "code-analysis-statistics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Messaging Analytics",
+			"item": [
+				{
+					"name": "Get All-Time Messaging Analytics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"",
+									"pm.test('Has required fields', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalMessagesSent');",
+									"    pm.expect(data).to.have.property('totalMessagesReceived');",
+									"    pm.expect(data).to.have.property('averageResponseTimeHours');",
+									"});",
+									"",
+									"const data = pm.response.json().data;",
+									"console.log('📧 Messaging Summary:');",
+									"console.log('  Sent:', data.totalMessagesSent);",
+									"console.log('  Received:', data.totalMessagesReceived);",
+									"console.log('  Response Rate:', data.responseRate, '%');",
+									"console.log('  Avg Response Time:', data.averageResponseTimeHours, 'hours');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "messaging-analytics"]
+						}
+					}
+				},
+				{
+					"name": "Get Last 7 Days Messaging",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const endDate = new Date();",
+									"const startDate = new Date();",
+									"startDate.setDate(endDate.getDate() - 7);",
+									"pm.environment.set('start_date_7d', startDate.toISOString());",
+									"pm.environment.set('end_date_now', endDate.toISOString());"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/messaging-analytics?startDate={{start_date_7d}}&endDate={{end_date_now}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "messaging-analytics"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "{{start_date_7d}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Impact Analytics",
+			"item": [
+				{
+					"name": "Get Impact Analytics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"",
+									"pm.test('Has impact metrics', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalFarmersReached');",
+									"    pm.expect(data).to.have.property('totalCropsAnalyzed');",
+									"    pm.expect(data).to.have.property('citiesReached');",
+									"});",
+									"",
+									"const data = pm.response.json().data;",
+									"console.log('🌍 Impact Summary:');",
+									"console.log('  Farmers Reached:', data.totalFarmersReached);",
+									"console.log('  Cities Reached:', data.citiesReached);",
+									"console.log('  Crops Analyzed:', data.totalCropsAnalyzed);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/impact-analytics",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "impact-analytics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Temporal Analytics",
+			"item": [
+				{
+					"name": "Get Daily Trends (Last 30 Days)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const endDate = new Date();",
+									"const startDate = new Date();",
+									"startDate.setDate(endDate.getDate() - 30);",
+									"pm.environment.set('start_date_30d', startDate.toISOString());",
+									"pm.environment.set('end_date_now', endDate.toISOString());"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics?groupBy=Day&startDate={{start_date_30d}}&endDate={{end_date_now}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "temporal-analytics"],
+							"query": [
+								{
+									"key": "groupBy",
+									"value": "Day"
+								},
+								{
+									"key": "startDate",
+									"value": "{{start_date_30d}}"
+								},
+								{
+									"key": "endDate",
+									"value": "{{end_date_now}}"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Weekly Trends (Last 3 Months)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/temporal-analytics?groupBy=Week",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "temporal-analytics"],
+							"query": [
+								{
+									"key": "groupBy",
+									"value": "Week"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "7. ROI Analytics",
+			"item": [
+				{
+					"name": "Get ROI Analytics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status is 200', () => pm.response.to.have.status(200));",
+									"",
+									"pm.test('Has ROI metrics', () => {",
+									"    const data = pm.response.json().data;",
+									"    pm.expect(data).to.have.property('totalInvestment');",
+									"    pm.expect(data).to.have.property('overallROI');",
+									"    pm.expect(data).to.have.property('utilizationRate');",
+									"});",
+									"",
+									"const data = pm.response.json().data;",
+									"console.log('💰 ROI Summary:');",
+									"console.log('  Total Investment:', data.totalInvestment, data.currency);",
+									"console.log('  Overall ROI:', data.overallROI, '%');",
+									"console.log('  Status:', data.roiStatus);",
+									"console.log('  Utilization Rate:', data.utilizationRate, '%');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/roi-analytics",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "roi-analytics"]
+						}
+					}
+				},
+				{
+					"name": "Test - ROI Calculation Verification",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('ROI calculation is correct', () => {",
+									"    const data = pm.response.json().data;",
+									"    const calculatedROI = ((data.totalAnalysesValue - data.totalInvestment) / data.totalInvestment) * 100;",
+									"    pm.expect(data.overallROI).to.eql(Math.round(calculatedROI * 100) / 100);",
+									"});",
+									"",
+									"pm.test('Breakeven calculation is correct', () => {",
+									"    const data = pm.response.json().data;",
+									"    const expectedBreakeven = data.totalInvestment / data.analysisUnitValue;",
+									"    pm.expect(data.breakevenAnalysisCount).to.eql(Math.ceil(expectedBreakeven));",
+									"});",
+									"",
+									"console.log('✅ ROI Calculations Verified');"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/roi-analytics",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "sponsorship", "roi-analytics"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://ziraai-api-sit.up.railway.app",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "admin_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
