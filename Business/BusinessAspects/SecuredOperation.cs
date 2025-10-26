@@ -43,7 +43,8 @@ namespace Business.BusinessAspects
 
             // Get operation name from handler class name
             // Example: "TransferCodesToDealerCommandHandler" -> "TransferCodesToDealerCommand"
-            var operationName = invocation.Method?.DeclaringType?.Name;
+            // Use TargetType to get the actual handler class, not the interface
+            var operationName = invocation.TargetType?.Name;
 
             if (string.IsNullOrEmpty(operationName))
             {
