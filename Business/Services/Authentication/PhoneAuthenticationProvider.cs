@@ -116,11 +116,18 @@ namespace Business.Services.Authentication
 
             var claims = await _users.GetClaimsAsync(user.UserId);
             var userGroups = await _users.GetUserGroupsAsync(user.UserId);
+            
+            // DEBUG: Log claims for troubleshooting
+            _logger.LogInformation($"[PhoneAuth:Claims] User {user.UserId} has {claims.Count} claims: {string.Join(", ", claims.Take(10).Select(x => x.Name))}");
+            
             var accessToken = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
             accessToken.Provider = ProviderType;
 
             // Add user claims to cache for authorization checks
-            _cacheManager.Add($"{CacheKeys.UserIdForClaim}={user.UserId}", claims.Select(x => x.Name));
+            var claimNames = claims.Select(x => x.Name).ToList();
+            _cacheManager.Add($"{CacheKeys.UserIdForClaim}={user.UserId}", claimNames);
+            
+            _logger.LogInformation($"[PhoneAuth:Cache] Added {claimNames.Count} claims to cache for user {user.UserId}");
 
             return accessToken;
         }
