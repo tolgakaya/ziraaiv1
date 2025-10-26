@@ -60,7 +60,8 @@
       "Bash(gh pr view:*)",
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(git pull:*)",
-      "Bash(Select-String -Pattern \"error CS|Build succeeded|Build FAILED\")"
+      "Bash(Select-String -Pattern \"error CS|Build succeeded|Build FAILED\")",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": [],
