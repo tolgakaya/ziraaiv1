@@ -8,6 +8,7 @@ using Core.Utilities.Interceptors;
 using Core.Utilities.IoC;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Business.BusinessAspects
 {
@@ -54,7 +55,7 @@ namespace Business.BusinessAspects
             operationName = operationName.Replace("Handler", "");
 
             // DEBUG: Log for troubleshooting
-            var logger = ServiceTool.ServiceProvider.GetService<Microsoft.Extensions.Logging.ILogger<SecuredOperation>>();
+            var logger = ServiceTool.ServiceProvider.GetService<ILogger<SecuredOperation>>();
             logger?.LogInformation($"[SecuredOperation] UserId: {userId}, Operation: {operationName}, CachedClaims: {(oprClaims != null ? string.Join(", ", oprClaims) : "NULL")}");
 
             // If operation claims exist and contain this operation, allow access
