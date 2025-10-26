@@ -1,3 +1,4 @@
+using Business.BusinessAspects;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
@@ -25,6 +26,8 @@ namespace Business.Handlers.Sponsorship.Commands
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _userRepository = userRepository;
         }
+
+        [SecuredOperation(Priority = 1)]
 
         public async Task<IDataResult<DealerCodeTransferResponseDto>> Handle(TransferCodesToDealerCommand request, CancellationToken cancellationToken)
         {

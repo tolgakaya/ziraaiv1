@@ -1,3 +1,4 @@
+using Business.BusinessAspects;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
@@ -29,6 +30,8 @@ namespace Business.Handlers.Sponsorship.Queries
             _plantAnalysisRepository = plantAnalysisRepository;
             _userRepository = userRepository;
         }
+
+        [SecuredOperation(Priority = 1)]
 
         public async Task<IDataResult<DealerSummaryDto>> Handle(GetDealerSummaryQuery request, CancellationToken cancellationToken)
         {

@@ -1,4 +1,5 @@
 using Core.Entities.Concrete;
+using Business.BusinessAspects;
 using Core.Utilities.Results;
 using Core.Utilities.Security.Hashing;
 using DataAccess.Abstract;
@@ -37,6 +38,8 @@ namespace Business.Handlers.Sponsorship.Commands
             _groupRepository = groupRepository;
             _userGroupRepository = userGroupRepository;
         }
+
+        [SecuredOperation(Priority = 1)]
 
         public async Task<IDataResult<DealerInvitationResponseDto>> Handle(CreateDealerInvitationCommand request, CancellationToken cancellationToken)
         {

@@ -1,3 +1,4 @@
+using Business.BusinessAspects;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using MediatR;
@@ -19,6 +20,8 @@ namespace Business.Handlers.Sponsorship.Queries
         {
             _userRepository = userRepository;
         }
+
+        [SecuredOperation(Priority = 1)]
 
         public async Task<IDataResult<DealerSearchResultDto>> Handle(SearchDealerByEmailQuery request, CancellationToken cancellationToken)
         {

@@ -1,3 +1,4 @@
+using Business.BusinessAspects;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
@@ -21,6 +22,8 @@ namespace Business.Handlers.Sponsorship.Queries
         {
             _dealerInvitationRepository = dealerInvitationRepository;
         }
+
+        [SecuredOperation(Priority = 1)]
 
         public async Task<IDataResult<List<DealerInvitationListDto>>> Handle(GetDealerInvitationsQuery request, CancellationToken cancellationToken)
         {
