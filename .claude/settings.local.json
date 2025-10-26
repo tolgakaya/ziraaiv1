@@ -8,7 +8,12 @@
       "Bash(__NEW_LINE__ echo \"=== Test 4: Get Dealer Performance (dealerId=158) ===\")",
       "Bash(__NEW_LINE__ echo \"=== Test 5: Transfer Codes to Dealer (Method A - Manual) ===\")",
       "Bash(__NEW_LINE__ echo \"=== Test 6: Create Dealer Invitation (Method B - Invite) ===\")",
-      "Bash(__NEW_LINE__ echo \"=== Test 7: Reclaim Dealer Codes ===\")"
+      "Bash(__NEW_LINE__ echo \"=== Test 7: Reclaim Dealer Codes ===\")",
+      "Bash(__NEW_LINE__ curl -s -X GET \"https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/codes/my-codes?page=1&pageSize=10\" )",
+      "Bash(TOKEN=\"eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjE1OSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJVc2VyIDExMTQiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOlsiRmFybWVyIiwiU3BvbnNvciJdLCJuYmYiOjE3NjE0ODAyNDYsImV4cCI6MTc2MTQ4Mzg0NiwiaXNzIjoiWmlyYUFJX1N0YWdpbmciLCJhdWQiOiJaaXJhQUlfU3RhZ2luZ19Vc2VycyJ9.JaO8OpG8hUfFh7AayK0PpuFqA5-CYdqsbPJDzXByUmw\")",
+      "Bash(__NEW_LINE__ echo \"=== Sponsorun mevcut paketlerini kontrol edelim ===\")",
+      "Bash(__NEW_LINE__ echo \"=== Mevcut paketleri listeleyelim ===\")",
+      "Bash(__NEW_LINE__ curl -s -X GET 'https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/codes?page=1&pageSize=10&status=available' -H \"Authorization: Bearer $TOKEN\" -H 'x-dev-arch-version: 1.0')"
     ],
     "deny": [],
     "ask": [],

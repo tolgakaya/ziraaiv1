@@ -49,13 +49,10 @@ namespace Business.Handlers.Sponsorship.Commands
                 return new ErrorDataResult<DealerInvitationResponseDto>("Email is required for Invite type.");
             }
 
-            // 2. Check if sponsor has enough unused codes
-            var purchaseCodes = await _sponsorshipCodeRepository.GetByPurchaseIdAsync(request.PurchaseId);
-            var availableCodesCount = purchaseCodes.Count(c => 
-                c.SponsorId == request.SponsorId 
-                && !c.IsUsed 
-                && c.IsActive 
-                && c.ExpiryDate > DateTime.Now
+            // 2. Check if sponsor has enough unsent codes (not distributed to farmers)
+            var unsentCodes = await _sponsorshipCodeRepository.GetUnsentCodesBySponsorAsync(request.SponsorId);
+            var availableCodesCount = unsentCodes.Count(c => 
+                c.SponsorshipPurchaseId == request.PurchaseId
                 && c.DealerId == null);
 
             if (availableCodesCount < request.CodeCount)
@@ -161,12 +158,9 @@ namespace Business.Handlers.Sponsorship.Commands
         private async Task TransferCodesToDealer(int purchaseId, int sponsorId, int dealerId, int codeCount)
         {
             var codes = await _sponsorshipCodeRepository.GetByPurchaseIdAsync(purchaseId);
+            // Use only unsent codes (codes parameter already filtered by GetUnsentCodesBySponsorAsync)
             var codesToTransfer = codes
-                .Where(c => c.SponsorId == sponsorId 
-                         && !c.IsUsed 
-                         && c.IsActive 
-                         && c.ExpiryDate > DateTime.Now
-                         && c.DealerId == null)
+                .Where(c => c.DealerId == null)
                 .Take(codeCount)
                 .ToList();
 

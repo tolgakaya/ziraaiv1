@@ -45,15 +45,12 @@ namespace Business.Handlers.Sponsorship.Commands
                 return new ErrorDataResult<DealerCodeTransferResponseDto>("Dealer must have Sponsor role to receive codes.");
             }
 
-            // 2. Get unused codes from the purchase that belong to the main sponsor
-            var allPurchaseCodes = await _sponsorshipCodeRepository.GetByPurchaseIdAsync(request.PurchaseId);
+            // 2. Get unsent codes (not distributed to farmers) that belong to the main sponsor
+            var unsentCodes = await _sponsorshipCodeRepository.GetUnsentCodesBySponsorAsync(request.UserId);
             
-            // Filter: unused, active, not expired, not yet transferred to dealer, belongs to requesting sponsor
-            var availableCodes = allPurchaseCodes
-                .Where(c => c.SponsorId == request.UserId 
-                         && !c.IsUsed 
-                         && c.IsActive 
-                         && c.ExpiryDate > DateTime.Now
+            // Filter: codes from the specific purchase, not yet transferred to dealer
+            var availableCodes = unsentCodes
+                .Where(c => c.SponsorshipPurchaseId == request.PurchaseId 
                          && c.DealerId == null)
                 .OrderBy(c => c.CreatedDate)
                 .Take(request.CodeCount)
