@@ -8,12 +8,39 @@
 -- =====================================================
 
 -- =====================================================
--- PART 1: Create Operation Claims
+-- PART 0: Cleanup - Remove Old Incorrect Claims
 -- =====================================================
 
--- Insert dealer management operation claims
--- These will be used by the [SecuredOperation] attribute in handlers
--- Using WHERE NOT EXISTS for idempotency (no unique constraint on Name)
+-- Remove old GroupClaims associations (foreign key constraint)
+DELETE FROM public."GroupClaims" 
+WHERE "ClaimId" IN (
+    SELECT "Id" FROM public."OperationClaims"
+    WHERE "Name" IN (
+        'TransferCodesToDealer',
+        'CreateDealerInvitation', 
+        'ReclaimDealerCodes',
+        'GetDealerPerformance',
+        'GetDealerSummary',
+        'GetDealerInvitations',
+        'SearchDealerByEmail'
+    )
+);
+
+-- Remove old incorrect OperationClaims
+DELETE FROM public."OperationClaims"
+WHERE "Name" IN (
+    'TransferCodesToDealer',
+    'CreateDealerInvitation',
+    'ReclaimDealerCodes', 
+    'GetDealerPerformance',
+    'GetDealerSummary',
+    'GetDealerInvitations',
+    'SearchDealerByEmail'
+);
+
+-- =====================================================
+-- PART 1: Create Operation Claims (Correct Names)
+-- =====================================================
 
 -- TransferCodesToDealerCommand
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
