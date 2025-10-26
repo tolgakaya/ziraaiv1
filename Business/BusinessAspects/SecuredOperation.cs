@@ -41,18 +41,17 @@ namespace Business.BusinessAspects
             var oprClaims = _cacheManager.Get<IEnumerable<string>>($"{CacheKeys.UserIdForClaim}={userId}");
 
             // Get operation name from handler class name
-            var fullHandlerName = invocation.Method?.DeclaringType?.Name;
+            // Example: "TransferCodesToDealerCommandHandler" -> "TransferCodesToDealerCommand"
+            var operationName = invocation.Method?.DeclaringType?.Name;
             
-            if (string.IsNullOrEmpty(fullHandlerName))
+            if (string.IsNullOrEmpty(operationName))
             {
                 throw new SecurityException(Messages.AuthorizationsDenied);
             }
             
-            // Remove "CommandHandler" or "QueryHandler" suffix to match OperationClaim names
-            // Example: "TransferCodesToDealerCommandHandler" -> "TransferCodesToDealer"
-            var operationName = fullHandlerName
-                .Replace("CommandHandler", "")
-                .Replace("QueryHandler", "");
+            // Remove only "Handler" suffix to match OperationClaim naming convention
+            // Claims are stored as: "CreateUserCommand", "GetUsersQuery", etc. (without "Handler")
+            operationName = operationName.Replace("Handler", "");
             
             // If operation claims exist and contain this operation, allow access
             if (oprClaims != null && oprClaims.Contains(operationName))

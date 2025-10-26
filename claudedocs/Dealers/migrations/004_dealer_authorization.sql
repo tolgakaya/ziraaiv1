@@ -15,40 +15,40 @@
 -- These will be used by the [SecuredOperation] attribute in handlers
 -- Using WHERE NOT EXISTS for idempotency (no unique constraint on Name)
 
--- TransferCodesToDealer
+-- TransferCodesToDealerCommand
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
-SELECT 'TransferCodesToDealer', 'dealer.transfer', 'Transfer sponsorship codes to dealer'
-WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'TransferCodesToDealer');
+SELECT 'TransferCodesToDealerCommand', 'dealer.transfer', 'Transfer sponsorship codes to dealer'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'TransferCodesToDealerCommand');
 
--- CreateDealerInvitation
+-- CreateDealerInvitationCommand
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
-SELECT 'CreateDealerInvitation', 'dealer.invite', 'Create dealer invitation (Invite/AutoCreate)'
-WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'CreateDealerInvitation');
+SELECT 'CreateDealerInvitationCommand', 'dealer.invite', 'Create dealer invitation (Invite/AutoCreate)'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'CreateDealerInvitationCommand');
 
--- ReclaimDealerCodes
+-- ReclaimDealerCodesCommand
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
-SELECT 'ReclaimDealerCodes', 'dealer.reclaim', 'Reclaim unused codes from dealer'
-WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'ReclaimDealerCodes');
+SELECT 'ReclaimDealerCodesCommand', 'dealer.reclaim', 'Reclaim unused codes from dealer'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'ReclaimDealerCodesCommand');
 
--- GetDealerPerformance
+-- GetDealerPerformanceQuery
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
-SELECT 'GetDealerPerformance', 'dealer.analytics', 'View dealer performance analytics'
-WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerPerformance');
+SELECT 'GetDealerPerformanceQuery', 'dealer.analytics', 'View dealer performance analytics'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerPerformanceQuery');
 
--- GetDealerSummary
+-- GetDealerSummaryQuery
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
-SELECT 'GetDealerSummary', 'dealer.summary', 'View all dealers summary'
-WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerSummary');
+SELECT 'GetDealerSummaryQuery', 'dealer.summary', 'View all dealers summary'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerSummaryQuery');
 
--- GetDealerInvitations
+-- GetDealerInvitationsQuery
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
-SELECT 'GetDealerInvitations', 'dealer.invitations', 'List dealer invitations'
-WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerInvitations');
+SELECT 'GetDealerInvitationsQuery', 'dealer.invitations', 'List dealer invitations'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'GetDealerInvitationsQuery');
 
--- SearchDealerByEmail
+-- SearchDealerByEmailQuery
 INSERT INTO public."OperationClaims" ("Name", "Alias", "Description")
-SELECT 'SearchDealerByEmail', 'dealer.search', 'Search dealer by email'
-WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'SearchDealerByEmail');
+SELECT 'SearchDealerByEmailQuery', 'dealer.search', 'Search dealer by email'
+WHERE NOT EXISTS (SELECT 1 FROM public."OperationClaims" WHERE "Name" = 'SearchDealerByEmailQuery');
 
 -- =====================================================
 -- PART 2: Assign Claims to Groups
@@ -63,13 +63,13 @@ INSERT INTO public."GroupClaims" ("GroupId", "ClaimId")
 SELECT 3, oc."Id"
 FROM public."OperationClaims" oc
 WHERE oc."Name" IN (
-    'TransferCodesToDealer',
-    'CreateDealerInvitation',
-    'ReclaimDealerCodes',
-    'GetDealerPerformance',
-    'GetDealerSummary',
-    'GetDealerInvitations',
-    'SearchDealerByEmail'
+    'TransferCodesToDealerCommand',
+    'CreateDealerInvitationCommand',
+    'ReclaimDealerCodesCommand',
+    'GetDealerPerformanceQuery',
+    'GetDealerSummaryQuery',
+    'GetDealerInvitationsQuery',
+    'SearchDealerByEmailQuery'
 )
 AND NOT EXISTS (
     SELECT 1 FROM public."GroupClaims" gc 
@@ -82,13 +82,13 @@ INSERT INTO public."GroupClaims" ("GroupId", "ClaimId")
 SELECT 1, oc."Id"
 FROM public."OperationClaims" oc
 WHERE oc."Name" IN (
-    'TransferCodesToDealer',
-    'CreateDealerInvitation',
-    'ReclaimDealerCodes',
-    'GetDealerPerformance',
-    'GetDealerSummary',
-    'GetDealerInvitations',
-    'SearchDealerByEmail'
+    'TransferCodesToDealerCommand',
+    'CreateDealerInvitationCommand',
+    'ReclaimDealerCodesCommand',
+    'GetDealerPerformanceQuery',
+    'GetDealerSummaryQuery',
+    'GetDealerInvitationsQuery',
+    'SearchDealerByEmailQuery'
 )
 AND NOT EXISTS (
     SELECT 1 FROM public."GroupClaims" gc 

@@ -14,7 +14,9 @@
       "Bash(__NEW_LINE__ echo \"=== Sponsorun mevcut paketlerini kontrol edelim ===\")",
       "Bash(__NEW_LINE__ echo \"=== Mevcut paketleri listeleyelim ===\")",
       "Bash(__NEW_LINE__ curl -s -X GET 'https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/codes?page=1&pageSize=10&status=available' -H \"Authorization: Bearer $TOKEN\" -H 'x-dev-arch-version: 1.0')",
-      "Bash(__NEW_LINE__ echo \"Purchase ID from codes: 26\")"
+      "Bash(__NEW_LINE__ echo \"Purchase ID from codes: 26\")",
+      "Bash(python3:*)",
+      "Bash(__NEW_LINE__ echo \"=== Check which handler name we''re looking for ===\")"
     ],
     "deny": [],
     "ask": [],
