@@ -103,19 +103,22 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // Get sponsor's access percentage
                 var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(request.SponsorId);
 
-                // Build query: Get all analyses where sponsor has sponsored the farmer
-                // If DealerId is provided, filter to only analyses distributed by that dealer
+                // Build query: Get all analyses where user is involved as sponsor OR dealer
+                // - As Sponsor: SponsorUserId = userId (codes distributed directly by sponsor)
+                // - As Dealer: DealerId = userId (codes distributed by dealer on behalf of sponsor)
+                // - Both roles: Show analyses from both capacities
                 var query = _plantAnalysisRepository.GetListAsync(a =>
-                    a.SponsorUserId == request.SponsorId &&
+                    (a.SponsorUserId == request.SponsorId || a.DealerId == request.SponsorId) &&
                     a.AnalysisStatus != null
                 );
 
                 var allAnalyses = await query;
                 var analysesQuery = allAnalyses.AsQueryable();
                 
-                // NEW: Filter by DealerId if provided (dealer view or main sponsor monitoring dealer)
-                if (request.DealerId.HasValue)
+                // Optional: Filter by specific DealerId if provided (for admin/sponsor monitoring specific dealer)
+                if (request.DealerId.HasValue && request.DealerId.Value != request.SponsorId)
                 {
+                    // Admin/Sponsor wants to see a specific dealer's analyses
                     analysesQuery = analysesQuery.Where(a => a.DealerId == request.DealerId.Value);
                 }
 
