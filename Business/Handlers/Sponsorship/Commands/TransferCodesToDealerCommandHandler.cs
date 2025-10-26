@@ -48,6 +48,12 @@ namespace Business.Handlers.Sponsorship.Commands
             // 2. Get unsent codes (not distributed to farmers) that belong to the main sponsor
             var unsentCodes = await _sponsorshipCodeRepository.GetUnsentCodesBySponsorAsync(request.UserId);
             
+            if (unsentCodes == null || !unsentCodes.Any())
+            {
+                return new ErrorDataResult<DealerCodeTransferResponseDto>(
+                    "No unsent codes available. All codes have been either used or distributed to farmers.");
+            }
+            
             // Filter: codes from the specific purchase, not yet transferred to dealer
             var availableCodes = unsentCodes
                 .Where(c => c.SponsorshipPurchaseId == request.PurchaseId 
