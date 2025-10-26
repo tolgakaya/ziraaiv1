@@ -43,16 +43,20 @@ namespace Business.BusinessAspects
             // Get operation name from handler class name
             // Example: "TransferCodesToDealerCommandHandler" -> "TransferCodesToDealerCommand"
             var operationName = invocation.Method?.DeclaringType?.Name;
-            
+
             if (string.IsNullOrEmpty(operationName))
             {
                 throw new SecurityException(Messages.AuthorizationsDenied);
             }
-            
+
             // Remove only "Handler" suffix to match OperationClaim naming convention
             // Claims are stored as: "CreateUserCommand", "GetUsersQuery", etc. (without "Handler")
             operationName = operationName.Replace("Handler", "");
-            
+
+            // DEBUG: Log for troubleshooting
+            var logger = ServiceTool.ServiceProvider.GetService<Microsoft.Extensions.Logging.ILogger<SecuredOperation>>();
+            logger?.LogInformation($"[SecuredOperation] UserId: {userId}, Operation: {operationName}, CachedClaims: {(oprClaims != null ? string.Join(", ", oprClaims) : "NULL")}");
+
             // If operation claims exist and contain this operation, allow access
             if (oprClaims != null && oprClaims.Contains(operationName))
             {
