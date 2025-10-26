@@ -421,7 +421,7 @@ namespace Business.Services.Sponsorship
             try
             {
                 var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
                     .OrderByDescending(x => x.CreatedDate);
 
                 var totalCount = await query.CountAsync();
@@ -452,7 +452,7 @@ namespace Business.Services.Sponsorship
             try
             {
                 var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
                     .Where(x => x.IsUsed == false)
                     .OrderByDescending(x => x.CreatedDate);
 
@@ -484,7 +484,7 @@ namespace Business.Services.Sponsorship
             try
             {
                 var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
                     .Where(x => x.DistributionDate == null)
                     .OrderByDescending(x => x.CreatedDate);
 
@@ -519,7 +519,7 @@ namespace Business.Services.Sponsorship
                 var cutoffDate = DateTime.Now.AddDays(-sentDaysAgo);
                 
                 var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
                     .Where(x => x.DistributionDate != null)
                     .Where(x => x.DistributionDate.Value.Date == cutoffDate.Date)
                     .Where(x => x.IsUsed == false)
@@ -555,7 +555,7 @@ namespace Business.Services.Sponsorship
             try
             {
                 var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId)
+                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
                     .Where(x => x.DistributionDate != null)
                     .Where(x => x.ExpiryDate < DateTime.Now)
                     .Where(x => x.IsUsed == false)
