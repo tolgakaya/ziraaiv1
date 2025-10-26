@@ -660,11 +660,12 @@ namespace PlantAnalysisWorkerService.Jobs
 
                 _logger.LogInformation($"[SponsorAttribution] ✅ Found sponsorship code: {code.Code}, SponsorId={code.SponsorId}");
 
-                // Set both attribution fields
+                // Set all attribution fields (sponsor, dealer, subscription)
                 analysis.ActiveSponsorshipId = activeSponsorship.Id;
                 analysis.SponsorCompanyId = code.SponsorId;
+                analysis.DealerId = code.DealerId; // Capture dealer who distributed the code
                 
-                _logger.LogInformation($"[SponsorAttribution] ✅ Analysis {analysis.Id} attributed to sponsor {code.SponsorId} (subscription {activeSponsorship.Id})");
+                _logger.LogInformation($"[SponsorAttribution] ✅ Analysis {analysis.Id} attributed to sponsor {code.SponsorId}, dealer {code.DealerId ?? 0} (subscription {activeSponsorship.Id})");
                 
                 // Invalidate sponsor dashboard cache
                 InvalidateSponsorDashboardCache(code.SponsorId);

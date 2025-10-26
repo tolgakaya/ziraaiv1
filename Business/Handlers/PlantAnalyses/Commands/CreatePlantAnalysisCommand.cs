@@ -448,11 +448,12 @@ namespace Business.Handlers.PlantAnalyses.Commands
 
                     Console.WriteLine($"[SponsorAttribution] ✅ Found sponsorship code: {code.Code}, SponsorId={code.SponsorId}");
 
-                    // Set both attribution fields
+                    // Set all attribution fields (sponsor, dealer, subscription)
                     analysis.ActiveSponsorshipId = activeSponsorship.Id;
                     analysis.SponsorCompanyId = code.SponsorId;
+                    analysis.DealerId = code.DealerId; // Capture dealer who distributed the code
                     
-                    Console.WriteLine($"[SponsorAttribution] ✅ Analysis {analysis.Id} attributed to sponsor {code.SponsorId} (subscription {activeSponsorship.Id})");
+                    Console.WriteLine($"[SponsorAttribution] ✅ Analysis {analysis.Id} attributed to sponsor {code.SponsorId}, dealer {code.DealerId ?? 0} (subscription {activeSponsorship.Id})");
                     
                     // Invalidate sponsor dashboard cache
                     InvalidateSponsorDashboardCache(code.SponsorId);
