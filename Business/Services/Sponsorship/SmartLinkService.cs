@@ -45,8 +45,8 @@ namespace Business.Services.Sponsorship
                 {
                     foreach (var purchase in profile.SponsorshipPurchases)
                     {
-                        // XL tier (ID=4) smart link oluşturabilir
-                        if (purchase.SubscriptionTierId == 4) // XL tier
+                        // XL tier (ID=5) smart link oluşturabilir
+                        if (purchase.SubscriptionTierId == 5) // XL tier
                         {
                             Console.WriteLine($"[SmartLinkService] Sponsor {sponsorId} has XL tier, can create smart links");
                             return true;

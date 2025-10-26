@@ -61,6 +61,9 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         
         // Subscription System
         public DbSet<SubscriptionTier> SubscriptionTiers { get; set; }
+
+        public DbSet<Feature> Features { get; set; }
+        public DbSet<TierFeature> TierFeatures { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<SubscriptionUsageLog> SubscriptionUsageLogs { get; set; }
         

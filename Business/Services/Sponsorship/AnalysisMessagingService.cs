@@ -65,9 +65,9 @@ namespace Business.Services.Sponsorship
             {
                 foreach (var purchase in profile.SponsorshipPurchases)
                 {
-                    // Sadece L, XL tier'larında mesajlaşma var (L=3, XL=4)
+                    // Sadece L, XL tier'larında mesajlaşma var (L=4, XL=5)
                     // M tier'da mesajlaşma yok çünkü çiftçi profili anonim
-                    if (purchase.SubscriptionTierId >= 3) // L=3, XL=4
+                    if (purchase.SubscriptionTierId >= 4) // L=4, XL=5
                     {
                         return true;
                     }
