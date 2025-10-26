@@ -41,7 +41,7 @@ namespace Business.BusinessAspects
             var oprClaims = _cacheManager.Get<IEnumerable<string>>($"{CacheKeys.UserIdForClaim}={userId}");
 
             var operationName = invocation.TargetType.ReflectedType.Name;
-            if (oprClaims.Contains(operationName))
+            if (oprClaims != null && oprClaims.Contains(operationName))
             {
                 return;
             }
