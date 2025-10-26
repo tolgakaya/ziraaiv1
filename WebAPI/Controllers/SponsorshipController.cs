@@ -1,4 +1,5 @@
 using Business.Handlers.Sponsorship.Commands;
+using Business.Handlers.Sponsorship.Commands;
 using Business.Handlers.Sponsorship.Queries;
 using Business.Handlers.Sponsorships.Queries;
 using Business.Handlers.SponsorProfiles.Commands;
@@ -1716,6 +1717,282 @@ namespace WebAPI.Controllers
         }
 
         #endregion
+
+        // ====== DEALER CODE DISTRIBUTION ENDPOINTS ======
+
+        /// <summary>
+        /// Transfer sponsorship codes to a dealer (sub-sponsor)
+        /// Main sponsor can distribute codes to dealers who will distribute them to farmers
+        /// </summary>
+        /// <param name="command">Transfer details (dealerId, purchaseId, codeCount)</param>
+        /// <returns>Transfer result with transferred code IDs</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("dealer/transfer-codes")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerCodeTransferResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<DealerCodeTransferResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> TransferCodesToDealer([FromBody] TransferCodesToDealerCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                command.UserId = userId.Value;
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Successfully transferred {Count} codes to dealer {DealerId}", 
+                        result.Data.TransferredCount, result.Data.DealerId);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error transferring codes to dealer for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Code transfer failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Create dealer invitation (Invite or AutoCreate types)
+        /// Invite: Sends invitation link to existing sponsor
+        /// AutoCreate: Creates new sponsor account with auto-generated password
+        /// </summary>
+        /// <param name="command">Invitation details (email, phone, dealerName, invitationType, purchaseId, codeCount)</param>
+        /// <returns>Invitation details with token/link or auto-created credentials</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("dealer/invite")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerInvitationResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<DealerInvitationResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CreateDealerInvitation([FromBody] CreateDealerInvitationCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                command.SponsorId = userId.Value;
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Dealer invitation created for sponsor {SponsorId}, type: {Type}", 
+                        userId.Value, command.InvitationType);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating dealer invitation for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Invitation creation failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Reclaim unused codes from a dealer back to main sponsor
+        /// Allows main sponsor to reclaim codes that were transferred but not yet distributed
+        /// </summary>
+        /// <param name="command">Reclaim details (dealerId, optional codeIds)</param>
+        /// <returns>Reclaim result with reclaimed code IDs and count</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("dealer/reclaim-codes")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<ReclaimCodesResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<ReclaimCodesResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ReclaimDealerCodes([FromBody] ReclaimDealerCodesCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                command.UserId = userId.Value;
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Successfully reclaimed {Count} codes from dealer {DealerId}", 
+                        result.Data.ReclaimedCount, result.Data.DealerId);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reclaiming codes from dealer for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Code reclaim failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get performance analytics for a specific dealer
+        /// Shows codes received, sent, used, available, reclaimed, and unique farmers reached
+        /// </summary>
+        /// <param name="dealerId">Dealer user ID</param>
+        /// <returns>Detailed dealer performance metrics</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("dealer/analytics/{dealerId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerPerformanceDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<DealerPerformanceDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetDealerPerformance(int dealerId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetDealerPerformanceQuery
+                {
+                    UserId = userId.Value,
+                    DealerId = dealerId
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting dealer performance for sponsor {UserId}, dealer {DealerId}", 
+                    GetUserId(), dealerId);
+                return StatusCode(500, new ErrorResult($"Dealer performance retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get summary of all dealers for current sponsor
+        /// Aggregated statistics across all dealers
+        /// </summary>
+        /// <returns>Dealer summary with aggregated metrics and individual dealer list</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("dealer/summary")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerSummaryDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetDealerSummary()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetDealerSummaryQuery
+                {
+                    SponsorId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting dealer summary for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Dealer summary retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get list of dealer invitations for current sponsor
+        /// Optional status filter (Pending, Accepted, Expired, Cancelled)
+        /// </summary>
+        /// <param name="status">Optional status filter</param>
+        /// <returns>List of dealer invitations</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("dealer/invitations")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<DealerInvitationListDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetDealerInvitations([FromQuery] string status = null)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetDealerInvitationsQuery
+                {
+                    SponsorId = userId.Value,
+                    Status = status
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting dealer invitations for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Invitations retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Search for existing sponsor/dealer by email (Method A: Manual search)
+        /// Returns user details and sponsor role status
+        /// </summary>
+        /// <param name="email">Email address to search</param>
+        /// <returns>User details with sponsor role flag</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("dealer/search")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerSearchResultDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<DealerSearchResultDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> SearchDealerByEmail([FromQuery] string email)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(email))
+                    return BadRequest(new ErrorDataResult<DealerSearchResultDto>("Email is required"));
+
+                var query = new SearchDealerByEmailQuery
+                {
+                    Email = email
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching dealer by email for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Dealer search failed: {ex.Message}"));
+            }
+        }
 
         /// <summary>
         /// Get list of blocked sponsors for current farmer

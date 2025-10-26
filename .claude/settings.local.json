@@ -61,7 +61,8 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(git pull:*)",
       "Bash(Select-String -Pattern \"error CS|Build succeeded|Build FAILED\")",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": [],
