@@ -15,6 +15,13 @@ namespace Entities.Concrete
         public int SubscriptionTierId { get; set; } // Which subscription tier this code provides
         public int SponsorshipPurchaseId { get; set; } // Link to bulk purchase record
         
+        // Dealer Distribution (NEW)
+        public int? DealerId { get; set; } // Dealer who received this code (NULL = direct sponsor distribution)
+        public DateTime? TransferredAt { get; set; } // When code was transferred to dealer
+        public int? TransferredByUserId { get; set; } // Who transferred the code
+        public DateTime? ReclaimedAt { get; set; } // When code was reclaimed from dealer
+        public int? ReclaimedByUserId { get; set; } // Who reclaimed the code
+        
         // Usage Information
         public bool IsUsed { get; set; }
         public int? UsedByUserId { get; set; } // Farmer who redeemed the code

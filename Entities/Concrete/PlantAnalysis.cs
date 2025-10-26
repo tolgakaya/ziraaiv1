@@ -27,6 +27,9 @@ namespace Entities.Concrete
         public int? SponsorshipCodeId { get; set; }
         public int? SponsorUserId { get; set; }
         
+        // Dealer Distribution (NEW)
+        public int? DealerId { get; set; } // Dealer who distributed the code (NULL = direct sponsor distribution)
+        
         // Sponsor Attribution (tracks which sponsor was active during analysis)
         public int? ActiveSponsorshipId { get; set; } // FK to UserSubscription that was active
         public int? SponsorCompanyId { get; set; } // Denormalized sponsor company ID for performance
