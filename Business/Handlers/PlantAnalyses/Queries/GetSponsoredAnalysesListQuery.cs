@@ -34,6 +34,12 @@ namespace Business.Handlers.PlantAnalyses.Queries
         public string FilterByCropType { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        
+        /// <summary>
+        /// Filter by dealer ID to show only analyses distributed by specific dealer
+        /// Used for dealer view (their own analyses) or main sponsor view (monitoring dealer)
+        /// </summary>
+        public int? DealerId { get; set; }
 
 
         // NEW: Message Status Filters
@@ -98,6 +104,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(request.SponsorId);
 
                 // Build query: Get all analyses where sponsor has sponsored the farmer
+                // If DealerId is provided, filter to only analyses distributed by that dealer
                 var query = _plantAnalysisRepository.GetListAsync(a =>
                     a.SponsorUserId == request.SponsorId &&
                     a.AnalysisStatus != null
@@ -105,6 +112,12 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 var allAnalyses = await query;
                 var analysesQuery = allAnalyses.AsQueryable();
+                
+                // NEW: Filter by DealerId if provided (dealer view or main sponsor monitoring dealer)
+                if (request.DealerId.HasValue)
+                {
+                    analysesQuery = analysesQuery.Where(a => a.DealerId == request.DealerId.Value);
+                }
 
                 // Apply filters
                 if (!string.IsNullOrEmpty(request.FilterByCropType))
