@@ -56,7 +56,9 @@
       "Bash(__NEW_LINE__ echo \"=== Step 4: Farmer Redeems Code AGRI-2025-36767AD6 ===\")",
       "Bash(__NEW_LINE__ echo \"=== Check Farmer Subscription Status ===\")",
       "Bash(__NEW_LINE__ echo \"=== CORRECT: Farmer Redeems Code AGRI-2025-36767AD6 ===\")",
-      "Bash(__NEW_LINE__ echo \"=== Step 5: Verify Farmer Subscription Active ===\")"
+      "Bash(__NEW_LINE__ echo \"=== Step 5: Verify Farmer Subscription Active ===\")",
+      "Bash(__NEW_LINE__ echo \"=== Farmer''s Existing Analyses ===\")",
+      "Bash(__NEW_LINE__ echo \"=== Dealer''s view of ALL analyses ===\")"
     ],
     "deny": [],
     "ask": [],

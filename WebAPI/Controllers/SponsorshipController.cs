@@ -930,7 +930,8 @@ namespace WebAPI.Controllers
             [FromQuery] string filterByCropType = null,
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
-            // NEW: Message Status Filters
+            [FromQuery] int? dealerId = null, // NEW: Filter by dealer (for dealer view)
+            // Message Status Filters
             [FromQuery] string filterByMessageStatus = null,
             [FromQuery] bool? hasUnreadMessages = null,
             [FromQuery] bool? hasUnreadForCurrentUser = null,
@@ -952,6 +953,7 @@ namespace WebAPI.Controllers
                 var query = new GetSponsoredAnalysesListQuery
                 {
                     SponsorId = userId.Value,
+                    DealerId = dealerId, // NEW: Pass dealer filter
                     Page = page,
                     PageSize = pageSize,
                     SortBy = sortBy,
@@ -960,7 +962,7 @@ namespace WebAPI.Controllers
                     FilterByCropType = filterByCropType,
                     StartDate = startDate,
                     EndDate = endDate,
-                    // NEW: Pass messaging filters
+                    // Pass messaging filters
                     FilterByMessageStatus = filterByMessageStatus,
                     HasUnreadMessages = hasUnreadMessages,
                     HasUnreadForCurrentUser = hasUnreadForCurrentUser,
