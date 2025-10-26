@@ -1,4 +1,5 @@
 using Business.Services.Sponsorship;
+using Business.Services.Subscription;
 using Business.Hubs;
 using DataAccess.Abstract;
 using Entities.Concrete;
@@ -20,6 +21,7 @@ namespace Business.Services.Sponsorship
         private readonly IFarmerSponsorBlockRepository _blockRepository;
         private readonly IMessageRateLimitService _rateLimitService;
         private readonly IHubContext<PlantAnalysisHub> _hubContext;
+        private readonly ITierFeatureService _tierFeatureService;
 
         public AnalysisMessagingService(
             IAnalysisMessageRepository messageRepository,
@@ -29,7 +31,8 @@ namespace Business.Services.Sponsorship
             IPlantAnalysisRepository plantAnalysisRepository,
             IFarmerSponsorBlockRepository blockRepository,
             IMessageRateLimitService rateLimitService,
-            IHubContext<PlantAnalysisHub> hubContext)
+            IHubContext<PlantAnalysisHub> hubContext,
+            ITierFeatureService tierFeatureService)
         {
             _messageRepository = messageRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
@@ -39,6 +42,7 @@ namespace Business.Services.Sponsorship
             _plantAnalysisRepository = plantAnalysisRepository;
             _blockRepository = blockRepository;
             _rateLimitService = rateLimitService;
+            _tierFeatureService = tierFeatureService;
         }
 
         /// <summary>
@@ -60,14 +64,14 @@ namespace Business.Services.Sponsorship
                 return false;
             }
 
-            // Sponsor'un M, L veya XL paketi satın almış olması gerekiyor (mesajlaşma için)
+            // Check if sponsor has messaging feature in any of their active purchases
             if (profile.SponsorshipPurchases != null && profile.SponsorshipPurchases.Any())
             {
                 foreach (var purchase in profile.SponsorshipPurchases)
                 {
-                    // Sadece L, XL tier'larında mesajlaşma var (L=4, XL=5)
-                    // M tier'da mesajlaşma yok çünkü çiftçi profili anonim
-                    if (purchase.SubscriptionTierId >= 4) // L=4, XL=5
+                    // Use TierFeatureService to check if tier has messaging feature
+                    var hasMessaging = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "messaging");
+                    if (hasMessaging)
                     {
                         return true;
                     }

@@ -1,10 +1,17 @@
 using Business.Services.Sponsorship;
+using Business.Services.Subscription;
 using DataAccess.Abstract;
 using Entities.Concrete;
 using System.Threading.Tasks;
 
 namespace Business.Services.Sponsorship
 {
+    public class SponsorVisibilityConfig
+    {
+        public bool showLogo { get; set; }
+        public bool showProfile { get; set; }
+    }
+
     public class SponsorVisibilityService : ISponsorVisibilityService
     {
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
@@ -12,19 +19,22 @@ namespace Business.Services.Sponsorship
         private readonly ISponsorshipPurchaseRepository _sponsorshipPurchaseRepository;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
         private readonly ISponsorProfileRepository _sponsorProfileRepository;
+        private readonly ITierFeatureService _tierFeatureService;
 
         public SponsorVisibilityService(
             IPlantAnalysisRepository plantAnalysisRepository,
             ISponsorshipCodeRepository sponsorshipCodeRepository,
             ISponsorshipPurchaseRepository sponsorshipPurchaseRepository,
             ISubscriptionTierRepository subscriptionTierRepository,
-            ISponsorProfileRepository sponsorProfileRepository)
+            ISponsorProfileRepository sponsorProfileRepository,
+            ITierFeatureService tierFeatureService)
         {
             _plantAnalysisRepository = plantAnalysisRepository;
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
             _subscriptionTierRepository = subscriptionTierRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
+            _tierFeatureService = tierFeatureService;
         }
 
         public async Task<bool> CanShowLogoOnResultScreenAsync(int sponsorId)
@@ -43,15 +53,19 @@ namespace Business.Services.Sponsorship
             if (profile == null || !profile.IsActive)
                 return false;
 
-            // Sponsor'un M, L veya XL paketi satın almış olması gerekiyor
+            // Check if sponsor has sponsor_visibility feature with showLogo=true
             var purchases = await _sponsorshipPurchaseRepository.GetBySponsorIdAsync(sponsorId);
             
             foreach (var purchase in purchases)
             {
-                var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == purchase.SubscriptionTierId);
-                if (tier != null && (tier.TierName == "M" || tier.TierName == "L" || tier.TierName == "XL"))
+                var hasVisibility = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "sponsor_visibility");
+                if (hasVisibility)
                 {
-                    return true;
+                    var config = await _tierFeatureService.GetFeatureConfigAsync<SponsorVisibilityConfig>(purchase.SubscriptionTierId, "sponsor_visibility");
+                    if (config?.showLogo == true)
+                    {
+                        return true;
+                    }
                 }
             }
             
@@ -64,15 +78,19 @@ namespace Business.Services.Sponsorship
             if (profile == null || !profile.IsActive)
                 return false;
 
-            // Sponsor'un L veya XL paketi satın almış olması gerekiyor
+            // Check if sponsor has sponsor_visibility feature with both showLogo and showProfile=true
             var purchases = await _sponsorshipPurchaseRepository.GetBySponsorIdAsync(sponsorId);
             
             foreach (var purchase in purchases)
             {
-                var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == purchase.SubscriptionTierId);
-                if (tier != null && (tier.TierName == "L" || tier.TierName == "XL"))
+                var hasVisibility = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "sponsor_visibility");
+                if (hasVisibility)
                 {
-                    return true;
+                    var config = await _tierFeatureService.GetFeatureConfigAsync<SponsorVisibilityConfig>(purchase.SubscriptionTierId, "sponsor_visibility");
+                    if (config?.showLogo == true && config?.showProfile == true)
+                    {
+                        return true;
+                    }
                 }
             }
             
@@ -137,16 +155,33 @@ namespace Business.Services.Sponsorship
 
         public async Task<bool> CanShowLogoOnScreenAsync(int plantAnalysisId, string screenType)
         {
-            var tierName = await GetTierNameFromAnalysisAsync(plantAnalysisId);
-            if (string.IsNullOrEmpty(tierName))
+            var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
+            if (analysis?.SponsorshipCodeId == null)
+                return false;
+
+            var sponsorshipCode = await _sponsorshipCodeRepository.GetAsync(c => c.Id == analysis.SponsorshipCodeId);
+            if (sponsorshipCode == null)
+                return false;
+
+            var purchase = await _sponsorshipPurchaseRepository.GetAsync(p => p.Id == sponsorshipCode.SponsorshipPurchaseId);
+            if (purchase == null)
+                return false;
+
+            // Check sponsor_visibility feature access
+            var hasVisibility = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "sponsor_visibility");
+            if (!hasVisibility)
+                return false;
+
+            var config = await _tierFeatureService.GetFeatureConfigAsync<SponsorVisibilityConfig>(purchase.SubscriptionTierId, "sponsor_visibility");
+            if (config == null)
                 return false;
 
             return screenType.ToLower() switch
             {
-                "result" => true, // Tüm tier'lar result screen'de gösterebilir
-                "start" => tierName == "M" || tierName == "L" || tierName == "XL",
-                "analysis" => tierName == "L" || tierName == "XL",
-                "profile" => tierName == "L" || tierName == "XL",
+                "result" => config.showLogo, // Show logo if configured
+                "start" => config.showLogo,
+                "analysis" => config.showLogo && config.showProfile, // Full visibility required
+                "profile" => config.showLogo && config.showProfile, // Full visibility required
                 _ => false
             };
         }
