@@ -1042,7 +1042,7 @@ namespace WebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(PaginatedResult<List<AnalysisMessageDto>>))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetConversation(
-            int otherUserId, 
+            int otherUserId,
             int plantAnalysisId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20)
@@ -1050,6 +1050,30 @@ namespace WebAPI.Controllers
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
+
+            // AUTHORIZATION CHECK: Verify user has access to this analysis
+            // Use service to get full analysis entity (not DTO) for authorization
+            var analysisMessagingService = HttpContext.RequestServices.GetService(typeof(Business.Services.Sponsorship.IAnalysisMessagingService)) as Business.Services.Sponsorship.IAnalysisMessagingService;
+            var analysis = await analysisMessagingService.GetPlantAnalysisAsync(plantAnalysisId);
+
+            if (analysis == null)
+            {
+                return NotFound(new { success = false, message = "Analysis not found" });
+            }
+
+            // Check if user has permission to view this conversation
+            // Permissions:
+            // - Farmer: UserId matches analysis.UserId
+            // - Sponsor: SponsorUserId matches OR DealerId matches (hybrid support)
+            // - Admin: Always allowed (role check at attribute level)
+            bool hasAccess = (analysis.UserId == userId.Value) ||  // Farmer
+                             (analysis.SponsorUserId == userId.Value) ||  // Main Sponsor
+                             (analysis.DealerId == userId.Value);  // Dealer
+
+            if (!hasAccess)
+            {
+                return Forbid();  // 403 Forbidden
+            }
 
             // Validate and limit page size
             if (pageSize > 100) pageSize = 100;
@@ -1064,12 +1088,12 @@ namespace WebAPI.Controllers
                 Page = page,
                 PageSize = pageSize
             };
-            
+
             var result = await Mediator.Send(query);
-            
+
             if (result.Success)
                 return Ok(result);
-            
+
             return BadRequest(result);
         }
 

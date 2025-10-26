@@ -9,6 +9,8 @@ namespace Business.Services.Sponsorship
         Task<bool> CanSendMessageAsync(int sponsorId);
         Task<(bool canSend, string errorMessage)> CanSendMessageForAnalysisAsync(int sponsorId, int farmerId, int plantAnalysisId);
         Task<(bool canReply, string errorMessage)> CanFarmerReplyAsync(int farmerId, int sponsorId, int plantAnalysisId);
+
+        Task<Entities.Concrete.PlantAnalysis> GetPlantAnalysisAsync(int plantAnalysisId);
         Task<AnalysisMessage> SendMessageAsync(int fromUserId, int toUserId, int plantAnalysisId, string message, string messageType = "Information");
         Task SendMessageNotificationAsync(
             AnalysisMessage message, 

@@ -90,7 +90,7 @@ namespace Business.Services.Sponsorship
                 return (false, "Messaging is only available for L and XL tier sponsors");
             }
 
-            // 2. Check analysis ownership - sponsor must own this analysis
+            // 2. Check analysis ownership - sponsor must own this analysis OR be the dealer who distributed the code
             var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
             if (analysis == null)
             {
@@ -104,10 +104,16 @@ namespace Business.Services.Sponsorship
                 return (false, "Sponsor profile not found");
             }
 
-            // Verify analysis was sponsored by this sponsor (check SponsorUserId match)
-            if (analysis.SponsorUserId != sponsorId)
+            // Verify analysis attribution - user must be involved as sponsor OR dealer
+            // - As Sponsor: SponsorUserId = sponsorId (codes purchased by sponsor)
+            // - As Dealer: DealerId = sponsorId (codes distributed by dealer on behalf of sponsor)
+            // - Hybrid: Users who are both sponsor and dealer can access analyses from both roles
+            bool hasAttribution = (analysis.SponsorUserId == sponsorId) || 
+                                  (analysis.DealerId == sponsorId);
+
+            if (!hasAttribution)
             {
-                return (false, "You can only message farmers for analyses done using your sponsorship codes");
+                return (false, "You can only message farmers for analyses done using sponsorship codes you purchased or distributed");
             }
 
             // Verify sponsor has access record for this analysis
@@ -159,18 +165,22 @@ namespace Business.Services.Sponsorship
             }
 
             // 3. Verify analysis was sponsored
-            if (!analysis.SponsorUserId.HasValue)
+            if (!analysis.SponsorUserId.HasValue && !analysis.DealerId.HasValue)
             {
                 return (false, "This analysis was not sponsored");
             }
 
-            // 4. Verify sponsor matches
-            if (analysis.SponsorUserId.Value != sponsorId)
+            // 4. Verify sponsor/dealer matches - accept messages from either sponsor OR dealer
+            // sponsorId parameter actually represents whoever sent the message (could be sponsor or dealer)
+            bool isValidMessageSender = (analysis.SponsorUserId.HasValue && analysis.SponsorUserId.Value == sponsorId) ||
+                                        (analysis.DealerId.HasValue && analysis.DealerId.Value == sponsorId);
+
+            if (!isValidMessageSender)
             {
-                return (false, "Invalid sponsor for this analysis");
+                return (false, "Invalid sponsor/dealer for this analysis");
             }
 
-            // 5. Check if sponsor has sent at least one message to farmer
+            // 5. Check if sponsor/dealer has sent at least one message to farmer
             var sponsorMessage = await _messageRepository.GetAsync(
                 m => m.PlantAnalysisId == plantAnalysisId &&
                      m.FromUserId == sponsorId &&
@@ -178,7 +188,7 @@ namespace Business.Services.Sponsorship
 
             if (sponsorMessage == null)
             {
-                return (false, "You can only reply after the sponsor sends you a message first");
+                return (false, "You can only reply after the sponsor/dealer sends you a message first");
             }
 
             // 6. Check if farmer has blocked this sponsor
@@ -189,6 +199,11 @@ namespace Business.Services.Sponsorship
             }
 
             return (true, string.Empty);
+        }
+
+        public async Task<Entities.Concrete.PlantAnalysis> GetPlantAnalysisAsync(int plantAnalysisId)
+        {
+            return await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
         }
 
         /// <summary>
