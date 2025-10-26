@@ -43,17 +43,20 @@ namespace WebAPI.Controllers
         private readonly ISponsorshipTierMappingService _tierMappingService;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
         private readonly IConfiguration _configuration;
+        private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
 
         public SponsorshipController(
             ILogger<SponsorshipController> logger,
             ISponsorshipTierMappingService tierMappingService,
             ISubscriptionTierRepository subscriptionTierRepository,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ISponsorshipCodeRepository sponsorshipCodeRepository)
         {
             _logger = logger;
             _tierMappingService = tierMappingService;
             _subscriptionTierRepository = subscriptionTierRepository;
             _configuration = configuration;
+            _sponsorshipCodeRepository = sponsorshipCodeRepository;
         }
         /// <summary>
         /// Get subscription tiers for sponsor package purchase selection
@@ -950,10 +953,24 @@ namespace WebAPI.Controllers
                 if (!userId.HasValue)
                     return Unauthorized();
 
+                // Auto-detect if user is a dealer (has distributed codes)
+                // If user has codes where they are the DealerId, they should only see analyses from those codes
+                int? autoDealerId = dealerId; // Use provided dealerId if any (for admin/sponsor monitoring)
+                if (!autoDealerId.HasValue)
+                {
+                    // Check if this user is a dealer by checking if they have any codes assigned to them
+                    var dealerCodes = await _sponsorshipCodeRepository.GetListAsync(c => c.DealerId == userId.Value);
+                    if (dealerCodes != null && dealerCodes.Any())
+                    {
+                        autoDealerId = userId.Value; // User is a dealer, filter by their DealerId
+                        _logger.LogInformation($"[DealerDetection] User {userId.Value} identified as dealer with {dealerCodes.Count()} codes");
+                    }
+                }
+
                 var query = new GetSponsoredAnalysesListQuery
                 {
                     SponsorId = userId.Value,
-                    DealerId = dealerId, // NEW: Pass dealer filter
+                    DealerId = autoDealerId, // Auto-detected or provided dealerId
                     Page = page,
                     PageSize = pageSize,
                     SortBy = sortBy,
