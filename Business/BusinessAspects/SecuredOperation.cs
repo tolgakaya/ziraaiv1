@@ -40,11 +40,16 @@ namespace Business.BusinessAspects
 
             var oprClaims = _cacheManager.Get<IEnumerable<string>>($"{CacheKeys.UserIdForClaim}={userId}");
 
-            var operationName = invocation.TargetType?.ReflectedType?.Name;
-            if (operationName == null)
+            // Get operation name from method being called
+            // Use Method.DeclaringType.Name instead of TargetType.ReflectedType
+            var operationName = invocation.Method?.DeclaringType?.Name;
+            
+            if (string.IsNullOrEmpty(operationName))
             {
                 throw new SecurityException(Messages.AuthorizationsDenied);
             }
+            
+            // If operation claims exist and contain this operation, allow access
             if (oprClaims != null && oprClaims.Contains(operationName))
             {
                 return;
