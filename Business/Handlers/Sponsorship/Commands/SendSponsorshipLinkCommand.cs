@@ -76,15 +76,16 @@ namespace Business.Handlers.Sponsorship.Commands
                     // Validate codes exist and are available
                     var codes = request.Recipients.Select(r => r.Code).ToList();
                     
-                    // Fetch codes based on AllowResendExpired flag
+                    // ✅ FIX: Fetch codes based on AllowResendExpired flag
+                    // Support both sponsor (original owner) and dealer (transferred to)
                     var validCodes = request.AllowResendExpired
                         ? await _codeRepository.GetListAsync(c => 
                             codes.Contains(c.Code) && 
-                            c.SponsorId == request.SponsorId && 
+                            (c.SponsorId == request.SponsorId || c.DealerId == request.SponsorId) &&  // ✅ Check both!
                             !c.IsUsed)  // Allow expired codes if AllowResendExpired=true
                         : await _codeRepository.GetListAsync(c => 
                             codes.Contains(c.Code) && 
-                            c.SponsorId == request.SponsorId && 
+                            (c.SponsorId == request.SponsorId || c.DealerId == request.SponsorId) &&  // ✅ Check both!
                             !c.IsUsed && 
                             c.ExpiryDate > DateTime.Now);  // Only non-expired codes
 
