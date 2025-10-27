@@ -61,10 +61,10 @@ namespace Entities.Concrete
         public int CreatedByUserId { get; set; }
         
         /// <summary>
-        /// When this mapping was last modified
+        /// When this mapping was last updated
         /// </summary>
-        public DateTime? ModifiedDate { get; set; }
-        
+        public DateTime? UpdatedDate { get; set; }
+
         /// <summary>
         /// User ID who last modified this mapping
         /// For audit trail

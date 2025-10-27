@@ -34,9 +34,10 @@ namespace DataAccess.Concrete.Configurations
             builder.Property(tf => tf.ExpiryDate);
 
             builder.Property(tf => tf.CreatedDate)
-                .IsRequired();
+                .IsRequired()
+                .HasDefaultValueSql("NOW()");
 
-            builder.Property(tf => tf.ModifiedDate);
+            builder.Property(tf => tf.UpdatedDate);
 
             builder.Property(tf => tf.CreatedByUserId)
                 .IsRequired();
