@@ -42,9 +42,10 @@ namespace DataAccess.Concrete.Configurations
                 .HasDefaultValue(false);
 
             builder.Property(f => f.CreatedDate)
-                .IsRequired();
+                .IsRequired()
+                .HasDefaultValueSql("NOW()");
 
-            builder.Property(f => f.ModifiedDate);
+            builder.Property(f => f.UpdatedDate);
 
             // Navigation properties
             builder.HasMany(f => f.TierFeatures)

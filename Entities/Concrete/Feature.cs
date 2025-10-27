@@ -56,11 +56,11 @@ namespace Entities.Concrete
         /// When this feature was created
         /// </summary>
         public DateTime CreatedDate { get; set; }
-        
+
         /// <summary>
-        /// When this feature was last modified
+        /// When this feature was last updated
         /// </summary>
-        public DateTime? ModifiedDate { get; set; }
+        public DateTime? UpdatedDate { get; set; }
         
         // Navigation Properties
         
