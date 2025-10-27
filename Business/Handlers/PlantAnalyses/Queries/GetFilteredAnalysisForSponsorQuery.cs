@@ -22,15 +22,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
         {
             private readonly ISponsorDataAccessService _dataAccessService;
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
+            private readonly ISubscriptionTierRepository _subscriptionTierRepository;
             private readonly IMediator _mediator;
 
             public GetFilteredAnalysisForSponsorQueryHandler(
                 ISponsorDataAccessService dataAccessService,
                 ISponsorProfileRepository sponsorProfileRepository,
+                ISubscriptionTierRepository subscriptionTierRepository,
                 IMediator mediator)
             {
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
+                _subscriptionTierRepository = subscriptionTierRepository;
                 _mediator = mediator;
             }
 
@@ -73,18 +76,26 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // Get sponsor profile for branding info
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(request.SponsorId);
 
-                // Build response with tier metadata (static values)
+                // Get sponsor's highest tier from purchases
+                var sponsorTier = await GetSponsorHighestTierAsync(sponsorProfile);
+                var tierName = sponsorTier?.TierName ?? "Unknown";
+
+                // Apply tier-based feature permissions
+                var canMessage = IsTierAllowedToMessage(tierName);
+                var canViewFarmerContact = IsTierAllowedToViewFarmerContact(tierName);
+
+                // Build response with tier metadata
                 var response = new SponsoredAnalysisDetailDto
                 {
                     Analysis = filteredDetail,
                     TierMetadata = new AnalysisTierMetadata
                     {
-                        // 🎯 Static tier values - all sponsors have full access
-                        TierName = "Standard",
-                        AccessPercentage = 100,
-                        CanMessage = true,
-                        CanReply = true, // Add this if DTO has it
-                        CanViewLogo = true,
+                        // 🎯 Real tier from purchases
+                        TierName = tierName,
+                        AccessPercentage = 100, // Always 100 - no field/count restrictions
+                        CanMessage = canMessage,
+                        CanReply = canMessage, // Same as CanMessage
+                        CanViewLogo = true, // All tiers can view logo
                         SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
                         {
                             SponsorId = sponsorProfile.SponsorId,
@@ -94,7 +105,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         } : null,
                         AccessibleFields = new AccessibleFieldsInfo
                         {
-                            // 🎯 All fields accessible (no tier-based restrictions)
+                            // 🎯 All analysis fields accessible (no tier-based field restrictions)
                             CanViewBasicInfo = true,
                             CanViewHealthScore = true,
                             CanViewImages = true,
@@ -103,7 +114,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                             CanViewNutrients = true,
                             CanViewRecommendations = true,
                             CanViewLocation = true,
-                            CanViewFarmerContact = true,
+                            CanViewFarmerContact = canViewFarmerContact, // XL tier only
                             CanViewFieldData = true,
                             CanViewProcessingData = true
                         }
@@ -113,9 +124,64 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 return new SuccessDataResult<SponsoredAnalysisDetailDto>(response);
             }
 
-            // 🎯 REMOVED: ApplyTierBasedFiltering and GetTierName methods
-            // All analysis fields are now shown regardless of tier
-            // Static tier values returned to all sponsors
+            /// <summary>
+            /// Get sponsor's highest tier from their active purchases
+            /// </summary>
+            private async Task<SubscriptionTier> GetSponsorHighestTierAsync(SponsorProfile sponsorProfile)
+            {
+                if (sponsorProfile?.SponsorshipPurchases == null || !sponsorProfile.SponsorshipPurchases.Any())
+                    return null;
+
+                var activePurchases = sponsorProfile.SponsorshipPurchases
+                    .Where(p => p.PaymentStatus == "Completed")
+                    .ToList();
+
+                if (!activePurchases.Any())
+                    return null;
+
+                var tierIds = activePurchases.Select(p => p.SubscriptionTierId).Distinct().ToList();
+                var tiers = await _subscriptionTierRepository.GetListAsync(t => tierIds.Contains(t.Id));
+
+                return tiers.OrderByDescending(t => GetTierPriority(t.TierName)).FirstOrDefault();
+            }
+
+            /// <summary>
+            /// Get tier priority for sorting (XL > L > M > S > Trial)
+            /// </summary>
+            private int GetTierPriority(string tierName)
+            {
+                return tierName?.ToUpper() switch
+                {
+                    "XL" => 5,
+                    "L" => 4,
+                    "M" => 3,
+                    "S" => 2,
+                    "TRIAL" => 1,
+                    _ => 0
+                };
+            }
+
+            /// <summary>
+            /// Check if tier allows messaging (M, L, XL only)
+            /// </summary>
+            private bool IsTierAllowedToMessage(string tierName)
+            {
+                return tierName?.ToUpper() switch
+                {
+                    "M" => true,
+                    "L" => true,
+                    "XL" => true,
+                    _ => false
+                };
+            }
+
+            /// <summary>
+            /// Check if tier allows viewing farmer contact (XL only)
+            /// </summary>
+            private bool IsTierAllowedToViewFarmerContact(string tierName)
+            {
+                return tierName?.ToUpper() == "XL";
+            }
         }
     }
 }
