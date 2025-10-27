@@ -100,8 +100,9 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     return new ErrorDataResult<SponsoredAnalysesListResponseDto>("Sponsor profile not found or inactive");
                 }
 
-                // Get sponsor's access percentage
-                var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(request.SponsorId);
+                // 🎯 REMOVED: Access percentage no longer used for filtering
+                // All sponsors see all their analyses with full data
+                // Tier-based features (messaging, logo) controlled separately
 
                 // Build query: Get all analyses where user is involved as sponsor OR dealer
                 // - As Sponsor: SponsorUserId = userId (codes distributed directly by sponsor)
@@ -210,7 +211,6 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 {
                     var dto = MapToSummaryDto(
                         analysis,
-                        accessPercentage,
                         sponsorProfile);
 
                     // Add messaging status (both nested and flat for backward compatibility)
@@ -303,7 +303,6 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
             private SponsoredAnalysisSummaryDto MapToSummaryDto(
                 Entities.Concrete.PlantAnalysis analysis,
-                int accessPercentage,
                 Entities.Concrete.SponsorProfile sponsorProfile)
             {
                 var dto = new SponsoredAnalysisSummaryDto
@@ -314,11 +313,11 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     AnalysisStatus = analysis.AnalysisStatus,
                     CropType = analysis.CropType,
 
-                    // Tier info
-                    TierName = GetTierName(accessPercentage),
-                    AccessPercentage = accessPercentage,
-                    CanMessage = accessPercentage >= 30, // M, L, XL tiers can message
-                    CanViewLogo = true, // All tiers can view logo
+                    // 🎯 Tier info - Static values (no database lookup)
+                    TierName = "Standard", // Generic tier name for all sponsors
+                    AccessPercentage = 100, // All sponsors have full access
+                    CanMessage = true, // All sponsors can message
+                    CanViewLogo = true, // All sponsors can view logo
 
                     // Sponsor info
                     SponsorInfo = new SponsorDisplayInfoDto
@@ -329,8 +328,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         WebsiteUrl = sponsorProfile.WebsiteUrl
                     },
 
-                    // 🎯 ALL analysis fields (no conditional field filtering!)
-                    // Access percentage now limits ANALYSIS COUNT, not field visibility
+                    // 🎯 ALL analysis fields (always visible)
                     OverallHealthScore = analysis.OverallHealthScore,
                     PlantSpecies = analysis.PlantSpecies,
                     PlantVariety = analysis.PlantVariety,
@@ -341,11 +339,15 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     VigorScore = analysis.VigorScore,
                     HealthSeverity = analysis.HealthSeverity,
                     PrimaryConcern = analysis.PrimaryConcern,
-                    Location = analysis.Location
+                    Location = analysis.Location,
+
+                    // 🎯 Farmer contact info (always available)
+                    FarmerPhone = analysis.ContactPhone,
+                    FarmerEmail = analysis.ContactEmail
                 };
 
-                // Farmer contact info (optional - only for XL tier per business rules)
-                if (accessPercentage >= 100 && analysis.UserId.HasValue)
+                // Get farmer name if UserId available
+                if (analysis.UserId.HasValue)
                 {
                     var farmer = _userRepository.Get(u => u.UserId == analysis.UserId.Value);
                     if (farmer != null)
@@ -353,11 +355,6 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         dto.FarmerName = farmer.FullName;
                         dto.FarmerPhone = farmer.MobilePhones ?? analysis.ContactPhone;
                         dto.FarmerEmail = farmer.Email ?? analysis.ContactEmail;
-                    }
-                    else
-                    {
-                        dto.FarmerPhone = analysis.ContactPhone;
-                        dto.FarmerEmail = analysis.ContactEmail;
                     }
                 }
 
@@ -404,16 +401,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 };
             }
 
-            private string GetTierName(int accessPercentage)
-            {
-                return accessPercentage switch
-                {
-                    30 => "S/M",
-                    60 => "L",
-                    100 => "XL",
-                    _ => "Unknown"
-                };
-            }
+            // 🎯 REMOVED: GetTierName method - no longer using tier-based logic
         }
     }
 }

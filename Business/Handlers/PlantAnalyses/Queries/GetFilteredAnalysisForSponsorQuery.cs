@@ -44,8 +44,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     return new ErrorDataResult<SponsoredAnalysisDetailDto>("Access denied to this analysis");
                 }
 
-                // Get sponsor's tier information first
-                var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(request.SponsorId);
+                // 🎯 REMOVED: Access percentage no longer used
+                // All sponsors get full data access
 
                 // Get RICH analysis detail (same as farmer endpoint)
                 var detailQuery = new GetPlantAnalysisDetailQuery { Id = request.PlantAnalysisId };
@@ -73,16 +73,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // Get sponsor profile for branding info
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(request.SponsorId);
 
-                // Build response with tier metadata
+                // Build response with tier metadata (static values)
                 var response = new SponsoredAnalysisDetailDto
                 {
                     Analysis = filteredDetail,
                     TierMetadata = new AnalysisTierMetadata
                     {
-                        TierName = GetTierName(accessPercentage),
-                        AccessPercentage = accessPercentage,
-                        CanMessage = accessPercentage >= 30, // M, L, XL tiers
-                        CanViewLogo = true, // All tiers can see logo on result screen
+                        // 🎯 Static tier values - all sponsors have full access
+                        TierName = "Standard",
+                        AccessPercentage = 100,
+                        CanMessage = true,
+                        CanReply = true, // Add this if DTO has it
+                        CanViewLogo = true,
                         SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
                         {
                             SponsorId = sponsorProfile.SponsorId,
@@ -92,22 +94,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         } : null,
                         AccessibleFields = new AccessibleFieldsInfo
                         {
-                            // 30% Access
-                            CanViewBasicInfo = accessPercentage >= 30,
-                            CanViewHealthScore = accessPercentage >= 30,
-                            CanViewImages = accessPercentage >= 30,
-
-                            // 60% Access
-                            CanViewDetailedHealth = accessPercentage >= 60,
-                            CanViewDiseases = accessPercentage >= 60,
-                            CanViewNutrients = accessPercentage >= 60,
-                            CanViewRecommendations = accessPercentage >= 60,
-                            CanViewLocation = accessPercentage >= 60,
-
-                            // 100% Access
-                            CanViewFarmerContact = accessPercentage >= 100,
-                            CanViewFieldData = accessPercentage >= 100,
-                            CanViewProcessingData = accessPercentage >= 100
+                            // 🎯 All fields accessible (no tier-based restrictions)
+                            CanViewBasicInfo = true,
+                            CanViewHealthScore = true,
+                            CanViewImages = true,
+                            CanViewDetailedHealth = true,
+                            CanViewDiseases = true,
+                            CanViewNutrients = true,
+                            CanViewRecommendations = true,
+                            CanViewLocation = true,
+                            CanViewFarmerContact = true,
+                            CanViewFieldData = true,
+                            CanViewProcessingData = true
                         }
                     }
                 };
@@ -115,20 +113,9 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 return new SuccessDataResult<SponsoredAnalysisDetailDto>(response);
             }
 
-            // 🎯 REMOVED: ApplyTierBasedFiltering method
+            // 🎯 REMOVED: ApplyTierBasedFiltering and GetTierName methods
             // All analysis fields are now shown regardless of tier
-            // Tier only controls feature access (messaging, farmer contact visibility in UI)
-
-            private string GetTierName(int accessPercentage)
-            {
-                return accessPercentage switch
-                {
-                    30 => "S/M",
-                    60 => "L",
-                    100 => "XL",
-                    _ => "Unknown"
-                };
-            }
+            // Static tier values returned to all sponsors
         }
     }
 }
