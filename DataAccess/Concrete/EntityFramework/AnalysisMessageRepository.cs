@@ -30,13 +30,33 @@ namespace DataAccess.Concrete.EntityFramework
 
         public async Task<List<AnalysisMessage>> GetConversationAsync(int fromUserId, int toUserId, int plantAnalysisId)
         {
-            return await Context.AnalysisMessages
+            // ✅ FIX: Get analysis to check if dealer exists (three-way conversation support)
+            var analysis = await Context.PlantAnalyses
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == plantAnalysisId);
+            
+            if (analysis == null)
+                return new List<AnalysisMessage>();
+            
+            var query = Context.AnalysisMessages
                 .Include(x => x.FromUser)
                 .Include(x => x.ToUser)
-                .Where(x => x.PlantAnalysisId == plantAnalysisId && 
-                           !x.IsDeleted &&
-                           ((x.FromUserId == fromUserId && x.ToUserId == toUserId) ||
-                            (x.FromUserId == toUserId && x.ToUserId == fromUserId)))
+                .Where(x => x.PlantAnalysisId == plantAnalysisId && !x.IsDeleted);
+            
+            // ✅ FIX: If dealer exists, show ALL messages for this analysis
+            // This enables three-way conversation: farmer ↔ sponsor + farmer ↔ dealer
+            // All parties (farmer, sponsor, dealer) can see all messages for transparency
+            if (analysis.DealerId.HasValue)
+            {
+                // Show all messages for this analysis
+                // Authorization already checked in controller (farmer, sponsor, or dealer)
+                return await query.OrderBy(x => x.SentDate).ToListAsync();
+            }
+            
+            // Keep existing 1-to-1 behavior when no dealer (backward compatibility)
+            return await query
+                .Where(x => (x.FromUserId == fromUserId && x.ToUserId == toUserId) ||
+                            (x.FromUserId == toUserId && x.ToUserId == fromUserId))
                 .OrderBy(x => x.SentDate)
                 .ToListAsync();
         }
