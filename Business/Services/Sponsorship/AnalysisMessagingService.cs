@@ -22,6 +22,7 @@ namespace Business.Services.Sponsorship
         private readonly IMessageRateLimitService _rateLimitService;
         private readonly IHubContext<PlantAnalysisHub> _hubContext;
         private readonly ITierFeatureService _tierFeatureService;
+        private readonly IUserSubscriptionRepository _userSubscriptionRepository;
 
         public AnalysisMessagingService(
             IAnalysisMessageRepository messageRepository,
@@ -32,7 +33,8 @@ namespace Business.Services.Sponsorship
             IFarmerSponsorBlockRepository blockRepository,
             IMessageRateLimitService rateLimitService,
             IHubContext<PlantAnalysisHub> hubContext,
-            ITierFeatureService tierFeatureService)
+            ITierFeatureService tierFeatureService,
+            IUserSubscriptionRepository userSubscriptionRepository)
         {
             _messageRepository = messageRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
@@ -43,43 +45,40 @@ namespace Business.Services.Sponsorship
             _blockRepository = blockRepository;
             _rateLimitService = rateLimitService;
             _tierFeatureService = tierFeatureService;
+            _userSubscriptionRepository = userSubscriptionRepository;
         }
 
         /// <summary>
-        /// Checks if sponsor can send messages (tier-based permission)
+        /// Checks if user can send messages for a specific analysis (tier-based permission)
+        /// CRITICAL: Tier comes from ANALYSIS, not from user's purchases
         /// </summary>
-        public async Task<bool> CanSendMessageAsync(int sponsorId)
+        public async Task<bool> CanSendMessageAsync(int userId, int plantAnalysisId)
         {
-            var profile = await _sponsorProfileRepository.GetBySponsorIdAsync(sponsorId);
-
-            // If not a sponsor, allow messaging (farmers can always send messages)
-            if (profile == null)
-            {
-                return true;
-            }
-
-            // For sponsors, check if they have active profile (verification not required for messaging)
-            if (!profile.IsActive)
+            // Get the analysis to determine its tier
+            var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
+            if (analysis == null)
             {
                 return false;
             }
 
-            // Check if sponsor has messaging feature in any of their active purchases
-            if (profile.SponsorshipPurchases != null && profile.SponsorshipPurchases.Any())
+            // Check if analysis has sponsorship (ActiveSponsorshipId)
+            if (!analysis.ActiveSponsorshipId.HasValue || analysis.ActiveSponsorshipId.Value == 0)
             {
-                foreach (var purchase in profile.SponsorshipPurchases)
-                {
-                    // Use TierFeatureService to check if tier has messaging feature
-                    var hasMessaging = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "messaging");
-                    if (hasMessaging)
-                    {
-                        return true;
-                    }
-                }
+                // Analysis not sponsored - no tier, no messaging
                 return false;
             }
 
-            return false;
+            // Get the UserSubscription (sponsorship package) that this analysis uses
+            var userSubscription = await _userSubscriptionRepository.GetAsync(us => us.Id == analysis.ActiveSponsorshipId.Value);
+            if (userSubscription == null)
+            {
+                return false;
+            }
+
+            // Check if ANALYSIS tier (from UserSubscription, not user tier) has messaging feature
+            // This is the correct approach: analysis.ActiveSponsorshipId -> UserSubscription -> SubscriptionTierId -> TierFeature
+            var hasMessaging = await _tierFeatureService.HasFeatureAccessAsync(userSubscription.SubscriptionTierId, "messaging");
+            return hasMessaging;
         }
 
         /// <summary>
@@ -88,10 +87,10 @@ namespace Business.Services.Sponsorship
         /// </summary>
         public async Task<(bool canSend, string errorMessage)> CanSendMessageForAnalysisAsync(int sponsorId, int farmerId, int plantAnalysisId)
         {
-            // 1. Check tier permission (L/XL only)
-            if (!await CanSendMessageAsync(sponsorId))
+            // 1. Check tier permission based on ANALYSIS tier (not user tier)
+            if (!await CanSendMessageAsync(sponsorId, plantAnalysisId))
             {
-                return (false, "Messaging is only available for L and XL tier sponsors");
+                return (false, "Messaging is not available for this analysis tier. Upgrade to M tier or higher to enable messaging");
             }
 
             // 2. Check analysis ownership - sponsor must own this analysis OR be the dealer who distributed the code
@@ -398,10 +397,13 @@ namespace Business.Services.Sponsorship
             if (message.ToUserId != userId)
                 return false;
 
-            // Sponsor ise mesajlaşma yetkisi var mı?
+            // Get plantAnalysisId from message
+            var plantAnalysisId = message.PlantAnalysisId;
+
+            // Sponsor ise mesajlaşma yetkisi var mı? (Check ANALYSIS tier, not user tier)
             var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(userId);
             if (sponsorProfile != null)
-                return await CanSendMessageAsync(userId);
+                return await CanSendMessageAsync(userId, plantAnalysisId);
 
             return true; // Farmers can always reply
         }
@@ -446,9 +448,9 @@ namespace Business.Services.Sponsorship
             return await _messageRepository.GetRecentMessagesAsync(userId, count);
         }
 
-        public async Task<bool> HasMessagingPermissionAsync(int sponsorId)
+        public async Task<bool> HasMessagingPermissionAsync(int sponsorId, int plantAnalysisId)
         {
-            return await CanSendMessageAsync(sponsorId);
+            return await CanSendMessageAsync(sponsorId, plantAnalysisId);
         }
 
         public async Task DeleteMessageAsync(int messageId, int userId)
