@@ -74,6 +74,10 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // Tier controls feature access (messaging, farmer contact), not field visibility
                 var filteredDetail = detailResult.Data;
 
+                // Clean up sponsorshipMetadata from base query (farmer view)
+                // We'll add proper tierMetadata for sponsor view
+                filteredDetail.SponsorshipMetadata = null;
+
                 // Get sponsor profile for branding info
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(request.SponsorId);
 

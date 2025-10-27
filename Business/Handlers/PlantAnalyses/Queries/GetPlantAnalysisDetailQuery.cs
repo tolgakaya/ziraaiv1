@@ -130,10 +130,53 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     ErrorMessage = null
                 };
 
-                // 🎯 SponsorshipMetadata removed from this query
-                // When called by GetFilteredAnalysisForSponsorQuery, tier metadata is added there
-                // When called directly by farmer, no sponsorship metadata needed
-                detailDto.SponsorshipMetadata = null;
+                // 🎯 Populate sponsorship metadata if analysis was done with sponsorship code
+                // For farmer view: Show sponsor info without tier restrictions
+                // For sponsor view: GetFilteredAnalysisForSponsorQuery adds full tier metadata
+                if (analysis.SponsorUserId.HasValue && analysis.SponsorshipCodeId.HasValue)
+                {
+                    try
+                    {
+                        var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(analysis.SponsorUserId.Value);
+
+                        detailDto.SponsorshipMetadata = new AnalysisTierMetadata
+                        {
+                            TierName = "Standard", // Generic tier name for farmer view
+                            AccessPercentage = 100, // Farmer sees all their own data
+                            CanMessage = true, // Farmer can always message their sponsor
+                            CanReply = true, // Farmer can always reply
+                            CanViewLogo = true, // Farmer sees sponsor logo
+                            SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
+                            {
+                                SponsorId = sponsorProfile.SponsorId,
+                                CompanyName = sponsorProfile.CompanyName,
+                                LogoUrl = sponsorProfile.SponsorLogoUrl,
+                                WebsiteUrl = sponsorProfile.WebsiteUrl
+                            } : null,
+                            AccessibleFields = new AccessibleFieldsInfo
+                            {
+                                // Farmer sees all their own analysis fields
+                                CanViewBasicInfo = true,
+                                CanViewHealthScore = true,
+                                CanViewImages = true,
+                                CanViewDetailedHealth = true,
+                                CanViewDiseases = true,
+                                CanViewNutrients = true,
+                                CanViewRecommendations = true,
+                                CanViewLocation = true,
+                                CanViewFarmerContact = true,
+                                CanViewFieldData = true,
+                                CanViewProcessingData = true
+                            }
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log but don't fail if sponsorship metadata fetch fails
+                        Console.WriteLine($"[GetPlantAnalysisDetailQuery] Warning: Could not fetch sponsorship metadata: {ex.Message}");
+                        detailDto.SponsorshipMetadata = null;
+                    }
+                }
 
                 return new SuccessDataResult<PlantAnalysisDetailDto>(detailDto);
             }

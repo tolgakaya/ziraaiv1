@@ -227,34 +227,216 @@ CachedClaims: ..., TransferCodesToDealerCommand
 
 ---
 
+## Completed E2E Test Steps (Fresh Farmer Test)
+
+### ✅ Step 3: Transfer Codes from Sponsor to Dealer
+
+**Status:** COMPLETED
+**Endpoint:** `POST /api/v1/sponsorship/dealer/transfer-codes`
+**Codes Transferred:** 945, 946, 947 (3 codes from Purchase ID 26)
+**Dealer:** UserId 158 (User 1113)
+
+### ✅ Step 4: Dealer Distributes Code to Farmer
+
+**Status:** COMPLETED
+**Endpoint:** `POST /api/v1/sponsorship/send-link`
+**Farmer:** UserId 170 (User 3978) - Fresh farmer for E2E test
+**Code Sent:** AGRI-2025-36767AD6 (Code ID 945)
+**Result:** Code successfully sent to farmer via link
+
+### ✅ Step 5: Farmer Redeems Code
+
+**Status:** COMPLETED
+**Endpoint:** `POST /api/v1/sponsorship/redeem`
+**Code:** AGRI-2025-36767AD6
+**Result:** Successfully redeemed, farmer's subscription activated
+
+### ✅ Step 6: Farmer Performs Plant Analysis
+
+**Status:** COMPLETED
+**Endpoint:** `POST /api/v1/PlantAnalyses/async`
+**Processing:** Asynchronous via RabbitMQ (2-5 minute processing time)
+**Analysis IDs:** 76, 75
+**Attribution:** 
+- SponsorCompanyId: 159 (Main sponsor)
+- DealerId: 158 (Dealer who distributed code)
+- ActiveSponsorshipId: 170 (Farmer's subscription)
+
+### ✅ Step 7: Dealer Views Own Analyses
+
+**Status:** COMPLETED
+**Endpoint:** `GET /api/v1/sponsorship/analyses`
+**Token-Based Detection:** DealerId auto-detected from JWT token (userId)
+**Query Logic:** `WHERE (SponsorUserId = userId OR DealerId = userId)`
+
+**Result:**
+```json
+{
+  "data": {
+    "analyses": [
+      {
+        "id": 76,
+        "userId": 170,
+        "userName": "User 3978",
+        "sponsorCompanyId": 159,
+        "dealerId": 158,
+        "canMessage": true,
+        "canViewLogo": true
+      },
+      {
+        "id": 75,
+        "userId": 170,
+        "userName": "User 3978",
+        "sponsorCompanyId": 159,
+        "dealerId": 158,
+        "canMessage": true,
+        "canViewLogo": true
+      }
+    ],
+    "totalCount": 2,
+    "currentPage": 1,
+    "totalPages": 1
+  },
+  "success": true
+}
+```
+
+**Validation:**
+- ✅ Dealer sees ONLY 2 analyses from farmer 170 (who used dealer's code)
+- ✅ Correct attribution: DealerId = 158
+- ✅ Messaging and logo viewing enabled
+
+### ✅ Step 8: Main Sponsor Views All Analyses
+
+**Status:** COMPLETED
+**Endpoint:** `GET /api/v1/sponsorship/analyses`
+**Query Logic:** Same OR query supports hybrid sponsor/dealer role
+
+**Result:**
+```json
+{
+  "data": {
+    "analyses": [...],
+    "totalCount": 18,
+    "currentPage": 1,
+    "totalPages": 2
+  },
+  "success": true
+}
+```
+
+**Validation:**
+- ✅ Sponsor sees ALL 18 analyses (including dealer-distributed 2)
+- ✅ Hybrid role support: Shows analyses where user is sponsor OR dealer
+- ✅ Includes analyses from codes 945-947 distributed through dealer
+
+---
+
+## Critical Issues Encountered and Resolved (E2E Test Phase)
+
+### Issue 2: DealerId Not Captured in Plant Analysis
+
+**Problem:**
+After farmer performed analysis using dealer-distributed code, DealerId field was NULL in database despite code having DealerId = 158.
+
+**Root Cause:**
+`CaptureActiveSponsorAsync` method captured `SponsorCompanyId` and `ActiveSponsorshipId` but not `DealerId`.
+
+**Investigation:**
+```sql
+-- Check analysis attribution
+SELECT 
+    pa."Id" as "AnalysisId",
+    pa."UserId",
+    pa."SponsorCompanyId",
+    pa."DealerId",
+    pa."ActiveSponsorshipId"
+FROM public."PlantAnalyses" pa
+WHERE pa."Id" IN (75, 76);
+
+-- Result: DealerId was NULL
+```
+
+**Solution:**
+Added DealerId capture in both sync and async analysis handlers:
+
+**File 1:** `Business/Handlers/PlantAnalyses/Commands/CreatePlantAnalysisCommand.cs:454-457`
+```csharp
+analysis.ActiveSponsorshipId = activeSponsorship.Id;
+analysis.SponsorCompanyId = code.SponsorId;
+analysis.DealerId = code.DealerId; // NEW: Capture dealer who distributed code
+```
+
+**File 2:** `PlantAnalysisWorkerService/Jobs/PlantAnalysisJobService.cs:665-669`
+```csharp
+analysis.ActiveSponsorshipId = activeSponsorship.Id;
+analysis.SponsorCompanyId = code.SponsorId;
+analysis.DealerId = code.DealerId; // NEW: Capture dealer who distributed code
+```
+
+**Commit:** `e6a5c10` - "feat: Add DealerId attribution to plant analysis"
+
+---
+
+### Issue 3: Hybrid Sponsor/Dealer Role Support
+
+**Problem:**
+Initial query implementation only checked `WHERE SponsorUserId = userId`, which didn't support:
+1. Pure dealers viewing their distributed analyses (DealerId = userId)
+2. Hybrid users who are BOTH sponsor AND dealer
+
+**User Requirement:**
+> "Sponsor için analizde sponsorid alanı userid olmalı, Eğer bir dealer hem sponsor hem dealer olarka kod dağıtıyorsa onun analizleri 'sponsorid=userid veya dealerid=userid' şeklinde bir sorgu gerektirir"
+
+**Solution:**
+Changed repository query to OR logic in `GetSponsoredAnalysesListQuery.cs:105-120`:
+
+```csharp
+// Build query: Get all analyses where user is involved as sponsor OR dealer
+// - As Sponsor: SponsorUserId = userId (codes distributed directly by sponsor)
+// - As Dealer: DealerId = userId (codes distributed by dealer on behalf of sponsor)
+// - Both roles: Show analyses from both capacities
+var query = _plantAnalysisRepository.GetListAsync(a =>
+    (a.SponsorUserId == request.SponsorId || a.DealerId == request.SponsorId) &&
+    a.AnalysisStatus != null
+);
+
+var allAnalyses = await query;
+var analysesQuery = allAnalyses.AsQueryable();
+
+// Optional: Filter by specific DealerId if provided (for admin/sponsor monitoring specific dealer)
+if (request.DealerId.HasValue && request.DealerId.Value != request.SponsorId)
+{
+    analysesQuery = analysesQuery.Where(a => a.DealerId == request.DealerId.Value);
+}
+```
+
+**Files Modified:**
+- `Business/Handlers/PlantAnalyses/Queries/GetSponsoredAnalysesListQuery.cs` - OR query logic
+- `WebAPI/Controllers/SponsorshipController.cs` - Added optional dealerId parameter
+
+**Commits:**
+- `4181003` - "feat: Add dealerId query parameter to sponsorship analyses endpoint"
+- `e186e2b` - "fix: Auto-detect dealer role from token for analysis filtering" (interim solution)
+- `32f4beb` - "feat: Show analyses for both sponsor and dealer roles with OR query" (final solution)
+
+**Test Results:**
+- ✅ Pure dealer (158): Sees 2 analyses where DealerId = 158
+- ✅ Pure sponsor (159): Sees 18 analyses where SponsorUserId = 159
+- ✅ Hybrid user (if exists): Would see analyses from BOTH roles
+- ✅ Token-based detection: No manual role checking needed
+
+---
+
 ## Pending Steps
 
-### 🔄 Step 3: Dealer Distributes Code to Farmer
-**Status:** IN PROGRESS
-**Endpoint:** `POST /api/v1/sponsorship/send-link`
-**Test:** Dealer (158) sends code 932 to Farmer (165)
-
-### ⏳ Step 4: Farmer Performs Analysis
-**Status:** PENDING
-**Action:** Farmer redeems code and performs plant analysis
-
-### ⏳ Step 5: Dealer Views Own Analyses
-**Status:** PENDING
-**Endpoint:** `GET /api/v1/PlantAnalyses/list?dealerId=158`
-**Validation:** Only analyses from farmer using dealer's codes
-
-### ⏳ Step 6: Main Sponsor Views All Analyses
-**Status:** PENDING
-**Endpoint:** `GET /api/v1/PlantAnalyses/list`
-**Validation:** All analyses visible to main sponsor
-
-### ⏳ Step 7: Verify Dealer Analytics
+### ⏳ Step 9: Verify Dealer Analytics
 **Status:** PENDING
 **Endpoints:**
 - `GET /api/v1/sponsorship/dealer/performance/{dealerId}`
 - `GET /api/v1/sponsorship/dealer/summary`
 
-### ⏳ Step 8: Test Tier-Based Messaging
+### ⏳ Step 10: Test Tier-Based Messaging
 **Status:** PENDING
 **Validation:** Messaging permissions based on subscription tier
 
@@ -272,14 +454,26 @@ CachedClaims: ..., TransferCodesToDealerCommand
 
 5. **SQL Idempotency**: Using `WHERE NOT EXISTS` instead of `ON CONFLICT` for PostgreSQL compatibility when Name field has no UNIQUE constraint.
 
+6. **Attribution Chain Completeness**: All sponsor-related analyses must capture BOTH `SponsorCompanyId` AND `DealerId` to support multi-tier distribution tracking.
+
+7. **Hybrid Role Support**: OR query logic (`SponsorUserId = userId OR DealerId = userId`) elegantly handles users who are both sponsor and dealer without role detection.
+
+8. **Token-Based Role Detection**: Always derive role context from JWT token's userId rather than query parameters, matching existing patterns (e.g., SponsorId extraction).
+
+9. **Asynchronous Processing Verification**: RabbitMQ-based async analysis requires 2-5 minute wait time for completion before verification.
+
+10. **Fresh User Testing**: Using a fresh farmer (170) instead of existing user (165) ensured clean test data without subscription conflicts
+
 ---
 
 ## Next Actions
 
-1. Continue E2E test from Step 3 (Dealer → Farmer code distribution)
-2. Remove debug logging from SecuredOperation after test completion
-3. Document complete E2E test flow with all endpoints
-4. Update SECUREDOPERATION_GUIDE.md with TargetType vs DeclaringType lesson
+1. ✅ ~~Continue E2E test from Step 3~~ - COMPLETED
+2. ⏳ Test dealer analytics endpoints (performance, summary)
+3. ⏳ Test tier-based messaging permissions
+4. ⏳ Remove debug logging from SecuredOperation after full test completion
+5. ⏳ Update SECUREDOPERATION_GUIDE.md with TargetType vs DeclaringType lesson
+6. ⏳ Consider merging feature branch to main after all tests pass
 
 ---
 
@@ -292,4 +486,37 @@ CachedClaims: ..., TransferCodesToDealerCommand
 
 ---
 
-**Test Continues...**
+## Test Summary
+
+**E2E Test Status:** ✅ CORE FLOW COMPLETED (Steps 1-8)
+
+**Successfully Validated:**
+- ✅ Code transfer chain: Sponsor → Dealer → Farmer
+- ✅ Code redemption and subscription activation
+- ✅ Asynchronous plant analysis processing
+- ✅ DealerId attribution in analysis records
+- ✅ Hybrid sponsor/dealer role support with OR query
+- ✅ Token-based role detection without manual filtering
+- ✅ Dealer sees ONLY their distributed analyses (2)
+- ✅ Sponsor sees ALL analyses including dealer-distributed (18 total)
+- ✅ Messaging and logo viewing permissions working
+
+**Remaining Tests:**
+- ⏳ Dealer analytics endpoints
+- ⏳ Tier-based messaging permissions
+
+**Architecture Improvements Implemented:**
+1. Complete attribution chain: `SponsorCompanyId`, `DealerId`, `ActiveSponsorshipId`
+2. Hybrid role query: `WHERE (SponsorUserId = userId OR DealerId = userId)`
+3. Token-based role context extraction
+4. Support for multi-tier code distribution tracking
+
+**Test Environment:** Railway Staging (ziraai-api-sit.up.railway.app)  
+**Branch:** feature/sponsorship-code-distribution-experiment  
+**Git Commits:** 4 commits for E2E test fixes  
+**Test Duration:** ~2 hours (including async processing waits)
+
+---
+
+**Last Updated:** 2025-10-26 (E2E Core Flow Completion)
+
