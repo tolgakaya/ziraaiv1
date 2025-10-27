@@ -66,8 +66,9 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Console.WriteLine($"[GetFilteredAnalysisForSponsorQuery] Warning: Could not record access: {ex.Message}");
                 }
 
-                // Apply tier-based filtering to the rich DTO
-                var filteredDetail = ApplyTierBasedFiltering(detailResult.Data, accessPercentage);
+                // 🎯 NO field filtering - show all analysis data
+                // Tier controls feature access (messaging, farmer contact), not field visibility
+                var filteredDetail = detailResult.Data;
 
                 // Get sponsor profile for branding info
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(request.SponsorId);
@@ -114,57 +115,9 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 return new SuccessDataResult<SponsoredAnalysisDetailDto>(response);
             }
 
-            /// <summary>
-            /// Apply tier-based filtering to PlantAnalysisDetailDto
-            /// Nullifies fields based on sponsor's access level
-            /// </summary>
-            private PlantAnalysisDetailDto ApplyTierBasedFiltering(PlantAnalysisDetailDto detail, int accessPercentage)
-            {
-                // 30% Access: Basic info, health score, images
-                // Fields available: PlantIdentification (basic), Summary.OverallHealthScore, ImageInfo
-
-                // 60% Access: + Detailed health, nutrients, recommendations, location
-                if (accessPercentage < 60)
-                {
-                    // Remove 60% fields
-                    detail.HealthAssessment = null;
-                    detail.NutrientStatus = null;
-                    detail.PestDisease = null;
-                    detail.EnvironmentalStress = null;
-                    detail.Recommendations = null;
-                    detail.CrossFactorInsights = null;
-                    detail.RiskAssessment = null;
-                    detail.Location = null;
-                    detail.Latitude = null;
-                    detail.Longitude = null;
-                    detail.WeatherConditions = null;
-                    detail.Temperature = null;
-                    detail.Humidity = null;
-                    detail.SoilType = null;
-                }
-
-                // 100% Access: + Farmer contact, field data, processing info
-                if (accessPercentage < 100)
-                {
-                    // Remove 100% fields
-                    detail.ContactPhone = null;
-                    detail.ContactEmail = null;
-                    detail.FieldId = null;
-                    detail.PlantingDate = null;
-                    detail.ExpectedHarvestDate = null;
-                    detail.LastFertilization = null;
-                    detail.LastIrrigation = null;
-                    detail.PreviousTreatments = null;
-                    detail.UrgencyLevel = null;
-                    detail.Notes = null;
-                    detail.AdditionalInfo = null;
-                    detail.ProcessingInfo = null;
-                    detail.TokenUsage = null;
-                    detail.RequestMetadata = null;
-                }
-
-                return detail;
-            }
+            // 🎯 REMOVED: ApplyTierBasedFiltering method
+            // All analysis fields are now shown regardless of tier
+            // Tier only controls feature access (messaging, farmer contact visibility in UI)
 
             private string GetTierName(int accessPercentage)
             {
