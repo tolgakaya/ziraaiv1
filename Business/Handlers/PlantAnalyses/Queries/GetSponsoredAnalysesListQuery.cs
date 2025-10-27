@@ -200,18 +200,6 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // Update total count after messaging filters
                 var totalCount = filteredAnalyses.Count;
 
-                // 🎯 NEW: Apply access percentage limit to analysis COUNT (not fields!)
-                // - 100% tier → Show all analyses (no limit)
-                // - 60% tier → Show 60% of analyses (each with full data)
-                // - 30% tier → Show 30% of analyses (each with full data)
-                // - 0% tier → Show 0 analyses
-                if (accessPercentage < 100)
-                {
-                    var allowedCount = (int)Math.Ceiling(totalCount * (accessPercentage / 100.0));
-                    filteredAnalyses = filteredAnalyses.Take(allowedCount).ToList();
-                    totalCount = filteredAnalyses.Count; // Update total count after limiting
-                }
-
                 // Calculate pagination
                 var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
                 var skip = (request.Page - 1) * request.PageSize;
