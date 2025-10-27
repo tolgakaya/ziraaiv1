@@ -40,6 +40,17 @@ using System.Collections.Generic;
         /// <returns>True if sponsor has sent at least one non-deleted message</returns>
         Task<bool> HasSponsorMessagedAnalysisAsync(int plantAnalysisId, int sponsorUserId);
 
+        /// <summary>
+        /// Get messaging status for analyses from farmer's perspective
+        /// Correctly identifies sponsor vs farmer messages based on actual sponsor user IDs
+        /// </summary>
+        /// <param name="farmerUserId">Farmer's user ID</param>
+        /// <param name="analyses">List of analyses with sponsor information</param>
+        /// <returns>Dictionary mapping analysis ID to messaging status</returns>
+        Task<Dictionary<int, MessagingStatusDto>> GetMessagingStatusForFarmerAsync(
+            int farmerUserId,
+            List<Entities.Concrete.PlantAnalysis> analyses);
+
         Task<Dictionary<int, MessagingStatusDto>> GetMessagingStatusForAnalysesAsync(
             int sponsorId,
             int[] analysisIds);

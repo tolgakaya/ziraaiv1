@@ -76,7 +76,14 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "mcp__serena__search_for_pattern",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(cat:*)",
+      "mcp__serena__read_file",
+      "mcp__serena__replace_regex",
+      "mcp__serena__replace_symbol_body",
+      "mcp__serena__insert_before_symbol",
+      "Bash(curl:*)",
+      "mcp__serena__insert_after_symbol"
     ],
     "deny": [],
     "ask": [],

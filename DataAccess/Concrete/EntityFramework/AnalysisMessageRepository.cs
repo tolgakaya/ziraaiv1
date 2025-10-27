@@ -231,6 +231,78 @@ namespace DataAccess.Concrete.EntityFramework
             return result;
         }
 
+
+        public async Task<Dictionary<int, MessagingStatusDto>> GetMessagingStatusForFarmerAsync(
+            int farmerUserId,
+            List<Entities.Concrete.PlantAnalysis> analyses)
+        {
+            var analysisIds = analyses.Select(a => a.Id).ToArray();
+            
+            // Build sponsor ID map: analysisId -> sponsorUserId
+            var sponsorMap = analyses
+                .Where(a => a.SponsorUserId.HasValue)
+                .ToDictionary(a => a.Id, a => a.SponsorUserId.Value);
+
+            // Single efficient query with grouping
+            var result = await Context.AnalysisMessages
+                .Where(m => analysisIds.Contains(m.PlantAnalysisId) && !m.IsDeleted)
+                .GroupBy(m => m.PlantAnalysisId)
+                .Select(g => new
+                {
+                    AnalysisId = g.Key,
+                    TotalMessageCount = g.Count(),
+                    UnreadCount = g.Count(m => !m.IsRead && m.ToUserId == farmerUserId),
+                    LastMessageDate = g.Max(m => m.SentDate),
+                    LastMessage = g.OrderByDescending(m => m.SentDate).FirstOrDefault(),
+                    HasFarmerResponse = g.Any(m => m.FromUserId == farmerUserId),
+                    LastFarmerResponseDate = g.Where(m => m.FromUserId == farmerUserId)
+                        .Max(m => (DateTime?)m.SentDate)
+                })
+                .ToDictionaryAsync(
+                    x => x.AnalysisId,
+                    x => new MessagingStatusDto
+                    {
+                        HasMessages = true,
+                        TotalMessageCount = x.TotalMessageCount,
+                        UnreadCount = x.UnreadCount,
+                        LastMessageDate = x.LastMessageDate,
+                        LastMessagePreview = x.LastMessage != null && !string.IsNullOrEmpty(x.LastMessage.Message)
+                            ? (x.LastMessage.Message.Length > 50
+                                ? x.LastMessage.Message.Substring(0, 50) + "..."
+                                : x.LastMessage.Message)
+                            : null,
+                        // ✅ CORRECT: Compare against actual sponsor ID for this analysis
+                        LastMessageBy = x.LastMessage != null && sponsorMap.ContainsKey(x.AnalysisId)
+                            ? (x.LastMessage.FromUserId == sponsorMap[x.AnalysisId] ? "sponsor" : "farmer")
+                            : null,
+                        HasFarmerResponse = x.HasFarmerResponse,
+                        LastFarmerResponseDate = x.LastFarmerResponseDate,
+                        ConversationStatus = CalculateConversationStatus(
+                            x.TotalMessageCount,
+                            x.HasFarmerResponse,
+                            x.LastMessageDate)
+                    });
+
+            // Add default status for analyses with no messages
+            foreach (var analysisId in analysisIds.Where(id => !result.ContainsKey(id)))
+            {
+                result[analysisId] = new MessagingStatusDto
+                {
+                    HasMessages = false,
+                    TotalMessageCount = 0,
+                    UnreadCount = 0,
+                    LastMessageDate = null,
+                    LastMessagePreview = null,
+                    LastMessageBy = null,
+                    HasFarmerResponse = false,
+                    LastFarmerResponseDate = null,
+                    ConversationStatus = ConversationStatus.NoContact
+                };
+            }
+
+            return result;
+        }
+
         /// <summary>
         /// Calculate conversation status based on message counts and dates
         /// </summary>
