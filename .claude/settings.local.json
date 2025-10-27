@@ -74,7 +74,9 @@
       "Bash(findstr:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "mcp__serena__search_for_pattern",
+      "Bash(dotnet build:*)"
     ],
     "deny": [],
     "ask": [],

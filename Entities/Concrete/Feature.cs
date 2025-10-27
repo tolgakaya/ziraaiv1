@@ -27,12 +27,7 @@ namespace Entities.Concrete
         /// Feature description for documentation
         /// </summary>
         public string Description { get; set; }
-        
-        /// <summary>
-        /// Feature category (Communication, Analytics, Marketing, etc.)
-        /// </summary>
-        public string Category { get; set; }
-        
+
         /// <summary>
         /// Default configuration JSON for this feature
         /// Used when tier-specific configuration is not provided
@@ -44,12 +39,7 @@ namespace Entities.Concrete
         /// If true, ConfigurationJson must be provided when enabling
         /// </summary>
         public bool RequiresConfiguration { get; set; }
-        
-        /// <summary>
-        /// JSON schema for validating feature configuration
-        /// </summary>
-        public string ConfigurationSchema { get; set; }
-        
+
         /// <summary>
         /// Whether this feature is currently active
         /// Inactive features are hidden from admin UI
