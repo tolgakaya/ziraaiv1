@@ -200,6 +200,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // Update total count after messaging filters
                 var totalCount = filteredAnalyses.Count;
 
+                // 🎯 NEW: Apply access percentage limit to analysis COUNT (not fields!)
+                // - 100% tier → Show all analyses (no limit)
+                // - 60% tier → Show 60% of analyses (each with full data)
+                // - 30% tier → Show 30% of analyses (each with full data)
+                // - 0% tier → Show 0 analyses
+                if (accessPercentage < 100)
+                {
+                    var allowedCount = (int)Math.Ceiling(totalCount * (accessPercentage / 100.0));
+                    filteredAnalyses = filteredAnalyses.Take(allowedCount).ToList();
+                    totalCount = filteredAnalyses.Count; // Update total count after limiting
+                }
+
                 // Calculate pagination
                 var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
                 var skip = (request.Page - 1) * request.PageSize;
@@ -308,7 +320,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
             {
                 var dto = new SponsoredAnalysisSummaryDto
                 {
-                    // Core fields (always available)
+                    // Core fields
                     AnalysisId = analysis.Id,
                     AnalysisDate = analysis.AnalysisDate,
                     AnalysisStatus = analysis.AnalysisStatus,
@@ -317,8 +329,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     // Tier info
                     TierName = GetTierName(accessPercentage),
                     AccessPercentage = accessPercentage,
-                    CanMessage = accessPercentage >= 30, // M, L, XL
-                    CanViewLogo = true, // All tiers on result screen
+                    CanMessage = accessPercentage >= 30, // M, L, XL tiers can message
+                    CanViewLogo = true, // All tiers can view logo
 
                     // Sponsor info
                     SponsorInfo = new SponsorDisplayInfoDto
@@ -327,50 +339,34 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         CompanyName = sponsorProfile.CompanyName,
                         LogoUrl = sponsorProfile.SponsorLogoUrl,
                         WebsiteUrl = sponsorProfile.WebsiteUrl
-                    }
+                    },
+
+                    // 🎯 ALL analysis fields (no conditional field filtering!)
+                    // Access percentage now limits ANALYSIS COUNT, not field visibility
+                    OverallHealthScore = analysis.OverallHealthScore,
+                    PlantSpecies = analysis.PlantSpecies,
+                    PlantVariety = analysis.PlantVariety,
+                    GrowthStage = analysis.GrowthStage,
+                    ImageUrl = !string.IsNullOrEmpty(analysis.ImageUrl)
+                        ? analysis.ImageUrl
+                        : analysis.ImagePath,
+                    VigorScore = analysis.VigorScore,
+                    HealthSeverity = analysis.HealthSeverity,
+                    PrimaryConcern = analysis.PrimaryConcern,
+                    Location = analysis.Location
                 };
 
-                // 30% Access Fields (S & M tiers)
-                if (accessPercentage >= 30)
+                // Farmer contact info (optional - only for XL tier per business rules)
+                if (accessPercentage >= 100 && analysis.UserId.HasValue)
                 {
-                    dto.OverallHealthScore = analysis.OverallHealthScore;
-                    dto.PlantSpecies = analysis.PlantSpecies;
-                    dto.PlantVariety = analysis.PlantVariety;
-                    dto.GrowthStage = analysis.GrowthStage;
-                    // Use ImageUrl (original) or ImagePath (thumbnail) - prefer original for better quality
-                    dto.ImageUrl = !string.IsNullOrEmpty(analysis.ImageUrl)
-                        ? analysis.ImageUrl
-                        : analysis.ImagePath;
-                }
-
-                // 60% Access Fields (L tier)
-                if (accessPercentage >= 60)
-                {
-                    dto.VigorScore = analysis.VigorScore;
-                    dto.HealthSeverity = analysis.HealthSeverity;
-                    dto.PrimaryConcern = analysis.PrimaryConcern;
-                    dto.Location = analysis.Location;
-                    // Recommendations removed from list view - too large for list display
-                    // Use GET /api/v1/sponsorship/analyses/{id} for full details including recommendations
-                }
-
-                // 100% Access Fields (XL tier)
-                if (accessPercentage >= 100)
-                {
-                    // Fetch farmer info from User entity if available
-                    if (analysis.UserId.HasValue)
+                    var farmer = _userRepository.Get(u => u.UserId == analysis.UserId.Value);
+                    if (farmer != null)
                     {
-                        var farmer = _userRepository.Get(u => u.UserId == analysis.UserId.Value);
-                        if (farmer != null)
-                        {
-                            dto.FarmerName = farmer.FullName;
-                            dto.FarmerPhone = farmer.MobilePhones ?? analysis.ContactPhone;
-                            dto.FarmerEmail = farmer.Email ?? analysis.ContactEmail;
-                        }
+                        dto.FarmerName = farmer.FullName;
+                        dto.FarmerPhone = farmer.MobilePhones ?? analysis.ContactPhone;
+                        dto.FarmerEmail = farmer.Email ?? analysis.ContactEmail;
                     }
-
-                    // Fallback to analysis contact info if User not found
-                    if (string.IsNullOrEmpty(dto.FarmerName))
+                    else
                     {
                         dto.FarmerPhone = analysis.ContactPhone;
                         dto.FarmerEmail = analysis.ContactEmail;
