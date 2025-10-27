@@ -1,5 +1,6 @@
 using Business.BusinessAspects;
 using Business.Services.Sponsorship;
+using Business.Services.Subscription;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
@@ -24,17 +25,26 @@ namespace Business.Handlers.PlantAnalyses.Queries
             private readonly ISponsorDataAccessService _dataAccessService;
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
             private readonly IAnalysisMessageRepository _analysisMessageRepository;
+            private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+            private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+            private readonly ITierFeatureService _tierFeatureService;
             
             public GetPlantAnalysisDetailQueryHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
                 ISponsorDataAccessService dataAccessService,
                 ISponsorProfileRepository sponsorProfileRepository,
-                IAnalysisMessageRepository analysisMessageRepository)
+                IAnalysisMessageRepository analysisMessageRepository,
+                IUserSubscriptionRepository userSubscriptionRepository,
+                ISubscriptionTierRepository subscriptionTierRepository,
+                ITierFeatureService tierFeatureService)
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
                 _analysisMessageRepository = analysisMessageRepository;
+                _userSubscriptionRepository = userSubscriptionRepository;
+                _subscriptionTierRepository = subscriptionTierRepository;
+                _tierFeatureService = tierFeatureService;
             }
             
             public async Task<IDataResult<PlantAnalysisDetailDto>> Handle(GetPlantAnalysisDetailQuery request, CancellationToken cancellationToken)
@@ -139,6 +149,31 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     {
                         var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(analysis.SponsorUserId.Value);
 
+                        // Get subscription and tier information for dynamic feature checks
+                        var subscription = await _userSubscriptionRepository.GetAsync(
+                            us => us.Id == analysis.ActiveSponsorshipId.Value);
+
+                        string tierName = "Unknown";
+                        bool canMessage = false;
+                        bool canViewLogo = false;
+
+                        if (subscription != null)
+                        {
+                            // Get actual tier name
+                            var tier = await _subscriptionTierRepository.GetAsync(
+                                t => t.Id == subscription.SubscriptionTierId);
+                            tierName = tier?.DisplayName ?? tier?.TierName ?? "Unknown";
+
+                            // Check tier features dynamically
+                            canMessage = await _tierFeatureService.HasFeatureAccessAsync(
+                                subscription.SubscriptionTierId,
+                                "messaging");
+
+                            canViewLogo = await _tierFeatureService.HasFeatureAccessAsync(
+                                subscription.SubscriptionTierId,
+                                "sponsor_visibility");
+                        }
+
                         // Check if sponsor has initiated conversation (sent first message)
                         // Farmer can only reply if sponsor has messaged them first
                         bool canReply = await _analysisMessageRepository.HasSponsorMessagedAnalysisAsync(
@@ -147,11 +182,11 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                         detailDto.SponsorshipMetadata = new AnalysisTierMetadata
                         {
-                            TierName = "Standard", // Generic tier name for farmer view
-                            AccessPercentage = 100, // Farmer sees all their own data
-                            CanMessage = true, // Farmer can always message their sponsor
-                            CanReply = canReply, // Dynamic: true only if sponsor has sent message first
-                            CanViewLogo = true, // Farmer sees sponsor logo
+                            TierName = tierName, // ✅ Dynamic: Actual tier name from subscription
+                            AccessPercentage = 100, // ✅ Correct: Farmer sees all their own data
+                            CanMessage = canMessage, // ✅ Dynamic: Tier-based messaging feature check
+                            CanReply = canReply, // ✅ Dynamic: true only if sponsor has sent message first
+                            CanViewLogo = canViewLogo, // ✅ Dynamic: Tier-based sponsor visibility check
                             SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
                             {
                                 SponsorId = sponsorProfile.SponsorId,
