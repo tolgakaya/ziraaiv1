@@ -72,7 +72,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
             private readonly IUserRepository _userRepository;
             private readonly ISubscriptionTierRepository _subscriptionTierRepository;
-            private readonly IAnalysisMessageRepository _messageRepository; // NEW
+            private readonly IAnalysisMessageRepository _messageRepository;
+            private readonly IUserSubscriptionRepository _userSubscriptionRepository; // NEW: For analysis tier lookup
 
             public GetSponsoredAnalysesListQueryHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
@@ -80,14 +81,16 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 ISponsorProfileRepository sponsorProfileRepository,
                 IUserRepository userRepository,
                 ISubscriptionTierRepository subscriptionTierRepository,
-                IAnalysisMessageRepository messageRepository) // NEW
+                IAnalysisMessageRepository messageRepository,
+                IUserSubscriptionRepository userSubscriptionRepository) // NEW
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
                 _userRepository = userRepository;
                 _subscriptionTierRepository = subscriptionTierRepository;
-                _messageRepository = messageRepository; // NEW
+                _messageRepository = messageRepository;
+                _userSubscriptionRepository = userSubscriptionRepository; // NEW
             }
 
             [LogAspect(typeof(FileLogger))]
@@ -100,8 +103,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     return new ErrorDataResult<SponsoredAnalysesListResponseDto>("Sponsor profile not found or inactive");
                 }
 
-                // Get sponsor's highest tier for feature permissions
-                var sponsorTier = await GetSponsorHighestTierAsync(sponsorProfile);
+                // ✅ REMOVED: No longer using sponsor's tier - each analysis has its own tier
 
                 // Build query: Get all analyses where user is involved as sponsor OR dealer
                 // - As Sponsor: SponsorUserId = userId (codes distributed directly by sponsor)
@@ -205,13 +207,17 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 var skip = (request.Page - 1) * request.PageSize;
                 var pagedAnalyses = filteredAnalyses.Skip(skip).Take(request.PageSize).ToList();
 
-                // Map to DTOs with messaging status
-                var items = pagedAnalyses.Select(analysis =>
+                // Map to DTOs with messaging status (async for tier lookup)
+                var items = new List<SponsoredAnalysisSummaryDto>();
+                foreach (var analysis in pagedAnalyses)
                 {
+                    // ✅ FIX: Get tier from analysis (via ActiveSponsorshipId), not from user
+                    var analysisTier = await GetAnalysisUsedTierAsync(analysis);
+                    
                     var dto = MapToSummaryDto(
                         analysis,
                         sponsorProfile,
-                        sponsorTier);
+                        analysisTier);
 
                     // Add messaging status (both nested and flat for backward compatibility)
                     var messagingStatus = messagingStatuses.ContainsKey(analysis.Id)
@@ -250,9 +256,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         dto.ConversationStatus = "None";
                     }
 
-                    return dto;
-                }).ToArray();
-
+                    items.Add(dto);
+                }
                 // Calculate summary statistics
                 var summary = new SponsoredAnalysesListSummaryDto
                 {
@@ -285,7 +290,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 var response = new SponsoredAnalysesListResponseDto
                 {
-                    Items = items,
+                    Items = items.ToArray(),
                     TotalCount = totalCount,
                     Page = request.Page,
                     PageSize = request.PageSize,
@@ -297,7 +302,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 return new SuccessDataResult<SponsoredAnalysesListResponseDto>(
                     response,
-                    $"Retrieved {items.Length} analyses (page {request.Page} of {totalPages})"
+                    $"Retrieved {items.Count} analyses (page {request.Page} of {totalPages})"
                 );
             }
 
@@ -369,25 +374,23 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 return dto;
             }
 
-            private async Task<Entities.Concrete.SubscriptionTier> GetSponsorHighestTierAsync(Entities.Concrete.SponsorProfile sponsorProfile)
+            /// <summary>
+            /// Get the tier that was used for a specific analysis
+            /// This is the CORRECT approach - tier comes from the analysis, not from user
+            /// </summary>
+            private async Task<Entities.Concrete.SubscriptionTier> GetAnalysisUsedTierAsync(Entities.Concrete.PlantAnalysis analysis)
             {
-                if (sponsorProfile.SponsorshipPurchases == null || !sponsorProfile.SponsorshipPurchases.Any())
+                if (!analysis.ActiveSponsorshipId.HasValue)
                     return null;
 
-                // Get all active purchases
-                var activePurchases = sponsorProfile.SponsorshipPurchases
-                    .Where(p => p.PaymentStatus == "Completed")
-                    .ToList();
+                var subscription = await _userSubscriptionRepository.GetAsync(
+                    s => s.Id == analysis.ActiveSponsorshipId.Value);
 
-                if (!activePurchases.Any())
+                if (subscription == null)
                     return null;
 
-                // Get highest tier (by tier priority: XL > L > M > S > Trial)
-                var tierIds = activePurchases.Select(p => p.SubscriptionTierId).Distinct().ToList();
-                var tiers = await _subscriptionTierRepository.GetListAsync(t => tierIds.Contains(t.Id));
-
-                // Order by tier level (assuming higher ID = higher tier, adjust if needed)
-                return tiers.OrderByDescending(t => GetTierPriority(t.TierName)).FirstOrDefault();
+                return await _subscriptionTierRepository.GetAsync(
+                    t => t.Id == subscription.SubscriptionTierId);
             }
 
             private int GetTierPriority(string tierName)

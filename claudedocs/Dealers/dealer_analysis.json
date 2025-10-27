@@ -1,0 +1,102 @@
+{
+    "data": {
+        "items": [
+            {
+                "analysisId": 76,
+                "analysisDate": "2025-10-26T17:47:46.4",
+                "analysisStatus": "Completed",
+                "cropType": "Domates",
+                "overallHealthScore": 6,
+                "plantSpecies": "Domates",
+                "plantVariety": "bilinmiyor",
+                "growthStage": "vejetatif",
+                "imageUrl": "https://iili.io/K4azIa9.jpg",
+                "vigorScore": 6,
+                "healthSeverity": "orta",
+                "primaryConcern": "fungal yaprak lekesi (Alternaria/Septoria olasılığı)",
+                "location": "Istanbul, Turkey",
+                "tierName": "Unknown",
+                "accessPercentage": 100,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 158,
+                    "companyName": "uc tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": true,
+                    "totalMessageCount": 5,
+                    "unreadCount": 0,
+                    "lastMessageDate": "2025-10-27T19:17:08.612924",
+                    "lastMessagePreview": "Delaers sent a message",
+                    "lastMessageBy": "sponsor",
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "Pending"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 5,
+                "lastMessageDate": "2025-10-27T19:17:08.612924",
+                "lastMessagePreview": "Delaers sent a message",
+                "lastMessageSenderRole": "sponsor",
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "Pending"
+            },
+            {
+                "analysisId": 75,
+                "analysisDate": "2025-10-26T17:46:36.411",
+                "analysisStatus": "Completed",
+                "cropType": "Domates",
+                "overallHealthScore": 4,
+                "plantSpecies": "Domates (Solanum lycopersicum)",
+                "plantVariety": "bilinmiyor",
+                "growthStage": "vejetatif",
+                "imageUrl": "https://iili.io/K4azIa9.jpg",
+                "vigorScore": 4,
+                "healthSeverity": "orta",
+                "primaryConcern": "muhtemel azot/magnezyum eksikliği ile ilişkili yaprak sararması ve yüzeysel fungal lezyon riski",
+                "location": "Istanbul, Turkey",
+                "tierName": "Unknown",
+                "accessPercentage": 100,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 158,
+                    "companyName": "uc tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            }
+        ],
+        "totalCount": 2,
+        "page": 1,
+        "pageSize": 10,
+        "totalPages": 1,
+        "hasNextPage": false,
+        "hasPreviousPage": false,
+        "summary": {
+            "totalAnalyses": 2,
+            "averageHealthScore": 5,
+            "topCropTypes": [
+                "Domates"
+            ],
+            "analysesThisMonth": 2,
+            "contactedAnalyses": 1,
+            "notContactedAnalyses": 1,
+            "activeConversations": 0,
+            "pendingResponses": 1,
+            "totalUnreadMessages": 0,
+            "analysesWithUnread": 0
+        }
+    },
+    "success": true,
+    "message": "Retrieved 2 analyses (page 1 of 1)"
+}

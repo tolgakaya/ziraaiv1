@@ -24,17 +24,23 @@ namespace Business.Handlers.PlantAnalyses.Queries
             private readonly ISponsorDataAccessService _dataAccessService;
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
             private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+            private readonly IPlantAnalysisRepository _plantAnalysisRepository; // NEW: For fetching analysis entity
+            private readonly IUserSubscriptionRepository _userSubscriptionRepository; // NEW: For analysis tier lookup
             private readonly IMediator _mediator;
 
             public GetFilteredAnalysisForSponsorQueryHandler(
                 ISponsorDataAccessService dataAccessService,
                 ISponsorProfileRepository sponsorProfileRepository,
                 ISubscriptionTierRepository subscriptionTierRepository,
+                IPlantAnalysisRepository plantAnalysisRepository, // NEW
+                IUserSubscriptionRepository userSubscriptionRepository, // NEW
                 IMediator mediator)
             {
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
                 _subscriptionTierRepository = subscriptionTierRepository;
+                _plantAnalysisRepository = plantAnalysisRepository; // NEW
+                _userSubscriptionRepository = userSubscriptionRepository; // NEW
                 _mediator = mediator;
             }
 
@@ -81,9 +87,12 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // Get sponsor profile for branding info
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(request.SponsorId);
 
-                // Get sponsor's highest tier from purchases
-                var sponsorTier = await GetSponsorHighestTierAsync(sponsorProfile);
-                var tierName = sponsorTier?.TierName ?? "Unknown";
+                // ✅ FIX: Get analysis entity to retrieve tier from ActiveSponsorshipId
+                var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == request.PlantAnalysisId);
+                
+                // ✅ FIX: Get tier from analysis (via ActiveSponsorshipId), not from user
+                var analysisTier = await GetAnalysisUsedTierAsync(analysis);
+                var tierName = analysisTier?.TierName ?? "Unknown";
 
                 // Apply tier-based feature permissions
                 var canMessage = IsTierAllowedToMessage(tierName);
@@ -148,6 +157,26 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 var tiers = await _subscriptionTierRepository.GetListAsync(t => tierIds.Contains(t.Id));
 
                 return tiers.OrderByDescending(t => GetTierPriority(t.TierName)).FirstOrDefault();
+            }
+
+            /// <summary>
+            /// Get the tier that was used for a specific analysis
+            /// This is the CORRECT approach - tier comes from the analysis, not from user
+            /// Analysis → ActiveSponsorshipId → UserSubscription → SubscriptionTier
+            /// </summary>
+            private async Task<Entities.Concrete.SubscriptionTier> GetAnalysisUsedTierAsync(Entities.Concrete.PlantAnalysis analysis)
+            {
+                if (!analysis.ActiveSponsorshipId.HasValue)
+                    return null;
+
+                var subscription = await _userSubscriptionRepository.GetAsync(
+                    s => s.Id == analysis.ActiveSponsorshipId.Value);
+
+                if (subscription == null)
+                    return null;
+
+                return await _subscriptionTierRepository.GetAsync(
+                    t => t.Id == subscription.SubscriptionTierId);
             }
 
             /// <summary>
