@@ -30,6 +30,16 @@ using System.Collections.Generic;
         /// <param name="sponsorId">ID of the sponsor</param>
         /// <param name="analysisIds">Array of analysis IDs to get status for</param>
         /// <returns>Dictionary mapping analysis ID to messaging status</returns>
+
+        /// <summary>
+        /// Check if a sponsor has sent any message to a specific analysis
+        /// Used to determine if farmer can reply (sponsor must initiate conversation)
+        /// </summary>
+        /// <param name="plantAnalysisId">Analysis ID to check</param>
+        /// <param name="sponsorUserId">Sponsor's user ID</param>
+        /// <returns>True if sponsor has sent at least one non-deleted message</returns>
+        Task<bool> HasSponsorMessagedAnalysisAsync(int plantAnalysisId, int sponsorUserId);
+
         Task<Dictionary<int, MessagingStatusDto>> GetMessagingStatusForAnalysesAsync(
             int sponsorId,
             int[] analysisIds);

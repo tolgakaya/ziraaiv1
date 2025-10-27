@@ -139,12 +139,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     {
                         var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(analysis.SponsorUserId.Value);
 
+                        // Check if sponsor has initiated conversation (sent first message)
+                        // Farmer can only reply if sponsor has messaged them first
+                        bool canReply = await _analysisMessageRepository.HasSponsorMessagedAnalysisAsync(
+                            analysis.Id,
+                            analysis.SponsorUserId.Value);
+
                         detailDto.SponsorshipMetadata = new AnalysisTierMetadata
                         {
                             TierName = "Standard", // Generic tier name for farmer view
                             AccessPercentage = 100, // Farmer sees all their own data
                             CanMessage = true, // Farmer can always message their sponsor
-                            CanReply = true, // Farmer can always reply
+                            CanReply = canReply, // Dynamic: true only if sponsor has sent message first
                             CanViewLogo = true, // Farmer sees sponsor logo
                             SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
                             {

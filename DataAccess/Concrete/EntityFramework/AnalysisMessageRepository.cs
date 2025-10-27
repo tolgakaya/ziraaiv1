@@ -157,6 +157,17 @@ namespace DataAccess.Concrete.EntityFramework
         }
 
 
+
+
+        public async Task<bool> HasSponsorMessagedAnalysisAsync(int plantAnalysisId, int sponsorUserId)
+        {
+            return await Context.AnalysisMessages
+                .AnyAsync(m =>
+                    m.PlantAnalysisId == plantAnalysisId &&
+                    m.FromUserId == sponsorUserId &&
+                    !m.IsDeleted);
+        }
+
         public async Task<Dictionary<int, MessagingStatusDto>> GetMessagingStatusForAnalysesAsync(
             int sponsorId,
             int[] analysisIds)
