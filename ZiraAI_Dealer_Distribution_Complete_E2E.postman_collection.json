@@ -1,0 +1,1320 @@
+{
+	"info": {
+		"_postman_id": "dealer-distribution-e2e-2025",
+		"name": "ZiraAI - Dealer Distribution System (Complete E2E)",
+		"description": "Complete end-to-end test collection for Dealer Code Distribution System\n\n## Test Scenarios Covered:\n1. Authentication (Sponsor, Dealer, Farmer)\n2. Sponsor → Dealer Code Transfer\n3. Dealer → Farmer Code Distribution\n4. Farmer Code Redemption & Analysis\n5. Dealer Analytics & Performance\n6. Sponsor Analytics (All Analyses)\n7. Dealer Invitation Flows (Method A, B, C)\n8. Code Reclaim Operations\n\n## Environment:\n- Base URL: https://ziraai-api-sit.up.railway.app\n- API Version: 1.0\n- Auto Token Management: ✅ Enabled\n\n## Test Users:\n- Main Sponsor: 05411111114 (UserId: 159)\n- Dealer/Bayi: 05411111113 (UserId: 158)\n- Farmer/Çiftçi: 05061111113 (UserId: 165)\n\n**Version**: 1.0\n**Created**: 2025-10-28\n**Status**: Production Ready",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "00 - Authentication",
+			"item": [
+				{
+					"name": "Login - Main Sponsor (159)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Auto-capture token for Main Sponsor",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"        pm.environment.set(\"sponsor_token\", jsonData.data.token.token);",
+									"        pm.environment.set(\"sponsor_user_id\", \"159\");",
+									"        pm.environment.set(\"sponsor_phone\", \"05411111114\");",
+									"        console.log(\"✅ Main Sponsor token captured: \" + jsonData.data.token.token.substring(0, 20) + \"...\");",
+									"    }",
+									"} else {",
+									"    console.log(\"❌ Login failed. Check OTP code.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"05411111114\",\n  \"otpCode\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/PhoneAuth/verify-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"PhoneAuth",
+								"verify-otp"
+							]
+						},
+						"description": "Login as Main Sponsor (UserId: 159)\n\n**Before Running:**\n1. Request OTP: POST /api/v1/PhoneAuth/request-otp with {\"phoneNumber\": \"05411111114\"}\n2. Get OTP code from SMS or database\n3. Update otpCode in request body\n\n**Auto Actions:**\n- Captures token to {{sponsor_token}}\n- Sets {{sponsor_user_id}} = 159"
+					},
+					"response": []
+				},
+				{
+					"name": "Login - Dealer (158)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Auto-capture token for Dealer",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"        pm.environment.set(\"dealer_token\", jsonData.data.token.token);",
+									"        pm.environment.set(\"dealer_user_id\", \"158\");",
+									"        pm.environment.set(\"dealer_phone\", \"05411111113\");",
+									"        console.log(\"✅ Dealer token captured: \" + jsonData.data.token.token.substring(0, 20) + \"...\");",
+									"    }",
+									"} else {",
+									"    console.log(\"❌ Login failed. Check OTP code.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"05411111113\",\n  \"otpCode\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/PhoneAuth/verify-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"PhoneAuth",
+								"verify-otp"
+							]
+						},
+						"description": "Login as Dealer (UserId: 158)\n\n**Before Running:**\n1. Request OTP: POST /api/v1/PhoneAuth/request-otp with {\"phoneNumber\": \"05411111113\"}\n2. Get OTP code from SMS or database\n3. Update otpCode in request body\n\n**Auto Actions:**\n- Captures token to {{dealer_token}}\n- Sets {{dealer_user_id}} = 158"
+					},
+					"response": []
+				},
+				{
+					"name": "Login - Farmer (165)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Auto-capture token for Farmer",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"        pm.environment.set(\"farmer_token\", jsonData.data.token.token);",
+									"        pm.environment.set(\"farmer_user_id\", \"165\");",
+									"        pm.environment.set(\"farmer_phone\", \"05061111113\");",
+									"        console.log(\"✅ Farmer token captured: \" + jsonData.data.token.token.substring(0, 20) + \"...\");",
+									"    }",
+									"} else {",
+									"    console.log(\"❌ Login failed. Check OTP code.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"05061111113\",\n  \"otpCode\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/PhoneAuth/verify-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"PhoneAuth",
+								"verify-otp"
+							]
+						},
+						"description": "Login as Farmer (UserId: 165)\n\n**Before Running:**\n1. Request OTP: POST /api/v1/PhoneAuth/request-otp with {\"phoneNumber\": \"05061111113\"}\n2. Get OTP code from SMS or database\n3. Update otpCode in request body\n\n**Auto Actions:**\n- Captures token to {{farmer_token}}\n- Sets {{farmer_user_id}} = 165"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for all three user roles.\n\n**Usage Pattern:**\n1. Request OTP for phone number\n2. Get OTP code (from SMS or database)\n3. Verify OTP to get JWT token\n4. Token automatically captured to environment variable\n\n**Token Variables:**\n- {{sponsor_token}} - Main Sponsor (159)\n- {{dealer_token}} - Dealer (158)\n- {{farmer_token}} - Farmer (165)"
+		},
+		{
+			"name": "01 - Sponsor Operations",
+			"item": [
+				{
+					"name": "1.1 - Get Sponsor Available Codes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Extract first available code for transfer tests",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.codes && jsonData.data.codes.length > 0) {",
+									"        var firstCode = jsonData.data.codes[0];",
+									"        pm.environment.set(\"available_code_id\", firstCode.id);",
+									"        pm.environment.set(\"available_code\", firstCode.code);",
+									"        pm.environment.set(\"purchase_id\", firstCode.purchaseId);",
+									"        console.log(\"✅ Available code captured: \" + firstCode.code);",
+									"        console.log(\"   Purchase ID: \" + firstCode.purchaseId);",
+									"    } else {",
+									"        console.log(\"⚠️ No available codes found. Sponsor needs to purchase codes first.\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/codes?page=1&pageSize=10&onlyUnsent=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"codes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								},
+								{
+									"key": "onlyUnsent",
+									"value": "true",
+									"description": "Only show codes not transferred to dealers"
+								}
+							]
+						},
+						"description": "Get sponsor's available codes (not transferred to dealers)\n\n**Query Parameters:**\n- onlyUnsent=true: Only show codes not sent to farmers\n- onlyActive=true: Only show non-expired codes\n\n**Auto Actions:**\n- Captures first code to {{available_code}}\n- Captures purchase ID to {{purchase_id}}"
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 - Search Dealer by Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify dealer found",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        console.log(\"✅ Dealer found: \" + jsonData.data.firstName + \" \" + jsonData.data.lastName);",
+									"        console.log(\"   UserId: \" + jsonData.data.userId);",
+									"        console.log(\"   Is Sponsor: \" + jsonData.data.isSponsor);",
+									"    }",
+									"} else if (pm.response.code === 404) {",
+									"    console.log(\"⚠️ Dealer not found. Check email address.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/search?email=05411111113@phone.ziraai.com",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"search"
+							],
+							"query": [
+								{
+									"key": "email",
+									"value": "05411111113@phone.ziraai.com",
+									"description": "Dealer email to search"
+								}
+							]
+						},
+						"description": "Search for existing dealer by email (Method A - Manual Transfer)\n\n**Use Case:**\nFind dealer's userId before transferring codes\n\n**Returns:**\n- userId: Dealer's user ID\n- isSponsor: Whether dealer has Sponsor role"
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 - Transfer Codes to Dealer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Capture transferred code IDs",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        var transferredCodes = jsonData.data.transferredCodeIds || jsonData.data.transferredCodes;",
+									"        if (transferredCodes && transferredCodes.length > 0) {",
+									"            pm.environment.set(\"transferred_code_ids\", JSON.stringify(transferredCodes));",
+									"            console.log(\"✅ Transferred \" + transferredCodes.length + \" codes to dealer\");",
+									"            console.log(\"   Code IDs: \" + transferredCodes.join(\", \"));",
+									"        }",
+									"    }",
+									"} else if (pm.response.code === 400) {",
+									"    console.log(\"⚠️ Transfer failed. Check if sponsor has enough available codes.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"purchaseId\": 26,\n  \"dealerId\": 158,\n  \"codeCount\": 5\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/transfer-codes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"transfer-codes"
+							]
+						},
+						"description": "Transfer codes from sponsor to dealer (Method A)\n\n**Request Body:**\n- purchaseId: Sponsor's purchase ID (use {{purchase_id}})\n- dealerId: Dealer's user ID (158)\n- codeCount: Number of codes to transfer (1-100)\n\n**Business Rules:**\n- Only unsent, active codes can be transferred\n- Codes must belong to sponsor's purchase\n- Dealer must exist and have Sponsor role\n\n**Auto Actions:**\n- Captures transferred code IDs to {{transferred_code_ids}}"
+					},
+					"response": []
+				},
+				{
+					"name": "1.4 - Get Dealer Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/summary",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"summary"
+							]
+						},
+						"description": "Get summary of all dealers in sponsor's network\n\n**Returns:**\n- Total dealers count\n- Total codes distributed\n- Overall usage rate\n- List of all dealers with performance metrics"
+					},
+					"response": []
+				},
+				{
+					"name": "1.5 - Get Dealer Performance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/analytics/158",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"analytics",
+								"158"
+							]
+						},
+						"description": "Get detailed performance analytics for specific dealer\n\n**Path Parameter:**\n- dealerId: 158 (or {{dealer_user_id}})\n\n**Returns:**\n- Total codes received\n- Codes sent, used, available\n- Usage rate\n- Unique farmers reached\n- Total analyses performed"
+					},
+					"response": []
+				},
+				{
+					"name": "1.6 - Get All Analyses (Sponsor View)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Display sponsor's total analyses",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        var totalCount = jsonData.data.totalCount || 0;",
+									"        var analyses = jsonData.data.analyses || jsonData.data.items || [];",
+									"        console.log(\"✅ Sponsor sees \" + totalCount + \" total analyses\");",
+									"        ",
+									"        // Count direct vs dealer-distributed",
+									"        var directCount = analyses.filter(a => !a.dealerId).length;",
+									"        var dealerCount = analyses.filter(a => a.dealerId).length;",
+									"        console.log(\"   Direct: \" + directCount + \", Dealer-distributed: \" + dealerCount);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?page=1&pageSize=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get ALL analyses from sponsor's codes (direct + dealer-distributed)\n\n**Query Logic:**\nWHERE (SponsorUserId = userId OR DealerId = userId)\n\n**Returns:**\n- Analyses from codes distributed directly by sponsor\n- Analyses from codes distributed by dealers\n- Supports hybrid sponsor/dealer role"
+					},
+					"response": []
+				},
+				{
+					"name": "1.7 - Reclaim Codes from Dealer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Display reclaimed codes",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        var reclaimedCount = jsonData.data.reclaimedCount || 0;",
+									"        console.log(\"✅ Reclaimed \" + reclaimedCount + \" codes from dealer\");",
+									"    }",
+									"} else if (pm.response.code === 400) {",
+									"    console.log(\"⚠️ Reclaim failed. Check if dealer has unsent codes.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dealerId\": 158,\n  \"codeCount\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/reclaim-codes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"reclaim-codes"
+							]
+						},
+						"description": "Reclaim unused codes from dealer back to sponsor\n\n**Request Body:**\n- dealerId: Dealer user ID (158)\n- codeCount: Number of codes to reclaim\n\n**Business Rules:**\n- Only unsent codes can be reclaimed\n- Codes must currently belong to dealer\n- Reclaimed codes return to sponsor's pool"
+					},
+					"response": []
+				}
+			],
+			"description": "Main sponsor operations for dealer network management\n\n**Endpoints:**\n1. View available codes\n2. Search dealer by email\n3. Transfer codes to dealer\n4. View dealer summary\n5. View dealer performance\n6. View all analyses\n7. Reclaim codes from dealer"
+		},
+		{
+			"name": "02 - Dealer Operations",
+			"item": [
+				{
+					"name": "2.1 - Get Dealer Received Codes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Capture first unsent code for distribution",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data && jsonData.data.codes && jsonData.data.codes.length > 0) {",
+									"        var firstCode = jsonData.data.codes[0];",
+									"        pm.environment.set(\"dealer_code_id\", firstCode.id);",
+									"        pm.environment.set(\"dealer_code\", firstCode.code);",
+									"        console.log(\"✅ Dealer code captured: \" + firstCode.code);",
+									"        console.log(\"   Code ID: \" + firstCode.id);",
+									"    } else {",
+									"        console.log(\"⚠️ No codes available. Sponsor needs to transfer codes to dealer first.\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{dealer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/codes?page=1&pageSize=10&onlyUnsent=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"codes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								},
+								{
+									"key": "onlyUnsent",
+									"value": "true",
+									"description": "Only show codes not sent to farmers"
+								}
+							]
+						},
+						"description": "Get codes received from sponsor (not sent to farmers yet)\n\n**Query Parameters:**\n- onlyUnsent=true: Only show unsent codes\n\n**Auto Actions:**\n- Captures first code to {{dealer_code}}\n- Captures code ID to {{dealer_code_id}}"
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 - Send Code to Farmer (SMS)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Display distribution result",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        console.log(\"✅ Code sent to farmer: \" + jsonData.data.code);",
+									"        console.log(\"   Deep Link: \" + jsonData.data.deepLink);",
+									"        console.log(\"   SMS Sent: \" + jsonData.data.smsSent);",
+									"    }",
+									"} else if (pm.response.code === 400) {",
+									"    console.log(\"⚠️ Send failed. Check if code belongs to dealer.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{dealer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"AGRI-2025-62038F92\",\n  \"recipientPhone\": \"05061111113\",\n  \"sendViaSms\": true,\n  \"customMessage\": \"Merhaba! ZiraAI bitki analizi için kodunuz.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/send-link",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"send-link"
+							]
+						},
+						"description": "Dealer distributes code to farmer via SMS\n\n**Request Body:**\n- code: Code to send (use {{dealer_code}})\n- recipientPhone: Farmer's phone number\n- sendViaSms: true to send SMS\n- customMessage: Optional custom message\n\n**What Happens:**\n- SMS sent to farmer with deep link\n- distributionDate field updated\n- Code marked as sent"
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 - Get Dealer Analyses (Own Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Display dealer's analyses count",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        var totalCount = jsonData.data.totalCount || 0;",
+									"        var analyses = jsonData.data.analyses || jsonData.data.items || [];",
+									"        console.log(\"✅ Dealer sees \" + totalCount + \" analyses from own codes\");",
+									"        ",
+									"        // Verify all analyses have dealerId = 158",
+									"        var allHaveDealerId = analyses.every(a => a.dealerId === 158);",
+									"        console.log(\"   All analyses from dealer's codes: \" + allHaveDealerId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{dealer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/analyses?page=1&pageSize=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"analyses"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get analyses from farmers who used dealer's codes\n\n**Query Logic:**\nWHERE DealerId = userId (auto-detected from token)\n\n**Returns:**\n- ONLY analyses where dealerId = 158\n- Does NOT include sponsor's direct analyses\n- Can message farmers\n- Can view sponsor logo"
+					},
+					"response": []
+				}
+			],
+			"description": "Dealer operations for code distribution and farmer management\n\n**Endpoints:**\n1. View received codes from sponsor\n2. Send codes to farmers via SMS\n3. View analyses from own distributed codes"
+		},
+		{
+			"name": "03 - Farmer Operations",
+			"item": [
+				{
+					"name": "3.1 - Redeem Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Capture subscription details",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.environment.set(\"subscription_id\", jsonData.data.subscriptionId || jsonData.data.id);",
+									"        pm.environment.set(\"subscription_tier\", jsonData.data.tier);",
+									"        console.log(\"✅ Code redeemed successfully\");",
+									"        console.log(\"   Subscription ID: \" + (jsonData.data.subscriptionId || jsonData.data.id));",
+									"        console.log(\"   Tier: \" + jsonData.data.tier);",
+									"        console.log(\"   Daily Limit: \" + jsonData.data.dailyLimit);",
+									"    }",
+									"} else if (pm.response.code === 400) {",
+									"    console.log(\"⚠️ Redemption failed. Check error message.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{farmer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"AGRI-2025-62038F92\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/use-code",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"use-code"
+							]
+						},
+						"description": "Farmer redeems code to activate subscription\n\n**Request Body:**\n- code: Code received from dealer (use {{dealer_code}})\n\n**What Happens:**\n- New UserSubscription created\n- Tier set from code's package (M)\n- Duration: 30 days\n- IsUsed flag set to true\n- RedeemedAt timestamp recorded\n\n**Auto Actions:**\n- Captures subscription ID to {{subscription_id}}"
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 - Check Subscription Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{farmer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/active",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"subscriptions",
+								"active"
+							]
+						},
+						"description": "Check farmer's active subscription status\n\n**Returns:**\n- Subscription tier\n- Daily/monthly limits\n- Expiry date\n- Sponsor company name"
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 - Create Plant Analysis (Async)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Capture analysis ID for later retrieval",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.environment.set(\"analysis_id\", jsonData.data.analysisId || jsonData.data.id);",
+									"        console.log(\"✅ Analysis created: ID = \" + (jsonData.data.analysisId || jsonData.data.id));",
+									"        console.log(\"   Status: \" + jsonData.data.status);",
+									"        console.log(\"   ⏳ Processing time: 2-5 minutes\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{farmer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/plant_image.jpg",
+									"description": "Plant image file (JPEG, PNG, WebP)"
+								},
+								{
+									"key": "cropType",
+									"value": "Tomato",
+									"type": "text",
+									"description": "Type of crop (Tomato, Pepper, Wheat, etc.)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/PlantAnalyses/async",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"PlantAnalyses",
+								"async"
+							]
+						},
+						"description": "Create asynchronous plant analysis\n\n**Form Data:**\n- file: Plant image (max 10MB)\n- cropType: Type of crop\n\n**Processing:**\n- Request sent to RabbitMQ queue\n- Worker service processes (2-5 min)\n- AI/ML endpoint analyzes image\n- Attribution captured:\n  - UserId: 165 (farmer)\n  - SponsorCompanyId: 159 (sponsor)\n  - DealerId: 158 (dealer)\n  - ActiveSponsorshipId: Subscription ID\n\n**Auto Actions:**\n- Captures analysis ID to {{analysis_id}}"
+					},
+					"response": []
+				},
+				{
+					"name": "3.4 - Get Analysis Result",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{farmer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/PlantAnalyses/{{analysis_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"PlantAnalyses",
+								"{{analysis_id}}"
+							]
+						},
+						"description": "Get completed analysis results\n\n**Path Parameter:**\n- analysisId: {{analysis_id}}\n\n**Returns:**\n- Disease detected\n- Confidence score (0-100)\n- Severity level\n- Treatment recommendations\n- Sponsor metadata (logo, messaging)"
+					},
+					"response": []
+				},
+				{
+					"name": "3.5 - Get Farmer Analysis History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{farmer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/PlantAnalyses/list?page=1&pageSize=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"PlantAnalyses",
+								"list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Get farmer's complete analysis history\n\n**Query Logic:**\nWHERE UserId = userId\n\n**Returns:**\n- All analyses performed by farmer\n- Sorted by date (newest first)"
+					},
+					"response": []
+				}
+			],
+			"description": "Farmer operations for code redemption and plant analysis\n\n**Endpoints:**\n1. Redeem code to activate subscription\n2. Check active subscription status\n3. Create plant analysis (async)\n4. Get analysis result\n5. View analysis history"
+		},
+		{
+			"name": "04 - Dealer Invitations",
+			"item": [
+				{
+					"name": "4.1 - Create Invitation (Method B - Invite)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Capture invitation details",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.environment.set(\"invitation_id\", jsonData.data.invitationId);",
+									"        pm.environment.set(\"invitation_token\", jsonData.data.invitationToken);",
+									"        pm.environment.set(\"invitation_link\", jsonData.data.invitationLink);",
+									"        console.log(\"✅ Invitation created: ID = \" + jsonData.data.invitationId);",
+									"        console.log(\"   Link: \" + jsonData.data.invitationLink);",
+									"    }",
+									"} else if (pm.response.code === 400) {",
+									"    console.log(\"⚠️ Invitation failed. Check if sponsor has enough codes.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"invitationType\": \"Invite\",\n  \"email\": \"newdealer@example.com\",\n  \"phone\": \"+905551234567\",\n  \"dealerName\": \"New Dealer Company\",\n  \"purchaseId\": 26,\n  \"codeCount\": 15\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invite",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invite"
+							]
+						},
+						"description": "Create dealer invitation with acceptance link (Method B)\n\n**Request Body:**\n- invitationType: \"Invite\"\n- email: Dealer email\n- phone: Dealer phone (optional)\n- dealerName: Company name\n- purchaseId: Sponsor's purchase (use {{purchase_id}})\n- codeCount: Codes to transfer on acceptance\n\n**What Happens:**\n- Invitation created with 7-day expiry\n- Link sent to dealer\n- Codes transferred when dealer accepts\n\n**Auto Actions:**\n- Captures invitation link to {{invitation_link}}"
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 - Create AutoCreate Dealer (Method C)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Capture auto-created dealer credentials",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.environment.set(\"autocreated_dealer_id\", jsonData.data.createdDealerId);",
+									"        pm.environment.set(\"autocreated_password\", jsonData.data.autoCreatedPassword);",
+									"        console.log(\"✅ Dealer account auto-created\");",
+									"        console.log(\"   Dealer ID: \" + jsonData.data.createdDealerId);",
+									"        console.log(\"   Email: \" + jsonData.data.email);",
+									"        console.log(\"   Password: \" + jsonData.data.autoCreatedPassword);",
+									"        console.log(\"   ⚠️ Share credentials with dealer securely\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"invitationType\": \"AutoCreate\",\n  \"email\": \"quickdealer@example.com\",\n  \"dealerName\": \"Quick Dealer LLC\",\n  \"purchaseId\": 26,\n  \"codeCount\": 20\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invite",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invite"
+							]
+						},
+						"description": "Auto-create dealer account with instant code transfer (Method C)\n\n**Request Body:**\n- invitationType: \"AutoCreate\"\n- email: Dealer email\n- dealerName: Company name\n- purchaseId: Sponsor's purchase (use {{purchase_id}})\n- codeCount: Codes to transfer immediately\n\n**What Happens:**\n- Dealer account created immediately\n- Random password generated\n- Sponsor role assigned\n- Codes transferred instantly\n- Password returned to sponsor\n\n**Auto Actions:**\n- Captures dealer ID to {{autocreated_dealer_id}}\n- Captures password to {{autocreated_password}}"
+					},
+					"response": []
+				},
+				{
+					"name": "4.3 - Get All Invitations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invitations",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invitations"
+							]
+						},
+						"description": "Get all dealer invitations\n\n**Returns:**\n- All invitations (Pending, Accepted, Expired)\n- Invitation links for Invite type\n- Created dealer IDs for AutoCreate type"
+					},
+					"response": []
+				},
+				{
+					"name": "4.4 - Get Pending Invitations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invitations?status=Pending",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invitations"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "Pending",
+									"description": "Filter by status: Pending, Accepted, Expired"
+								}
+							]
+						},
+						"description": "Get pending dealer invitations\n\n**Query Parameters:**\n- status: Pending (awaiting acceptance)\n\n**Status Values:**\n- Pending: Awaiting dealer acceptance\n- Accepted: Dealer accepted, codes transferred\n- Expired: Invitation expired (>7 days)"
+					},
+					"response": []
+				}
+			],
+			"description": "Dealer invitation management (Methods B & C)\n\n**Method B (Invite):**\n- Create invitation with link\n- Dealer accepts via link\n- Codes transferred on acceptance\n\n**Method C (AutoCreate):**\n- Create dealer account instantly\n- Generate random password\n- Transfer codes immediately\n- Return credentials to sponsor"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"console.log(\"🚀 ZiraAI Dealer Distribution E2E Test Collection\");",
+					"console.log(\"Environment: \" + pm.environment.get(\"base_url\"));"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"if (pm.response.code !== 200 && pm.response.code !== 201) {",
+					"    console.log(\"⚠️ Request failed with status: \" + pm.response.code);",
+					"    if (pm.response.json) {",
+					"        var jsonData = pm.response.json();",
+					"        if (jsonData.message) {",
+					"            console.log(\"Error: \" + jsonData.message);",
+					"        }",
+					"    }",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://ziraai-api-sit.up.railway.app",
+			"type": "string"
+		},
+		{
+			"key": "api_version",
+			"value": "1.0",
+			"type": "string"
+		}
+	]
+}
