@@ -1,4 +1,5 @@
 using Business.Services.Messaging;
+using Business.Services.DealerInvitation;
 using Business.Services.Messaging.Factories;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
@@ -33,6 +34,7 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly ISponsorshipCodeRepository _codeRepository;
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
             private readonly IMessagingServiceFactory _messagingFactory;
+            private readonly IDealerInvitationConfigurationService _configService;
             private readonly IConfiguration _configuration;
             private readonly ILogger<InviteDealerViaSmsCommandHandler> _logger;
 
@@ -41,6 +43,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 ISponsorshipCodeRepository codeRepository,
                 ISponsorProfileRepository sponsorProfileRepository,
                 IMessagingServiceFactory messagingFactory,
+                IDealerInvitationConfigurationService configService,
                 IConfiguration configuration,
                 ILogger<InviteDealerViaSmsCommandHandler> logger)
             {
@@ -48,6 +51,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 _codeRepository = codeRepository;
                 _sponsorProfileRepository = sponsorProfileRepository;
                 _messagingFactory = messagingFactory;
+                _configService = configService;
                 _configuration = configuration;
                 _logger = logger;
             }
@@ -95,8 +99,7 @@ namespace Business.Handlers.Sponsorship.Commands
                         InvitationToken = Guid.NewGuid().ToString("N"), // 32-character hex
                         Status = "Pending",
                         CreatedDate = DateTime.Now,
-                        ExpiryDate = DateTime.Now.AddDays(
-                            _configuration.GetValue<int>("DealerInvitation:TokenExpiryDays", 7))
+                        ExpiryDate = DateTime.Now.AddDays(await _configService.GetTokenExpiryDaysAsync())
                     };
 
                     _invitationRepository.Add(invitation);
@@ -105,26 +108,21 @@ namespace Business.Handlers.Sponsorship.Commands
                     _logger.LogInformation("✅ Created invitation {InvitationId} with token {Token}",
                         invitation.Id, invitation.InvitationToken);
 
-                    // 4. Generate deep link
-                    var baseUrl = _configuration["DealerInvitation:DeepLinkBaseUrl"]
-                        ?? _configuration["WebAPI:BaseUrl"]?.TrimEnd('/') + "/dealer-invitation/"
-                        ?? throw new InvalidOperationException("DealerInvitation:DeepLinkBaseUrl configuration is missing");
-
+                    // 4. Generate deep link using configuration service
+                    var baseUrl = await _configService.GetDeepLinkBaseUrlAsync();
                     var deepLink = $"{baseUrl.TrimEnd('/')}/DEALER-{invitation.InvitationToken}";
 
                     // 5. Get Play Store link
                     var playStorePackageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
                     var playStoreLink = $"https://play.google.com/store/apps/details?id={playStorePackageName}";
 
-                    // 6. Build SMS message
-                    var smsTemplate = _configuration["DealerInvitation:SmsTemplate"];
-                    var smsMessage = string.IsNullOrEmpty(smsTemplate)
-                        ? BuildDefaultSmsMessage(sponsorCompanyName, invitation.InvitationToken, deepLink, playStoreLink)
-                        : smsTemplate
-                            .Replace("{sponsorName}", sponsorCompanyName)
-                            .Replace("{token}", invitation.InvitationToken)
-                            .Replace("{deepLink}", deepLink)
-                            .Replace("{playStoreLink}", playStoreLink);
+                    // 6. Build SMS message using configuration service
+                    var smsTemplate = await _configService.GetSmsTemplateAsync();
+                    var smsMessage = smsTemplate
+                        .Replace("{sponsorName}", sponsorCompanyName)
+                        .Replace("{token}", invitation.InvitationToken)
+                        .Replace("{deepLink}", deepLink)
+                        .Replace("{playStoreLink}", playStoreLink);
 
                     // 7. Send SMS
                     var smsService = _messagingFactory.GetSmsService();

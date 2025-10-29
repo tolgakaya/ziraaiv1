@@ -278,6 +278,11 @@ namespace Business.DependencyResolvers
                 .As<Business.Services.Referral.IReferralConfigurationService>()
                 .InstancePerLifetimeScope();
             
+            // Dealer Invitation Services
+            builder.RegisterType<Business.Services.DealerInvitation.DealerInvitationConfigurationService>()
+                .As<Business.Services.DealerInvitation.IDealerInvitationConfigurationService>()
+                .InstancePerLifetimeScope();
+            
             builder.RegisterType<Business.Services.Referral.ReferralCodeService>()
                 .As<Business.Services.Referral.IReferralCodeService>()
                 .InstancePerLifetimeScope();
