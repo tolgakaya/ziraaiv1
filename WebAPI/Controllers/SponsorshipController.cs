@@ -1826,6 +1826,124 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Send dealer invitation via SMS with deep link
+        /// Creates invitation and sends SMS with token for easy mobile acceptance
+        /// </summary>
+        /// <param name="command">Invitation details (email, phone, dealerName, purchaseId, codeCount)</param>
+        /// <returns>Invitation details with SMS delivery status</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("dealer/invite-via-sms")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerInvitationResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<DealerInvitationResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> InviteDealerViaSms([FromBody] InviteDealerViaSmsCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                command.SponsorId = userId.Value;
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Dealer SMS invitation sent for sponsor {SponsorId} to {Phone}", 
+                        userId.Value, command.Phone);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending dealer SMS invitation for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"SMS invitation failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Accept dealer invitation (mobile endpoint)
+        /// Validates token, assigns Sponsor role if needed, and transfers codes
+        /// </summary>
+        /// <param name="command">Invitation token</param>
+        /// <returns>Acceptance result with transferred code count</returns>
+        [Authorize]
+        [HttpPost("dealer/accept-invitation")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerInvitationAcceptResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<DealerInvitationAcceptResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AcceptDealerInvitation([FromBody] AcceptDealerInvitationCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var userEmail = GetUserEmail();
+
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                command.CurrentUserId = userId.Value;
+                command.CurrentUserEmail = userEmail;
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Dealer invitation {InvitationToken} accepted by user {UserId}", 
+                        command.InvitationToken, userId.Value);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error accepting dealer invitation for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Invitation acceptance failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get dealer invitation details by token (PUBLIC - no auth required)
+        /// Used by mobile app to display invitation details before login/acceptance
+        /// </summary>
+        /// <param name="token">Invitation token</param>
+        /// <returns>Invitation details (sponsor name, code count, expiry, etc.)</returns>
+        [AllowAnonymous]
+        [HttpGet("dealer/invitation-details")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerInvitationDetailsDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<DealerInvitationDetailsDto>))]
+        public async Task<IActionResult> GetDealerInvitationDetails([FromQuery] string token)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(token))
+                    return BadRequest(new ErrorDataResult<DealerInvitationDetailsDto>("Token is required"));
+
+                var query = new GetDealerInvitationDetailsQuery
+                {
+                    InvitationToken = token
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting invitation details for token {Token}", token);
+                return StatusCode(500, new ErrorResult($"Invitation details retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
         /// Reclaim unused codes from a dealer back to main sponsor
         /// Allows main sponsor to reclaim codes that were transferred but not yet distributed
         /// </summary>

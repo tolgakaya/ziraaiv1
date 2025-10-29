@@ -1,0 +1,478 @@
+{
+  "name": "04 - SMS-Based Dealer Invitation (Method B Enhanced)",
+  "description": "Complete SMS-based dealer invitation flow with automatic code transfer\n\n## Flow:\n1. Sponsor sends SMS invitation\n2. Dealer receives SMS with DEALER-{token}\n3. Dealer clicks deep link or opens app\n4. App reads SMS to extract token\n5. Dealer gets invitation details (public endpoint)\n6. Dealer accepts invitation\n7. Codes automatically transferred\n\n## Test Scenarios:\n- ✅ Send SMS invitation\n- ✅ Get invitation details (no auth)\n- ✅ Accept invitation (with auth)\n- ✅ Verify code transfer\n- ❌ Error: Expired invitation\n- ❌ Error: Email mismatch\n- ❌ Error: Insufficient codes",
+  "item": [
+    {
+      "name": "Step 1: Send SMS Invitation to Dealer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Auto-capture invitation token",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.success && jsonData.data) {",
+              "        pm.environment.set(\"dealer_invitation_token\", jsonData.data.invitationToken);",
+              "        pm.environment.set(\"dealer_invitation_id\", jsonData.data.invitationId);",
+              "        pm.environment.set(\"dealer_invitation_link\", jsonData.data.invitationLink);",
+              "        ",
+              "        console.log(\"✅ Invitation created successfully\");",
+              "        console.log(\"📧 Invitation ID: \" + jsonData.data.invitationId);",
+              "        console.log(\"🔑 Token: \" + jsonData.data.invitationToken);",
+              "        console.log(\"🔗 Deep Link: \" + jsonData.data.invitationLink);",
+              "        console.log(\"📱 SMS Sent: \" + jsonData.data.smsSent);",
+              "        console.log(\"📊 Status: \" + jsonData.data.smsDeliveryStatus);",
+              "        ",
+              "        // Tests",
+              "        pm.test(\"Status code is 200\", function () {",
+              "            pm.response.to.have.status(200);",
+              "        });",
+              "        ",
+              "        pm.test(\"Response is successful\", function () {",
+              "            pm.expect(jsonData.success).to.be.true;",
+              "        });",
+              "        ",
+              "        pm.test(\"Invitation token exists\", function () {",
+              "            pm.expect(jsonData.data.invitationToken).to.exist;",
+              "            pm.expect(jsonData.data.invitationToken).to.have.lengthOf(32);",
+              "        });",
+              "        ",
+              "        pm.test(\"SMS sent successfully\", function () {",
+              "            pm.expect(jsonData.data.smsSent).to.be.true;",
+              "        });",
+              "    }",
+              "} else {",
+              "    console.log(\"❌ Invitation creation failed\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{sponsor_token}}",
+            "type": "text"
+          },
+          {
+            "key": "x-dev-arch-version",
+            "value": "1.0",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"dealer@test.com\",\n  \"phone\": \"+905551234567\",\n  \"dealerName\": \"ABC Tarım Bayii\",\n  \"purchaseId\": 26,\n  \"codeCount\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/Sponsorship/dealer/invite-via-sms",
+          "host": ["{{base_url}}"],
+          "path": ["api", "Sponsorship", "dealer", "invite-via-sms"]
+        },
+        "description": "**Purpose:** Sponsor sends SMS invitation to dealer with deep link\n\n**Auth:** Required (Sponsor role)\n\n**What Happens:**\n1. Validates sponsor has enough available codes\n2. Creates DealerInvitation record with unique token\n3. Generates environment-aware deep link\n4. Sends SMS with DEALER-{token} format\n5. Tracks SMS delivery status\n\n**SMS Content:**\n```\n🎁 {Sponsor Name} Bayilik Daveti!\n\nDavet Kodunuz: DEALER-a1b2c3d4...\n\nHemen katılmak için tıklayın:\n{deep_link}\n\nVeya uygulamayı indirin:\n{play_store_link}\n```\n\n**Auto Actions:**\n- Captures {{dealer_invitation_token}}\n- Captures {{dealer_invitation_id}}\n- Captures {{dealer_invitation_link}}\n\n**Request Body:**\n- `email`: Dealer email (required for email verification)\n- `phone`: Dealer phone number (SMS recipient)\n- `dealerName`: Dealer company/person name\n- `purchaseId`: Which purchase to allocate codes from\n- `codeCount`: Number of codes to transfer (max: available codes)\n\n**Success Response:**\n```json\n{\n  \"data\": {\n    \"invitationId\": 15,\n    \"invitationToken\": \"a1b2c3d4e5f67890...\",\n    \"invitationLink\": \"https://...\",\n    \"smsSent\": true,\n    \"smsDeliveryStatus\": \"Sent\"\n  },\n  \"success\": true\n}\n```\n\n**Error Cases:**\n- Insufficient codes available\n- Invalid purchaseId\n- SMS service failure (invitation still created)"
+      },
+      "response": []
+    },
+    {
+      "name": "Step 2: Get Invitation Details (Public - No Auth)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validate invitation details",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.success && jsonData.data) {",
+              "        console.log(\"✅ Invitation details retrieved\");",
+              "        console.log(\"🏢 Sponsor: \" + jsonData.data.sponsorCompanyName);",
+              "        console.log(\"📦 Code Count: \" + jsonData.data.codeCount);",
+              "        console.log(\"🎁 Package Tier: \" + jsonData.data.packageTier);",
+              "        console.log(\"⏰ Remaining Days: \" + jsonData.data.remainingDays);",
+              "        console.log(\"📊 Status: \" + jsonData.data.status);",
+              "        ",
+              "        // Tests",
+              "        pm.test(\"Status code is 200\", function () {",
+              "            pm.response.to.have.status(200);",
+              "        });",
+              "        ",
+              "        pm.test(\"Response is successful\", function () {",
+              "            pm.expect(jsonData.success).to.be.true;",
+              "        });",
+              "        ",
+              "        pm.test(\"Invitation is pending\", function () {",
+              "            pm.expect(jsonData.data.status).to.eql(\"Pending\");",
+              "        });",
+              "        ",
+              "        pm.test(\"Has sponsor info\", function () {",
+              "            pm.expect(jsonData.data.sponsorCompanyName).to.exist;",
+              "        });",
+              "    }",
+              "} else {",
+              "    console.log(\"❌ Failed to get invitation details\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-dev-arch-version",
+            "value": "1.0",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/Sponsorship/dealer/invitation-details?token={{dealer_invitation_token}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "Sponsorship", "dealer", "invitation-details"],
+          "query": [
+            {
+              "key": "token",
+              "value": "{{dealer_invitation_token}}",
+              "description": "32-character invitation token (without DEALER- prefix)"
+            }
+          ]
+        },
+        "description": "**Purpose:** Get invitation details before login/acceptance\n\n**Auth:** None (Public endpoint - token-only validation)\n\n**Use Case:** Mobile app shows invitation details screen before requiring login\n\n**What Happens:**\n1. Validates token exists and not expired\n2. Returns sponsor company name and package details\n3. Shows remaining days until expiry\n4. No authentication required (secure by token)\n\n**Query Parameters:**\n- `token`: The 32-character invitation token (from SMS, without \"DEALER-\" prefix)\n\n**Success Response:**\n```json\n{\n  \"data\": {\n    \"invitationId\": 15,\n    \"sponsorCompanyName\": \"ABC Tarım A.Ş.\",\n    \"codeCount\": 5,\n    \"packageTier\": \"M\",\n    \"expiresAt\": \"2025-02-01T10:30:00\",\n    \"remainingDays\": 6,\n    \"status\": \"Pending\",\n    \"invitationMessage\": \"🎉 ABC Tarım A.Ş. sizi bayilik ağına katılmaya davet ediyor!\",\n    \"dealerEmail\": \"dealer@test.com\",\n    \"dealerPhone\": \"+905551234567\"\n  },\n  \"success\": true\n}\n```\n\n**Error Cases:**\n- Token not found\n- Invitation expired\n- Already accepted/rejected\n\n**Mobile Integration:**\nThis endpoint is called BEFORE user login to show invitation details."
+      },
+      "response": []
+    },
+    {
+      "name": "Step 3: Accept Invitation (Authenticated)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validate acceptance and code transfer",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.success && jsonData.data) {",
+              "        console.log(\"✅ Invitation accepted successfully\");",
+              "        console.log(\"👤 Dealer ID: \" + jsonData.data.dealerId);",
+              "        console.log(\"📦 Codes Transferred: \" + jsonData.data.transferredCodeCount);",
+              "        console.log(\"🎁 Code IDs: \" + jsonData.data.transferredCodeIds.join(\", \"));",
+              "        console.log(\"⏰ Accepted At: \" + jsonData.data.acceptedAt);",
+              "        ",
+              "        // Tests",
+              "        pm.test(\"Status code is 200\", function () {",
+              "            pm.response.to.have.status(200);",
+              "        });",
+              "        ",
+              "        pm.test(\"Response is successful\", function () {",
+              "            pm.expect(jsonData.success).to.be.true;",
+              "        });",
+              "        ",
+              "        pm.test(\"Codes transferred\", function () {",
+              "            pm.expect(jsonData.data.transferredCodeCount).to.be.above(0);",
+              "        });",
+              "        ",
+              "        pm.test(\"Has dealer ID\", function () {",
+              "            pm.expect(jsonData.data.dealerId).to.exist;",
+              "        });",
+              "        ",
+              "        pm.test(\"Code IDs array exists\", function () {",
+              "            pm.expect(jsonData.data.transferredCodeIds).to.be.an('array');",
+              "        });",
+              "    }",
+              "} else {",
+              "    console.log(\"❌ Invitation acceptance failed\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{dealer_token}}",
+            "type": "text"
+          },
+          {
+            "key": "x-dev-arch-version",
+            "value": "1.0",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"invitationToken\": \"{{dealer_invitation_token}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/Sponsorship/dealer/accept-invitation",
+          "host": ["{{base_url}}"],
+          "path": ["api", "Sponsorship", "dealer", "accept-invitation"]
+        },
+        "description": "**Purpose:** Accept invitation and transfer codes to dealer\n\n**Auth:** Required (Any authenticated user)\n\n**What Happens:**\n1. Validates token exists and not expired\n2. **Security Check:** Verifies email matches invitation email\n3. Auto-assigns Sponsor role to dealer if not already assigned\n4. Transfers specified number of codes from sponsor to dealer\n5. Updates invitation status to \"Accepted\"\n6. Records acceptance timestamp and dealer ID\n\n**Request Body:**\n- `invitationToken`: 32-character token from SMS\n\n**Auto Actions by Backend:**\n- `currentUserId`: Extracted from JWT claims\n- `currentUserEmail`: Extracted from JWT claims\n\n**Success Response:**\n```json\n{\n  \"data\": {\n    \"invitationId\": 15,\n    \"dealerId\": 158,\n    \"transferredCodeCount\": 5,\n    \"transferredCodeIds\": [945, 946, 947, 948, 949],\n    \"acceptedAt\": \"2025-01-25T11:00:00\",\n    \"message\": \"✅ Tebrikler! 5 adet kod hesabınıza transfer edildi.\"\n  },\n  \"success\": true\n}\n```\n\n**Database Changes:**\n1. `DealerInvitations.Status` → \"Accepted\"\n2. `DealerInvitations.AcceptedDate` → Current timestamp\n3. `DealerInvitations.CreatedDealerId` → Current user ID\n4. `SponsorshipCodes.DealerId` → Current user ID (for transferred codes)\n5. `SponsorshipCodes.TransferredAt` → Current timestamp\n6. `UserGroups` → Adds Sponsor role if missing\n\n**Error Cases:**\n- Email mismatch: \"Bu davetiye size ait değil\"\n- Already accepted: \"Davetiye bulunamadı veya daha önce kabul edilmiş\"\n- Expired: \"Davetiye süresi dolmuş\"\n- Insufficient codes: \"Yetersiz kod. İstenen: 10, Mevcut: 5\""
+      },
+      "response": []
+    },
+    {
+      "name": "Step 4: Verify Codes Transferred to Dealer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Verify dealer received codes",
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.success && jsonData.data && jsonData.data.items) {",
+              "        var codes = jsonData.data.items;",
+              "        console.log(\"✅ Dealer codes retrieved\");",
+              "        console.log(\"📦 Total Codes: \" + codes.length);",
+              "        ",
+              "        codes.forEach((code, index) => {",
+              "            console.log(`Code ${index + 1}: ${code.code} | Tier: ${code.subscriptionTierName} | Transferred: ${code.transferredAt}`);",
+              "        });",
+              "        ",
+              "        // Tests",
+              "        pm.test(\"Status code is 200\", function () {",
+              "            pm.response.to.have.status(200);",
+              "        });",
+              "        ",
+              "        pm.test(\"Response is successful\", function () {",
+              "            pm.expect(jsonData.success).to.be.true;",
+              "        });",
+              "        ",
+              "        pm.test(\"Codes exist\", function () {",
+              "            pm.expect(codes).to.be.an('array').that.is.not.empty;",
+              "        });",
+              "        ",
+              "        pm.test(\"All codes have dealerId\", function () {",
+              "            codes.forEach(code => {",
+              "                pm.expect(code.dealerId).to.exist;",
+              "            });",
+              "        });",
+              "    }",
+              "} else {",
+              "    console.log(\"❌ Failed to retrieve dealer codes\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{dealer_token}}",
+            "type": "text"
+          },
+          {
+            "key": "x-dev-arch-version",
+            "value": "1.0",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/Sponsorship/codes/my-codes?page=1&pageSize=20",
+          "host": ["{{base_url}}"],
+          "path": ["api", "Sponsorship", "codes", "my-codes"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "pageSize",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "**Purpose:** Verify codes were successfully transferred to dealer\n\n**Auth:** Required (Dealer)\n\n**What to Verify:**\n- ✅ Codes have `dealerId` = current user\n- ✅ `transferredAt` is populated\n- ✅ `transferredByUserId` is sponsor ID\n- ✅ Code count matches invitation `codeCount`\n- ✅ Codes are not yet used (`isUsed` = false)\n\n**Expected Fields:**\n```json\n{\n  \"code\": \"AGRI-2025-ABC123\",\n  \"dealerId\": 158,\n  \"transferredAt\": \"2025-01-25T11:00:00\",\n  \"transferredByUserId\": 159,\n  \"isUsed\": false\n}\n```"
+      },
+      "response": []
+    },
+    {
+      "name": "Error: Expired Invitation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 or 200\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+              "});",
+              "",
+              "pm.test(\"Error message about expiry\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.message).to.include(\"süresi dolmuş\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-dev-arch-version",
+            "value": "1.0",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/Sponsorship/dealer/invitation-details?token=expired_token_example",
+          "host": ["{{base_url}}"],
+          "path": ["api", "Sponsorship", "dealer", "invitation-details"],
+          "query": [
+            {
+              "key": "token",
+              "value": "expired_token_example"
+            }
+          ]
+        },
+        "description": "**Test Case:** Expired Invitation\n\n**Expected Response:**\n```json\n{\n  \"success\": false,\n  \"message\": \"Davetiyenin süresi dolmuş. Lütfen sponsor ile iletişime geçin\"\n}\n```\n\n**What Happens:**\n- Backend checks `ExpiryDate < DateTime.Now`\n- Auto-updates status to \"Expired\"\n- Returns user-friendly error message"
+      },
+      "response": []
+    },
+    {
+      "name": "Error: Email Mismatch",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 or 200\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+              "});",
+              "",
+              "pm.test(\"Error message about ownership\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.message).to.include(\"size ait değil\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{dealer_token}}",
+            "type": "text",
+            "description": "Token with different email than invitation"
+          },
+          {
+            "key": "x-dev-arch-version",
+            "value": "1.0",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"invitationToken\": \"{{dealer_invitation_token}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/Sponsorship/dealer/accept-invitation",
+          "host": ["{{base_url}}"],
+          "path": ["api", "Sponsorship", "dealer", "accept-invitation"]
+        },
+        "description": "**Test Case:** Email Mismatch (Security Check)\n\n**Expected Response:**\n```json\n{\n  \"success\": false,\n  \"message\": \"Bu davetiye size ait değil\"\n}\n```\n\n**What Happens:**\n- Backend compares `invitation.Email` with `currentUserEmail` from JWT\n- If mismatch, rejects the request\n- Prevents unauthorized users from accepting invitations"
+      },
+      "response": []
+    },
+    {
+      "name": "Error: Insufficient Codes",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 or 200\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+              "});",
+              "",
+              "pm.test(\"Error message about insufficient codes\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.false;",
+              "    pm.expect(jsonData.message).to.include(\"Yetersiz kod\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{sponsor_token}}",
+            "type": "text"
+          },
+          {
+            "key": "x-dev-arch-version",
+            "value": "1.0",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"dealer@test.com\",\n  \"phone\": \"+905551234567\",\n  \"dealerName\": \"Test Dealer\",\n  \"purchaseId\": 26,\n  \"codeCount\": 99999\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/Sponsorship/dealer/invite-via-sms",
+          "host": ["{{base_url}}"],
+          "path": ["api", "Sponsorship", "dealer", "invite-via-sms"]
+        },
+        "description": "**Test Case:** Insufficient Available Codes\n\n**Expected Response:**\n```json\n{\n  \"success\": false,\n  \"message\": \"Yetersiz kod. Mevcut: 5, İstenen: 99999\"\n}\n```\n\n**What Happens:**\n- Backend counts available codes for the purchase\n- Available = `!IsUsed AND DealerId == NULL AND ExpiryDate > Now`\n- If count < requested, returns error\n- No invitation created"
+      },
+      "response": []
+    }
+  ]
+}

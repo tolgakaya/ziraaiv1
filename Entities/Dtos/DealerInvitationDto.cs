@@ -67,6 +67,32 @@ namespace Entities.Dtos
         public int? CreatedDealerId { get; set; }
         
         public DateTime CreatedAt { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+
+        /// <summary>
+        /// SMS delivery status (for invite-via-sms endpoint)
+        /// </summary>
+        public bool SmsSent { get; set; }
+        public string SmsDeliveryStatus { get; set; }
+    }
+
+    /// <summary>
+    /// DTO for dealer invitation details (public, no auth required)
+    /// Used by mobile app to show invitation details before acceptance
+    /// </summary>
+    public class DealerInvitationDetailsDto : IDto
+    {
+        public int InvitationId { get; set; }
+        public string SponsorCompanyName { get; set; }
+        public int CodeCount { get; set; }
+        public string PackageTier { get; set; }
+        public DateTime ExpiresAt { get; set; }
+        public int RemainingDays { get; set; }
+        public string Status { get; set; }
+        public string InvitationMessage { get; set; }
+        public string DealerEmail { get; set; }
+        public string DealerPhone { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
     /// <summary>

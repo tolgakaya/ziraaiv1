@@ -46,6 +46,11 @@ namespace Entities.Concrete
         public DateTime? AcceptedDate { get; set; } // When dealer accepted the invitation
         public string AutoCreatedPassword { get; set; } // Encrypted password for auto-created accounts
         
+        // SMS/Link Tracking
+        public DateTime? LinkSentDate { get; set; } // When the SMS/link was sent
+        public string LinkSentVia { get; set; } // SMS, WhatsApp, Email, etc.
+        public bool LinkDelivered { get; set; } = false; // Whether the message was successfully delivered
+
         // Audit Fields
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public DateTime ExpiryDate { get; set; } // Invitation expiry (default: 7 days)
