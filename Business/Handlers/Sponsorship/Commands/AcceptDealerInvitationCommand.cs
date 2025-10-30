@@ -98,9 +98,9 @@ namespace Business.Handlers.Sponsorship.Commands
                     // Check phone match (if invitation has phone and user logged in with phone)
                     if (!string.IsNullOrEmpty(invitation.Phone) && !string.IsNullOrEmpty(request.CurrentUserPhone))
                     {
-                        // Normalize both phones for comparison (remove spaces, dashes, etc.)
-                        var invitationPhoneNormalized = invitation.Phone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "");
-                        var userPhoneNormalized = request.CurrentUserPhone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "");
+                        // Normalize both phones for comparison (remove spaces, dashes, parentheses, plus sign)
+                        var invitationPhoneNormalized = NormalizePhoneNumber(invitation.Phone);
+                        var userPhoneNormalized = NormalizePhoneNumber(request.CurrentUserPhone);
 
                         if (invitationPhoneNormalized.Equals(userPhoneNormalized, StringComparison.OrdinalIgnoreCase))
                         {
@@ -240,6 +240,25 @@ namespace Business.Handlers.Sponsorship.Commands
                     return new ErrorDataResult<DealerInvitationAcceptResponseDto>(
                         "Davetiye kabul edilirken hata oluştu");
                 }
+            }
+
+            /// <summary>
+            /// Normalize phone number for comparison
+            /// Removes: spaces, dashes, parentheses, plus sign
+            /// Examples: +90 555 686 6386 → 905556866386
+            ///           0555-686-6386 → 05556866386
+            /// </summary>
+            private string NormalizePhoneNumber(string phone)
+            {
+                if (string.IsNullOrEmpty(phone))
+                    return phone;
+
+                return phone
+                    .Replace(" ", "")
+                    .Replace("-", "")
+                    .Replace("(", "")
+                    .Replace(")", "")
+                    .Replace("+", "");
             }
         }
     }
