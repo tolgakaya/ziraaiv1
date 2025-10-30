@@ -123,18 +123,34 @@ namespace Business.Handlers.Sponsorship.Commands
                         _logger.LogInformation("ℹ️ User {UserId} already has Sponsor role", request.CurrentUserId);
                     }
 
-                    // 5. Transfer codes to dealer
-                    var codes = await _codeRepository.GetListAsync(c =>
-                        c.SponsorId == invitation.SponsorId &&
-                        c.SponsorshipPurchaseId == invitation.PurchaseId &&
-                        !c.IsUsed &&
-                        c.DealerId == null &&
-                        c.ExpiryDate > DateTime.Now);
+                    // 5. Get reserved codes for this invitation (or fallback to fresh codes)
+                    var reservedCodes = await _codeRepository.GetListAsync(c =>
+                        c.ReservedForInvitationId == invitation.Id);
 
-                    var codesToTransfer = codes
-                        .OrderBy(c => c.CreatedDate)
-                        .Take(invitation.CodeCount)
-                        .ToList();
+                    var codesToTransfer = reservedCodes.ToList();
+
+                    // Fallback: If no reserved codes or insufficient, get fresh codes
+                    if (codesToTransfer.Count < invitation.CodeCount)
+                    {
+                        _logger.LogWarning("⚠️ Reserved codes insufficient or missing. Fetching fresh codes. Reserved: {Reserved}, Needed: {Needed}",
+                            codesToTransfer.Count, invitation.CodeCount);
+
+                        var freshCodes = await _codeRepository.GetListAsync(c =>
+                            c.SponsorId == invitation.SponsorId &&
+                            !c.IsUsed &&
+                            c.DealerId == null &&
+                            c.ReservedForInvitationId == null &&
+                            c.ExpiryDate > DateTime.Now);
+
+                        var additionalNeeded = invitation.CodeCount - codesToTransfer.Count;
+                        var freshCodesList = freshCodes
+                            .OrderBy(c => c.ExpiryDate)  // Expiring soonest first
+                            .ThenBy(c => c.CreatedDate)  // FIFO
+                            .Take(additionalNeeded)
+                            .ToList();
+
+                        codesToTransfer.AddRange(freshCodesList);
+                    }
 
                     if (codesToTransfer.Count < invitation.CodeCount)
                     {
@@ -153,6 +169,8 @@ namespace Business.Handlers.Sponsorship.Commands
                         code.DealerId = request.CurrentUserId;
                         code.TransferredAt = DateTime.Now;
                         code.TransferredByUserId = invitation.SponsorId;
+                        code.ReservedForInvitationId = null;  // Clear reservation
+                        code.ReservedAt = null;
                         _codeRepository.Update(code);
                     }
 

@@ -22,6 +22,20 @@ namespace Entities.Concrete
         public DateTime? ReclaimedAt { get; set; } // When code was reclaimed from dealer
         public int? ReclaimedByUserId { get; set; } // Who reclaimed the code
         
+        // Code Reservation System (for dealer invitations)
+        /// <summary>
+        /// Invitation ID for which this code is reserved.
+        /// Prevents double-allocation during pending invitations.
+        /// Cleared when invitation is accepted/expired/cancelled.
+        /// </summary>
+        public int? ReservedForInvitationId { get; set; }
+        
+        /// <summary>
+        /// Timestamp when the code was reserved for an invitation.
+        /// Reservation expires with the invitation expiry date.
+        /// </summary>
+        public DateTime? ReservedAt { get; set; }
+        
         // Usage Information
         public bool IsUsed { get; set; }
         public int? UsedByUserId { get; set; } // Farmer who redeemed the code

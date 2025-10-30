@@ -38,7 +38,19 @@ namespace Entities.Concrete
         public string InvitationToken { get; set; } // Unique token for invitation link
         
         // Package and Code Information
-        public int PurchaseId { get; set; } // Which sponsorship purchase these codes come from
+        /// <summary>
+        /// [DEPRECATED] Purchase ID - nullable for backward compatibility.
+        /// New invitations should use PackageTier instead for intelligent code selection.
+        /// </summary>
+        public int? PurchaseId { get; set; }
+        
+        /// <summary>
+        /// Optional tier filter for code selection: S, M, L, XL.
+        /// If null, codes from any tier can be selected automatically.
+        /// System will intelligently select codes based on expiry date (FIFO).
+        /// </summary>
+        public string PackageTier { get; set; }
+        
         public int CodeCount { get; set; } // Number of codes to transfer
         
         // Dealer Creation Tracking
