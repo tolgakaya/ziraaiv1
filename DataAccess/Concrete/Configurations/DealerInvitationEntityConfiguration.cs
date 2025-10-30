@@ -52,9 +52,16 @@ namespace DataAccess.Concrete.Configurations
                 .HasColumnName("InvitationToken")
                 .HasMaxLength(255);
 
+            // v2.0: PurchaseId is now nullable (optional - backward compatible)
             builder.Property(x => x.PurchaseId)
                 .HasColumnName("PurchaseId")
-                .IsRequired();
+                .IsRequired(false);  // Changed from IsRequired() to allow NULL
+
+            // v2.0: PackageTier added as optional filter
+            builder.Property(x => x.PackageTier)
+                .HasColumnName("PackageTier")
+                .HasMaxLength(10)
+                .IsRequired(false);
 
             builder.Property(x => x.CodeCount)
                 .HasColumnName("CodeCount")
