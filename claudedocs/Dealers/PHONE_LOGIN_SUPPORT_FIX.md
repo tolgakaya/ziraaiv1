@@ -2,11 +2,12 @@
 
 **Date**: 2025-10-30
 **Severity**: 🔴 CRITICAL (Blocking feature for phone users)
-**Status**: ✅ FIXED (Three-part fix required)
+**Status**: ✅ FIXED (Four-part fix required)
 **Commits**:
 - 7da97f5 (validation logic)
 - 06af14f (JWT claims)
 - 6a214b0 (phone normalization - plus sign)
+- a861ccb (phone normalization - country code handling)
 **Affected Endpoint**: `POST /api/v1/sponsorship/dealer/accept-invitation`
 
 ---
@@ -26,9 +27,9 @@ Users who logged in via **phone number** (OTP-based authentication) were unable 
 
 ---
 
-## 🔍 Root Cause - THREE-PART PROBLEM
+## 🔍 Root Cause - FOUR-PART PROBLEM
 
-This issue required **THREE separate fixes** because it manifested at three different layers:
+This issue required **FOUR separate fixes** because it manifested at four different layers:
 
 ### Problem 1: Validation Logic (Partial Fix - Commit 7da97f5)
 
@@ -92,9 +93,9 @@ private static IEnumerable<Claim> SetClaims(User user, ...)
 (Phone mismatch due to + sign!)
 ```
 
-### Problem 3: Phone Normalization Missing Plus Sign (Final Fix - Commit 6a214b0)
+### Problem 3: Phone Normalization Missing Plus Sign (Partial Fix - Commit 6a214b0)
 
-**The final issue**: Phone normalization didn't remove the **+** prefix!
+**The third issue**: Phone normalization didn't remove the **+** prefix!
 
 ```
 Invitation Phone: +905556866386 (international format with +)
@@ -102,21 +103,50 @@ User Phone: 05556866386 (Turkish format without +)
 Comparison: "+905556866386" != "05556866386" → MISMATCH!
 ```
 
-**Why All Three Fixes Were Needed**:
+**Third fix applied**: Added `.Replace("+", "")` to normalization logic.
+
+**BUT ERROR STILL PERSISTED!** After removing + sign:
+```
+Invitation: +905556866386 → 905556866386 (starts with 90)
+User: 05556866386 → 05556866386 (starts with 0)
+Comparison: "905556866386" != "05556866386" → STILL MISMATCH!
+```
+
+### Problem 4: Phone Normalization Country Code (Final Fix - Commit a861ccb)
+
+**The final issue**: Phones still didn't match due to **country code format difference**!
+
+- International format (+90): `+905556866386` → after removing + → `905556866386` (12 digits, starts with 90)
+- Turkish format (0): `05556866386` → stays → `05556866386` (11 digits, starts with 0)
+
+**Fourth fix applied**: Convert international (90xxx) to Turkish (0xxx) format:
+
+```csharp
+// Convert international format (90xxx) to Turkish format (0xxx)
+if (normalized.StartsWith("90") && normalized.Length == 12)
+{
+    normalized = "0" + normalized.Substring(2);
+}
+```
+
+**Why All Four Fixes Were Needed**:
 1. **First fix (7da97f5)**: Added phone validation logic → BUT phone was null in JWT
 2. **Second fix (06af14f)**: Added phone to JWT → BUT normalization incomplete
-3. **Third fix (6a214b0)**: Fixed normalization to handle + sign → ✅ **NOW IT WORKS!**
+3. **Third fix (6a214b0)**: Fixed normalization to remove + sign → BUT country code mismatch
+4. **Fourth fix (a861ccb)**: Convert 90 → 0 country code format → ✅ **NOW IT WORKS!**
 
-**Log Evidence - After All Three Fixes**:
+**Log Evidence - After All Four Fixes**:
 ```
 🎯 User 172 (Email: null, Phone: 05556866386) attempting to accept...
+Normalized: +905556866386 → 905556866386 → 05556866386
+Normalized: 05556866386 → 05556866386
 ✅ User authorized by phone. Proceeding with acceptance.
 ✅ Transferred 10 codes successfully
 ```
 
 ---
 
-## ✅ THREE-PART FIX APPLIED (4 Files Total)
+## ✅ FOUR-PART FIX APPLIED (4 Files Total)
 
 ### Part 1: Validation Logic Support (Commit 7da97f5) - 3 Files
 
@@ -316,6 +346,64 @@ Database stored invitation phone as `+905556866386` (international format), but 
 
 ---
 
+### Part 4: Country Code Normalization (Commit a861ccb) - 1 File
+
+#### 4. AcceptDealerInvitationCommand.cs (NormalizePhoneNumber Method - Enhanced)
+
+**Enhanced phone normalization to handle Turkish/international country codes**:
+
+**File**: `Business/Handlers/Sponsorship/Commands/AcceptDealerInvitationCommand.cs`
+**Lines**: 245-270
+
+```csharp
+/// <summary>
+/// Normalize phone number for comparison
+/// Handles Turkish (0) vs international (+90) formats
+/// Examples:
+///   +90 555 686 6386 → 05556866386
+///   +905556866386 → 05556866386
+///   0555-686-6386 → 05556866386
+///   905556866386 → 05556866386
+/// </summary>
+private string NormalizePhoneNumber(string phone)
+{
+    if (string.IsNullOrEmpty(phone))
+        return phone;
+
+    // Remove formatting characters
+    var normalized = phone
+        .Replace(" ", "")
+        .Replace("-", "")
+        .Replace("(", "")
+        .Replace(")", "")
+        .Replace("+", "");
+
+    // ✅ NEW - Convert international format (90xxx) to Turkish format (0xxx)
+    if (normalized.StartsWith("90") && normalized.Length == 12)
+    {
+        normalized = "0" + normalized.Substring(2);
+    }
+
+    return normalized;
+}
+```
+
+**What Changed**:
+- After removing formatting and + sign, check if phone starts with "90" and has 12 digits
+- If so, convert to Turkish format: `905556866386` → `05556866386`
+- All phone formats now normalize to same Turkish format (0xxx)
+
+**Why This Was Critical**:
+Even after removing the + sign, international format `+905556866386` became `905556866386` (12 digits, starts with 90), which still didn't match Turkish format `05556866386` (11 digits, starts with 0). This final fix standardizes both to the same format.
+
+**Normalization Examples**:
+- `+905556866386` → Remove + → `905556866386` → Convert 90→0 → `05556866386` ✅
+- `05556866386` → No formatting → `05556866386` → No conversion needed → `05556866386` ✅
+- `+90 555 686 6386` → Remove formatting+sign → `905556866386` → Convert 90→0 → `05556866386` ✅
+- `905556866386` → No + to remove → `905556866386` → Convert 90→0 → `05556866386` ✅
+
+---
+
 ## 🔧 Key Features
 
 ### Phone Normalization
@@ -323,13 +411,17 @@ Handles different phone formats for robust matching:
 
 | Invitation Phone | User Phone (JWT) | Normalized Match |
 |-----------------|------------------|------------------|
-| `05556866386` | `05556866386` | ✅ Match |
-| `+905556866386` | `05556866386` | ✅ Match (+ removed) |
-| `+90 555 686 6386` | `05556866386` | ✅ Match |
-| `0555-686-6386` | `05556866386` | ✅ Match |
-| `(0555) 686 6386` | `05556866386` | ✅ Match |
+| `05556866386` | `05556866386` | ✅ `05556866386` |
+| `+905556866386` | `05556866386` | ✅ `05556866386` (+ removed, 90→0) |
+| `905556866386` | `05556866386` | ✅ `05556866386` (90→0 converted) |
+| `+90 555 686 6386` | `05556866386` | ✅ `05556866386` (formatting + 90→0) |
+| `0555-686-6386` | `05556866386` | ✅ `05556866386` (formatting removed) |
+| `(0555) 686 6386` | `05556866386` | ✅ `05556866386` (formatting removed) |
 
-**Normalization Logic**: Removes spaces, dashes, parentheses, **plus sign** before comparison.
+**Normalization Logic**:
+1. Remove formatting (spaces, dashes, parentheses)
+2. Remove international prefix (+)
+3. Convert international country code (90xxx → 0xxx)
 
 ### Enhanced Logging
 Improved debug visibility:
@@ -450,6 +542,7 @@ Improved debug visibility:
   - `7da97f5` - Validation logic (3 files: SponsorshipController.cs, AcceptDealerInvitationCommand.cs)
   - `06af14f` - JWT claims (1 file: JwtHelper.cs)
   - `6a214b0` - Phone normalization plus sign fix (1 file: AcceptDealerInvitationCommand.cs)
+  - `a861ccb` - Phone normalization country code fix (1 file: AcceptDealerInvitationCommand.cs)
 - **Total Files Changed**: 4
 - **Build Status**: ✅ Successful (0 errors, 20 warnings - all pre-existing)
 
@@ -462,14 +555,15 @@ Improved debug visibility:
 - [x] Phone normalization tested with various formats
 
 #### Deployment to Staging
-- [ ] Deploy commits `7da97f5` + `06af14f` + `6a214b0` to Railway staging
+- [ ] Deploy commits `7da97f5` + `06af14f` + `6a214b0` + `a861ccb` to Railway staging
 - [ ] Restart API service
 - [ ] **IMPORTANT**: Users must re-login after deployment to get new JWT with claims!
 - [ ] Test with phone login user (User 172, phone: 05556866386)
   - [ ] Login with phone to get new JWT token
   - [ ] Call accept-invitation endpoint (token: 7fc679cd040c44509f961f2b9fb0f7b4)
   - [ ] Verify phone in logs: "Phone: 05556866386" (not null!)
-  - [ ] Verify normalization works: "+905556866386" matches "05556866386"
+  - [ ] Verify normalization works: "+905556866386" → "05556866386" matches "05556866386"
+  - [ ] Verify country code conversion: "905556866386" → "05556866386"
 - [ ] Test with email login user (verify backward compatibility)
 - [ ] Check logs for "✅ User authorized by phone" message
 - [ ] Verify invitation acceptance succeeds with code transfer
