@@ -244,21 +244,33 @@ namespace Business.Handlers.Sponsorship.Commands
 
             /// <summary>
             /// Normalize phone number for comparison
-            /// Removes: spaces, dashes, parentheses, plus sign
-            /// Examples: +90 555 686 6386 → 905556866386
-            ///           0555-686-6386 → 05556866386
+            /// Handles Turkish (0) vs international (+90) formats
+            /// Examples: 
+            ///   +90 555 686 6386 → 05556866386
+            ///   +905556866386 → 05556866386
+            ///   0555-686-6386 → 05556866386
+            ///   905556866386 → 05556866386
             /// </summary>
             private string NormalizePhoneNumber(string phone)
             {
                 if (string.IsNullOrEmpty(phone))
                     return phone;
 
-                return phone
+                // Remove formatting characters
+                var normalized = phone
                     .Replace(" ", "")
                     .Replace("-", "")
                     .Replace("(", "")
                     .Replace(")", "")
                     .Replace("+", "");
+
+                // Convert international format (90xxx) to Turkish format (0xxx)
+                if (normalized.StartsWith("90") && normalized.Length == 12)
+                {
+                    normalized = "0" + normalized.Substring(2);
+                }
+
+                return normalized;
             }
         }
     }
