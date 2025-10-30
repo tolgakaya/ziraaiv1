@@ -97,14 +97,31 @@ namespace Business.Handlers.Sponsorship.Queries
 
                     var sponsorCompanyName = sponsorProfile?.CompanyName ?? "ZiraAI Sponsor";
 
-                    // Get package tier information
-                    var purchase = await _purchaseRepository.GetAsync(p => p.Id == invitation.PurchaseId);
+                    // Get package tier information (v2.0 - handle nullable PurchaseId)
                     string packageTier = "Unknown";
 
-                    if (purchase != null)
+                    // Priority 1: Use PackageTier directly if specified (v2.0 feature)
+                    if (!string.IsNullOrEmpty(invitation.PackageTier))
                     {
-                        var tier = await _tierRepository.GetAsync(t => t.Id == purchase.SubscriptionTierId);
-                        packageTier = tier?.TierName ?? "Unknown";
+                        packageTier = invitation.PackageTier;
+                        _logger.LogInformation("📦 Using PackageTier from invitation: {Tier}", packageTier);
+                    }
+                    // Priority 2: Fallback to PurchaseId lookup (backward compatibility)
+                    else if (invitation.PurchaseId.HasValue)
+                    {
+                        var purchase = await _purchaseRepository.GetAsync(p => p.Id == invitation.PurchaseId.Value);
+                        if (purchase != null)
+                        {
+                            var tier = await _tierRepository.GetAsync(t => t.Id == purchase.SubscriptionTierId);
+                            packageTier = tier?.TierName ?? "Unknown";
+                            _logger.LogInformation("📦 Using PackageTier from PurchaseId {PurchaseId}: {Tier}",
+                                invitation.PurchaseId.Value, packageTier);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("⚠️ No PackageTier or PurchaseId found for invitation {InvitationId}",
+                            invitation.Id);
                     }
 
                     // Calculate remaining time
