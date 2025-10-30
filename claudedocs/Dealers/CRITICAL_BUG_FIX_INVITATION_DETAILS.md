@@ -25,18 +25,27 @@ Mobile application receiving **400 Bad Request** error when fetching dealer invi
 
 1. **v2.0 Migration** (2025-10-30): Made `DealerInvitation.PurchaseId` nullable, added `PackageTier` field
 2. **Updated 4 Command Handlers**: InviteDealerViaSms, CreateDealerInvitation, TransferCodes, AcceptInvitation
-3. **❌ MISSED**: `GetDealerInvitationDetailsQuery` handler was NOT updated
-4. **Mobile Error Reported**: 400 error when calling `/invitation-details` endpoint
-5. **Root Cause Found**: Query handler still assumes `PurchaseId` is non-null
-6. **Fix Applied**: Updated query handler to handle nullable `PurchaseId` and `PackageTier`
+3. **❌ MISSED TWO FILES**:
+   - `GetDealerInvitationDetailsQuery` handler - handler logic not updated
+   - `DealerInvitationEntityConfiguration` - EF configuration still marked PurchaseId as required
+4. **Mobile Error Reported #1**: 400 error when calling `/invitation-details` endpoint
+5. **First Fix Applied (Commit 4ec0bcf)**: Updated query handler logic to handle nullable `PurchaseId`
+6. **❌ ERROR PERSISTED**: Same 400 error still occurring after first fix
+7. **Root Cause Discovered**: Entity Framework configuration with `.IsRequired()` prevented NULL values
+8. **Second Fix Applied (Commit b4a899a)**: Updated EF configuration to `.IsRequired(false)` for PurchaseId
+9. **✅ BUG RESOLVED**: Both fixes together resolved the issue completely
 
 ---
 
 ## 🔍 Root Cause Analysis
 
-### Problem Code (BEFORE)
+### TWO-PART PROBLEM
 
-**File**: `Business/Handlers/Sponsorship/Queries/GetDealerInvitationDetailsQuery.cs`  
+This bug required TWO separate fixes because it manifested at two different layers:
+
+#### Problem 1: Handler Logic (PARTIAL FIX)
+
+**File**: `Business/Handlers/Sponsorship/Queries/GetDealerInvitationDetailsQuery.cs`
 **Lines**: 101-108
 
 ```csharp
@@ -51,13 +60,43 @@ if (purchase != null)
 }
 ```
 
+**Why First Fix Alone Was Not Enough**: Even after updating the handler logic to check `PurchaseId.HasValue`, the error persisted because Entity Framework couldn't even read the NULL value from the database.
+
+#### Problem 2: EF Configuration (REAL ROOT CAUSE)
+
+**File**: `DataAccess/Concrete/Configurations/DealerInvitationEntityConfiguration.cs`
+**Lines**: 55-58
+
+```csharp
+// ❌ REAL PROBLEM - EF configuration marked PurchaseId as required
+builder.Property(x => x.PurchaseId)
+    .HasColumnName("PurchaseId")
+    .IsRequired();  // ← This prevented NULL values from being read!
+```
+
+**Backend Log Evidence**:
+```
+System.InvalidCastException: Column 'PurchaseId' is null.
+at Npgsql.NpgsqlDataReader.GetFieldValueCore[T](Int32 ordinal)
+at Business.Handlers.Sponsorship.Queries.GetDealerInvitationDetailsQuery.cs:line 49
+```
+
 ### Why It Failed
 
-1. **v2.0 Change**: `DealerInvitation.PurchaseId` made nullable (`int?`)
-2. **New Invitations**: Created with `PackageTier` instead of `PurchaseId`
-3. **Query Fails**: `invitation.PurchaseId` is `null` → database query throws exception
-4. **Generic Error**: Exception caught, returns `"Davetiye bilgileri alınırken hata oluştu"`
-5. **Mobile Gets 400**: User sees error, cannot view invitation details
+1. **v2.0 Change**: `DealerInvitation.PurchaseId` made nullable (`int?`) in entity class
+2. **EF Configuration Missed**: `.IsRequired()` still present in DealerInvitationEntityConfiguration
+3. **Data Reader Failure**: Npgsql threw `InvalidCastException` when trying to read NULL into "required" field
+4. **Happens Before Handler**: Error occurred at line 49 (GetAsync call), BEFORE handler logic even executed
+5. **Generic Error**: Exception caught, returns `"Davetiye bilgileri alınırken hata oluştu"`
+6. **Mobile Gets 400**: User sees error, cannot view invitation details
+
+### Critical Lesson
+
+**Both layers must be updated together for nullable migration:**
+1. ✅ C# entity property must be nullable (`int?`)
+2. ✅ EF Core configuration must allow NULL (`.IsRequired(false)`)
+
+Missing either one will cause runtime errors!
 
 ### Mobile App Log Evidence
 
@@ -75,11 +114,11 @@ I/flutter ( 8493): {"success":false,"message":"Davetiye bilgileri alınırken ha
 
 ---
 
-## ✅ Fix Applied
+## ✅ TWO-PART FIX APPLIED
 
-### Fixed Code (AFTER)
+### Fix Part 1: Handler Logic (Commit 4ec0bcf)
 
-**File**: `Business/Handlers/Sponsorship/Queries/GetDealerInvitationDetailsQuery.cs`  
+**File**: `Business/Handlers/Sponsorship/Queries/GetDealerInvitationDetailsQuery.cs`
 **Lines**: 100-125
 
 ```csharp
@@ -111,29 +150,50 @@ else
 }
 ```
 
-### Fix Strategy
+**Fix Strategy**:
 
-**Priority-Based Tier Resolution**:
+1. **First**: Check `invitation.PackageTier` (v2.0 invitations) - use directly, fastest path
+2. **Second**: Check `invitation.PurchaseId` (v1.0 invitations) - lookup purchase, backward compatibility
+3. **Fallback**: Set to `"Unknown"` - graceful degradation
 
-1. **First**: Check `invitation.PackageTier` (v2.0 invitations)
-   - If present → use directly
-   - Fastest path, no database lookup
+**Why This Alone Wasn't Enough**: Handler logic improved, but Entity Framework still couldn't read NULL values due to configuration issue.
 
-2. **Second**: Check `invitation.PurchaseId` (v1.0 invitations)
-   - If present → lookup purchase → get tier
-   - Backward compatibility for old invitations
+---
 
-3. **Fallback**: Set to `"Unknown"`
-   - Graceful degradation if both missing
-   - Prevents crashes
+### Fix Part 2: EF Configuration (Commit b4a899a) - THE REAL FIX
 
-### Key Improvements
+**File**: `DataAccess/Concrete/Configurations/DealerInvitationEntityConfiguration.cs`
+**Lines**: 55-64
 
-✅ **Null-Safe**: Uses `PurchaseId.HasValue` check  
-✅ **Efficient**: Prefers `PackageTier` (no DB lookup)  
-✅ **Backward Compatible**: Handles old invitations  
-✅ **Logged**: Clear logging for debugging  
+```csharp
+// v2.0: PurchaseId is now nullable (optional - backward compatible)
+builder.Property(x => x.PurchaseId)
+    .HasColumnName("PurchaseId")
+    .IsRequired(false);  // ✅ Changed from IsRequired() to allow NULL
+
+// v2.0: PackageTier added as optional filter
+builder.Property(x => x.PackageTier)
+    .HasColumnName("PackageTier")
+    .HasMaxLength(10)
+    .IsRequired(false);
+```
+
+**What Changed**:
+- `PurchaseId`: `.IsRequired()` → `.IsRequired(false)`
+- `PackageTier`: Added with `.IsRequired(false)` configuration
+
+**Why This Was Critical**: This allowed Entity Framework's Npgsql data reader to properly handle NULL values in the PurchaseId column.
+
+---
+
+### Combined Fix Benefits
+
+✅ **Null-Safe at Two Levels**: Entity can be read from DB + Handler logic handles nullable values
+✅ **Efficient**: Prefers `PackageTier` (no DB lookup)
+✅ **Backward Compatible**: Handles old invitations with PurchaseId
+✅ **Logged**: Clear logging for debugging
 ✅ **Graceful**: Doesn't crash if both null
+✅ **Data Layer Fixed**: EF Core properly reads NULL columns
 
 ---
 
@@ -245,30 +305,50 @@ WHERE "PurchaseId" IS NULL AND "PackageTier" IS NULL;
 
 ### What Went Wrong
 
-1. **Incomplete Migration**: Updated 4 command handlers but missed 1 query handler
+1. **Incomplete Migration - Two Layers Missed**:
+   - Updated 4 command handlers but missed 1 query handler
+   - Updated entity class but missed EF configuration file
 2. **No Integration Test**: Migration tested with commands but not queries
 3. **Generic Error Messages**: Exception message too vague for debugging
+4. **False Sense of Security**: First fix seemed correct but didn't actually work
 
 ### Prevention Measures
 
-1. **Comprehensive Search**: When migrating fields, search ALL files for usage
+1. **Comprehensive Multi-Layer Search**: When migrating fields, search ALL layers:
+   - ✅ Entity classes (`Entities/Concrete/`)
+   - ✅ Command handlers (`Business/Handlers/*/Commands/`)
+   - ✅ Query handlers (`Business/Handlers/*/Queries/`) ← MISSED
+   - ✅ EF Configurations (`DataAccess/Concrete/Configurations/`) ← MISSED
+   - ✅ Controllers (`WebAPI/Controllers/`)
+   - ✅ DTOs (`Entities/Dtos/`)
+   - ✅ Validators
+
 2. **Integration Tests**: Add tests for ALL endpoints affected by schema changes
+
 3. **Better Error Messages**: Include specific details in error responses (dev mode)
-4. **Code Review Checklist**: Check queries AND commands during migrations
+
+4. **Code Review Checklist**:
+   - Entity + EF Configuration must match (nullable property → `.IsRequired(false)`)
+   - Check queries AND commands
+   - Test with actual NULL data, not just code review
+
+5. **Verify After First Fix**: If error persists, assume multiple root causes exist
 
 ### Search Pattern for Future Migrations
 
 ```bash
-# When changing a field, search for ALL usages
+# When changing a field, search for ALL usages across ALL layers
 grep -r "PurchaseId" --include="*.cs" Business/
 grep -r "PurchaseId" --include="*.cs" WebAPI/
+grep -r "PurchaseId" --include="*.cs" DataAccess/Concrete/Configurations/  # ← DON'T FORGET THIS!
 
-# Look for:
+# Critical: Check BOTH code AND configuration
 # 1. Command Handlers (CREATE, UPDATE, DELETE)
 # 2. Query Handlers (GET, LIST) ← WE MISSED THIS!
-# 3. Controllers
-# 4. DTOs
-# 5. Validators
+# 3. Entity Configurations (EF FluentAPI) ← WE MISSED THIS TOO!
+# 4. Controllers
+# 5. DTOs
+# 6. Validators
 ```
 
 ---
