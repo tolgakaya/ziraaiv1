@@ -2183,5 +2183,46 @@ namespace WebAPI.Controllers
                 return StatusCode(500, new ErrorResult($"Retrieval failed: {ex.Message}"));
             }
         }
+
+        /// <summary>
+        /// Get authenticated user's pending dealer invitations
+        /// </summary>
+        /// <returns>List of pending invitations for the current user</returns>
+        [HttpGet("dealer/invitations/my-pending")]
+        [Authorize(Roles = "Dealer,Farmer,Sponsor")]
+        public async Task<IActionResult> GetMyPendingInvitations()
+        {
+            try
+            {
+                var userEmail = GetUserEmail();
+                var userPhone = GetUserPhone();
+
+                if (string.IsNullOrEmpty(userEmail) && string.IsNullOrEmpty(userPhone))
+                {
+                    _logger.LogWarning("⚠️ User has no email or phone in JWT claims");
+                    return BadRequest(new ErrorDataResult<object>("Email veya telefon bilgisi bulunamadı"));
+                }
+
+                var query = new GetMyPendingInvitationsQuery
+                {
+                    UserEmail = userEmail,
+                    UserPhone = userPhone
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error getting pending invitations for user");
+                return StatusCode(500, new ErrorDataResult<object>("Bekleyen davetiyeler alınırken hata oluştu"));
+            }
+        }
     }
 }

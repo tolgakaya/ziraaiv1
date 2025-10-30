@@ -233,7 +233,10 @@ namespace Business.DependencyResolvers
             // Notification Services
             builder.RegisterType<NotificationService>().As<INotificationService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<DealerInvitationNotificationService>().As<IDealerInvitationNotificationService>()
+                .InstancePerLifetimeScope();
+
             // Sponsor Request Services
             builder.RegisterType<SponsorRequestService>().As<ISponsorRequestService>()
                 .InstancePerLifetimeScope();

@@ -395,8 +395,9 @@ namespace WebAPI
             {
                 endpoints.MapControllers();
 
-                // 🆕 Map SignalR hub
+                // 🆕 Map SignalR hubs
                 endpoints.MapHub<PlantAnalysisHub>("/hubs/plantanalysis");
+                endpoints.MapHub<NotificationHub>("/hubs/notification");
             });
         }
         

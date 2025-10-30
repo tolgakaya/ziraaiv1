@@ -1,6 +1,7 @@
 using Business.Services.Messaging;
 using Business.Services.DealerInvitation;
 using Business.Services.Messaging.Factories;
+using Business.Services.Notification;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.Aspects.Autofac.Validation;
@@ -45,6 +46,7 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly IDealerInvitationConfigurationService _configService;
             private readonly IConfiguration _configuration;
             private readonly ILogger<InviteDealerViaSmsCommandHandler> _logger;
+            private readonly IDealerInvitationNotificationService _notificationService;
 
             public InviteDealerViaSmsCommandHandler(
                 IDealerInvitationRepository invitationRepository,
@@ -54,7 +56,8 @@ namespace Business.Handlers.Sponsorship.Commands
                 IMessagingServiceFactory messagingFactory,
                 IDealerInvitationConfigurationService configService,
                 IConfiguration configuration,
-                ILogger<InviteDealerViaSmsCommandHandler> logger)
+                ILogger<InviteDealerViaSmsCommandHandler> logger,
+                IDealerInvitationNotificationService notificationService)
             {
                 _invitationRepository = invitationRepository;
                 _codeRepository = codeRepository;
@@ -64,6 +67,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 _configService = configService;
                 _configuration = configuration;
                 _logger = logger;
+                _notificationService = notificationService;
             }
 
             [CacheRemoveAspect("Get")]
@@ -131,6 +135,18 @@ namespace Business.Handlers.Sponsorship.Commands
 
                     _logger.LogInformation("✅ Created invitation {InvitationId} with token {Token}",
                         invitation.Id, invitation.InvitationToken);
+
+                    // Send SignalR notification to dealer
+                    try
+                    {
+                        await _notificationService.NotifyNewInvitationAsync(invitation);
+                        _logger.LogInformation("📣 SignalR notification sent for invitation {InvitationId}", invitation.Id);
+                    }
+                    catch (Exception notificationEx)
+                    {
+                        // Log but don't fail - notification is optional
+                        _logger.LogWarning(notificationEx, "⚠️ Failed to send SignalR notification for invitation {InvitationId}", invitation.Id);
+                    }
 
                     // 5. Reserve codes for this invitation
                     foreach (var code in codesToReserve)
