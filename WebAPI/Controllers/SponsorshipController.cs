@@ -1288,6 +1288,11 @@ namespace WebAPI.Controllers
             return User?.FindFirst(ClaimTypes.Email)?.Value;
         }
 
+        private string GetUserPhone()
+        {
+            return User?.FindFirst(ClaimTypes.MobilePhone)?.Value;
+        }
+
         private string GetUserFullName()
         {
             return User?.FindFirst(ClaimTypes.Name)?.Value;
@@ -1880,18 +1885,20 @@ namespace WebAPI.Controllers
             {
                 var userId = GetUserId();
                 var userEmail = GetUserEmail();
+                var userPhone = GetUserPhone();
 
                 if (!userId.HasValue)
                     return Unauthorized();
 
                 command.CurrentUserId = userId.Value;
                 command.CurrentUserEmail = userEmail;
+                command.CurrentUserPhone = userPhone;
 
                 var result = await Mediator.Send(command);
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("Dealer invitation {InvitationToken} accepted by user {UserId}", 
+                    _logger.LogInformation("Dealer invitation {InvitationToken} accepted by user {UserId}",
                         command.InvitationToken, userId.Value);
                     return Ok(result);
                 }

@@ -18,7 +18,8 @@ namespace Business.Handlers.Sponsorship.Commands
     {
         public string InvitationToken { get; set; }
         public int CurrentUserId { get; set; } // From JWT
-        public string CurrentUserEmail { get; set; } // From JWT
+        public string CurrentUserEmail { get; set; } // From JWT (nullable - may be null for phone login)
+        public string CurrentUserPhone { get; set; } // From JWT (nullable - may be null for email login)
 
         public class AcceptDealerInvitationCommandHandler : IRequestHandler<AcceptDealerInvitationCommand, IDataResult<DealerInvitationAcceptResponseDto>>
         {
@@ -51,8 +52,8 @@ namespace Business.Handlers.Sponsorship.Commands
             {
                 try
                 {
-                    _logger.LogInformation("🎯 User {UserId} ({Email}) attempting to accept dealer invitation with token {Token}",
-                        request.CurrentUserId, request.CurrentUserEmail, request.InvitationToken);
+                    _logger.LogInformation("🎯 User {UserId} (Email: {Email}, Phone: {Phone}) attempting to accept dealer invitation with token {Token}",
+                        request.CurrentUserId, request.CurrentUserEmail ?? "null", request.CurrentUserPhone ?? "null", request.InvitationToken);
 
                     // 1. Find invitation by token
                     var invitation = await _invitationRepository.GetAsync(i =>
@@ -79,16 +80,46 @@ namespace Business.Handlers.Sponsorship.Commands
                             "Davetiye süresi dolmuş. Lütfen sponsor ile iletişime geçin");
                     }
 
-                    // 3. Verify email match (security check)
-                    if (!string.IsNullOrEmpty(invitation.Email) &&
-                        !invitation.Email.Equals(request.CurrentUserEmail, StringComparison.OrdinalIgnoreCase))
+                    // 3. Verify email OR phone match (security check)
+                    // v2.1: Support both email and phone login methods
+                    bool isAuthorized = false;
+                    string matchedBy = "";
+
+                    // Check email match (if invitation has email and user logged in with email)
+                    if (!string.IsNullOrEmpty(invitation.Email) && !string.IsNullOrEmpty(request.CurrentUserEmail))
                     {
-                        _logger.LogWarning("❌ Email mismatch. Invitation: {InvitationEmail}, User: {UserEmail}",
-                            invitation.Email, request.CurrentUserEmail);
+                        if (invitation.Email.Equals(request.CurrentUserEmail, StringComparison.OrdinalIgnoreCase))
+                        {
+                            isAuthorized = true;
+                            matchedBy = "email";
+                        }
+                    }
+
+                    // Check phone match (if invitation has phone and user logged in with phone)
+                    if (!string.IsNullOrEmpty(invitation.Phone) && !string.IsNullOrEmpty(request.CurrentUserPhone))
+                    {
+                        // Normalize both phones for comparison (remove spaces, dashes, etc.)
+                        var invitationPhoneNormalized = invitation.Phone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "");
+                        var userPhoneNormalized = request.CurrentUserPhone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "");
+
+                        if (invitationPhoneNormalized.Equals(userPhoneNormalized, StringComparison.OrdinalIgnoreCase))
+                        {
+                            isAuthorized = true;
+                            matchedBy = "phone";
+                        }
+                    }
+
+                    if (!isAuthorized)
+                    {
+                        _logger.LogWarning("❌ Authorization failed. Invitation Email: {InvEmail}, Phone: {InvPhone} | User Email: {UserEmail}, Phone: {UserPhone}",
+                            invitation.Email ?? "null", invitation.Phone ?? "null",
+                            request.CurrentUserEmail ?? "null", request.CurrentUserPhone ?? "null");
 
                         return new ErrorDataResult<DealerInvitationAcceptResponseDto>(
                             "Bu davetiye size ait değil");
                     }
+
+                    _logger.LogInformation("✅ User authorized by {MatchedBy}. Proceeding with acceptance.", matchedBy);
 
                     // 4. Check if user has Sponsor role, if not assign it
                     var sponsorGroup = await _groupRepository.GetAsync(g => g.GroupName == "Sponsor");

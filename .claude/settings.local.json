@@ -83,7 +83,15 @@
       "mcp__serena__replace_symbol_body",
       "mcp__serena__insert_before_symbol",
       "Bash(curl:*)",
-      "mcp__serena__insert_after_symbol"
+      "mcp__serena__insert_after_symbol",
+      "Bash(Select-String \"error|warning|Build succeeded|Build FAILED\" -Context 0,2)",
+      "mcp__serena__create_text_file",
+      "Bash(git log:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__serena__list_dir",
+      "mcp__serena__think_about_collected_information",
+      "mcp__serena__think_about_whether_you_are_done",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": [],
