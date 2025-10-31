@@ -42,5 +42,14 @@ namespace Entities.Dtos
         public int? UsedByUserId { get; set; }
         public string UsedByUserName { get; set; }
         public string Notes { get; set; }
+
+        // Dealer-specific fields
+        public DateTime? CreatedDate { get; set; }
+        public DateTime? TransferredAt { get; set; }
+        public DateTime? DistributionDate { get; set; }
+        public string RecipientPhone { get; set; }
+        public string RecipientName { get; set; }
+        public string DistributedTo { get; set; }
+        public string SubscriptionTier { get; set; }
     }
 }

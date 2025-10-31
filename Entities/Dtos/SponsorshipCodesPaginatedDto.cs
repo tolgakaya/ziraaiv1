@@ -14,6 +14,11 @@ namespace Entities.Dtos
         public List<SponsorshipCode> Items { get; set; }
 
         /// <summary>
+        /// List of sponsorship code DTOs (for dealer endpoints)
+        /// </summary>
+        public List<SponsorshipCodeDto> Codes { get; set; }
+
+        /// <summary>
         /// Total number of codes across all pages
         /// </summary>
         public int TotalCount { get; set; }
