@@ -82,15 +82,16 @@ namespace Business.Handlers.SponsorProfiles.Commands
                 _sponsorProfileRepository.Add(sponsorProfile);
                 await _sponsorProfileRepository.SaveChangesAsync();
 
-                // Update user's email and password (if provided) for phone-registered users
-                // This allows sponsors to login with their business email + password
+                // Update user's email and password (if provided) to enable business email login
+                // This allows sponsors to login with their business credentials
                 var user = await _userRepository.GetAsync(u => u.UserId == request.SponsorId);
                 if (user != null)
                 {
                     bool needsUpdate = false;
 
-                    // Only update if current email is auto-generated from phone
-                    if (user.Email.Contains("@phone.ziraai.com"))
+                    // Always update email if provided and different from current
+                    if (!string.IsNullOrWhiteSpace(request.ContactEmail) &&
+                        user.Email != request.ContactEmail)
                     {
                         // Check if the new email is already in use by another user
                         var emailExists = await _userRepository.GetAsync(u =>
@@ -101,24 +102,20 @@ namespace Business.Handlers.SponsorProfiles.Commands
                             user.Email = request.ContactEmail;
                             needsUpdate = true;
                         }
-                        // If email already exists, keep the auto-generated one (don't fail profile creation)
+                        // If email already exists, keep the current one (don't fail profile creation)
                     }
 
-                    // Update password if provided (for phone-registered users who don't have a password)
+                    // Always update password if provided (overwrites existing password)
                     if (!string.IsNullOrWhiteSpace(request.Password))
                     {
-                        // Check if user currently has no password (phone registration)
-                        if (user.PasswordHash == null || user.PasswordHash.Length == 0)
-                        {
-                            Core.Utilities.Security.Hashing.HashingHelper.CreatePasswordHash(
-                                request.Password,
-                                out byte[] passwordSalt,
-                                out byte[] passwordHash);
+                        Core.Utilities.Security.Hashing.HashingHelper.CreatePasswordHash(
+                            request.Password,
+                            out byte[] passwordSalt,
+                            out byte[] passwordHash);
 
-                            user.PasswordHash = passwordHash;
-                            user.PasswordSalt = passwordSalt;
-                            needsUpdate = true;
-                        }
+                        user.PasswordHash = passwordHash;
+                        user.PasswordSalt = passwordSalt;
+                        needsUpdate = true;
                     }
 
                     if (needsUpdate)
