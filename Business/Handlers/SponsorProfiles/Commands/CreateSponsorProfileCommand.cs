@@ -9,6 +9,7 @@ using DataAccess.Abstract;
 using Entities.Concrete;
 using Core.Entities.Concrete;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,17 +36,20 @@ namespace Business.Handlers.SponsorProfiles.Commands
             private readonly IUserGroupRepository _userGroupRepository;
             private readonly IGroupRepository _groupRepository;
             private readonly IUserRepository _userRepository;
+            private readonly ILogger<CreateSponsorProfileCommandHandler> _logger;
 
             public CreateSponsorProfileCommandHandler(
                 ISponsorProfileRepository sponsorProfileRepository,
                 IUserGroupRepository userGroupRepository,
                 IGroupRepository groupRepository,
-                IUserRepository userRepository)
+                IUserRepository userRepository,
+                ILogger<CreateSponsorProfileCommandHandler> logger)
             {
                 _sponsorProfileRepository = sponsorProfileRepository;
                 _userGroupRepository = userGroupRepository;
                 _groupRepository = groupRepository;
                 _userRepository = userRepository;
+                _logger = logger;
             }
 
             [ValidationAspect(typeof(CreateSponsorProfileValidator), Priority = 1)]
@@ -87,27 +91,48 @@ namespace Business.Handlers.SponsorProfiles.Commands
                 var user = await _userRepository.GetAsync(u => u.UserId == request.SponsorId);
                 if (user != null)
                 {
+                    _logger.LogInformation("📧 [CreateSponsorProfile] User found - UserId: {UserId}, CurrentEmail: {CurrentEmail}",
+                        user.UserId, user.Email);
+
                     bool needsUpdate = false;
 
-                    // Always update email if provided and different from current
-                    if (!string.IsNullOrWhiteSpace(request.ContactEmail) &&
-                        user.Email != request.ContactEmail)
+                    // Always update email if provided and different from current (case-insensitive comparison)
+                    if (!string.IsNullOrWhiteSpace(request.ContactEmail))
                     {
-                        // Check if the new email is already in use by another user
-                        var emailExists = await _userRepository.GetAsync(u =>
-                            u.Email == request.ContactEmail && u.UserId != request.SponsorId);
+                        var normalizedNewEmail = request.ContactEmail.Trim().ToLowerInvariant();
+                        var normalizedCurrentEmail = user.Email?.Trim().ToLowerInvariant() ?? "";
 
-                        if (emailExists == null)
+                        _logger.LogInformation("📧 [CreateSponsorProfile] Email comparison - New: {NewEmail}, Current: {CurrentEmail}",
+                            normalizedNewEmail, normalizedCurrentEmail);
+
+                        if (normalizedNewEmail != normalizedCurrentEmail)
                         {
-                            user.Email = request.ContactEmail;
-                            needsUpdate = true;
+                            // Check if the new email is already in use by another user (case-insensitive)
+                            var emailExists = await _userRepository.GetAsync(u =>
+                                u.Email.ToLower() == normalizedNewEmail && u.UserId != request.SponsorId);
+
+                            if (emailExists == null)
+                            {
+                                user.Email = request.ContactEmail.Trim(); // Use original case from request
+                                needsUpdate = true;
+                                _logger.LogInformation("✅ [CreateSponsorProfile] Email will be updated to: {NewEmail}", user.Email);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("⚠️ [CreateSponsorProfile] Email {Email} already exists for another user", normalizedNewEmail);
+                            }
                         }
-                        // If email already exists, keep the current one (don't fail profile creation)
+                        else
+                        {
+                            _logger.LogInformation("ℹ️ [CreateSponsorProfile] Email unchanged (same as current)");
+                        }
                     }
 
                     // Always update password if provided (overwrites existing password)
                     if (!string.IsNullOrWhiteSpace(request.Password))
                     {
+                        _logger.LogInformation("🔐 [CreateSponsorProfile] Password will be updated");
+
                         Core.Utilities.Security.Hashing.HashingHelper.CreatePasswordHash(
                             request.Password,
                             out byte[] passwordSalt,
@@ -120,8 +145,17 @@ namespace Business.Handlers.SponsorProfiles.Commands
 
                     if (needsUpdate)
                     {
+                        _logger.LogInformation("💾 [CreateSponsorProfile] Updating user - Email: {Email}, HasPassword: {HasPassword}",
+                            user.Email, user.PasswordHash != null && user.PasswordHash.Length > 0);
+
                         _userRepository.Update(user);
                         await _userRepository.SaveChangesAsync();
+
+                        _logger.LogInformation("✅ [CreateSponsorProfile] User updated successfully");
+                    }
+                    else
+                    {
+                        _logger.LogInformation("ℹ️ [CreateSponsorProfile] No user updates needed");
                     }
                 }
 
