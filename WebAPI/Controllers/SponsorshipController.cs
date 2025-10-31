@@ -127,7 +127,8 @@ namespace WebAPI.Controllers
                     ContactPhone = dto.ContactPhone,
                     ContactPerson = dto.ContactPerson,
                     CompanyType = dto.CompanyType,
-                    BusinessModel = dto.BusinessModel
+                    BusinessModel = dto.BusinessModel,
+                    Password = dto.Password // Pass password to enable email+password login
                 };
                 
                 var result = await Mediator.Send(command);

@@ -37,6 +37,7 @@ namespace Entities.Dtos
         public string ContactPerson { get; set; }
         public string CompanyType { get; set; }
         public string BusinessModel { get; set; }
+        public string Password { get; set; } // Optional: For phone-registered users to enable email+password login
     }
 
     public class UpdateSponsorProfileDto : IDto
