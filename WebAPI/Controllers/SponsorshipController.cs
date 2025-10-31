@@ -114,7 +114,10 @@ namespace WebAPI.Controllers
                 {
                     return Unauthorized();
                 }
-                
+
+                _logger.LogInformation("📥 [CreateSponsorProfile API] Request received - UserId: {UserId}, Email: {Email}, HasPassword: {HasPassword}",
+                    userId.Value, dto.ContactEmail ?? "NULL", !string.IsNullOrWhiteSpace(dto.Password));
+
                 // Map DTO to Command and set SponsorId from authenticated user
                 var command = new CreateSponsorProfileCommand
                 {
