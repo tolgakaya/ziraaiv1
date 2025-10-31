@@ -20,6 +20,8 @@ namespace Business.Handlers.Sponsorship.Queries
     public class GetDealerDashboardSummaryQuery : IRequest<IDataResult<DealerDashboardSummaryDto>>
     {
         public int DealerId { get; set; }
+        public string UserEmail { get; set; }
+        public string UserPhone { get; set; }
 
         public class GetDealerDashboardSummaryQueryHandler : IRequestHandler<GetDealerDashboardSummaryQuery, IDataResult<DealerDashboardSummaryDto>>
         {
@@ -74,11 +76,29 @@ namespace Business.Handlers.Sponsorship.Queries
                         : 0;
 
                     // Get pending invitations count (separate optimized query)
-                    var pendingCount = await _invitationRepository.Query()
-                        .Where(i => (i.Email == request.DealerId.ToString() || i.Phone == request.DealerId.ToString()) &&
-                                    i.Status == "Pending" &&
-                                    i.ExpiryDate > now)
-                        .CountAsync(cancellationToken);
+                    // Match by email OR phone from JWT claims
+                    var invitationsQuery = _invitationRepository.Query()
+                        .Where(i => i.Status == "Pending" && i.ExpiryDate > now);
+
+                    // Filter by email OR phone
+                    if (!string.IsNullOrEmpty(request.UserEmail) && !string.IsNullOrEmpty(request.UserPhone))
+                    {
+                        // User has both - match either
+                        invitationsQuery = invitationsQuery.Where(i =>
+                            i.Email == request.UserEmail || i.Phone == request.UserPhone);
+                    }
+                    else if (!string.IsNullOrEmpty(request.UserEmail))
+                    {
+                        // Email only
+                        invitationsQuery = invitationsQuery.Where(i => i.Email == request.UserEmail);
+                    }
+                    else if (!string.IsNullOrEmpty(request.UserPhone))
+                    {
+                        // Phone only
+                        invitationsQuery = invitationsQuery.Where(i => i.Phone == request.UserPhone);
+                    }
+
+                    var pendingCount = await invitationsQuery.CountAsync(cancellationToken);
 
                     var summary = new DealerDashboardSummaryDto
                     {

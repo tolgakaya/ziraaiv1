@@ -2301,9 +2301,14 @@ namespace WebAPI.Controllers
                 if (!userId.HasValue)
                     return Unauthorized();
 
+                var userEmail = GetUserEmail();
+                var userPhone = GetUserPhone();
+
                 var query = new GetDealerDashboardSummaryQuery
                 {
-                    DealerId = userId.Value
+                    DealerId = userId.Value,
+                    UserEmail = userEmail,
+                    UserPhone = userPhone
                 };
 
                 var result = await Mediator.Send(query);
