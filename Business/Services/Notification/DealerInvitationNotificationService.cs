@@ -97,26 +97,20 @@ namespace Business.Services.Notification
 
         /// <summary>
         /// Normalize phone number for group matching (same logic as Hub)
+        /// IMPORTANT: Must match NotificationHub.NormalizePhone() exactly
         /// </summary>
         private string NormalizePhone(string phone)
         {
             if (string.IsNullOrEmpty(phone))
                 return phone;
 
-            var normalized = phone
+            // Same normalization as NotificationHub - only remove special characters
+            return phone
                 .Replace(" ", "")
                 .Replace("-", "")
                 .Replace("(", "")
                 .Replace(")", "")
                 .Replace("+", "");
-
-            // Convert international (90xxx) to Turkish (0xxx) format
-            if (normalized.StartsWith("90") && normalized.Length == 12)
-            {
-                normalized = "0" + normalized.Substring(2);
-            }
-
-            return normalized;
         }
     }
 
