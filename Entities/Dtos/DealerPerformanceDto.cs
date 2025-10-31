@@ -166,4 +166,42 @@ namespace Entities.Dtos
         /// </summary>
         public DateTime ReclaimedAt { get; set; }
     }
+
+    /// <summary>
+    /// Dashboard summary DTO for dealer view
+    /// Quick statistics about transferred codes
+    /// Used in GET /api/Sponsorship/dealer/my-dashboard
+    /// </summary>
+    public class DealerDashboardSummaryDto : IDto
+    {
+        /// <summary>
+        /// Total codes transferred to this dealer
+        /// </summary>
+        public int TotalCodesReceived { get; set; }
+
+        /// <summary>
+        /// Codes sent to farmers by dealer
+        /// </summary>
+        public int CodesSent { get; set; }
+
+        /// <summary>
+        /// Codes used by farmers (redeemed)
+        /// </summary>
+        public int CodesUsed { get; set; }
+
+        /// <summary>
+        /// Available codes (not sent to farmers yet, active, not expired)
+        /// </summary>
+        public int CodesAvailable { get; set; }
+
+        /// <summary>
+        /// Usage rate percentage (CodesUsed / CodesSent * 100)
+        /// </summary>
+        public decimal UsageRate { get; set; }
+
+        /// <summary>
+        /// Number of pending invitations
+        /// </summary>
+        public int PendingInvitationsCount { get; set; }
+    }
 }

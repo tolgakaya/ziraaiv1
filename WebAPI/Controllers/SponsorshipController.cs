@@ -2224,5 +2224,103 @@ namespace WebAPI.Controllers
                 return StatusCode(500, new ErrorDataResult<object>("Bekleyen davetiyeler alınırken hata oluştu"));
             }
         }
+
+        /// <summary>
+        /// Get codes transferred to current dealer
+        /// Returns codes that have been transferred from sponsors to this dealer
+        /// Use onlyUnsent=true to get codes not yet distributed to farmers (available for distribution)
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 50, max: 200)</param>
+        /// <param name="onlyUnsent">Only show codes not sent to farmers yet (default: false)</param>
+        /// <returns>Paginated list of dealer's codes</returns>
+        [Authorize(Roles = "Dealer,Sponsor")]
+        [HttpGet("dealer/my-codes")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<SponsorshipCodesPaginatedDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetMyDealerCodes(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] bool onlyUnsent = false)
+        {
+            try
+            {
+                // Validate pagination
+                if (page < 1)
+                    return BadRequest(new ErrorResult("Page must be greater than 0"));
+
+                if (pageSize < 1 || pageSize > 200)
+                    return BadRequest(new ErrorResult("Page size must be between 1 and 200"));
+
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetDealerCodesQuery
+                {
+                    DealerId = userId.Value,
+                    Page = page,
+                    PageSize = pageSize,
+                    OnlyUnsent = onlyUnsent
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Dealer codes retrieved for dealer {DealerId}, OnlyUnsent: {OnlyUnsent}, TotalCount: {Count}",
+                        userId.Value, onlyUnsent, result.Data?.TotalCount ?? 0);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting dealer codes for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Dealer kodları alınırken hata oluştu: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get dashboard summary for current dealer
+        /// Returns quick statistics: total received, available, sent, used codes
+        /// Optimized for fast loading with minimal queries
+        /// </summary>
+        /// <returns>Dashboard summary with code statistics</returns>
+        [Authorize(Roles = "Dealer,Sponsor")]
+        [HttpGet("dealer/my-dashboard")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<DealerDashboardSummaryDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetMyDealerDashboard()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetDealerDashboardSummaryQuery
+                {
+                    DealerId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Dealer dashboard summary retrieved for dealer {DealerId}", userId.Value);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting dealer dashboard summary for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Dashboard özeti alınırken hata oluştu: {ex.Message}"));
+            }
+        }
     }
 }
