@@ -1,0 +1,268 @@
+{
+    "data": {
+        "analysis": {
+            "id": 76,
+            "analysisId": "async_analysis_20251026_174656_3a1a54b5",
+            "analysisDate": "2025-10-26T17:47:46.4",
+            "analysisStatus": "Completed",
+            "userId": 170,
+            "farmerId": "F170",
+            "sponsor_id": "S159",
+            "sponsorUserId": 159,
+            "sponsorshipCodeId": 945,
+            "location": "Istanbul, Turkey",
+            "cropType": "Domates",
+            "previousTreatments": [],
+            "notes": "",
+            "plantIdentification": {
+                "species": "Domates",
+                "variety": "bilinmiyor",
+                "growthStage": "vejetatif",
+                "confidence": 90,
+                "identifyingFeatures": [
+                    "loblu yapraklar",
+                    "ince tüylü yaprak yüzeyi",
+                    "tipik domates yaprak venasyonu"
+                ],
+                "visibleParts": [
+                    "yapraklar",
+                    "gövde"
+                ]
+            },
+            "healthAssessment": {
+                "vigorScore": 6,
+                "leafColor": "çoğunlukla yeşil ancak bazı yapraklarda sararma ve kahverengi lekeler gözlemleniyor",
+                "leafTexture": "çoğunlukla normal, etkilenen bölgelerde kuruma ve nekroz başlangıcı",
+                "growthPattern": "anormal - alt yapraklarda leke ve hafif yaprak dökülmesi mevcut",
+                "structuralIntegrity": "orta - bitki gövde sağlam görünse de yapraklarda zarar var",
+                "severity": "orta",
+                "stressIndicators": [
+                    "yaprak lekeleri (kahverengi-siyah)",
+                    "kısmi kloroz (sararma)"
+                ],
+                "diseaseSymptoms": [
+                    "yaprak üzerinde sınırlı kahverengi lekeler",
+                    "yakın çevrede sararma halkaları"
+                ]
+            },
+            "nutrientStatus": {
+                "nitrogen": "eksik",
+                "phosphorus": "normal",
+                "potassium": "normal",
+                "calcium": "normal",
+                "magnesium": "eksik",
+                "sulfur": "normal",
+                "iron": "normal",
+                "zinc": "normal",
+                "manganese": "normal",
+                "boron": "normal",
+                "copper": "normal",
+                "molybdenum": "normal",
+                "chlorine": "normal",
+                "nickel": "normal",
+                "primaryDeficiency": "azot eksikliği",
+                "secondaryDeficiencies": [
+                    "magnezyum"
+                ],
+                "severity": "düşük"
+            },
+            "pestDisease": {
+                "pestsDetected": [],
+                "diseasesDetected": [
+                    {
+                        "type": "fungal leaf spot (Alternaria/Septoria olasılığı)",
+                        "category": "fungal",
+                        "severity": "orta",
+                        "affectedParts": [
+                            "yapraklar"
+                        ],
+                        "confidence": 50.0
+                    }
+                ],
+                "damagePattern": "Daha çok alt yapraklarda başlayan dağınık kahverengi-siyah lekeler; bazı yapraklarda sararma ve nekroz çevresi görülüyor. Desen yaprak yüzeyinde sınırlı noktasal lezyonlar ve halkamsı koyulaşma eğilimi gösteriyor.",
+                "affectedAreaPercentage": 15,
+                "spreadRisk": "orta",
+                "primaryIssue": "fungal yaprak lekesi (şüpheli Alternaria/Septoria)"
+            },
+            "environmentalStress": {
+                "waterStatus": "hafif kurak",
+                "temperatureStress": "yok",
+                "lightStress": "yok",
+                "physicalDamage": "yok",
+                "chemicalDamage": "yok",
+                "primaryStressor": "fungal hastalık ile muhtemel hafif besin dengesizliği birleşimi"
+            },
+            "summary": {
+                "overallHealthScore": 6,
+                "primaryConcern": "fungal yaprak lekesi (Alternaria/Septoria olasılığı)",
+                "secondaryConcerns": [
+                    "azot ve magnezyum eksikliği şüphesi",
+                    "hafif kuraklık stresi"
+                ],
+                "criticalIssuesCount": 0,
+                "confidenceLevel": 60,
+                "prognosis": "orta",
+                "estimatedYieldImpact": "orta"
+            },
+            "crossFactorInsights": [
+                {
+                    "insight": "Yaprak lekeleri muhtemelen ıslak yaprak yüzeyi ve yüksek nem ile ilişkilidir; aynı zamanda azot ve magnezyum eksikliği klorozu hastalık belirtilerini şiddetlendirebilir.",
+                    "confidence": 0.7,
+                    "affectedAspects": [
+                        "disease_spread",
+                        "leaf_color"
+                    ],
+                    "impactLevel": "orta"
+                }
+            ],
+            "recommendations": {
+                "immediate": [
+                    {
+                        "action": "Etkilenen yaprakları uzaklaştır",
+                        "details": "Hafifçe hastalıklı alt yaprakları steril eldivenle veya makasla kesip bitkiden uzaklaştırın; yaprakları yere bırakmayın (yakınında toplanıp imha edin).",
+                        "timeline": "24 saat içinde",
+                        "priority": "kritik"
+                    },
+                    {
+                        "action": "Sulama şeklini değiştir",
+                        "details": "Yaprak ıslatmayı azaltmak için damla sulama veya yüzey sulamaya yönelin; sabah erken saatlerde sulayın ki gün içinde yapraklar kurusun.",
+                        "timeline": "24-48 saat içinde",
+                        "priority": "yüksek"
+                    },
+                    {
+                        "action": "Organik mantar kontrolü uygulaması (varsayılan)",
+                        "details": "Bacillus subtilis içeren ürünler (ör. Serenade) veya bakır esaslı organik preparatlar ile yaprak spreyi uygulayın; etiket dozuna uyun.",
+                        "timeline": "48 saat içinde",
+                        "priority": "yüksek"
+                    }
+                ],
+                "shortTerm": [
+                    {
+                        "action": "Fungisit uygulaması (gerektiğinde)",
+                        "details": "Durum kötüleşirse sistemik veya teması fungisitleri (ör. azoxystrobin veya mancozeb içeren ürünler) kullanın; etiket talimatlarına uyun ve dönüşümlü kullanın.",
+                        "timeline": "3-7 gün",
+                        "priority": "yüksek"
+                    },
+                    {
+                        "action": "Besleme düzenlemesi",
+                        "details": "Hafif azot takviyesi ve magnezyumlu gübre (ör. Epsom tuzu %0.5 suda çözünmüş formda yapraktan veya topraktan verilmesi) ile bitki beslenmesini dengeleyin.",
+                        "timeline": "7-14 gün",
+                        "priority": "orta"
+                    },
+                    {
+                        "action": "Havalandırma ve aralık",
+                        "details": "Bitkiler arasındaki mesafeyi artırarak yaprak kuruluğunu sağlayın; gerekirse budama ile iç yoğunluğu azaltın.",
+                        "timeline": "7 gün",
+                        "priority": "orta"
+                    }
+                ],
+                "preventive": [
+                    {
+                        "action": "Dönüşüm ve temiz alan",
+                        "details": "Aynı alanda sürekli domates ekiminden kaçının; hasat ve hasat sonrası bitki artıklarını yakmayın, uzaklaştırın veya kompost işlemine tabi tutun.",
+                        "timeline": "sürekli",
+                        "priority": "orta"
+                    },
+                    {
+                        "action": "Mulch ve toprak yönetimi",
+                        "details": "Yerden sıçramayı azaltmak için organik örtü (malç) kullanın ve toprağı sağlıklı tutmak için organik madde ekleyin.",
+                        "timeline": "sürekli",
+                        "priority": "düşük"
+                    },
+                    {
+                        "action": "Rezistans ve temiz fide kullanımı",
+                        "details": "Hastalığa dayanıklı çeşitler ve sertifikalı temiz fideler tercih edin.",
+                        "timeline": "sürekli",
+                        "priority": "orta"
+                    }
+                ],
+                "monitoring": [
+                    {
+                        "parameter": "Yeni lezyon sayısı ve yayılımı",
+                        "frequency": "haftalık",
+                        "threshold": "%5-10 yaprak lezyonu"
+                    },
+                    {
+                        "parameter": "Günlük yaprak ıslak kalış süresi (nem/çiy)",
+                        "frequency": "günlük erken sabah kontrolleri",
+                        "threshold": "6 saatten fazla ıslak kalma"
+                    },
+                    {
+                        "parameter": "Bitki beslenme durumu (kloroz ve büyüme)",
+                        "frequency": "2 haftada bir görsel değerlendirme",
+                        "threshold": "görsel kloroz artışı veya büyüme duraklaması"
+                    }
+                ],
+                "resourceEstimation": {
+                    "waterRequiredLiters": "10 (yaklaşık, bitki başına/hafta)",
+                    "fertilizerCostEstimateUsd": "50",
+                    "laborHoursEstimate": "4"
+                },
+                "localizedRecommendations": {
+                    "region": "İstanbul, Türkiye",
+                    "preferredPractices": [
+                        "damla sulama tercih edin",
+                        "sabaha karşı sulama yapın",
+                        "havalandırmayı artırmak için serada/alan düzenlemesi"
+                    ],
+                    "restrictedMethods": [
+                        "açıktan yanma riski olan yüksek doz sentetik gübre uygulamaları (yaz döneminde yoğun kullanımdan kaçın)"
+                    ]
+                }
+            },
+            "imageInfo": {
+                "imageUrl": "https://iili.io/K4azIa9.jpg",
+                "format": "url"
+            },
+            "processingInfo": {
+                "processingTimestamp": "0001-01-01T00:00:00",
+                "processingTimeMs": 0,
+                "parseSuccess": false,
+                "retryCount": 0
+            },
+            "riskAssessment": {
+                "yieldLossProbability": "orta",
+                "timelineToWorsen": "hafta",
+                "spreadPotential": "lokal"
+            },
+            "confidenceNotes": [
+                {
+                    "aspect": "nutrient_status",
+                    "confidence": 0.85,
+                    "reason": "Görsel kloroz paterni ve yaprak tipine göre azot ve magnezyum eksikliği olasılığı değerlendirildi; ancak toprak ve yaprak analizleri yok."
+                }
+            ],
+            "farmerFriendlySummary": "Bitkide alt yapraklarda kahverengi lekeler ve bir miktar sararma görünüyor. Muhtemel mantar kaynaklı yaprak lekesi ve hafif besin eksikliği (azot/magnezyum) söz konusu. Hemen hastalıklı yaprakları çıkarın, sulama şeklini damla sulamaya çevirin ve sabah sulayın. Organik bazlı (Bacillus) veya bakır içeren preparatlarla mantar kontrolü yapın; durum kötüleşirse etiketine uygun kimyasal fungisit düşünülebilir. Besin takviyesi için hafif azot ve magnezyum verin. Daha kesin teşhis için toprak ve yaprak analizi, sulama sıklığı ve son 2 haftadaki hava koşullarına dair bilgi paylaşın.",
+            "tokenUsage": {},
+            "requestMetadata": {},
+            "success": true,
+            "message": "Success",
+            "error": false
+        },
+        "tierMetadata": {
+            "tierName": "Unknown",
+            "accessPercentage": 100,
+            "canMessage": false,
+            "canReply": false,
+            "canViewLogo": true,
+            "sponsorInfo": {
+                "sponsorId": 158,
+                "companyName": "uc tarim"
+            },
+            "accessibleFields": {
+                "canViewBasicInfo": true,
+                "canViewHealthScore": true,
+                "canViewImages": true,
+                "canViewDetailedHealth": true,
+                "canViewDiseases": true,
+                "canViewNutrients": true,
+                "canViewRecommendations": true,
+                "canViewLocation": true,
+                "canViewFarmerContact": false,
+                "canViewFieldData": true,
+                "canViewProcessingData": true
+            }
+        }
+    },
+    "success": true
+}

@@ -104,9 +104,10 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     }
 
                     // 🆕 Fetch messaging status for all analyses (BEFORE applying message filters and sorting)
-                    var allAnalysisIds = filteredAnalyses.Select(a => a.Id).ToArray();
-                    var messagingStatuses = allAnalysisIds.Length > 0
-                        ? await _messageRepository.GetMessagingStatusForAnalysesAsync(request.UserId, allAnalysisIds)
+                    // ✅ FIX: Use farmer-specific method that correctly identifies sponsor vs farmer messages
+                    var analysesForMessaging = filteredAnalyses.ToList();
+                    var messagingStatuses = analysesForMessaging.Count > 0
+                        ? await _messageRepository.GetMessagingStatusForFarmerAsync(request.UserId, analysesForMessaging)
                         : new Dictionary<int, MessagingStatusDto>();
 
                     // 🆕 NEW: Apply messaging filters (BEFORE pagination)

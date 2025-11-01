@@ -56,11 +56,22 @@ namespace Business.Handlers.AnalysisMessages.Queries
                 var messageDtos = new List<AnalysisMessageDto>();
                 var baseUrl = _localFileStorage.BaseUrl;
 
+                // PERFORMANCE FIX: Load all users upfront to avoid N+1 query problem
+                // Before: 50 messages = 100 DB queries (2 per message)
+                // After: 50 messages = 1 DB query for all users
+                var userIds = messages
+                    .SelectMany(m => new[] { m.FromUserId, m.ToUserId })
+                    .Distinct()
+                    .ToList();
+
+                var users = await _userRepository.GetListAsync(u => userIds.Contains(u.UserId));
+                var userDict = users.ToDictionary(u => u.UserId);
+
                 foreach (var m in messages)
                 {
-                    // Get sender's and receiver's user info for avatars
-                    var sender = await _userRepository.GetAsync(u => u.UserId == m.FromUserId);
-                    var receiver = await _userRepository.GetAsync(u => u.UserId == m.ToUserId);
+                    // Get sender's and receiver's user info from dictionary (no DB query!)
+                    var sender = userDict.GetValueOrDefault(m.FromUserId);
+                    var receiver = userDict.GetValueOrDefault(m.ToUserId);
 
                     // Transform voice message URL from physical path to API endpoint
                     string voiceMessageUrl = null;

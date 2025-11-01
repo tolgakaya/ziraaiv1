@@ -1,0 +1,20 @@
+"TierId","TierName","TierFeatureId","ConfigurationJson","Percentage","UpdatedDate"
+1,S,32,"{""percentage"": 30}","30",
+2,M,14,"{""percentage"": 60}","60",2025-10-27 11:29:39.560
+3,L,15,,,
+3,L,16,"{""showLogo"": true, ""showProfile"": false}",,
+3,L,17,"{""percentage"": 100}","100",2025-10-27 11:29:45.369
+4,XL,21,"{""showLogo"": true, ""showProfile"": true}",,
+4,XL,23,"{""responseTimeHours"": 12}",,
+4,XL,22,"{""percentage"": 100}","100",2025-10-27 11:24:11.726
+4,XL,19,,,
+4,XL,18,,,
+4,XL,20,,,
+5,Trial,28,,,
+5,Trial,29,"{""showLogo"": true, ""showProfile"": true}",,
+5,Trial,31,"{""responseTimeHours"": 6}",,
+5,Trial,30,"{""percentage"": 0}","0",2025-10-27 11:29:49.754
+5,Trial,24,,,
+5,Trial,25,,,
+5,Trial,26,,,
+5,Trial,27,,,

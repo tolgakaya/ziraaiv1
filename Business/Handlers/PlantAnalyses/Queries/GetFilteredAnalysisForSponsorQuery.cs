@@ -1,4 +1,5 @@
 using Business.Services.Sponsorship;
+using Business.Services.Subscription;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
@@ -8,6 +9,7 @@ using Entities.Concrete;
 using Entities.Dtos;
 using MediatR;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,15 +24,27 @@ namespace Business.Handlers.PlantAnalyses.Queries
         {
             private readonly ISponsorDataAccessService _dataAccessService;
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
+            private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+            private readonly IPlantAnalysisRepository _plantAnalysisRepository; // NEW: For fetching analysis entity
+            private readonly IUserSubscriptionRepository _userSubscriptionRepository; // NEW: For analysis tier lookup
+            private readonly ITierFeatureService _tierFeatureService; // NEW: For database-driven feature checks
             private readonly IMediator _mediator;
 
             public GetFilteredAnalysisForSponsorQueryHandler(
                 ISponsorDataAccessService dataAccessService,
                 ISponsorProfileRepository sponsorProfileRepository,
+                ISubscriptionTierRepository subscriptionTierRepository,
+                IPlantAnalysisRepository plantAnalysisRepository, // NEW
+                IUserSubscriptionRepository userSubscriptionRepository, // NEW
+                ITierFeatureService tierFeatureService, // NEW
                 IMediator mediator)
             {
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
+                _subscriptionTierRepository = subscriptionTierRepository;
+                _plantAnalysisRepository = plantAnalysisRepository; // NEW
+                _userSubscriptionRepository = userSubscriptionRepository; // NEW
+                _tierFeatureService = tierFeatureService; // NEW
                 _mediator = mediator;
             }
 
@@ -44,8 +58,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     return new ErrorDataResult<SponsoredAnalysisDetailDto>("Access denied to this analysis");
                 }
 
-                // Get sponsor's tier information first
-                var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(request.SponsorId);
+                // 🎯 REMOVED: Access percentage no longer used
+                // All sponsors get full data access
 
                 // Get RICH analysis detail (same as farmer endpoint)
                 var detailQuery = new GetPlantAnalysisDetailQuery { Id = request.PlantAnalysisId };
@@ -66,11 +80,30 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Console.WriteLine($"[GetFilteredAnalysisForSponsorQuery] Warning: Could not record access: {ex.Message}");
                 }
 
-                // Apply tier-based filtering to the rich DTO
-                var filteredDetail = ApplyTierBasedFiltering(detailResult.Data, accessPercentage);
+                // 🎯 NO field filtering - show all analysis data
+                // Tier controls feature access (messaging, farmer contact), not field visibility
+                var filteredDetail = detailResult.Data;
+
+                // Clean up sponsorshipMetadata from base query (farmer view)
+                // We'll add proper tierMetadata for sponsor view
+                filteredDetail.SponsorshipMetadata = null;
 
                 // Get sponsor profile for branding info
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(request.SponsorId);
+
+                // ✅ FIX: Get analysis entity to retrieve tier from ActiveSponsorshipId
+                var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == request.PlantAnalysisId);
+                
+                // ✅ FIX: Get tier from analysis (via ActiveSponsorshipId), not from user
+                var analysisTier = await GetAnalysisUsedTierAsync(analysis);
+                var tierName = analysisTier?.TierName ?? "Unknown";
+                var tierId = analysisTier?.Id ?? 0;
+
+                // ✅ DATABASE-DRIVEN: Query actual tier features from database
+                var canMessage = tierId > 0 ? await _tierFeatureService.HasFeatureAccessAsync(tierId, "messaging") : false;
+                var canViewLogo = tierId > 0 ? await _tierFeatureService.HasFeatureAccessAsync(tierId, "sponsor_visibility") : false;
+                // Farmer contact is a business rule (XL tier only), not a database feature
+                var canViewFarmerContact = tierName?.ToUpper() == "XL";
 
                 // Build response with tier metadata
                 var response = new SponsoredAnalysisDetailDto
@@ -78,10 +111,12 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     Analysis = filteredDetail,
                     TierMetadata = new AnalysisTierMetadata
                     {
-                        TierName = GetTierName(accessPercentage),
-                        AccessPercentage = accessPercentage,
-                        CanMessage = accessPercentage >= 30, // M, L, XL tiers
-                        CanViewLogo = true, // All tiers can see logo on result screen
+                        // 🎯 Real tier from purchases
+                        TierName = tierName,
+                        AccessPercentage = 100, // Always 100 - no field/count restrictions
+                        CanMessage = canMessage,
+                        CanReply = canMessage, // Same as CanMessage
+                        CanViewLogo = canViewLogo, // Database-driven: sponsor_visibility feature
                         SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
                         {
                             SponsorId = sponsorProfile.SponsorId,
@@ -91,22 +126,18 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         } : null,
                         AccessibleFields = new AccessibleFieldsInfo
                         {
-                            // 30% Access
-                            CanViewBasicInfo = accessPercentage >= 30,
-                            CanViewHealthScore = accessPercentage >= 30,
-                            CanViewImages = accessPercentage >= 30,
-
-                            // 60% Access
-                            CanViewDetailedHealth = accessPercentage >= 60,
-                            CanViewDiseases = accessPercentage >= 60,
-                            CanViewNutrients = accessPercentage >= 60,
-                            CanViewRecommendations = accessPercentage >= 60,
-                            CanViewLocation = accessPercentage >= 60,
-
-                            // 100% Access
-                            CanViewFarmerContact = accessPercentage >= 100,
-                            CanViewFieldData = accessPercentage >= 100,
-                            CanViewProcessingData = accessPercentage >= 100
+                            // 🎯 All analysis fields accessible (no tier-based field restrictions)
+                            CanViewBasicInfo = true,
+                            CanViewHealthScore = true,
+                            CanViewImages = true,
+                            CanViewDetailedHealth = true,
+                            CanViewDiseases = true,
+                            CanViewNutrients = true,
+                            CanViewRecommendations = true,
+                            CanViewLocation = true,
+                            CanViewFarmerContact = canViewFarmerContact, // XL tier only
+                            CanViewFieldData = true,
+                            CanViewProcessingData = true
                         }
                     }
                 };
@@ -115,67 +146,64 @@ namespace Business.Handlers.PlantAnalyses.Queries
             }
 
             /// <summary>
-            /// Apply tier-based filtering to PlantAnalysisDetailDto
-            /// Nullifies fields based on sponsor's access level
+            /// Get sponsor's highest tier from their active purchases
             /// </summary>
-            private PlantAnalysisDetailDto ApplyTierBasedFiltering(PlantAnalysisDetailDto detail, int accessPercentage)
+            private async Task<SubscriptionTier> GetSponsorHighestTierAsync(SponsorProfile sponsorProfile)
             {
-                // 30% Access: Basic info, health score, images
-                // Fields available: PlantIdentification (basic), Summary.OverallHealthScore, ImageInfo
+                if (sponsorProfile?.SponsorshipPurchases == null || !sponsorProfile.SponsorshipPurchases.Any())
+                    return null;
 
-                // 60% Access: + Detailed health, nutrients, recommendations, location
-                if (accessPercentage < 60)
-                {
-                    // Remove 60% fields
-                    detail.HealthAssessment = null;
-                    detail.NutrientStatus = null;
-                    detail.PestDisease = null;
-                    detail.EnvironmentalStress = null;
-                    detail.Recommendations = null;
-                    detail.CrossFactorInsights = null;
-                    detail.RiskAssessment = null;
-                    detail.Location = null;
-                    detail.Latitude = null;
-                    detail.Longitude = null;
-                    detail.WeatherConditions = null;
-                    detail.Temperature = null;
-                    detail.Humidity = null;
-                    detail.SoilType = null;
-                }
+                var activePurchases = sponsorProfile.SponsorshipPurchases
+                    .Where(p => p.PaymentStatus == "Completed")
+                    .ToList();
 
-                // 100% Access: + Farmer contact, field data, processing info
-                if (accessPercentage < 100)
-                {
-                    // Remove 100% fields
-                    detail.ContactPhone = null;
-                    detail.ContactEmail = null;
-                    detail.FieldId = null;
-                    detail.PlantingDate = null;
-                    detail.ExpectedHarvestDate = null;
-                    detail.LastFertilization = null;
-                    detail.LastIrrigation = null;
-                    detail.PreviousTreatments = null;
-                    detail.UrgencyLevel = null;
-                    detail.Notes = null;
-                    detail.AdditionalInfo = null;
-                    detail.ProcessingInfo = null;
-                    detail.TokenUsage = null;
-                    detail.RequestMetadata = null;
-                }
+                if (!activePurchases.Any())
+                    return null;
 
-                return detail;
+                var tierIds = activePurchases.Select(p => p.SubscriptionTierId).Distinct().ToList();
+                var tiers = await _subscriptionTierRepository.GetListAsync(t => tierIds.Contains(t.Id));
+
+                return tiers.OrderByDescending(t => GetTierPriority(t.TierName)).FirstOrDefault();
             }
 
-            private string GetTierName(int accessPercentage)
+            /// <summary>
+            /// Get the tier that was used for a specific analysis
+            /// This is the CORRECT approach - tier comes from the analysis, not from user
+            /// Analysis → ActiveSponsorshipId → UserSubscription → SubscriptionTier
+            /// </summary>
+            private async Task<Entities.Concrete.SubscriptionTier> GetAnalysisUsedTierAsync(Entities.Concrete.PlantAnalysis analysis)
             {
-                return accessPercentage switch
+                if (!analysis.ActiveSponsorshipId.HasValue)
+                    return null;
+
+                var subscription = await _userSubscriptionRepository.GetAsync(
+                    s => s.Id == analysis.ActiveSponsorshipId.Value);
+
+                if (subscription == null)
+                    return null;
+
+                return await _subscriptionTierRepository.GetAsync(
+                    t => t.Id == subscription.SubscriptionTierId);
+            }
+
+            /// <summary>
+            /// Get tier priority for sorting (XL > L > M > S > Trial)
+            /// </summary>
+            private int GetTierPriority(string tierName)
+            {
+                return tierName?.ToUpper() switch
                 {
-                    30 => "S/M",
-                    60 => "L",
-                    100 => "XL",
-                    _ => "Unknown"
+                    "XL" => 5,
+                    "L" => 4,
+                    "M" => 3,
+                    "S" => 2,
+                    "TRIAL" => 1,
+                    _ => 0
                 };
             }
+
+            // ✅ REMOVED: Hard-coded tier methods replaced with database-driven TierFeatureService
+            // Feature permissions now queried from TierFeatures table dynamically
         }
     }
 }

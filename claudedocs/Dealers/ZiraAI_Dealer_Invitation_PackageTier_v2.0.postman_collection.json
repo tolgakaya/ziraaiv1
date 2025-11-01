@@ -1,0 +1,517 @@
+{
+	"info": {
+		"_postman_id": "dealer-invitation-packagetier-v2",
+		"name": "ZiraAI - Dealer Invitation with PackageTier (v2.0)",
+		"description": "**🎯 NEW FEATURE: Intelligent Code Selection with PackageTier Filter**\n\nThis collection demonstrates the updated dealer invitation system with:\n- ✅ Optional `packageTier` filter (S, M, L, XL)\n- ✅ Multi-purchase automatic code selection\n- ✅ FIFO intelligent ordering (expiry date → creation date)\n- ✅ Code reservation system\n- ✅ Backward compatibility with `purchaseId`\n\n## 🆕 What's New (v2.0)\n\n### Intelligent Code Selection\n- **No more purchaseId requirement!** System auto-selects codes from multiple purchases\n- **Tier-based filtering**: Specify S, M, L, or XL to filter codes by package tier\n- **FIFO optimization**: Codes expiring soonest are selected first to prevent waste\n- **Multi-purchase support**: Automatically picks codes from different purchases\n\n### Code Reservation System\n- **Prevents double-allocation**: Reserved codes cannot be transferred to others\n- **Invitation-bound**: Codes reserved until invitation accepted/expired\n- **Automatic cleanup**: Reservation cleared on acceptance or expiry\n\n### API Changes\n\n**Before (Old):**\n```json\n{\n  \"purchaseId\": 26,      // ❌ REQUIRED\n  \"codeCount\": 5\n}\n```\n\n**After (New):**\n```json\n{\n  \"packageTier\": \"M\",    // ✅ OPTIONAL (S, M, L, XL)\n  \"codeCount\": 5\n}\n// OR combine both for precise filtering:\n{\n  \"purchaseId\": 26,      // ✅ Still supported\n  \"packageTier\": \"M\",    // ✅ Additional filter\n  \"codeCount\": 5\n}\n```\n\n## 📋 Test Scenarios\n\n1. **Invite with PackageTier (NEW)**: Select codes from specific tier\n2. **Invite without Filters (NEW)**: Auto-select from multiple purchases\n3. **Transfer with PackageTier (NEW)**: Tier-based code transfer\n4. **Backward Compatibility**: Old requests with purchaseId still work\n5. **Accept Invitation**: Reservation transfer to dealer\n\n## 🔧 Environment Setup\n\n**Required Variables:**\n- `base_url`: https://ziraai-api-sit.up.railway.app\n- `sponsor_token`: Login as sponsor (UserId: 159)\n- `dealer_token`: Login as dealer (UserId: 158)\n\n**Version**: 2.0  \n**Created**: 2025-10-30  \n**Migration**: Database migration required (see migration script)\n\n---\n\n**Database Migration Required!**\nRun `claudedocs/Dealers/migrations/001_remove_purchaseid_add_packagetier_and_reservation.sql` before testing.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "🆕 NEW - PackageTier Based Invitations",
+			"item": [
+				{
+					"name": "1. Invite Dealer (Tier M)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Capture invitation details",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.environment.set(\"invitation_id\", jsonData.data.invitationId);",
+									"        pm.environment.set(\"invitation_token\", jsonData.data.invitationToken);",
+									"        console.log(\"✅ Invitation created with Tier M filter\");",
+									"        console.log(\"   Invitation ID: \" + jsonData.data.invitationId);",
+									"        console.log(\"   Token: DEALER-\" + jsonData.data.invitationToken);",
+									"        console.log(\"   Codes Reserved: \" + jsonData.data.codeCount);",
+									"        console.log(\"   SMS Sent: \" + jsonData.data.smsSent);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"dealer@test.com\",\n  \"phone\": \"+905551234567\",\n  \"dealerName\": \"ABC Tarım\",\n  \"packageTier\": \"M\",\n  \"codeCount\": 5\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invite-via-sms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invite-via-sms"
+							]
+						},
+						"description": "**🆕 NEW: Tier-Based Invitation**\n\nCreate dealer invitation with packageTier filter (M tier).\n\n**Request Body:**\n- `email`: Dealer email\n- `phone`: Dealer phone (format: +90XXXXXXXXXX)\n- `dealerName`: Company name\n- `packageTier`: **M** (Medium tier - 50 analyses/month)\n- `codeCount`: 5 codes\n\n**What Happens:**\n1. System finds 5 codes from tier \"M\"\n2. Orders by expiry date (FIFO)\n3. Reserves codes for this invitation\n4. Sends SMS with deep link\n\n**Expected Result:**\n- ✅ Invitation created\n- ✅ 5 codes from M tier reserved\n- ✅ SMS sent to +905551234567\n- ✅ ReservedForInvitationId set in database"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Invite Dealer (Any Tier - Multi-Purchase)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify multi-purchase selection",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        console.log(\"✅ Multi-purchase auto-selection successful\");",
+									"        console.log(\"   Invitation ID: \" + jsonData.data.invitationId);",
+									"        console.log(\"   Codes Reserved: \" + jsonData.data.codeCount);",
+									"        console.log(\"   Note: Codes selected from multiple purchases automatically\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"dealer2@test.com\",\n  \"phone\": \"+905559876543\",\n  \"dealerName\": \"XYZ Tarım\",\n  \"codeCount\": 10\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invite-via-sms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invite-via-sms"
+							]
+						},
+						"description": "**🆕 NEW: Multi-Purchase Auto-Selection**\n\nCreate invitation WITHOUT tier filter - system auto-selects from multiple purchases.\n\n**Request Body:**\n- `email`: Dealer email\n- `phone`: Dealer phone\n- `dealerName`: Company name\n- `codeCount`: 10 codes\n- **NO packageTier** → Selects from ANY tier\n- **NO purchaseId** → Selects from MULTIPLE purchases\n\n**Intelligent Selection Algorithm:**\n1. Get ALL available codes (all tiers, all purchases)\n2. Order by ExpiryDate ASC (codes expiring soonest first - FIFO)\n3. Then by CreatedDate ASC (oldest first)\n4. Take 10 codes\n5. Reserve for invitation\n\n**Expected Result:**\n- ✅ 10 codes selected from multiple purchases\n- ✅ Codes expiring soonest selected first\n- ✅ Prevents code waste"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Transfer Codes (Tier L)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Display transferred codes",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        console.log(\"✅ Tier L codes transferred to dealer\");",
+									"        console.log(\"   Transferred Count: \" + jsonData.data.transferredCount);",
+									"        console.log(\"   Dealer ID: \" + jsonData.data.dealerId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"dealerId\": 158,\n  \"packageTier\": \"L\",\n  \"codeCount\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/transfer-codes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"transfer-codes"
+							]
+						},
+						"description": "**🆕 NEW: Tier-Based Transfer**\n\nTransfer codes to dealer with packageTier filter (L tier).\n\n**Request Body:**\n- `dealerId`: 158 (Dealer user ID)\n- `packageTier`: **L** (Large tier - 100 analyses/month)\n- `codeCount`: 3 codes\n\n**What Happens:**\n1. Get all available L tier codes\n2. Order by expiry date (FIFO)\n3. Transfer 3 codes to dealer\n4. No reservation (direct transfer)\n\n**Expected Result:**\n- ✅ 3 codes from L tier transferred\n- ✅ DealerId set to 158\n- ✅ TransferredAt timestamp recorded"
+					},
+					"response": []
+				}
+			],
+			"description": "**🆕 NEW FEATURES: PackageTier-Based Operations**\n\nThese endpoints demonstrate the new intelligent code selection with optional packageTier filtering.\n\n### Key Features:\n- **Tier Filtering**: S, M, L, XL\n- **Multi-Purchase Support**: Auto-selects from multiple purchases\n- **FIFO Ordering**: Codes expiring soonest first\n- **No purchaseId Required**: System handles multi-purchase automatically"
+		},
+		{
+			"name": "✅ Backward Compatibility",
+			"item": [
+				{
+					"name": "4. Invite with PurchaseId (Old Way)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"oldway@test.com\",\n  \"phone\": \"+905551111111\",\n  \"dealerName\": \"Old Method Dealer\",\n  \"purchaseId\": 26,\n  \"codeCount\": 5\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invite-via-sms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invite-via-sms"
+							]
+						},
+						"description": "**✅ BACKWARD COMPATIBLE: Old PurchaseId Method**\n\nOld API requests with `purchaseId` still work exactly as before.\n\n**Request Body:**\n- `purchaseId`: 26 (old parameter - still supported)\n- `codeCount`: 5\n\n**What Happens:**\n1. System filters codes by purchaseId = 26\n2. Orders by expiry date (FIFO)\n3. Reserves 5 codes\n\n**Expected Result:**\n- ✅ Works exactly like v1.0\n- ✅ No breaking changes\n- ✅ Only codes from purchaseId=26 selected"
+					},
+					"response": []
+				},
+				{
+					"name": "5. Combine PurchaseId + Tier (Precise)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"precise@test.com\",\n  \"phone\": \"+905552222222\",\n  \"dealerName\": \"Precise Filter Dealer\",\n  \"purchaseId\": 26,\n  \"packageTier\": \"M\",\n  \"codeCount\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invite-via-sms",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invite-via-sms"
+							]
+						},
+						"description": "**🎯 ADVANCED: Combined Filtering**\n\nCombine BOTH purchaseId AND packageTier for precise control.\n\n**Request Body:**\n- `purchaseId`: 26\n- `packageTier`: M\n- `codeCount`: 3\n\n**What Happens:**\n1. Filter: purchaseId = 26 AND tier = M\n2. Order by expiry date\n3. Take 3 codes\n\n**Use Case:**\n- Sponsor has multiple purchases\n- Wants specific tier from specific purchase\n- Maximum control over code selection\n\n**Expected Result:**\n- ✅ Only M tier codes from purchase #26\n- ✅ Most precise filtering possible"
+					},
+					"response": []
+				}
+			],
+			"description": "**✅ BACKWARD COMPATIBILITY TESTS**\n\nThese tests verify that old API requests still work without any changes.\n\n### Supported Patterns:\n1. **Old Way**: Just `purchaseId` (still works)\n2. **New Way**: Just `packageTier` (new feature)\n3. **Combined**: Both `purchaseId` + `packageTier` (max precision)\n4. **No Filter**: Neither (multi-purchase auto-select)"
+		},
+		{
+			"name": "🔄 Invitation Lifecycle",
+			"item": [
+				{
+					"name": "6. Accept Dealer Invitation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Verify reservation transfer",
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        console.log(\"✅ Invitation accepted - codes transferred\");",
+									"        console.log(\"   Codes Transferred: \" + jsonData.data.codesTransferred);",
+									"        console.log(\"   Dealer ID: \" + jsonData.data.dealerId);",
+									"        console.log(\"   ⚠️ Reservation cleared in database\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{dealer_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"invitationToken\": \"{{invitation_token}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/accept-invitation",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"accept-invitation"
+							]
+						},
+						"description": "**🔄 Accept Invitation - Reservation Transfer**\n\nDealer accepts invitation, reserved codes transferred.\n\n**Request Body:**\n- `invitationToken`: Token from invitation (use {{invitation_token}})\n\n**What Happens:**\n1. Find invitation by token\n2. Get reserved codes (WHERE ReservedForInvitationId = invitationId)\n3. Transfer codes to dealer:\n   - Set DealerId = dealer's userId\n   - Set TransferredAt = NOW\n   - Clear ReservedForInvitationId = NULL\n   - Clear ReservedAt = NULL\n4. Update invitation status = \"Accepted\"\n\n**Fallback Logic:**\n- If reserved codes insufficient → Auto-select fresh codes\n- Prevents invitation failure due to expired reservations\n\n**Expected Result:**\n- ✅ Reserved codes transferred to dealer\n- ✅ Reservation cleared\n- ✅ Dealer can now distribute codes to farmers"
+					},
+					"response": []
+				},
+				{
+					"name": "7. Get Invitation Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/dealer/invitations/{{invitation_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"dealer",
+								"invitations",
+								"{{invitation_id}}"
+							]
+						},
+						"description": "**📋 Get Invitation Details**\n\nView invitation details including reservation status.\n\n**Path Parameter:**\n- `invitationId`: {{invitation_id}}\n\n**Returns:**\n- Invitation status (Pending/Accepted/Expired)\n- PackageTier filter (if specified)\n- Code count\n- Reserved codes info\n- Expiry date"
+					},
+					"response": []
+				}
+			],
+			"description": "**🔄 Invitation Lifecycle Management**\n\nComplete workflow from invitation to code transfer:\n1. Create invitation → Codes reserved\n2. Dealer accepts → Codes transferred, reservation cleared\n3. View details → Check status"
+		},
+		{
+			"name": "🔍 Database Verification",
+			"item": [
+				{
+					"name": "8. Check Reserved Codes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{sponsor_token}}",
+								"type": "text"
+							},
+							{
+								"key": "x-dev-arch-version",
+								"value": "1.0",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sponsorship/codes?page=1&pageSize=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sponsorship",
+								"codes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "50"
+								}
+							]
+						},
+						"description": "**🔍 Database Verification**\n\nCheck codes to see reservation status.\n\n**What to Check:**\n- `reservedForInvitationId`: Should be set for reserved codes\n- `reservedAt`: Timestamp when reserved\n- `dealerId`: NULL for reserved, set after acceptance\n- `isUsed`: false for available codes\n\n**SQL Equivalent:**\n```sql\nSELECT Code, ReservedForInvitationId, ReservedAt, DealerId\nFROM SponsorshipCodes\nWHERE ReservedForInvitationId IS NOT NULL;\n```"
+					},
+					"response": []
+				}
+			],
+			"description": "**🔍 Database Verification Queries**\n\nVerify that database changes are working:\n- Reserved codes have ReservedForInvitationId\n- Accepted invitations clear reservation\n- PackageTier stored in DealerInvitations"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"console.log(\"🚀 ZiraAI Dealer Invitation v2.0 - PackageTier Support\");",
+					"console.log(\"Environment: \" + pm.environment.get(\"base_url\"));"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"if (pm.response.code !== 200 && pm.response.code !== 201) {",
+					"    console.log(\"⚠️ Request failed with status: \" + pm.response.code);",
+					"    if (pm.response.json) {",
+					"        var jsonData = pm.response.json();",
+					"        if (jsonData.message) {",
+					"            console.log(\"Error: \" + jsonData.message);",
+					"        }",
+					"    }",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://ziraai-api-sit.up.railway.app",
+			"type": "string"
+		},
+		{
+			"key": "api_version",
+			"value": "1.0",
+			"type": "string"
+		}
+	]
+}

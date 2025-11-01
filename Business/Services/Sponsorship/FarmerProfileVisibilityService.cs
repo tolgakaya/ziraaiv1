@@ -1,3 +1,4 @@
+using Business.Services.Subscription;
 using DataAccess.Abstract;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,13 +9,16 @@ namespace Business.Services.Sponsorship
     {
         private readonly ISponsorProfileRepository _sponsorProfileRepository;
         private readonly ISponsorshipPurchaseRepository _sponsorshipPurchaseRepository;
+        private readonly ITierFeatureService _tierFeatureService;
 
         public FarmerProfileVisibilityService(
             ISponsorProfileRepository sponsorProfileRepository,
-            ISponsorshipPurchaseRepository sponsorshipPurchaseRepository)
+            ISponsorshipPurchaseRepository sponsorshipPurchaseRepository,
+            ITierFeatureService tierFeatureService)
         {
             _sponsorProfileRepository = sponsorProfileRepository;
             _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
+            _tierFeatureService = tierFeatureService;
         }
 
         public async Task<bool> CanViewFarmerProfileAsync(int sponsorId)
@@ -25,15 +29,19 @@ namespace Business.Services.Sponsorship
             if (profile == null || !profile.IsActive)
                 return false;
 
-            // Check if sponsor has L or XL tier (messaging tiers = farmer profile visibility)
+            // Check if sponsor has sponsor_visibility feature with showProfile=true
             if (profile.SponsorshipPurchases != null && profile.SponsorshipPurchases.Any())
             {
                 foreach (var purchase in profile.SponsorshipPurchases)
                 {
-                    // L=3, XL=4 tiers can see farmer profiles
-                    if (purchase.SubscriptionTierId >= 3)
+                    var hasVisibility = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "sponsor_visibility");
+                    if (hasVisibility)
                     {
-                        return true;
+                        var config = await _tierFeatureService.GetFeatureConfigAsync<SponsorVisibilityConfig>(purchase.SubscriptionTierId, "sponsor_visibility");
+                        if (config?.showProfile == true)
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -58,22 +66,26 @@ namespace Business.Services.Sponsorship
 
             if (profile.SponsorshipPurchases != null && profile.SponsorshipPurchases.Any())
             {
-                // Get highest tier
-                int maxTier = 0;
+                // Check if any purchase has full profile visibility
                 foreach (var purchase in profile.SponsorshipPurchases)
                 {
-                    if (purchase.SubscriptionTierId > maxTier)
-                        maxTier = purchase.SubscriptionTierId;
+                    var hasVisibility = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "sponsor_visibility");
+                    if (hasVisibility)
+                    {
+                        var config = await _tierFeatureService.GetFeatureConfigAsync<SponsorVisibilityConfig>(purchase.SubscriptionTierId, "sponsor_visibility");
+                        if (config?.showProfile == true)
+                        {
+                            return "Full"; // L, XL tiers
+                        }
+                        else if (config?.showLogo == true)
+                        {
+                            return "Anonymous"; // M tier: logo only
+                        }
+                    }
                 }
-
-                return maxTier switch
-                {
-                    1 => "None",        // S tier: No farmer data
-                    2 => "Anonymous",   // M tier: Anonymous farmer profiles
-                    3 => "Full",        // L tier: Full farmer profiles
-                    4 => "Full",        // XL tier: Full farmer profiles
-                    _ => "None"
-                };
+                
+                // Has purchases but no visibility features
+                return "None"; // S tier or Trial
             }
             
             return "None";

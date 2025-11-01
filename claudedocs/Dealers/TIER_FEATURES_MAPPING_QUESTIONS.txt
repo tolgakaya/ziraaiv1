@@ -1,0 +1,95 @@
+# TIER FEATURE MAPPING - Karar Formu
+
+## Mevcut Tier'lar:
+1. Trial (Ücretsiz deneme)
+2. S (Small - Küçük çiftlikler)
+3. M (Medium - Profesyonel çiftçiler)
+4. L (Large - Büyük çiftlikler)
+5. XL (Extra Large - Kurumsal)
+
+## Mevcut Feature'lar:
+1. messaging - Mesajlaşma (text mesaj) Bunun yanında attachmentlı mesaj da var(resimli vb)
+2. voice_messages - Sesli mesaj
+3. smart_links - Akıllı link yönetimi
+4. advanced_analytics - Detaylı analytics
+5. api_access - API erişimi
+6. sponsor_visibility - Sponsor profil/logo görünürlüğü
+7. priority_support - Öncelikli destek
+8. data_access_percentage - Çiftçi verisi erişim yüzdesi
+
+---
+
+## SORU 1: Her tier için hangi feature'lar olsun?
+(✅ veya ❌ işareti koy)
+
+| Feature                    | Trial | S  | M  | L  | XL |
+|----------------------------|-------|----|----|----|----|
+| messaging (Text mesaj)     |       |    |    |  X |  X |
+| voice_messages (Sesli)     |       |    |    |  X |  X |
+| smart_links (Akıllı link)  |       |    |    |    |  X |
+| advanced_analytics         |       |    |    |  X |  X |
+| api_access (API)           |       |    |    |    |  X |
+| sponsor_visibility         |       |    |  X |  X |  X |
+| priority_support           |       |    |    |  X |  X |
+| data_access_percentage     |       |    |    |    |    |
+
+data_access_percentage artık kullanılmıyor
+---
+
+## SORU 2: sponsor_visibility için logo/profil ayarları BUNLAIRN HER İKİSİ DE AYNI, YUKARIDAKİ TABLOYA GÖRE YAPILACAK
+
+Trial tier:
+  - showLogo: true/false → 
+  - showProfile: true/false → 
+
+S tier:
+  - showLogo: true/false → 
+  - showProfile: true/false → 
+
+M tier:
+  - showLogo: true/false → 
+  - showProfile: true/false → 
+
+L tier:
+  - showLogo: true/false → 
+  - showProfile: true/false → 
+
+XL tier:
+  - showLogo: true/false → 
+  - showProfile: true/false → 
+
+---
+
+## SORU 3: data_access_percentage (Çiftçi verisine erişim yüzdesi) (BURASI KULLANILMIYOR ARTIK)
+
+Trial tier: % → 
+S tier: % → 
+M tier: % → 
+L tier: % → 
+XL tier: % → 
+
+---
+
+## SORU 4: priority_support için response time (saat cinsinden)
+
+Trial tier: ___ saat (eğer varsa)
+S tier: ___ saat (eğer varsa)
+M tier: ___ saat
+L tier: ___ saat 48 SAAT
+XL tier: ___ saat 24 SAAT
+
+---
+
+## NOTLAR:
+- Trial genellikle en kısıtlı tier'dır
+- S → M → L → XL şeklinde özellikler artar
+- Mantıklı bir fiyatlama hiyerarşisi oluşturmalıyız
+
+## ORNEK DOLUM: HAYIR olumsuz olanlara işaret koymadım. SADECE OK OLANLARA İŞARET KOYDUM.
+
+| Feature                    | Trial | S  | M  | L  | XL |
+|----------------------------|-------|----|----|----|----|
+| messaging (Text mesaj)     | ❌    | ❌ | ✅ | ✅ | ✅ |
+| voice_messages (Sesli)     | ❌    | ❌ | ❌ | ✅ | ✅ |
+
+Bu şekilde doldur ve bana geri gönder.

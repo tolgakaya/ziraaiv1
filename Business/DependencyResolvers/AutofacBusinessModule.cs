@@ -8,6 +8,7 @@ using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Business.Services.Sponsorship;
+using Business.Services.Subscription;
 using Business.Services.Redemption;
 using Business.Services.Notification;
 using Business.Services.SponsorRequest;
@@ -143,6 +144,16 @@ namespace Business.DependencyResolvers
             builder.RegisterType<MessagingFeatureRepository>().As<IMessagingFeatureRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<DealerInvitationRepository>().As<IDealerInvitationRepository>()
+                .InstancePerLifetimeScope();
+
+            // Tier Feature Management repositories
+            builder.RegisterType<FeatureRepository>().As<IFeatureRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<TierFeatureRepository>().As<ITierFeatureRepository>()
+                .InstancePerLifetimeScope();
+
             // Referral System repositories
             builder.RegisterType<ReferralCodeRepository>().As<IReferralCodeRepository>()
                 .InstancePerLifetimeScope();
@@ -222,7 +233,10 @@ namespace Business.DependencyResolvers
             // Notification Services
             builder.RegisterType<NotificationService>().As<INotificationService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<DealerInvitationNotificationService>().As<IDealerInvitationNotificationService>()
+                .InstancePerLifetimeScope();
+
             // Sponsor Request Services
             builder.RegisterType<SponsorRequestService>().As<ISponsorRequestService>()
                 .InstancePerLifetimeScope();
@@ -255,6 +269,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<SponsorDataAccessService>().As<ISponsorDataAccessService>()
                 .InstancePerLifetimeScope();
             
+            builder.RegisterType<TierFeatureService>().As<ITierFeatureService>()
+                .InstancePerLifetimeScope();
+            
             // Deep Links services
             builder.RegisterType<Business.Services.MobileIntegration.DeepLinkService>().As<Business.Services.MobileIntegration.IDeepLinkService>()
                 .InstancePerLifetimeScope();
@@ -262,6 +279,11 @@ namespace Business.DependencyResolvers
             // Referral System Services
             builder.RegisterType<Business.Services.Referral.ReferralConfigurationService>()
                 .As<Business.Services.Referral.IReferralConfigurationService>()
+                .InstancePerLifetimeScope();
+            
+            // Dealer Invitation Services
+            builder.RegisterType<Business.Services.DealerInvitation.DealerInvitationConfigurationService>()
+                .As<Business.Services.DealerInvitation.IDealerInvitationConfigurationService>()
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<Business.Services.Referral.ReferralCodeService>()
@@ -355,6 +377,6 @@ namespace Business.DependencyResolvers
                 {
                     Selector = new AspectInterceptorSelector()
                 }).SingleInstance().InstancePerDependency();
-                }
+        }
     }
 }

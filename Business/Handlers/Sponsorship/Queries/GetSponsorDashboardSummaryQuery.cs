@@ -73,8 +73,10 @@ namespace Business.Handlers.Sponsorship.Queries
 
                     Console.WriteLine($"[DashboardCache] ❌ Cache MISS for sponsor {request.SponsorId} - fetching from database");
 
-                    // Get all sponsor's codes
-                    var allCodes = await _sponsorshipCodeRepository.GetBySponsorIdAsync(request.SponsorId);
+                    // ✅ FIX: Get codes for both sponsor (purchased) and dealer (transferred)
+                    // A user can be BOTH sponsor and dealer simultaneously
+                    var allCodes = await _sponsorshipCodeRepository.GetListAsync(c => 
+                        c.SponsorId == request.SponsorId || c.DealerId == request.SponsorId);
 
                     // Get all sponsor's purchases
                     var allPurchases = await _sponsorshipPurchaseRepository.GetBySponsorIdAsync(request.SponsorId);
@@ -87,10 +89,11 @@ namespace Business.Handlers.Sponsorship.Queries
                     var sentCodes = allCodes.Count(c => c.DistributionDate.HasValue);
                     var sentCodesPercentage = totalCodes > 0 ? (decimal)sentCodes / totalCodes * 100 : 0;
 
-                    // Calculate total analyses - SIMPLIFIED using SponsorCompanyId
+                    // ✅ FIX: Calculate total analyses for both sponsor and dealer roles
+                    // A user can be BOTH sponsor and dealer simultaneously
                     var totalAnalyses = await _plantAnalysisRepository.GetCountAsync(
-                        pa => pa.SponsorCompanyId.HasValue && 
-                              pa.SponsorCompanyId.Value == request.SponsorId);
+                        pa => (pa.SponsorCompanyId.HasValue && pa.SponsorCompanyId.Value == request.SponsorId) ||
+                              (pa.DealerId.HasValue && pa.DealerId.Value == request.SponsorId));
 
                     Console.WriteLine($"[DashboardAnalyses] Total analyses for sponsor {request.SponsorId}: {totalAnalyses}");
 

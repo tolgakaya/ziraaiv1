@@ -61,13 +61,19 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         
         // Subscription System
         public DbSet<SubscriptionTier> SubscriptionTiers { get; set; }
+
+        public DbSet<Feature> Features { get; set; }
+        public DbSet<TierFeature> TierFeatures { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<SubscriptionUsageLog> SubscriptionUsageLogs { get; set; }
         
         // Sponsorship System
         public DbSet<SponsorshipCode> SponsorshipCodes { get; set; }
         public DbSet<SponsorshipPurchase> SponsorshipPurchases { get; set; }
-        
+
+        // Dealer Distribution System
+        public DbSet<DealerInvitation> DealerInvitations { get; set; }
+
         // Sponsor Request System
         public DbSet<SponsorRequest> SponsorRequests { get; set; }
         public DbSet<SponsorContact> SponsorContacts { get; set; }

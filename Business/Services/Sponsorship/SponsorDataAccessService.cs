@@ -1,3 +1,4 @@
+using Business.Services.Subscription;
 using DataAccess.Abstract;
 using System;
 using System.Collections.Generic;
@@ -6,20 +7,28 @@ using System.Threading.Tasks;
 
 namespace Business.Services.Sponsorship
 {
+    public class DataAccessConfig
+    {
+        public int percentage { get; set; }
+    }
+
     public class SponsorDataAccessService : ISponsorDataAccessService
     {
         private readonly ISponsorProfileRepository _sponsorProfileRepository;
         private readonly ISponsorAnalysisAccessRepository _sponsorAnalysisAccessRepository;
         private readonly IPlantAnalysisRepository _plantAnalysisRepository;
+        private readonly ITierFeatureService _tierFeatureService;
 
         public SponsorDataAccessService(
             ISponsorProfileRepository sponsorProfileRepository,
             ISponsorAnalysisAccessRepository sponsorAnalysisAccessRepository,
-            IPlantAnalysisRepository plantAnalysisRepository)
+            IPlantAnalysisRepository plantAnalysisRepository,
+            ITierFeatureService tierFeatureService)
         {
             _sponsorProfileRepository = sponsorProfileRepository;
             _sponsorAnalysisAccessRepository = sponsorAnalysisAccessRepository;
             _plantAnalysisRepository = plantAnalysisRepository;
+            _tierFeatureService = tierFeatureService;
         }
 
         public async Task<Entities.Concrete.PlantAnalysis> GetFilteredAnalysisDataAsync(int sponsorId, int plantAnalysisId)
@@ -61,30 +70,35 @@ namespace Business.Services.Sponsorship
                 if (sponsorProfile == null)
                 {
                     Console.WriteLine($"[SponsorDataAccessService] No sponsor profile found for sponsorId: {sponsorId}");
-                    return 30; // Default to basic access
+                    return 0; // No access without profile
                 }
 
                 if (sponsorProfile.SponsorshipPurchases == null || !sponsorProfile.SponsorshipPurchases.Any())
                 {
                     Console.WriteLine($"[SponsorDataAccessService] No purchases found for sponsorId: {sponsorId}");
-                    return 30; // Default to basic access
+                    return 0; // No access without purchases
                 }
 
-                // En yüksek tier'ın veri erişim yüzdesini döndür
-                int maxAccessPercentage = 30; // Minimum access level
+                // Get maximum data access percentage from all purchases
+                int maxAccessPercentage = 0; // Start with 0
                 foreach (var purchase in sponsorProfile.SponsorshipPurchases)
                 {
-                    var accessPercentage = purchase.SubscriptionTierId switch
+                    var hasDataAccess = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "data_access_percentage");
+                    if (hasDataAccess)
                     {
-                        1 => 30, // S tier: %30
-                        2 => 30, // M tier: %30  
-                        3 => 60, // L tier: %60
-                        4 => 100, // XL tier: %100
-                        _ => 30
-                    };
-                    
-                    if (accessPercentage > maxAccessPercentage)
-                        maxAccessPercentage = accessPercentage;
+                        var config = await _tierFeatureService.GetFeatureConfigAsync<DataAccessConfig>(purchase.SubscriptionTierId, "data_access_percentage");
+                        var accessPercentage = config?.percentage ?? 0;
+                        
+                        if (accessPercentage > maxAccessPercentage)
+                            maxAccessPercentage = accessPercentage;
+                    }
+                }
+                
+                // Default to 0 if no data access feature found
+                if (maxAccessPercentage == 0)
+                {
+                    Console.WriteLine($"[SponsorDataAccessService] No data_access_percentage feature found for sponsorId: {sponsorId}");
+                    return 0;
                 }
 
                 Console.WriteLine($"[SponsorDataAccessService] Access percentage for sponsorId {sponsorId}: {maxAccessPercentage}%");
@@ -93,7 +107,7 @@ namespace Business.Services.Sponsorship
             catch (Exception ex)
             {
                 Console.WriteLine($"[SponsorDataAccessService] Error getting access percentage: {ex.Message}");
-                return 30; // Default to basic access on error
+                return 0; // No access on error
             }
         }
 
