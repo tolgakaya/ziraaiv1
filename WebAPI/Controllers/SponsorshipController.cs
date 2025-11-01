@@ -1,5 +1,4 @@
 using Business.Handlers.Sponsorship.Commands;
-using Business.Handlers.Sponsorship.Commands;
 using Business.Handlers.Sponsorship.Queries;
 using Business.Handlers.Sponsorships.Queries;
 using Business.Handlers.SponsorProfiles.Commands;
@@ -147,6 +146,79 @@ namespace WebAPI.Controllers
             {
                 _logger.LogError(ex, "Error creating sponsor profile for user {UserId}", GetUserId());
                 return StatusCode(500, new ErrorResult($"Profile creation failed: {ex.Message}"));
+            }
+        }
+        
+        /// <summary>
+        /// Update sponsor profile information
+        /// </summary>
+        /// <param name="dto">Updated profile information</param>
+        /// <returns>Success or error result</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPut("update-profile")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> UpdateSponsorProfile([FromBody] UpdateSponsorProfileDto dto)
+        {
+            try
+            {
+                // Set sponsor ID from current user
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("📝 [UpdateSponsorProfile API] Request received - UserId: {UserId}", userId.Value);
+
+                // Map DTO to Command
+                var command = new UpdateSponsorProfileCommand
+                {
+                    SponsorId = userId.Value,
+                    CompanyName = dto.CompanyName,
+                    CompanyDescription = dto.CompanyDescription,
+                    SponsorLogoUrl = dto.SponsorLogoUrl,
+                    WebsiteUrl = dto.WebsiteUrl,
+                    ContactEmail = dto.ContactEmail,
+                    ContactPhone = dto.ContactPhone,
+                    ContactPerson = dto.ContactPerson,
+                    CompanyType = dto.CompanyType,
+                    BusinessModel = dto.BusinessModel,
+                    
+                    // Social Media Links
+                    LinkedInUrl = dto.LinkedInUrl,
+                    TwitterUrl = dto.TwitterUrl,
+                    FacebookUrl = dto.FacebookUrl,
+                    InstagramUrl = dto.InstagramUrl,
+                    
+                    // Business Information
+                    TaxNumber = dto.TaxNumber,
+                    TradeRegistryNumber = dto.TradeRegistryNumber,
+                    Address = dto.Address,
+                    City = dto.City,
+                    Country = dto.Country,
+                    PostalCode = dto.PostalCode,
+                    
+                    // Password
+                    Password = dto.Password
+                };
+                
+                var result = await Mediator.Send(command);
+                
+                if (!result.Success)
+                {
+                    return BadRequest(result);
+                }
+                
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating sponsor profile for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Profile update failed: {ex.Message}"));
             }
         }
         
