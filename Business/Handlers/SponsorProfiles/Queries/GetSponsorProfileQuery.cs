@@ -47,6 +47,21 @@ namespace Business.Handlers.SponsorProfiles.Queries
                     ContactEmail = sponsorProfile.ContactEmail,
                     ContactPhone = sponsorProfile.ContactPhone,
                     ContactPerson = sponsorProfile.ContactPerson,
+                    
+                    // Social Media Links
+                    LinkedInUrl = sponsorProfile.LinkedInUrl,
+                    TwitterUrl = sponsorProfile.TwitterUrl,
+                    FacebookUrl = sponsorProfile.FacebookUrl,
+                    InstagramUrl = sponsorProfile.InstagramUrl,
+                    
+                    // Business Information
+                    TaxNumber = sponsorProfile.TaxNumber,
+                    TradeRegistryNumber = sponsorProfile.TradeRegistryNumber,
+                    Address = sponsorProfile.Address,
+                    City = sponsorProfile.City,
+                    Country = sponsorProfile.Country,
+                    PostalCode = sponsorProfile.PostalCode,
+                    
                     CompanyType = sponsorProfile.CompanyType,
                     BusinessModel = sponsorProfile.BusinessModel,
                     IsVerifiedCompany = sponsorProfile.IsVerifiedCompany,
