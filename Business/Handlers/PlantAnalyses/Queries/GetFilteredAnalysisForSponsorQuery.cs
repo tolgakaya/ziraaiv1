@@ -101,6 +101,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 // ✅ DATABASE-DRIVEN: Query actual tier features from database
                 var canMessage = tierId > 0 ? await _tierFeatureService.HasFeatureAccessAsync(tierId, "messaging") : false;
+                var canViewLogo = tierId > 0 ? await _tierFeatureService.HasFeatureAccessAsync(tierId, "sponsor_visibility") : false;
                 // Farmer contact is a business rule (XL tier only), not a database feature
                 var canViewFarmerContact = tierName?.ToUpper() == "XL";
 
@@ -115,7 +116,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         AccessPercentage = 100, // Always 100 - no field/count restrictions
                         CanMessage = canMessage,
                         CanReply = canMessage, // Same as CanMessage
-                        CanViewLogo = true, // All tiers can view logo
+                        CanViewLogo = canViewLogo, // Database-driven: sponsor_visibility feature
                         SponsorInfo = sponsorProfile != null ? new SponsorDisplayInfoDto
                         {
                             SponsorId = sponsorProfile.SponsorId,
