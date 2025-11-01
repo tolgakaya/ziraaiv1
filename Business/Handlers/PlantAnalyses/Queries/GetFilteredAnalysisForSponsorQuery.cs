@@ -1,4 +1,5 @@
 using Business.Services.Sponsorship;
+using Business.Services.Subscription;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
@@ -26,6 +27,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
             private readonly ISubscriptionTierRepository _subscriptionTierRepository;
             private readonly IPlantAnalysisRepository _plantAnalysisRepository; // NEW: For fetching analysis entity
             private readonly IUserSubscriptionRepository _userSubscriptionRepository; // NEW: For analysis tier lookup
+            private readonly ITierFeatureService _tierFeatureService; // NEW: For database-driven feature checks
             private readonly IMediator _mediator;
 
             public GetFilteredAnalysisForSponsorQueryHandler(
@@ -34,6 +36,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 ISubscriptionTierRepository subscriptionTierRepository,
                 IPlantAnalysisRepository plantAnalysisRepository, // NEW
                 IUserSubscriptionRepository userSubscriptionRepository, // NEW
+                ITierFeatureService tierFeatureService, // NEW
                 IMediator mediator)
             {
                 _dataAccessService = dataAccessService;
@@ -41,6 +44,7 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 _subscriptionTierRepository = subscriptionTierRepository;
                 _plantAnalysisRepository = plantAnalysisRepository; // NEW
                 _userSubscriptionRepository = userSubscriptionRepository; // NEW
+                _tierFeatureService = tierFeatureService; // NEW
                 _mediator = mediator;
             }
 
@@ -93,10 +97,12 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 // ✅ FIX: Get tier from analysis (via ActiveSponsorshipId), not from user
                 var analysisTier = await GetAnalysisUsedTierAsync(analysis);
                 var tierName = analysisTier?.TierName ?? "Unknown";
+                var tierId = analysisTier?.Id ?? 0;
 
-                // Apply tier-based feature permissions
-                var canMessage = IsTierAllowedToMessage(tierName);
-                var canViewFarmerContact = IsTierAllowedToViewFarmerContact(tierName);
+                // ✅ DATABASE-DRIVEN: Query actual tier features from database
+                var canMessage = tierId > 0 ? await _tierFeatureService.HasFeatureAccessAsync(tierId, "messaging") : false;
+                // Farmer contact is a business rule (XL tier only), not a database feature
+                var canViewFarmerContact = tierName?.ToUpper() == "XL";
 
                 // Build response with tier metadata
                 var response = new SponsoredAnalysisDetailDto
@@ -195,27 +201,8 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 };
             }
 
-            /// <summary>
-            /// Check if tier allows messaging (M, L, XL only)
-            /// </summary>
-            private bool IsTierAllowedToMessage(string tierName)
-            {
-                return tierName?.ToUpper() switch
-                {
-                    "M" => true,
-                    "L" => true,
-                    "XL" => true,
-                    _ => false
-                };
-            }
-
-            /// <summary>
-            /// Check if tier allows viewing farmer contact (XL only)
-            /// </summary>
-            private bool IsTierAllowedToViewFarmerContact(string tierName)
-            {
-                return tierName?.ToUpper() == "XL";
-            }
+            // ✅ REMOVED: Hard-coded tier methods replaced with database-driven TierFeatureService
+            // Feature permissions now queried from TierFeatures table dynamically
         }
     }
 }
