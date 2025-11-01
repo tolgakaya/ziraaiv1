@@ -268,6 +268,7 @@ namespace WebAPI.Controllers
             [FromQuery] bool onlyUnsent = false,
             [FromQuery] int? sentDaysAgo = null,
             [FromQuery] bool onlySentExpired = false,
+            [FromQuery] bool excludeDealerTransferred = false,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50)
         {
@@ -289,6 +290,7 @@ namespace WebAPI.Controllers
                 OnlyUnsent = onlyUnsent,
                 SentDaysAgo = sentDaysAgo,
                 OnlySentExpired = onlySentExpired,
+                ExcludeDealerTransferred = excludeDealerTransferred,
                 Page = page,
                 PageSize = pageSize
             };

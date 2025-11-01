@@ -416,13 +416,25 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
         {
             try
             {
-                var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
-                    .OrderByDescending(x => x.CreatedDate);
+                var query = _sponsorshipCodeRepository.Query();
+                
+                // Apply dealer filtering based on parameter
+                if (excludeDealerTransferred)
+                {
+                    // Sponsor wants ONLY their own codes (exclude dealer-transferred codes)
+                    query = query.Where(x => x.SponsorId == sponsorId && (x.DealerId == null || x.DealerId == 0));
+                }
+                else
+                {
+                    // Include both sponsor's own codes AND dealer-transferred codes (backward compatibility)
+                    query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
+                }
+                
+                query = query.OrderByDescending(x => x.CreatedDate);
 
                 var totalCount = await query.CountAsync();
                 var items = await query
@@ -447,13 +459,25 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnusedSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnusedSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
         {
             try
             {
-                var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
-                    .Where(x => x.IsUsed == false)
+                var query = _sponsorshipCodeRepository.Query();
+                
+                // Apply dealer filtering based on parameter
+                if (excludeDealerTransferred)
+                {
+                    // Sponsor wants ONLY their own codes (exclude dealer-transferred codes)
+                    query = query.Where(x => x.SponsorId == sponsorId && (x.DealerId == null || x.DealerId == 0));
+                }
+                else
+                {
+                    // Include both sponsor's own codes AND dealer-transferred codes (backward compatibility)
+                    query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
+                }
+                
+                query = query.Where(x => x.IsUsed == false)
                     .OrderByDescending(x => x.CreatedDate);
 
                 var totalCount = await query.CountAsync();
@@ -479,13 +503,25 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnsentSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnsentSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
         {
             try
             {
-                var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
-                    .Where(x => x.DistributionDate == null)
+                var query = _sponsorshipCodeRepository.Query();
+                
+                // Apply dealer filtering based on parameter
+                if (excludeDealerTransferred)
+                {
+                    // Sponsor wants ONLY their own codes (exclude dealer-transferred codes)
+                    query = query.Where(x => x.SponsorId == sponsorId && (x.DealerId == null || x.DealerId == 0));
+                }
+                else
+                {
+                    // Include both sponsor's own codes AND dealer-transferred codes (backward compatibility)
+                    query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
+                }
+                
+                query = query.Where(x => x.DistributionDate == null)
                     .OrderByDescending(x => x.CreatedDate);
 
                 var totalCount = await query.CountAsync();
@@ -512,15 +548,27 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int sentDaysAgo, int page = 1, int pageSize = 50)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int sentDaysAgo, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
         {
             try
             {
                 var cutoffDate = DateTime.Now.AddDays(-sentDaysAgo);
                 
-                var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
-                    .Where(x => x.DistributionDate != null)
+                var query = _sponsorshipCodeRepository.Query();
+                
+                // Apply dealer filtering based on parameter
+                if (excludeDealerTransferred)
+                {
+                    // Sponsor wants ONLY their own codes (exclude dealer-transferred codes)
+                    query = query.Where(x => x.SponsorId == sponsorId && (x.DealerId == null || x.DealerId == 0));
+                }
+                else
+                {
+                    // Include both sponsor's own codes AND dealer-transferred codes (backward compatibility)
+                    query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
+                }
+                
+                query = query.Where(x => x.DistributionDate != null)
                     .Where(x => x.DistributionDate.Value.Date == cutoffDate.Date)
                     .Where(x => x.IsUsed == false)
                     .OrderByDescending(x => x.DistributionDate);
@@ -550,13 +598,25 @@ namespace Business.Services.Sponsorship
         }
 
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentExpiredCodesAsync(int sponsorId, int page = 1, int pageSize = 50)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentExpiredCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
         {
             try
             {
-                var query = _sponsorshipCodeRepository.Query()
-                    .Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId)
-                    .Where(x => x.DistributionDate != null)
+                var query = _sponsorshipCodeRepository.Query();
+                
+                // Apply dealer filtering based on parameter
+                if (excludeDealerTransferred)
+                {
+                    // Sponsor wants ONLY their own codes (exclude dealer-transferred codes)
+                    query = query.Where(x => x.SponsorId == sponsorId && (x.DealerId == null || x.DealerId == 0));
+                }
+                else
+                {
+                    // Include both sponsor's own codes AND dealer-transferred codes (backward compatibility)
+                    query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
+                }
+                
+                query = query.Where(x => x.DistributionDate != null)
                     .Where(x => x.ExpiryDate < DateTime.Now)
                     .Where(x => x.IsUsed == false)
                     .OrderByDescending(x => x.ExpiryDate)

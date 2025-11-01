@@ -16,6 +16,7 @@ namespace Business.Handlers.Sponsorship.Queries
         public bool OnlyUnsent { get; set; } = false;
         public int? SentDaysAgo { get; set; } = null;
         public bool OnlySentExpired { get; set; } = false;
+        public bool ExcludeDealerTransferred { get; set; } = false;
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 50;
 
@@ -36,7 +37,8 @@ namespace Business.Handlers.Sponsorship.Queries
                     return await _sponsorshipService.GetSentExpiredCodesAsync(
                         request.SponsorId,
                         request.Page,
-                        request.PageSize);
+                        request.PageSize,
+                        request.ExcludeDealerTransferred);
                 }
 
                 // Priority 2: OnlyUnsent - codes never sent to farmers (DistributionDate IS NULL)
@@ -45,7 +47,8 @@ namespace Business.Handlers.Sponsorship.Queries
                     return await _sponsorshipService.GetUnsentSponsorCodesAsync(
                         request.SponsorId,
                         request.Page,
-                        request.PageSize);
+                        request.PageSize,
+                        request.ExcludeDealerTransferred);
                 }
 
                 // Priority 3: SentDaysAgo - codes sent X days ago but still unused
@@ -55,7 +58,8 @@ namespace Business.Handlers.Sponsorship.Queries
                         request.SponsorId,
                         request.SentDaysAgo.Value,
                         request.Page,
-                        request.PageSize);
+                        request.PageSize,
+                        request.ExcludeDealerTransferred);
                 }
 
                 // Priority 4: OnlyUnused - codes not redeemed (includes both sent and unsent)
@@ -64,14 +68,16 @@ namespace Business.Handlers.Sponsorship.Queries
                     return await _sponsorshipService.GetUnusedSponsorCodesAsync(
                         request.SponsorId,
                         request.Page,
-                        request.PageSize);
+                        request.PageSize,
+                        request.ExcludeDealerTransferred);
                 }
 
                 // Default: All codes (paginated)
                 return await _sponsorshipService.GetSponsorCodesAsync(
                     request.SponsorId,
                     request.Page,
-                    request.PageSize);
+                    request.PageSize,
+                    request.ExcludeDealerTransferred);
             }
         }
     }
