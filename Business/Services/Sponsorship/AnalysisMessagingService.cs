@@ -23,6 +23,8 @@ namespace Business.Services.Sponsorship
         private readonly IHubContext<PlantAnalysisHub> _hubContext;
         private readonly ITierFeatureService _tierFeatureService;
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+        private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+        private readonly ITierFeatureRepository _tierFeatureRepository;
 
         public AnalysisMessagingService(
             IAnalysisMessageRepository messageRepository,
@@ -34,7 +36,9 @@ namespace Business.Services.Sponsorship
             IMessageRateLimitService rateLimitService,
             IHubContext<PlantAnalysisHub> hubContext,
             ITierFeatureService tierFeatureService,
-            IUserSubscriptionRepository userSubscriptionRepository)
+            IUserSubscriptionRepository userSubscriptionRepository,
+            ISubscriptionTierRepository subscriptionTierRepository,
+            ITierFeatureRepository tierFeatureRepository)
         {
             _messageRepository = messageRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
@@ -46,6 +50,8 @@ namespace Business.Services.Sponsorship
             _rateLimitService = rateLimitService;
             _tierFeatureService = tierFeatureService;
             _userSubscriptionRepository = userSubscriptionRepository;
+            _subscriptionTierRepository = subscriptionTierRepository;
+            _tierFeatureRepository = tierFeatureRepository;
         }
 
         /// <summary>
@@ -82,6 +88,46 @@ namespace Business.Services.Sponsorship
         }
 
         /// <summary>
+        /// Gets the minimum tier name that has messaging feature enabled
+        /// Used for dynamic error messages based on database configuration
+        /// </summary>
+        private async Task<string> GetMinimumMessagingTierNameAsync()
+        {
+            try
+            {
+                // Get all tier features for messaging that are enabled
+                var messagingTierFeatures = await _tierFeatureRepository.GetListAsync(
+                    tf => tf.Feature.FeatureKey == "messaging" && tf.IsEnabled);
+
+                if (messagingTierFeatures == null || !messagingTierFeatures.Any())
+                {
+                    return "a higher tier"; // Fallback if no tier has messaging
+                }
+
+                // Get tier IDs that have messaging enabled
+                var tierIds = messagingTierFeatures.Select(tf => tf.SubscriptionTierId).ToList();
+
+                // Get all tiers with messaging
+                var tiersWithMessaging = await _subscriptionTierRepository.GetListAsync(t => tierIds.Contains(t.Id));
+
+                if (tiersWithMessaging == null || !tiersWithMessaging.Any())
+                {
+                    return "a higher tier"; // Fallback
+                }
+
+                // Find minimum tier by ID (lower ID = lower tier in hierarchy)
+                var minTier = tiersWithMessaging.OrderBy(t => t.Id).FirstOrDefault();
+
+                return minTier?.TierName ?? "a higher tier";
+            }
+            catch
+            {
+                // If any error occurs, return generic fallback message
+                return "a higher tier";
+            }
+        }
+
+        /// <summary>
         /// Checks if sponsor has access to message farmer for a specific analysis
         /// Validates: 1) Tier permission, 2) Analysis ownership, 3) Rate limit, 4) Not blocked
         /// </summary>
@@ -90,7 +136,9 @@ namespace Business.Services.Sponsorship
             // 1. Check tier permission based on ANALYSIS tier (not user tier)
             if (!await CanSendMessageAsync(sponsorId, plantAnalysisId))
             {
-                return (false, "Messaging is not available for this analysis tier. Upgrade to M tier or higher to enable messaging");
+                // Get minimum tier dynamically from database configuration
+                var minTier = await GetMinimumMessagingTierNameAsync();
+                return (false, $"Messaging is not available for this analysis tier. Upgrade to {minTier} tier or higher to enable messaging");
             }
 
             // 2. Check analysis ownership - sponsor must own this analysis OR be the dealer who distributed the code
