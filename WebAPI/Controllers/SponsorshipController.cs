@@ -2429,8 +2429,8 @@ namespace WebAPI.Controllers
                 // Set SponsorId from authenticated user
                 command.SponsorId = userId.Value;
 
-                _logger.LogInformation("🔔 Bulk dealer invitation initiated by sponsor {SponsorId}, InvitationType: {Type}, DefaultTier: {Tier}, DefaultCodeCount: {Count}",
-                    command.SponsorId, command.InvitationType, command.DefaultTier, command.DefaultCodeCount);
+                _logger.LogInformation("🔔 Bulk dealer invitation initiated by sponsor {SponsorId}, InvitationType: {Type}",
+                    command.SponsorId, command.InvitationType);
 
                 var result = await Mediator.Send(command);
 

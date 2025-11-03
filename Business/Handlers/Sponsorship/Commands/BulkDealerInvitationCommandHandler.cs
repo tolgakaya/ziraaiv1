@@ -27,10 +27,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 request.ExcelFile,
                 request.SponsorId,
                 request.InvitationType,
-                request.DefaultTier,
-                request.DefaultCodeCount,
-                request.SendSms,
-                request.UseRowSpecificCounts);
+                request.SendSms);
         }
     }
 }
