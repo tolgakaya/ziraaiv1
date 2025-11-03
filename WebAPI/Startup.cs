@@ -258,34 +258,9 @@ namespace WebAPI
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // Configure EPPlus license for Excel processing (EPPlus 8+)
-            // Must be set before any ExcelPackage usage
-            try
-            {
-                // Use reflection to call SetNoncommercialOrganization method
-                var licenseType = typeof(OfficeOpenXml.ExcelPackage).Assembly
-                    .GetType("OfficeOpenXml.EPPlusLicense");
-
-                if (licenseType != null)
-                {
-                    var setMethod = licenseType.GetMethod("SetNoncommercialOrganization",
-                        System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-
-                    if (setMethod != null)
-                    {
-                        setMethod.Invoke(null, new object[] { "ZiraAI" });
-                        Console.WriteLine("✅ EPPlus license set successfully");
-                    }
-                    else
-                    {
-                        Console.WriteLine("⚠️ EPPlus SetNoncommercialOrganization method not found");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"⚠️ EPPlus license configuration failed: {ex.Message}");
-                // License will be validated at usage time
-            }
+            // License is configured via appsettings.json:
+            // "EPPlus": { "ExcelPackage": { "License": "NonCommercialOrganization:ZiraAI" } }
+            // EPPlus 8.2.1+ automatically reads this configuration at runtime
 
             // VERY IMPORTANT. Since we removed the build from AddDependencyResolvers, let's set the Service provider manually.
             // By the way, we can construct with DI by taking type to avoid calling static methods in aspects.
