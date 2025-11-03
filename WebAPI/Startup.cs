@@ -257,11 +257,33 @@ namespace WebAPI
         /// <param name="env"></param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            // Configure EPPlus license for Excel processing
-            // Note: LicenseContext is deprecated in EPPlus 8+ but still functional
-            #pragma warning disable CS0618 // Type or member is obsolete
-            OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-            #pragma warning restore CS0618
+            // Configure EPPlus license for Excel processing (EPPlus 8+)
+            // Must be set before any ExcelPackage usage
+            try
+            {
+                // EPPlus 8.2.1: Use ExcelPackage.License property (NOT LicenseContext)
+                var licenseType = typeof(OfficeOpenXml.ExcelPackage).Assembly
+                    .GetType("OfficeOpenXml.ExcelPackage")
+                    .GetProperty("License", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+                
+                if (licenseType != null && licenseType.CanWrite)
+                {
+                    // New EPPlus 8+ API
+                    licenseType.SetValue(null, Enum.Parse(licenseType.PropertyType, "NonCommercial"));
+                }
+                else
+                {
+                    // Fallback: Try old API (shouldn't happen but just in case)
+                    #pragma warning disable CS0618
+                    OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+                    #pragma warning restore CS0618
+                }
+            }
+            catch
+            {
+                // If license setting fails, EPPlus will throw when used
+                // Let it fail at usage time with clear error message
+            }
 
             // VERY IMPORTANT. Since we removed the build from AddDependencyResolvers, let's set the Service provider manually.
             // By the way, we can construct with DI by taking type to avoid calling static methods in aspects.
