@@ -235,9 +235,7 @@ namespace Business.Services.Sponsorship
         {
             var rows = new List<DealerInvitationRow>();
 
-            // Set EPPlus license context
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
+            // EPPlus license is set globally in Startup.cs
             using var stream = file.OpenReadStream();
             using var package = new ExcelPackage(stream);
 

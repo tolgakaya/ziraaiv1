@@ -257,6 +257,12 @@ namespace WebAPI
         /// <param name="env"></param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Configure EPPlus license for Excel processing
+            // Note: LicenseContext is deprecated in EPPlus 8+ but still functional
+            #pragma warning disable CS0618 // Type or member is obsolete
+            OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+            #pragma warning restore CS0618
+
             // VERY IMPORTANT. Since we removed the build from AddDependencyResolvers, let's set the Service provider manually.
             // By the way, we can construct with DI by taking type to avoid calling static methods in aspects.
             ServiceTool.ServiceProvider = app.ApplicationServices;
