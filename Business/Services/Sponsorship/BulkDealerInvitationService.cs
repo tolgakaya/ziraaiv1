@@ -322,7 +322,7 @@ namespace Business.Services.Sponsorship
                 {
                     RowNumber = row,
                     Email = email,
-                    Phone = phone,
+                    Phone = NormalizePhone(phone),  // Normalize phone to 905xxxxxxxxx format
                     DealerName = dealerName,
                     CodeCount = codeCount,
                     PackageTier = normalizedTier
@@ -514,15 +514,85 @@ namespace Business.Services.Sponsorship
 
         private bool IsValidPhone(string phone)
         {
-            var normalized = phone.Replace(" ", "").Replace("-", "")
-                                  .Replace("(", "").Replace(")", "");
+            if (string.IsNullOrWhiteSpace(phone))
+                return false;
 
-            // Turkish formats: +905xx, 905xx, 05xx
-            if (normalized.StartsWith("+90") && normalized.Length == 13) return true;
-            if (normalized.StartsWith("90") && normalized.Length == 12) return true;
-            if (normalized.StartsWith("0") && normalized.Length == 11) return true;
+            // Remove all formatting characters (spaces, dashes, parentheses, dots)
+            var cleaned = phone.Replace(" ", "").Replace("-", "")
+                               .Replace("(", "").Replace(")", "")
+                               .Replace(".", "");
+
+            // Remove leading + if present
+            if (cleaned.StartsWith("+"))
+                cleaned = cleaned.Substring(1);
+
+            // Valid Turkish phone formats after cleaning:
+            // 905xxxxxxxxx (12 digits) - international format
+            // 05xxxxxxxxx (11 digits) - local format with 0
+            // 5xxxxxxxxx (10 digits) - local format without 0
+            
+            if (cleaned.Length == 12 && cleaned.StartsWith("90"))
+            {
+                // 905xx format - valid
+                return cleaned.Substring(2, 1) == "5"; // Must be mobile (5xx)
+            }
+            
+            if (cleaned.Length == 11 && cleaned.StartsWith("0"))
+            {
+                // 05xx format - valid
+                return cleaned.Substring(1, 1) == "5"; // Must be mobile (5xx)
+            }
+            
+            if (cleaned.Length == 10 && cleaned.StartsWith("5"))
+            {
+                // 5xx format - valid (will be normalized to 905xx)
+                return true;
+            }
 
             return false;
+        }
+
+
+        /// <summary>
+        /// Normalizes Turkish phone number to international format (905xxxxxxxxx)
+        /// Accepts formats: +90 506 946 86 93, 0506 946 86 93, 506 946 86 93, 5069468693
+        /// Returns: 905069468693
+        /// </summary>
+        private string NormalizePhone(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+                return phone;
+
+            // Remove all formatting characters (spaces, dashes, parentheses, dots)
+            var cleaned = phone.Replace(" ", "").Replace("-", "")
+                               .Replace("(", "").Replace(")", "")
+                               .Replace(".", "");
+
+            // Remove leading + if present
+            if (cleaned.StartsWith("+"))
+                cleaned = cleaned.Substring(1);
+
+            // Normalize to 905xxxxxxxxx format (12 digits)
+            if (cleaned.Length == 12 && cleaned.StartsWith("90"))
+            {
+                // Already in 905xx format
+                return cleaned;
+            }
+            
+            if (cleaned.Length == 11 && cleaned.StartsWith("0"))
+            {
+                // 05xx format → 905xx
+                return "90" + cleaned.Substring(1);
+            }
+            
+            if (cleaned.Length == 10 && cleaned.StartsWith("5"))
+            {
+                // 5xx format → 905xx
+                return "90" + cleaned;
+            }
+
+            // Return as-is if format not recognized (will fail validation)
+            return cleaned;
         }
     }
 }
