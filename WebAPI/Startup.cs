@@ -261,28 +261,30 @@ namespace WebAPI
             // Must be set before any ExcelPackage usage
             try
             {
-                // EPPlus 8.2.1: Use ExcelPackage.License property (NOT LicenseContext)
+                // Use reflection to call SetNoncommercialOrganization method
                 var licenseType = typeof(OfficeOpenXml.ExcelPackage).Assembly
-                    .GetType("OfficeOpenXml.ExcelPackage")
-                    .GetProperty("License", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
-                
-                if (licenseType != null && licenseType.CanWrite)
+                    .GetType("OfficeOpenXml.EPPlusLicense");
+
+                if (licenseType != null)
                 {
-                    // New EPPlus 8+ API
-                    licenseType.SetValue(null, Enum.Parse(licenseType.PropertyType, "NonCommercial"));
-                }
-                else
-                {
-                    // Fallback: Try old API (shouldn't happen but just in case)
-                    #pragma warning disable CS0618
-                    OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
-                    #pragma warning restore CS0618
+                    var setMethod = licenseType.GetMethod("SetNoncommercialOrganization",
+                        System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+
+                    if (setMethod != null)
+                    {
+                        setMethod.Invoke(null, new object[] { "ZiraAI" });
+                        Console.WriteLine("✅ EPPlus license set successfully");
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ EPPlus SetNoncommercialOrganization method not found");
+                    }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // If license setting fails, EPPlus will throw when used
-                // Let it fail at usage time with clear error message
+                Console.WriteLine($"⚠️ EPPlus license configuration failed: {ex.Message}");
+                // License will be validated at usage time
             }
 
             // VERY IMPORTANT. Since we removed the build from AddDependencyResolvers, let's set the Service provider manually.

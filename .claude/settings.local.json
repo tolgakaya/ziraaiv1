@@ -99,7 +99,8 @@
       "Bash(nul)",
       "Bash(powershell:*)",
       "Bash(dotnet list:*)",
-      "Bash(dotnet add:*)"
+      "Bash(dotnet add:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": [],
