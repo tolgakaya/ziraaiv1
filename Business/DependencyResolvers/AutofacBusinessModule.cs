@@ -147,6 +147,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<DealerInvitationRepository>().As<IDealerInvitationRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<BulkInvitationJobRepository>().As<IBulkInvitationJobRepository>()
+                .InstancePerLifetimeScope();
+
             // Tier Feature Management repositories
             builder.RegisterType<FeatureRepository>().As<IFeatureRepository>()
                 .InstancePerLifetimeScope();
@@ -192,6 +195,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<SponsorshipService>().As<ISponsorshipService>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<BulkDealerInvitationService>().As<IBulkDealerInvitationService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SponsorshipTierMappingService>().As<ISponsorshipTierMappingService>()
                 .InstancePerLifetimeScope();
 
@@ -235,6 +241,9 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
 
             builder.RegisterType<DealerInvitationNotificationService>().As<IDealerInvitationNotificationService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkInvitationNotificationService>().As<IBulkInvitationNotificationService>()
                 .InstancePerLifetimeScope();
 
             // Sponsor Request Services

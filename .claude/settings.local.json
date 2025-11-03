@@ -92,7 +92,14 @@
       "mcp__serena__think_about_collected_information",
       "mcp__serena__think_about_whether_you_are_done",
       "Bash(git rm:*)",
-      "Bash(dotnet --version:*)"
+      "Bash(dotnet --version:*)",
+      "Bash(git checkout:*)",
+      "mcp__serena__find_file",
+      "Bash(python -c:*)",
+      "Bash(nul)",
+      "Bash(powershell:*)",
+      "Bash(dotnet list:*)",
+      "Bash(dotnet add:*)"
     ],
     "deny": [],
     "ask": [],

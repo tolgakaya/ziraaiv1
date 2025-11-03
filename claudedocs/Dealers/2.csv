@@ -1,0 +1,8 @@
+"Id","FeatureKey","DisplayName","Description","RequiresConfiguration"
+4,advanced_analytics,Advanced Analytics,Reports,false
+5,api_access,API Access,REST API,false
+1,messaging,Messaging,Text and attachments,false
+7,priority_support,Priority Support,Fast response,true
+3,smart_links,Smart Links,Advanced analytics,false
+6,sponsor_visibility,Sponsor Visibility,Logo and profile,true
+2,voice_messages,Voice Messages,Audio messages,false

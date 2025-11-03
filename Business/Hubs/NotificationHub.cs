@@ -44,6 +44,20 @@ namespace Business.Hubs
                 _logger.LogInformation("✅ User {UserId} added to group: phone_{Phone}", userId, normalizedPhone);
             }
 
+            // Add to user-specific group (for bulk invitation notifications)
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
+                _logger.LogInformation("✅ User {UserId} added to group: user_{UserId}", userId, userId);
+
+                // Add to sponsor group if user is sponsor
+                if (Context.User.IsInRole("Sponsor"))
+                {
+                    await Groups.AddToGroupAsync(Context.ConnectionId, $"sponsor_{userId}");
+                    _logger.LogInformation("✅ Sponsor {UserId} added to group: sponsor_{UserId}", userId, userId);
+                }
+            }
+
             await base.OnConnectedAsync();
         }
 

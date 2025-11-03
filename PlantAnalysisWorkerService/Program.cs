@@ -197,6 +197,8 @@ builder.Services.AddScoped<DataAccess.Abstract.IReferralCodeRepository, DataAcce
 builder.Services.AddScoped<DataAccess.Abstract.IReferralTrackingRepository, DataAccess.Concrete.EntityFramework.ReferralTrackingRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IReferralRewardRepository, DataAccess.Concrete.EntityFramework.ReferralRewardRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository, DataAccess.Concrete.EntityFramework.ReferralConfigurationRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IDealerInvitationRepository, DataAccess.Concrete.EntityFramework.DealerInvitationRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IBulkInvitationJobRepository, DataAccess.Concrete.EntityFramework.BulkInvitationJobRepository>();
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
 // Use RedisCacheManager to match API's cache provider for cross-service cache invalidation
 builder.Services.AddSingleton<Core.CrossCuttingConcerns.Caching.ICacheManager, Core.CrossCuttingConcerns.Caching.Redis.RedisCacheManager>();
@@ -217,9 +219,19 @@ builder.Services.AddSignalR();
 // 🆕 Add Plant Analysis Notification Service
 builder.Services.AddScoped<Business.Services.Notification.IPlantAnalysisNotificationService, Business.Services.Notification.PlantAnalysisNotificationService>();
 
+// 🆕 Add Bulk Invitation Notification Service
+builder.Services.AddScoped<Business.Services.Notification.IBulkInvitationNotificationService, Business.Services.Notification.BulkInvitationNotificationService>();
+
+// 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
+
 // Add worker services
 builder.Services.AddHostedService<RabbitMQConsumerWorker>();
 builder.Services.AddScoped<IPlantAnalysisJobService, PlantAnalysisJobService>();
+
+// 🆕 Add Dealer Invitation Worker and Job Service
+builder.Services.AddHostedService<DealerInvitationConsumerWorker>();
+builder.Services.AddScoped<IDealerInvitationJobService, DealerInvitationJobService>();
 
 var host = builder.Build();
 

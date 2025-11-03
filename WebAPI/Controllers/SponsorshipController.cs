@@ -16,6 +16,7 @@ using Core.Entities.Concrete;
 using Core.Extensions;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
+using Entities.Concrete;
 using Entities.Dtos;
 using WebAPI.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -2403,6 +2404,143 @@ namespace WebAPI.Controllers
             {
                 _logger.LogError(ex, "Error getting dealer dashboard summary for user {UserId}", GetUserId());
                 return StatusCode(500, new ErrorResult($"Dashboard özeti alınırken hata oluştu: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Upload Excel file for bulk dealer invitation
+        /// Accepts up to 2000 dealer records with email, phone, name, optional code count and tier
+        /// </summary>
+        /// <param name="command">Bulk invitation command with Excel file</param>
+        /// <returns>Job ID and status check URL</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("dealer/invite-bulk")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkInvitationJobDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> BulkInviteDealers([FromForm] BulkDealerInvitationCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                // Set SponsorId from authenticated user
+                command.SponsorId = userId.Value;
+
+                _logger.LogInformation("🔔 Bulk dealer invitation initiated by sponsor {SponsorId}, InvitationType: {Type}, DefaultTier: {Tier}, DefaultCodeCount: {Count}",
+                    command.SponsorId, command.InvitationType, command.DefaultTier, command.DefaultCodeCount);
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("✅ Bulk invitation job {JobId} created successfully with {TotalDealers} dealers",
+                        result.Data.JobId, result.Data.TotalDealers);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("⚠️ Bulk invitation failed: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error processing bulk dealer invitation for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Bulk invitation processing failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get status of a specific bulk invitation job
+        /// Returns current progress, success/failure counts, and job status
+        /// </summary>
+        /// <param name="jobId">Bulk job ID</param>
+        /// <returns>Job status with progress details</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("dealer/bulk-status/{jobId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkInvitationJob>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetBulkInvitationJobStatus(int jobId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetBulkInvitationJobStatusQuery
+                {
+                    JobId = jobId,
+                    SponsorId = userId.Value // Security: only job owner can view
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("📊 Bulk job {JobId} status retrieved for sponsor {SponsorId}: {Status}",
+                        jobId, userId.Value, result.Data.Status);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("⚠️ Bulk job {JobId} not found or access denied for sponsor {SponsorId}", jobId, userId.Value);
+                return NotFound(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error retrieving bulk job status {JobId} for sponsor {UserId}", jobId, GetUserId());
+                return StatusCode(500, new ErrorResult($"Job status retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get history of all bulk invitation jobs for current sponsor
+        /// Supports optional status filter and pagination
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 20)</param>
+        /// <param name="status">Optional status filter (Pending, Processing, Completed, PartialSuccess, Failed)</param>
+        /// <returns>List of bulk invitation jobs</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("dealer/bulk-history")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<BulkInvitationJob>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetBulkInvitationJobHistory(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string status = null)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetBulkInvitationJobHistoryQuery
+                {
+                    SponsorId = userId.Value,
+                    Page = page,
+                    PageSize = pageSize,
+                    Status = status
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("📚 Retrieved {Count} bulk invitation jobs for sponsor {SponsorId} (Page {Page}/{PageSize}, Status: {Status})",
+                        result.Data.Count, userId.Value, page, pageSize, status ?? "All");
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error retrieving bulk job history for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Job history retrieval failed: {ex.Message}"));
             }
         }
     }
