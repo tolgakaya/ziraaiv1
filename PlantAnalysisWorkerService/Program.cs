@@ -199,6 +199,11 @@ builder.Services.AddScoped<DataAccess.Abstract.IReferralRewardRepository, DataAc
 builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository, DataAccess.Concrete.EntityFramework.ReferralConfigurationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IDealerInvitationRepository, DataAccess.Concrete.EntityFramework.DealerInvitationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkInvitationJobRepository, DataAccess.Concrete.EntityFramework.BulkInvitationJobRepository>();
+// 🆕 Add missing repositories required by CreateDealerInvitationCommandHandler
+builder.Services.AddScoped<DataAccess.Abstract.IUserRepository, DataAccess.Concrete.EntityFramework.UserRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IGroupRepository, DataAccess.Concrete.EntityFramework.GroupRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IUserGroupRepository, DataAccess.Concrete.EntityFramework.UserGroupRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.ISubscriptionTierRepository, DataAccess.Concrete.EntityFramework.SubscriptionTierRepository>();
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
 // Use RedisCacheManager to match API's cache provider for cross-service cache invalidation
 builder.Services.AddSingleton<Core.CrossCuttingConcerns.Caching.ICacheManager, Core.CrossCuttingConcerns.Caching.Redis.RedisCacheManager>();
