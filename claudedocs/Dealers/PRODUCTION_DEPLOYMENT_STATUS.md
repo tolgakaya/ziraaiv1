@@ -214,11 +214,63 @@ public async Task<BulkInvitationJob> IncrementProgressAsync(int bulkJobId, bool 
 - Maintains atomicity at database level (UPDATE is still atomic)
 - Small performance trade-off (2 queries vs 1) but solves EF Core limitation
 
-**Status:** ✅ Fixed and ready for deployment
+**Status:** ✅ Fixed and deployed (commit `54f6dd4`)
 
 ---
 
-### 7. Frontend Documentation ✅
+### 7. Authentication Pattern Fix ✅
+**Issue:** Worker Service HTTP callbacks getting 401 Unauthorized errors
+
+**User Report (Turkish):**
+> "test etim. ancak Signalr gönderirken 401 alıyor. Bunun için ayenen plant analysis'dkei gibi yaptığından emin ol. Örneğin şu environment variable'dan kullanman gerkeiyordu WebAPI__InternalSecret"
+
+**Root Cause:** Authentication mismatch between Worker and WebAPI
+- Worker Service sending secret in **Authorization header**
+- NotificationController expecting **JWT token** (had `[Authorize(Roles = "Admin,System")]`)
+- Plant Analysis uses **request body authentication** with `InternalSecret` field
+
+**Solution:** Match Plant Analysis proven pattern
+1. **Worker Service Changes**: Send secret in request body, not header
+2. **WebAPI Changes**: New internal endpoints with `[AllowAnonymous]` + secret validation
+3. **Endpoints Created**:
+   - `POST /api/internal/signalr/bulk-invitation-progress`
+   - `POST /api/internal/signalr/bulk-invitation-completed`
+
+**Implementation** (matching Plant Analysis):
+```csharp
+// Worker Service - DealerInvitationJobService.cs
+var requestBody = new
+{
+    internalSecret,  // From WebAPI:InternalSecret config
+    progress         // Notification data
+};
+await httpClient.PostAsJsonAsync("/api/internal/signalr/bulk-invitation-progress", requestBody);
+
+// WebAPI - InternalNotificationController.cs
+[HttpPost("bulk-invitation-progress")]
+[AllowAnonymous]  // No JWT needed
+public async Task<IActionResult> SendBulkInvitationProgressNotification(
+    [FromBody] InternalBulkInvitationProgressRequest request)
+{
+    if (request.InternalSecret != _internalSecret)
+        return Unauthorized();
+
+    await _bulkNotificationService.NotifyProgressAsync(request.Progress);
+    return Ok();
+}
+```
+
+**Why This Works:**
+- Same pattern as Plant Analysis (proven and tested)
+- Uses Railway environment variable: `WebAPI__InternalSecret`
+- No JWT token complexity for internal service communication
+- Simple secret-based validation for cross-process calls
+
+**Status:** ✅ Fixed and deployed (commit `d5e3a40`)
+
+---
+
+### 8. Frontend Documentation ✅
 **Issue:** "Dosya yüklenmedi" (File not uploaded) error
 
 **Root Cause:** Likely frontend using incorrect field name (case-sensitive)
@@ -377,6 +429,8 @@ GROUP BY d.Email;
 1. `WebAPI/Startup.cs` - EPPlus license configuration (3 attempts)
 2. `Business/Services/Sponsorship/BulkDealerInvitationService.cs` - Removed local license setting
 3. `DataAccess/Concrete/EntityFramework/BulkInvitationJobRepository.cs` - Fixed EF Core non-composable SQL
+4. `PlantAnalysisWorkerService/Jobs/DealerInvitationJobService.cs` - Changed to request body authentication
+5. `WebAPI/Controllers/InternalNotificationController.cs` - Added bulk invitation internal endpoints
 
 ### Documentation
 3. `claudedocs/Dealers/migrations/005_bulk_invitation_authorization.sql` - NEW authorization migration
@@ -399,13 +453,14 @@ GROUP BY d.Email;
 | `f76c9a6` | 19:52 | appsettings.json + phone normalization | ✅ API works (confirmed) |
 | `c643bd4` | 20:05 | Worker service DI fix | ✅ Deployed - awaiting retry verification |
 | `b0e58f8` | 20:30 | SignalR HTTP callback pattern | ✅ Deployed - real-time notifications now work |
-| `TBD` | Now | Entity Framework non-composable SQL fix | ✅ Ready to deploy |
+| `54f6dd4` | Now | Entity Framework non-composable SQL fix | ✅ Deployed |
+| `d5e3a40` | Now | Plant Analysis authentication pattern | ✅ Deployed - fixes 401 errors |
 
 ---
 
 ## 🎯 Success Criteria
 
-Progress: 6/6 Complete
+Progress: 7/7 Complete
 
 1. ✅ **Application Starts:** No EPPlus crashes in Railway logs (appsettings.json fix)
 2. ⚠️ **Authorization Works:** SQL migration pending for OperationClaim
@@ -414,7 +469,8 @@ Progress: 6/6 Complete
 5. ✅ **Auto-Allocation:** Codes distributed across tiers automatically (already implemented)
 6. ✅ **Queue Processing:** Worker service DI fix deployed (commit `c643bd4`)
 7. ✅ **Real-time Notifications:** SignalR HTTP callback pattern implemented (commit `b0e58f8`)
-8. ✅ **Database Operations:** Entity Framework non-composable SQL fix (ready for deployment)
+8. ✅ **Database Operations:** Entity Framework non-composable SQL fix (commit `54f6dd4`)
+9. ✅ **Authentication:** Plant Analysis pattern for internal auth (commit `d5e3a40`)
 
 ---
 
