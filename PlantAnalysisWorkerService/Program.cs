@@ -187,6 +187,21 @@ builder.Services.AddDbContext<DataAccess.Concrete.EntityFramework.Contexts.Proje
 // Add HttpClient for FreeImageHostStorageService
 builder.Services.AddHttpClient();
 
+// Configure named HttpClient for WebAPI communication (notifications, SignalR callbacks)
+builder.Services.AddHttpClient("WebAPI", client =>
+{
+    var webApiBaseUrl = builder.Configuration.GetValue<string>("WebAPI:BaseUrl")
+                       ?? "https://localhost:5001";
+
+    client.BaseAddress = new Uri(webApiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    // Configure connection pool settings for concurrent requests
+    MaxConnectionsPerServer = 10
+});
+
 // Manual dependency injection for Worker Service
 // Add necessary services manually instead of full business module
 builder.Services.AddScoped<DataAccess.Abstract.IConfigurationRepository, DataAccess.Concrete.EntityFramework.ConfigurationRepository>();
@@ -197,6 +212,13 @@ builder.Services.AddScoped<DataAccess.Abstract.IReferralCodeRepository, DataAcce
 builder.Services.AddScoped<DataAccess.Abstract.IReferralTrackingRepository, DataAccess.Concrete.EntityFramework.ReferralTrackingRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IReferralRewardRepository, DataAccess.Concrete.EntityFramework.ReferralRewardRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository, DataAccess.Concrete.EntityFramework.ReferralConfigurationRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IDealerInvitationRepository, DataAccess.Concrete.EntityFramework.DealerInvitationRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IBulkInvitationJobRepository, DataAccess.Concrete.EntityFramework.BulkInvitationJobRepository>();
+// 🆕 Add missing repositories required by CreateDealerInvitationCommandHandler
+builder.Services.AddScoped<DataAccess.Abstract.IUserRepository, DataAccess.Concrete.EntityFramework.UserRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IGroupRepository, DataAccess.Concrete.EntityFramework.GroupRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IUserGroupRepository, DataAccess.Concrete.EntityFramework.UserGroupRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.ISubscriptionTierRepository, DataAccess.Concrete.EntityFramework.SubscriptionTierRepository>();
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
 // Use RedisCacheManager to match API's cache provider for cross-service cache invalidation
 builder.Services.AddSingleton<Core.CrossCuttingConcerns.Caching.ICacheManager, Core.CrossCuttingConcerns.Caching.Redis.RedisCacheManager>();
@@ -217,9 +239,19 @@ builder.Services.AddSignalR();
 // 🆕 Add Plant Analysis Notification Service
 builder.Services.AddScoped<Business.Services.Notification.IPlantAnalysisNotificationService, Business.Services.Notification.PlantAnalysisNotificationService>();
 
+// 🆕 Add Bulk Invitation Notification Service
+builder.Services.AddScoped<Business.Services.Notification.IBulkInvitationNotificationService, Business.Services.Notification.BulkInvitationNotificationService>();
+
+// 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
+
 // Add worker services
 builder.Services.AddHostedService<RabbitMQConsumerWorker>();
 builder.Services.AddScoped<IPlantAnalysisJobService, PlantAnalysisJobService>();
+
+// 🆕 Add Dealer Invitation Worker and Job Service
+builder.Services.AddHostedService<DealerInvitationConsumerWorker>();
+builder.Services.AddScoped<IDealerInvitationJobService, DealerInvitationJobService>();
 
 var host = builder.Build();
 

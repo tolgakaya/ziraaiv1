@@ -1,0 +1,14 @@
+"Id","FeatureId","SubscriptionTierId","ConfigurationJson","IsEnabled","FeatureKey","TierName"
+1,6,2,"{""showLogo"": true, ""showProfile"": true}",true,sponsor_visibility,M
+4,4,3,,true,advanced_analytics,L
+2,1,3,,true,messaging,L
+6,7,3,"{""responseTimeHours"": 48}",true,priority_support,L
+5,6,3,"{""showLogo"": true, ""showProfile"": true}",true,sponsor_visibility,L
+3,2,3,,true,voice_messages,L
+10,4,4,,true,advanced_analytics,XL
+11,5,4,,true,api_access,XL
+7,1,4,,true,messaging,XL
+13,7,4,"{""responseTimeHours"": 24}",true,priority_support,XL
+9,3,4,,true,smart_links,XL
+12,6,4,"{""showLogo"": true, ""showProfile"": true}",true,sponsor_visibility,XL
+8,2,4,,true,voice_messages,XL

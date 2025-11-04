@@ -1,0 +1,11 @@
+Email,Phone,DealerName,PackageTier,CodeCount
+complete.data@example.com,+905551234567,Tam Bilgi Bayisi,M,50
+only.email.phone@example.com,05552345678,,,
+with.name@example.com,5553456789,Sadece İsimli Bayi,,
+with.tier@example.com,905554567890,,L,
+with.codes@example.com,+905555678901,,,100
+partial.info1@example.com,05556789012,Kısmi Bilgi 1,S,
+partial.info2@example.com,5557890123,Kısmi Bilgi 2,,75
+partial.info3@example.com,905558901234,,XL,150
+all.defaults@example.com,+905559012345,,,
+custom.all@example.com,05550123456,Özel Tüm Bilgi,XL,300

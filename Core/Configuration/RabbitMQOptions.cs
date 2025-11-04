@@ -21,6 +21,7 @@ namespace Core.Configuration
     {
         public string PlantAnalysisRequest { get; set; } = "plant-analysis-requests";
         public string PlantAnalysisResult { get; set; } = "plant-analysis-results";
+        public string DealerInvitationRequest { get; set; } = "dealer-invitation-requests";
         public string Notification { get; set; } = "notifications";
     }
     

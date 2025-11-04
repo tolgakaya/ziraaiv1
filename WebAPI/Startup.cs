@@ -257,6 +257,11 @@ namespace WebAPI
         /// <param name="env"></param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Configure EPPlus license for Excel processing (EPPlus 8+)
+            // License is configured via appsettings.json:
+            // "EPPlus": { "ExcelPackage": { "License": "NonCommercialOrganization:ZiraAI" } }
+            // EPPlus 8.2.1+ automatically reads this configuration at runtime
+
             // VERY IMPORTANT. Since we removed the build from AddDependencyResolvers, let's set the Service provider manually.
             // By the way, we can construct with DI by taking type to avoid calling static methods in aspects.
             ServiceTool.ServiceProvider = app.ApplicationServices;
