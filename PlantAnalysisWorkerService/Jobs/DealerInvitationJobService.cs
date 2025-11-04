@@ -4,10 +4,13 @@ using DataAccess.Abstract;
 using Entities.Concrete;
 using Entities.Dtos;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 
 namespace PlantAnalysisWorkerService.Jobs
@@ -21,18 +24,21 @@ namespace PlantAnalysisWorkerService.Jobs
     {
         private readonly IMediator _mediator;
         private readonly IBulkInvitationJobRepository _bulkJobRepository;
-        private readonly IBulkInvitationNotificationService _notificationService;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<DealerInvitationJobService> _logger;
 
         public DealerInvitationJobService(
             IMediator mediator,
             IBulkInvitationJobRepository bulkJobRepository,
-            IBulkInvitationNotificationService notificationService,
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
             ILogger<DealerInvitationJobService> logger)
         {
             _mediator = mediator;
             _bulkJobRepository = bulkJobRepository;
-            _notificationService = notificationService;
+            _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
             _logger = logger;
         }
 
@@ -98,7 +104,7 @@ namespace PlantAnalysisWorkerService.Jobs
                         message.BulkJobId, bulkJob.Status, bulkJob.SuccessfulInvitations, bulkJob.FailedInvitations);
                 }
 
-                // 4. Send progress notification via SignalR
+                // 4. Send progress notification via HTTP to WebAPI (cross-process communication)
                 var progressDto = new BulkInvitationProgressDto
                 {
                     BulkJobId = bulkJob.Id,
@@ -115,12 +121,12 @@ namespace PlantAnalysisWorkerService.Jobs
                     LastUpdateTime = DateTime.Now
                 };
 
-                await _notificationService.NotifyProgressAsync(progressDto);
+                await SendProgressNotificationViaHttp(progressDto);
 
                 // 5. Send completion notification if job is done
                 if (isComplete)
                 {
-                    await _notificationService.NotifyCompletedAsync(
+                    await SendCompletionNotificationViaHttp(
                         bulkJob.Id,
                         bulkJob.SponsorId,
                         bulkJob.Status,
@@ -156,6 +162,104 @@ namespace PlantAnalysisWorkerService.Jobs
                 }
 
                 throw; // Re-throw for Hangfire retry
+            }
+        }
+
+        /// <summary>
+        /// Send progress notification to WebAPI via HTTP (cross-process communication)
+        /// WebAPI will broadcast via SignalR Hub
+        /// </summary>
+        private async Task SendProgressNotificationViaHttp(BulkInvitationProgressDto progress)
+        {
+            try
+            {
+                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl")
+                                   ?? "https://localhost:5001";
+
+                var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret")
+                                    ?? "ZiraAI_Internal_Secret_2025";
+
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {internalSecret}");
+                httpClient.DefaultRequestHeaders.Add("x-dev-arch-version", "1.0");
+
+                var endpoint = $"{webApiBaseUrl}/api/v1/notification/bulk-invitation-progress";
+
+                _logger.LogInformation(
+                    "📤 Sending progress notification to WebAPI - Endpoint: {Endpoint}, BulkJobId: {BulkJobId}, Progress: {Progress}%",
+                    endpoint, progress.BulkJobId, progress.ProgressPercentage);
+
+                var response = await httpClient.PostAsJsonAsync(endpoint, progress);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("✅ Progress notification sent successfully to WebAPI");
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ Failed to send progress notification - StatusCode: {StatusCode}", response.StatusCode);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Failed to send progress notification to WebAPI");
+                // Don't throw - notification failure shouldn't stop job processing
+            }
+        }
+
+        /// <summary>
+        /// Send completion notification to WebAPI via HTTP (cross-process communication)
+        /// WebAPI will broadcast via SignalR Hub
+        /// </summary>
+        private async Task SendCompletionNotificationViaHttp(
+            int bulkJobId,
+            int sponsorId,
+            string status,
+            int successCount,
+            int failedCount)
+        {
+            try
+            {
+                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl")
+                                   ?? "https://localhost:5001";
+
+                var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret")
+                                    ?? "ZiraAI_Internal_Secret_2025";
+
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {internalSecret}");
+                httpClient.DefaultRequestHeaders.Add("x-dev-arch-version", "1.0");
+
+                var endpoint = $"{webApiBaseUrl}/api/v1/notification/bulk-invitation-completed";
+
+                var request = new
+                {
+                    BulkJobId = bulkJobId,
+                    SponsorId = sponsorId,
+                    Status = status,
+                    SuccessCount = successCount,
+                    FailedCount = failedCount
+                };
+
+                _logger.LogInformation(
+                    "📤 Sending completion notification to WebAPI - Endpoint: {Endpoint}, BulkJobId: {BulkJobId}, Status: {Status}",
+                    endpoint, bulkJobId, status);
+
+                var response = await httpClient.PostAsJsonAsync(endpoint, request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("✅ Completion notification sent successfully to WebAPI");
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ Failed to send completion notification - StatusCode: {StatusCode}", response.StatusCode);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Failed to send completion notification to WebAPI");
+                // Don't throw - notification failure shouldn't stop job processing
             }
         }
     }

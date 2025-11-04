@@ -1,5 +1,6 @@
 using Business.Services.Notification;
 using Business.Services.Notification.Models;
+using Entities.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,14 @@ namespace WebAPI.Controllers
     public class NotificationController : BaseApiController
     {
         private readonly INotificationService _notificationService;
+        private readonly IBulkInvitationNotificationService _bulkInvitationNotificationService;
 
-        public NotificationController(INotificationService notificationService)
+        public NotificationController(
+            INotificationService notificationService,
+            IBulkInvitationNotificationService bulkInvitationNotificationService)
         {
             _notificationService = notificationService;
+            _bulkInvitationNotificationService = bulkInvitationNotificationService;
         }
 
         #region WhatsApp Notifications
@@ -361,6 +366,83 @@ namespace WebAPI.Controllers
         }
 
         #endregion
+
+        #region Bulk Invitation Notifications (Worker Service Callbacks)
+
+        /// <summary>
+        /// Worker Service callback for bulk invitation progress updates
+        /// Called by PlantAnalysisWorkerService after each dealer invitation is processed
+        /// </summary>
+        /// <param name="progress">Progress update details</param>
+        /// <returns>Success status</returns>
+        [HttpPost("bulk-invitation-progress")]
+        [Authorize(Roles = "Admin,System")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> NotifyBulkInvitationProgress([FromBody] BulkInvitationProgressDto progress)
+        {
+            try
+            {
+                await _bulkInvitationNotificationService.NotifyProgressAsync(progress);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Progress notification sent successfully",
+                    bulkJobId = progress.BulkJobId,
+                    progressPercentage = progress.ProgressPercentage
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = $"Failed to send progress notification: {ex.Message}"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Worker Service callback for bulk invitation completion
+        /// Called by PlantAnalysisWorkerService when all invitations are processed
+        /// </summary>
+        /// <param name="request">Completion details</param>
+        /// <returns>Success status</returns>
+        [HttpPost("bulk-invitation-completed")]
+        [Authorize(Roles = "Admin,System")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> NotifyBulkInvitationCompleted([FromBody] BulkInvitationCompletedRequest request)
+        {
+            try
+            {
+                await _bulkInvitationNotificationService.NotifyCompletedAsync(
+                    request.BulkJobId,
+                    request.SponsorId,
+                    request.Status,
+                    request.SuccessCount,
+                    request.FailedCount);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Completion notification sent successfully",
+                    bulkJobId = request.BulkJobId,
+                    status = request.Status
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = $"Failed to send completion notification: {ex.Message}"
+                });
+            }
+        }
+
+        #endregion
     }
 
     #region Request DTOs
@@ -457,6 +539,28 @@ namespace WebAPI.Controllers
         
         [Required]
         public string ResetDate { get; set; }
+    }
+
+    #endregion
+
+    #region Bulk Invitation Notifications Request DTOs
+
+    public class BulkInvitationCompletedRequest
+    {
+        [Required]
+        public int BulkJobId { get; set; }
+
+        [Required]
+        public int SponsorId { get; set; }
+
+        [Required]
+        public string Status { get; set; }
+
+        [Required]
+        public int SuccessCount { get; set; }
+
+        [Required]
+        public int FailedCount { get; set; }
     }
 
     #endregion
