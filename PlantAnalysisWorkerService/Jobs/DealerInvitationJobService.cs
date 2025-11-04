@@ -181,7 +181,7 @@ namespace PlantAnalysisWorkerService.Jobs
 
                 var httpClient = _httpClientFactory.CreateClient();
                 httpClient.BaseAddress = new Uri(webApiBaseUrl);
-                httpClient.Timeout = TimeSpan.FromSeconds(10);
+                httpClient.Timeout = TimeSpan.FromSeconds(30); // Increased to handle network latency and load
 
                 var endpoint = "/api/internal/signalr/bulk-invitation-progress";
 
@@ -236,7 +236,7 @@ namespace PlantAnalysisWorkerService.Jobs
 
                 var httpClient = _httpClientFactory.CreateClient();
                 httpClient.BaseAddress = new Uri(webApiBaseUrl);
-                httpClient.Timeout = TimeSpan.FromSeconds(10);
+                httpClient.Timeout = TimeSpan.FromSeconds(30); // Increased to handle network latency and load
 
                 var endpoint = "/api/internal/signalr/bulk-invitation-completed";
 
