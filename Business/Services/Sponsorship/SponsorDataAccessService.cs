@@ -140,6 +140,9 @@ namespace Business.Services.Sponsorship
             
             if (existingAccess == null)
             {
+                // Get the plant analysis to retrieve SponsorshipCodeId
+                var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == plantAnalysisId);
+                
                 var accessPercentage = await GetDataAccessPercentageFromPurchasesAsync(sponsorId);
                 var accessLevel = accessPercentage switch
                 {
@@ -154,6 +157,7 @@ namespace Business.Services.Sponsorship
                     SponsorId = sponsorId,
                     PlantAnalysisId = plantAnalysisId,
                     FarmerId = farmerId,
+                    SponsorshipCodeId = analysis?.SponsorshipCodeId,
                     AccessLevel = accessLevel,
                     AccessPercentage = accessPercentage,
                     FirstViewedDate = DateTime.Now,
