@@ -1,4 +1,5 @@
 using Business.BusinessAspects;
+using Business.Services.Analytics;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
@@ -22,17 +23,20 @@ namespace Business.Handlers.Sponsorship.Commands
         private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
         private readonly IUserRepository _userRepository;
         private readonly ISubscriptionTierRepository _tierRepository;
+        private readonly ISponsorDealerAnalyticsCacheService _analyticsCache;
         private readonly ILogger<TransferCodesToDealerCommandHandler> _logger;
 
         public TransferCodesToDealerCommandHandler(
             ISponsorshipCodeRepository sponsorshipCodeRepository,
             IUserRepository userRepository,
             ISubscriptionTierRepository tierRepository,
+            ISponsorDealerAnalyticsCacheService analyticsCache,
             ILogger<TransferCodesToDealerCommandHandler> logger)
         {
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _userRepository = userRepository;
             _tierRepository = tierRepository;
+            _analyticsCache = analyticsCache;
             _logger = logger;
         }
 
@@ -109,6 +113,9 @@ namespace Business.Handlers.Sponsorship.Commands
 
                 _logger.LogInformation("✅ Transferred {Count} codes to dealer {DealerId}",
                     transferredCodeIds.Count, request.DealerId);
+
+                // 4.5. Update analytics cache
+                await _analyticsCache.OnCodeTransferredAsync(request.UserId, request.DealerId, transferredCodeIds.Count);
 
                 // 5. Return response
                 var response = new DealerCodeTransferResponseDto

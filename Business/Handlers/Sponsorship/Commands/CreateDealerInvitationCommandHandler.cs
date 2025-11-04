@@ -1,5 +1,6 @@
 using Core.Entities.Concrete;
 using Business.BusinessAspects;
+using Business.Services.Analytics;
 using Core.Utilities.Results;
 using Core.Utilities.Security.Hashing;
 using DataAccess.Abstract;
@@ -27,6 +28,7 @@ namespace Business.Handlers.Sponsorship.Commands
         private readonly IGroupRepository _groupRepository;
         private readonly IUserGroupRepository _userGroupRepository;
         private readonly ISubscriptionTierRepository _tierRepository;
+        private readonly ISponsorDealerAnalyticsCacheService _analyticsCache;
         private readonly ILogger<CreateDealerInvitationCommandHandler> _logger;
 
         public CreateDealerInvitationCommandHandler(
@@ -36,6 +38,7 @@ namespace Business.Handlers.Sponsorship.Commands
             IGroupRepository groupRepository,
             IUserGroupRepository userGroupRepository,
             ISubscriptionTierRepository tierRepository,
+            ISponsorDealerAnalyticsCacheService analyticsCache,
             ILogger<CreateDealerInvitationCommandHandler> logger)
         {
             _dealerInvitationRepository = dealerInvitationRepository;
@@ -44,6 +47,7 @@ namespace Business.Handlers.Sponsorship.Commands
             _groupRepository = groupRepository;
             _userGroupRepository = userGroupRepository;
             _tierRepository = tierRepository;
+            _analyticsCache = analyticsCache;
             _logger = logger;
         }
 
@@ -160,6 +164,9 @@ namespace Business.Handlers.Sponsorship.Commands
                     // Save invitation first to get ID
                     _dealerInvitationRepository.Add(invitation);
                     await _dealerInvitationRepository.SaveChangesAsync();
+
+                    // Update analytics cache - invitation sent
+                    await _analyticsCache.OnInvitationSentAsync(request.SponsorId, createdDealer.UserId);
 
                     // Transfer codes immediately (without reservation, direct transfer)
                     await TransferCodesToDealer(codesToReserve, request.SponsorId, createdDealer.UserId);
