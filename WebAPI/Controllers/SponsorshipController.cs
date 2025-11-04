@@ -409,7 +409,7 @@ namespace WebAPI.Controllers
         /// Get farmers sponsored by current sponsor
         /// </summary>
         /// <returns>List of sponsored farmers</returns>
-        [Authorize(Roles = "Sponsor,Admin")]
+        [Authorize(Roles = "Admin")]
         [HttpGet("farmers")]
         public async Task<IActionResult> GetSponsoredFarmers()
         {
