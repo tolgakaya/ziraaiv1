@@ -180,16 +180,22 @@ namespace PlantAnalysisWorkerService.Jobs
                                     ?? "ZiraAI_Internal_Secret_2025";
 
                 var httpClient = _httpClientFactory.CreateClient();
-                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {internalSecret}");
-                httpClient.DefaultRequestHeaders.Add("x-dev-arch-version", "1.0");
+                httpClient.BaseAddress = new Uri(webApiBaseUrl);
+                httpClient.Timeout = TimeSpan.FromSeconds(10);
 
-                var endpoint = $"{webApiBaseUrl}/api/v1/notification/bulk-invitation-progress";
+                var endpoint = "/api/internal/signalr/bulk-invitation-progress";
+
+                var requestBody = new
+                {
+                    internalSecret,
+                    progress
+                };
 
                 _logger.LogInformation(
                     "📤 Sending progress notification to WebAPI - Endpoint: {Endpoint}, BulkJobId: {BulkJobId}, Progress: {Progress}%",
                     endpoint, progress.BulkJobId, progress.ProgressPercentage);
 
-                var response = await httpClient.PostAsJsonAsync(endpoint, progress);
+                var response = await httpClient.PostAsJsonAsync(endpoint, requestBody);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -197,7 +203,9 @@ namespace PlantAnalysisWorkerService.Jobs
                 }
                 else
                 {
-                    _logger.LogWarning("⚠️ Failed to send progress notification - StatusCode: {StatusCode}", response.StatusCode);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("⚠️ Failed to send progress notification - StatusCode: {StatusCode}, Error: {Error}", 
+                        response.StatusCode, errorContent);
                 }
             }
             catch (Exception ex)
@@ -227,25 +235,26 @@ namespace PlantAnalysisWorkerService.Jobs
                                     ?? "ZiraAI_Internal_Secret_2025";
 
                 var httpClient = _httpClientFactory.CreateClient();
-                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {internalSecret}");
-                httpClient.DefaultRequestHeaders.Add("x-dev-arch-version", "1.0");
+                httpClient.BaseAddress = new Uri(webApiBaseUrl);
+                httpClient.Timeout = TimeSpan.FromSeconds(10);
 
-                var endpoint = $"{webApiBaseUrl}/api/v1/notification/bulk-invitation-completed";
+                var endpoint = "/api/internal/signalr/bulk-invitation-completed";
 
-                var request = new
+                var requestBody = new
                 {
-                    BulkJobId = bulkJobId,
-                    SponsorId = sponsorId,
-                    Status = status,
-                    SuccessCount = successCount,
-                    FailedCount = failedCount
+                    internalSecret,
+                    bulkJobId,
+                    sponsorId,
+                    status,
+                    successCount,
+                    failedCount
                 };
 
                 _logger.LogInformation(
                     "📤 Sending completion notification to WebAPI - Endpoint: {Endpoint}, BulkJobId: {BulkJobId}, Status: {Status}",
                     endpoint, bulkJobId, status);
 
-                var response = await httpClient.PostAsJsonAsync(endpoint, request);
+                var response = await httpClient.PostAsJsonAsync(endpoint, requestBody);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -253,7 +262,9 @@ namespace PlantAnalysisWorkerService.Jobs
                 }
                 else
                 {
-                    _logger.LogWarning("⚠️ Failed to send completion notification - StatusCode: {StatusCode}", response.StatusCode);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("⚠️ Failed to send completion notification - StatusCode: {StatusCode}, Error: {Error}", 
+                        response.StatusCode, errorContent);
                 }
             }
             catch (Exception ex)
