@@ -187,6 +187,21 @@ builder.Services.AddDbContext<DataAccess.Concrete.EntityFramework.Contexts.Proje
 // Add HttpClient for FreeImageHostStorageService
 builder.Services.AddHttpClient();
 
+// Configure named HttpClient for WebAPI communication (notifications, SignalR callbacks)
+builder.Services.AddHttpClient("WebAPI", client =>
+{
+    var webApiBaseUrl = builder.Configuration.GetValue<string>("WebAPI:BaseUrl")
+                       ?? "https://localhost:5001";
+
+    client.BaseAddress = new Uri(webApiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    // Configure connection pool settings for concurrent requests
+    MaxConnectionsPerServer = 10
+});
+
 // Manual dependency injection for Worker Service
 // Add necessary services manually instead of full business module
 builder.Services.AddScoped<DataAccess.Abstract.IConfigurationRepository, DataAccess.Concrete.EntityFramework.ConfigurationRepository>();

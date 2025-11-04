@@ -173,15 +173,11 @@ namespace PlantAnalysisWorkerService.Jobs
         {
             try
             {
-                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl")
-                                   ?? "https://localhost:5001";
-
                 var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret")
                                     ?? "ZiraAI_Internal_Secret_2025";
 
-                var httpClient = _httpClientFactory.CreateClient();
-                httpClient.BaseAddress = new Uri(webApiBaseUrl);
-                httpClient.Timeout = TimeSpan.FromSeconds(30); // Increased to handle network latency and load
+                // Use named HttpClient (pre-configured with BaseAddress and Timeout)
+                var httpClient = _httpClientFactory.CreateClient("WebAPI");
 
                 var endpoint = "/api/internal/signalr/bulk-invitation-progress";
 
@@ -228,15 +224,11 @@ namespace PlantAnalysisWorkerService.Jobs
         {
             try
             {
-                var webApiBaseUrl = _configuration.GetValue<string>("WebAPI:BaseUrl")
-                                   ?? "https://localhost:5001";
-
                 var internalSecret = _configuration.GetValue<string>("WebAPI:InternalSecret")
                                     ?? "ZiraAI_Internal_Secret_2025";
 
-                var httpClient = _httpClientFactory.CreateClient();
-                httpClient.BaseAddress = new Uri(webApiBaseUrl);
-                httpClient.Timeout = TimeSpan.FromSeconds(30); // Increased to handle network latency and load
+                // Use named HttpClient (pre-configured with BaseAddress and Timeout)
+                var httpClient = _httpClientFactory.CreateClient("WebAPI");
 
                 var endpoint = "/api/internal/signalr/bulk-invitation-completed";
 
