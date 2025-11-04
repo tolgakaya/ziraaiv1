@@ -15,7 +15,7 @@ namespace Business.Services.Analytics
         private readonly ICacheManager _cache;
         private readonly ISponsorshipCodeRepository _codeRepository;
         private readonly IUserRepository _userRepository;
-        private readonly ISponsorAnalysisAccessRepository _analysisAccessRepository;
+        private readonly IPlantAnalysisRepository _plantAnalysisRepository;
         private readonly ILogger<SponsorDealerAnalyticsCacheService> _logger;
 
         private const string CACHE_KEY_PREFIX = "sponsor_dealer_analytics";
@@ -25,13 +25,13 @@ namespace Business.Services.Analytics
             ICacheManager cache,
             ISponsorshipCodeRepository codeRepository,
             IUserRepository userRepository,
-            ISponsorAnalysisAccessRepository analysisAccessRepository,
+            IPlantAnalysisRepository plantAnalysisRepository,
             ILogger<SponsorDealerAnalyticsCacheService> logger)
         {
             _cache = cache;
             _codeRepository = codeRepository;
             _userRepository = userRepository;
-            _analysisAccessRepository = analysisAccessRepository;
+            _plantAnalysisRepository = plantAnalysisRepository;
             _logger = logger;
         }
 
@@ -201,16 +201,18 @@ namespace Business.Services.Analytics
                     // Get code IDs for this dealer
                     var dealerCodeIds = dealerCodes.Select(c => c.Id).ToList();
 
-                    // Calculate unique farmers reached and total analyses
-                    var analysisAccesses = await _analysisAccessRepository.GetListAsync(
+                    // Calculate unique farmers reached and total analyses using PlantAnalysis table
+                    // This counts ALL analyses created with these codes, regardless of sponsor viewing
+                    var analyses = await _plantAnalysisRepository.GetListAsync(
                         a => dealerCodeIds.Contains(a.SponsorshipCodeId ?? 0));
 
-                    var uniqueFarmers = analysisAccesses
-                        .Select(a => a.FarmerId)
+                    var uniqueFarmers = analyses
+                        .Select(a => a.UserId ?? 0)
+                        .Where(userId => userId > 0)
                         .Distinct()
                         .Count();
 
-                    var totalAnalyses = analysisAccesses.Count();
+                    var totalAnalyses = analyses.Count();
 
                     // Get first and last transfer dates
                     var transferDates = dealerCodes
