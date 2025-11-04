@@ -60,8 +60,8 @@ namespace PlantAnalysisWorkerService.Jobs
 
                 var result = await _mediator.Send(command);
 
-                // 2. Update bulk job progress
-                var bulkJob = await _bulkJobRepository.GetAsync(j => j.Id == message.BulkJobId);
+                // 2. Atomically update bulk job progress (prevents race conditions)
+                var bulkJob = await _bulkJobRepository.IncrementProgressAsync(message.BulkJobId, result.Success);
 
                 if (bulkJob == null)
                 {
@@ -71,43 +71,34 @@ namespace PlantAnalysisWorkerService.Jobs
                     return;
                 }
 
-                // Atomic increment (use lock or transaction in production)
-                bulkJob.ProcessedDealers++;
-
+                // Log success/failure
                 if (result.Success)
                 {
-                    bulkJob.SuccessfulInvitations++;
                     _logger.LogInformation(
                         "[DEALER_INVITATION_JOB_SUCCESS] Invitation successful - Email: {Email}, InvitationId: {InvitationId}",
                         message.Email, result.Data?.InvitationId);
                 }
                 else
                 {
-                    bulkJob.FailedInvitations++;
                     _logger.LogWarning(
                         "[DEALER_INVITATION_JOB_FAILED] Invitation failed - Email: {Email}, Error: {Error}",
                         message.Email, result.Message);
                 }
 
-                // Check if job is complete
-                if (bulkJob.ProcessedDealers >= bulkJob.TotalDealers)
+                // 3. Check if all invitations are complete and mark as done
+                bool isComplete = await _bulkJobRepository.CheckAndMarkCompleteAsync(message.BulkJobId);
+
+                if (isComplete)
                 {
-                    bulkJob.Status = bulkJob.FailedInvitations == 0
-                        ? "Completed"
-                        : bulkJob.SuccessfulInvitations > 0
-                            ? "PartialSuccess"
-                            : "Failed";
-                    bulkJob.CompletedDate = DateTime.Now;
+                    // Reload to get updated status
+                    bulkJob = await _bulkJobRepository.GetAsync(j => j.Id == message.BulkJobId);
 
                     _logger.LogInformation(
                         "[DEALER_INVITATION_JOB_BULK_COMPLETED] BulkJob completed - BulkJobId: {BulkJobId}, Status: {Status}, Success: {Success}, Failed: {Failed}",
                         message.BulkJobId, bulkJob.Status, bulkJob.SuccessfulInvitations, bulkJob.FailedInvitations);
                 }
 
-                _bulkJobRepository.Update(bulkJob);
-                await _bulkJobRepository.SaveChangesAsync();
-
-                // 3. Send progress notification via SignalR
+                // 4. Send progress notification via SignalR
                 var progressDto = new BulkInvitationProgressDto
                 {
                     BulkJobId = bulkJob.Id,
@@ -126,8 +117,8 @@ namespace PlantAnalysisWorkerService.Jobs
 
                 await _notificationService.NotifyProgressAsync(progressDto);
 
-                // 4. Send completion notification if done
-                if (bulkJob.ProcessedDealers >= bulkJob.TotalDealers)
+                // 5. Send completion notification if job is done
+                if (isComplete)
                 {
                     await _notificationService.NotifyCompletedAsync(
                         bulkJob.Id,
@@ -135,6 +126,10 @@ namespace PlantAnalysisWorkerService.Jobs
                         bulkJob.Status,
                         bulkJob.SuccessfulInvitations,
                         bulkJob.FailedInvitations);
+
+                    _logger.LogInformation(
+                        "✅ Completion notification sent - SponsorId: {SponsorId}, Status: {Status}",
+                        bulkJob.SponsorId, bulkJob.Status);
                 }
 
                 stopwatch.Stop();
@@ -149,17 +144,11 @@ namespace PlantAnalysisWorkerService.Jobs
                     "[DEALER_INVITATION_JOB_ERROR] Error processing invitation - BulkJobId: {BulkJobId}, Email: {Email}, Duration: {Duration}ms",
                     message.BulkJobId, message.Email, stopwatch.ElapsedMilliseconds);
 
-                // Update bulk job with failure
+                // Update bulk job with failure using atomic operations
                 try
                 {
-                    var bulkJob = await _bulkJobRepository.GetAsync(j => j.Id == message.BulkJobId);
-                    if (bulkJob != null)
-                    {
-                        bulkJob.ProcessedDealers++;
-                        bulkJob.FailedInvitations++;
-                        _bulkJobRepository.Update(bulkJob);
-                        await _bulkJobRepository.SaveChangesAsync();
-                    }
+                    await _bulkJobRepository.IncrementProgressAsync(message.BulkJobId, success: false);
+                    await _bulkJobRepository.CheckAndMarkCompleteAsync(message.BulkJobId);
                 }
                 catch (Exception innerEx)
                 {
