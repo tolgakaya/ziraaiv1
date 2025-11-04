@@ -15,6 +15,7 @@ namespace Business.Services.Analytics
         private readonly ICacheManager _cache;
         private readonly ISponsorshipCodeRepository _codeRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ISponsorAnalysisAccessRepository _analysisAccessRepository;
         private readonly ILogger<SponsorDealerAnalyticsCacheService> _logger;
 
         private const string CACHE_KEY_PREFIX = "sponsor_dealer_analytics";
@@ -24,11 +25,13 @@ namespace Business.Services.Analytics
             ICacheManager cache,
             ISponsorshipCodeRepository codeRepository,
             IUserRepository userRepository,
+            ISponsorAnalysisAccessRepository analysisAccessRepository,
             ILogger<SponsorDealerAnalyticsCacheService> logger)
         {
             _cache = cache;
             _codeRepository = codeRepository;
             _userRepository = userRepository;
+            _analysisAccessRepository = analysisAccessRepository;
             _logger = logger;
         }
 
@@ -104,6 +107,11 @@ namespace Business.Services.Analytics
                     summary.TotalCodesUsed++;
                     var totalSent = summary.Dealers.Sum(d => d.CodesSent);
                     summary.OverallUsageRate = totalSent > 0 ? Math.Round((decimal)summary.TotalCodesUsed / totalSent * 100, 2) : 0;
+                    
+                    // Note: uniqueFarmersReached and totalAnalyses are NOT updated incrementally
+                    // These metrics require rebuild to ensure accuracy due to async analysis processing
+                    _logger.LogInformation("[ANALYTICS_CACHE] Code redeemed - Note: Rebuild required for accurate farmer/analysis counts");
+                    
                     _cache.Add(cacheKey, JsonSerializer.Serialize(summary), CACHE_DURATION_MINUTES);
                 }
             }
@@ -190,6 +198,30 @@ namespace Business.Services.Analytics
                     var codesUsed = dealerCodes.Count(c => c.IsUsed);
                     var codesAvailable = totalReceived - codesSent;
 
+                    // Get code IDs for this dealer
+                    var dealerCodeIds = dealerCodes.Select(c => c.Id).ToList();
+
+                    // Calculate unique farmers reached and total analyses
+                    var analysisAccesses = await _analysisAccessRepository.GetListAsync(
+                        a => dealerCodeIds.Contains(a.SponsorshipCodeId ?? 0));
+
+                    var uniqueFarmers = analysisAccesses
+                        .Select(a => a.FarmerId)
+                        .Distinct()
+                        .Count();
+
+                    var totalAnalyses = analysisAccesses.Count();
+
+                    // Get first and last transfer dates
+                    var transferDates = dealerCodes
+                        .Where(c => c.TransferredAt.HasValue)
+                        .Select(c => c.TransferredAt.Value)
+                        .OrderBy(d => d)
+                        .ToList();
+
+                    var firstTransferDate = transferDates.FirstOrDefault();
+                    var lastTransferDate = transferDates.LastOrDefault();
+
                     dealerStats.Add(new DealerPerformanceDto
                     {
                         DealerId = dealerId,
@@ -199,7 +231,11 @@ namespace Business.Services.Analytics
                         CodesSent = codesSent,
                         CodesUsed = codesUsed,
                         CodesAvailable = Math.Max(0, codesAvailable),
-                        UsageRate = codesSent > 0 ? Math.Round((decimal)codesUsed / codesSent * 100, 2) : 0
+                        UsageRate = codesSent > 0 ? Math.Round((decimal)codesUsed / codesSent * 100, 2) : 0,
+                        UniqueFarmersReached = uniqueFarmers,
+                        TotalAnalyses = totalAnalyses,
+                        FirstTransferDate = firstTransferDate != default ? firstTransferDate : (DateTime?)null,
+                        LastTransferDate = lastTransferDate != default ? lastTransferDate : (DateTime?)null
                     });
                 }
 
