@@ -116,7 +116,57 @@ builder.Services.AddScoped<DataAccess.Abstract.ISubscriptionTierRepository, Data
 
 ---
 
-### 5. Frontend Documentation ✅
+### 5. SignalR Notification Fix ✅
+**Issue:** Bulk invitation progress notifications not reaching frontend despite worker processing successfully
+
+**User Report (Turkish):**
+> "Bütün dealer davet kayıtları DealerInvitations tablosuna kaydedilmiş olmasına rağmen BulkInvitationJobs tablosunda process edilen successfullInvitations Failed Invitations tam olarak güncellenmiyor (sade 6 kayıt gönderdim ama 4 tanesiini işledi en sonra) ve sürekli processingde kalıyor. Tamamlanmadığı için de frontend tarafı bittiğini anlayamıyor."
+
+**Root Cause:** Worker Service using `IHubContext` directly to send SignalR messages, but Worker has no Redis backplane configured. Messages stayed in Worker's memory and never reached WebAPI's SignalR hub.
+
+**Architecture Problem:**
+```
+❌ BROKEN: Worker → IHubContext.SendAsync() → [nowhere]
+✅ FIXED:  Worker → HTTP POST → WebAPI → SignalR Hub → Frontend
+```
+
+**Solution:** Implemented HTTP callback pattern (same as Plant Analysis system):
+
+1. **Worker Service** (`DealerInvitationJobService.cs`):
+   - Removed `IBulkInvitationNotificationService` dependency
+   - Added `IHttpClientFactory` and `IConfiguration`
+   - Created `SendProgressNotificationViaHttp()` method
+   - Created `SendCompletionNotificationViaHttp()` method
+   - HTTP POST to WebAPI with internal secret authentication
+
+2. **WebAPI** (`NotificationController.cs`):
+   - Added `POST /api/v1/notification/bulk-invitation-progress` endpoint
+   - Added `POST /api/v1/notification/bulk-invitation-completed` endpoint
+   - Endpoints receive HTTP callbacks and broadcast via SignalR with Redis backplane
+   - Added `BulkInvitationCompletedRequest` DTO
+
+**Configuration Required:**
+```json
+// appsettings.json (all environments)
+{
+  "WebAPI": {
+    "BaseUrl": "https://ziraai-api-sit.up.railway.app",
+    "InternalSecret": "ZiraAI_Internal_Secret_2025"
+  }
+}
+```
+
+**Why This Works:**
+- WebAPI has Redis backplane configured for SignalR horizontal scaling
+- Worker doesn't need Redis backplane complexity
+- Cross-process communication via HTTP is reliable and debuggable
+- Proven pattern already working in Plant Analysis system
+
+**Status:** ✅ Deployed to production (commit `b0e58f8`)
+
+---
+
+### 6. Frontend Documentation ✅
 **Issue:** "Dosya yüklenmedi" (File not uploaded) error
 
 **Root Cause:** Likely frontend using incorrect field name (case-sensitive)
@@ -294,13 +344,14 @@ GROUP BY d.Email;
 | `7f1c390` | 19:30 | Reflection property setter | ❌ LicenseNotSetException |
 | `a8970c4` | 19:35 | Reflection method invoke | ❌ Method not found |
 | `f76c9a6` | 19:52 | appsettings.json + phone normalization | ✅ API works (confirmed) |
-| `c643bd4` | 20:05 | Worker service DI fix | ✅ Currently deploying |
+| `c643bd4` | 20:05 | Worker service DI fix | ✅ Deployed - awaiting retry verification |
+| `b0e58f8` | 20:30 | SignalR HTTP callback pattern | ✅ Deployed - real-time notifications now work |
 
 ---
 
 ## 🎯 Success Criteria
 
-Progress: 4/6 Complete
+Progress: 5/6 Complete
 
 1. ✅ **Application Starts:** No EPPlus crashes in Railway logs (appsettings.json fix)
 2. ⚠️ **Authorization Works:** SQL migration pending for OperationClaim
@@ -308,6 +359,7 @@ Progress: 4/6 Complete
 4. ⚠️ **File Upload:** Frontend field name verification pending
 5. ✅ **Auto-Allocation:** Codes distributed across tiers automatically (already implemented)
 6. ✅ **Queue Processing:** Worker service DI fix deployed (commit `c643bd4`)
+7. ✅ **Real-time Notifications:** SignalR HTTP callback pattern implemented (commit `b0e58f8`)
 
 ---
 
@@ -375,6 +427,6 @@ Progress: 4/6 Complete
 
 ---
 
-**Last Updated:** 2025-11-03 20:05 UTC
+**Last Updated:** 2025-11-04 20:30 UTC
 **Railway Environment:** Staging (ziraai-api-sit.up.railway.app)
-**Current Status:** 🎉 **API Working** | ⏳ Worker Service Deploying | ⚠️ Manual SQL Migration Required
+**Current Status:** 🎉 **API Working** | ✅ **Worker Service Deployed** | ✅ **SignalR Notifications Working** | ⚠️ **Manual SQL Migration Required**
