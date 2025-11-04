@@ -1,4 +1,5 @@
 using Business.Handlers.Sponsorship.Commands;
+using Business.Handlers.Sponsorship.Commands;
 using Business.Handlers.Sponsorship.Queries;
 using Business.Handlers.Sponsorships.Queries;
 using Business.Handlers.SponsorProfiles.Commands;
@@ -1988,6 +1989,52 @@ namespace WebAPI.Controllers
             {
                 _logger.LogError(ex, "Error accepting dealer invitation for user {UserId}", GetUserId());
                 return StatusCode(500, new ErrorResult($"Invitation acceptance failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Cancel a pending dealer invitation
+        /// Releases reserved codes back to sponsor's available pool
+        /// Only the sponsor who created the invitation can cancel it
+        /// </summary>
+        /// <param name="invitationId">ID of the invitation to cancel</param>
+        /// <returns>Cancellation result with released code count</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpDelete("dealer/invitations/{invitationId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> CancelDealerInvitation([FromRoute] int invitationId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new CancelDealerInvitationCommand
+                {
+                    InvitationId = invitationId,
+                    SponsorId = userId.Value
+                };
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Sponsor {SponsorId} cancelled invitation {InvitationId}",
+                        userId.Value, invitationId);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling invitation {InvitationId} for sponsor {UserId}",
+                    invitationId, GetUserId());
+                return StatusCode(500, new ErrorResult($"Invitation cancellation failed: {ex.Message}"));
             }
         }
 
