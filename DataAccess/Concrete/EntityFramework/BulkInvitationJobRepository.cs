@@ -30,12 +30,14 @@ namespace DataAccess.Concrete.EntityFramework
                 SET
                     ""ProcessedDealers"" = ""ProcessedDealers"" + 1,
                     {incrementField} = {incrementField} + 1
-                WHERE ""Id"" = {{0}}
-                RETURNING *";
+                WHERE ""Id"" = {{0}}";
 
+            // Execute UPDATE without RETURNING (prevents EF Core non-composable SQL error)
+            await Context.Database.ExecuteSqlRawAsync(sql, bulkJobId);
+
+            // Fetch the updated entity in a separate query
             var updatedJob = await Context.BulkInvitationJobs
-                .FromSqlRaw(sql, bulkJobId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(j => j.Id == bulkJobId);
 
             return updatedJob;
         }

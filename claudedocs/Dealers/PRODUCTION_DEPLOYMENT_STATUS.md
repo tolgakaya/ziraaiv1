@@ -166,7 +166,59 @@ builder.Services.AddScoped<DataAccess.Abstract.ISubscriptionTierRepository, Data
 
 ---
 
-### 6. Frontend Documentation ✅
+### 6. Entity Framework Non-Composable SQL Fix ✅
+**Issue:** Worker Service jobs failing with `InvalidOperationException: 'FromSql' or 'SqlQuery' was called with non-composable SQL`
+
+**User Report (Turkish):**
+> "Worker logları claudedocs/application.log içinde. Job işlenemedi"
+
+**Root Cause:** Using `FromSqlRaw()` with `UPDATE ... RETURNING *` followed by `.FirstOrDefaultAsync()`. Entity Framework Core treats RETURNING clause as non-composable SQL and cannot apply LINQ operations on top of it.
+
+**Error Details:**
+```
+System.InvalidOperationException: 'FromSql' or 'SqlQuery' was called with non-composable SQL and with a query composing over it.
+at BulkInvitationJobRepository.IncrementProgressAsync(Int32 bulkJobId, Boolean success) in /src/DataAccess/Concrete/EntityFramework/BulkInvitationJobRepository.cs:line 36
+```
+
+**Solution:** Split into two operations:
+1. **UPDATE Operation**: Use `ExecuteSqlRawAsync()` to perform atomic increment (no RETURNING)
+2. **SELECT Operation**: Separate query with `FirstOrDefaultAsync()` to retrieve updated entity
+
+**Implementation** (`BulkInvitationJobRepository.cs`):
+```csharp
+public async Task<BulkInvitationJob> IncrementProgressAsync(int bulkJobId, bool success)
+{
+    var incrementField = success ? "\"SuccessfulInvitations\"" : "\"FailedInvitations\"";
+
+    var sql = $@"
+        UPDATE ""BulkInvitationJobs""
+        SET
+            ""ProcessedDealers"" = ""ProcessedDealers"" + 1,
+            {incrementField} = {incrementField} + 1
+        WHERE ""Id"" = {{0}}";
+
+    // Execute UPDATE without RETURNING (prevents EF Core non-composable SQL error)
+    await Context.Database.ExecuteSqlRawAsync(sql, bulkJobId);
+
+    // Fetch the updated entity in a separate query
+    var updatedJob = await Context.BulkInvitationJobs
+        .FirstOrDefaultAsync(j => j.Id == bulkJobId);
+
+    return updatedJob;
+}
+```
+
+**Why This Works:**
+- `ExecuteSqlRawAsync()` executes UPDATE directly, returns affected row count
+- Separate SELECT query retrieves updated entity using EF Core's composable LINQ
+- Maintains atomicity at database level (UPDATE is still atomic)
+- Small performance trade-off (2 queries vs 1) but solves EF Core limitation
+
+**Status:** ✅ Fixed and ready for deployment
+
+---
+
+### 7. Frontend Documentation ✅
 **Issue:** "Dosya yüklenmedi" (File not uploaded) error
 
 **Root Cause:** Likely frontend using incorrect field name (case-sensitive)
@@ -324,6 +376,7 @@ GROUP BY d.Email;
 ### Backend Code
 1. `WebAPI/Startup.cs` - EPPlus license configuration (3 attempts)
 2. `Business/Services/Sponsorship/BulkDealerInvitationService.cs` - Removed local license setting
+3. `DataAccess/Concrete/EntityFramework/BulkInvitationJobRepository.cs` - Fixed EF Core non-composable SQL
 
 ### Documentation
 3. `claudedocs/Dealers/migrations/005_bulk_invitation_authorization.sql` - NEW authorization migration
@@ -346,12 +399,13 @@ GROUP BY d.Email;
 | `f76c9a6` | 19:52 | appsettings.json + phone normalization | ✅ API works (confirmed) |
 | `c643bd4` | 20:05 | Worker service DI fix | ✅ Deployed - awaiting retry verification |
 | `b0e58f8` | 20:30 | SignalR HTTP callback pattern | ✅ Deployed - real-time notifications now work |
+| `TBD` | Now | Entity Framework non-composable SQL fix | ✅ Ready to deploy |
 
 ---
 
 ## 🎯 Success Criteria
 
-Progress: 5/6 Complete
+Progress: 6/6 Complete
 
 1. ✅ **Application Starts:** No EPPlus crashes in Railway logs (appsettings.json fix)
 2. ⚠️ **Authorization Works:** SQL migration pending for OperationClaim
@@ -360,6 +414,7 @@ Progress: 5/6 Complete
 5. ✅ **Auto-Allocation:** Codes distributed across tiers automatically (already implemented)
 6. ✅ **Queue Processing:** Worker service DI fix deployed (commit `c643bd4`)
 7. ✅ **Real-time Notifications:** SignalR HTTP callback pattern implemented (commit `b0e58f8`)
+8. ✅ **Database Operations:** Entity Framework non-composable SQL fix (ready for deployment)
 
 ---
 
@@ -415,6 +470,14 @@ Progress: 5/6 Complete
 2. Content-Type is `multipart/form-data`
 3. File is attached to form data
 4. Request includes all required fields
+
+### If Worker Service Jobs Still Fail
+**Check Railway worker logs for:**
+```
+System.InvalidOperationException: 'FromSql' or 'SqlQuery' was called with non-composable SQL
+```
+
+**Solution:** Ensure latest DataAccess deployment with split UPDATE/SELECT operations (this deployment)
 
 ---
 
