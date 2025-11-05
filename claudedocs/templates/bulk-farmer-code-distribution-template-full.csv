@@ -1,4 +1,4 @@
-Email,Phone,CodeCount,FarmerName
-ahmet.yilmaz@gmail.com,05321234567,1,Ahmet Yılmaz
-mehmet.demir@hotmail.com,+905429876543,2,Mehmet Demir
-ayse.kaya@outlook.com,5559876543,1,Ayşe Kaya
+Email,Phone,FarmerName
+ahmet.yilmaz@gmail.com,05321234567,Ahmet Yılmaz
+mehmet.demir@hotmail.com,+905429876543,Mehmet Demir
+ayse.kaya@outlook.com,5559876543,Ayşe Kaya

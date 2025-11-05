@@ -1,11 +1,11 @@
-Email,Phone,CodeCount,FarmerName
-ahmet.yilmaz@gmail.com,05321234567,1,Ahmet Yılmaz
-mehmet.demir@hotmail.com,+905429876543,2,Mehmet Demir
-ayse.kaya@outlook.com,5559876543,1,Ayşe Kaya
-fatma.celik@yahoo.com,0542 987 65 43,3,Fatma Çelik
-ali.ozturk@gmail.com,(0532) 111-22-33,1,Ali Öztürk
-zeynep.arslan@gmail.com,0533 444 55 66,2,Zeynep Arslan
-mustafa.koc@hotmail.com,905449998877,1,Mustafa Koç
-elif.yildiz@outlook.com,532.777.88.99,1,Elif Yıldız
-hasan.acar@gmail.com,+90 555 123 45 67,2,Hasan Acar
-selin.kurt@yahoo.com,0542-333-22-11,1,Selin Kurt
+Email,Phone,FarmerName
+ahmet.yilmaz@gmail.com,05321234567,Ahmet Yılmaz
+mehmet.demir@hotmail.com,+905429876543,Mehmet Demir
+ayse.kaya@outlook.com,5559876543,Ayşe Kaya
+fatma.celik@yahoo.com,0542 987 65 43,Fatma Çelik
+ali.ozturk@gmail.com,(0532) 111-22-33,Ali Öztürk
+zeynep.arslan@gmail.com,0533 444 55 66,Zeynep Arslan
+mustafa.koc@hotmail.com,905449998877,Mustafa Koç
+elif.yildiz@outlook.com,532.777.88.99,Elif Yıldız
+hasan.acar@gmail.com,+90 555 123 45 67,Hasan Acar
+selin.kurt@yahoo.com,0542-333-22-11,Selin Kurt

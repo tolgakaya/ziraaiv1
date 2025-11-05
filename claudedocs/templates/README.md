@@ -10,13 +10,12 @@ Bu klasör, toplu farmer kod dağıtımı için Excel/CSV template dosyalarını
 **İçerik:**
 - Email (Zorunlu)
 - Phone (Zorunlu)
-- CodeCount (Zorunlu)
 
 **Kullanım:**
 ```csv
-Email,Phone,CodeCount
-farmer1@example.com,05321234567,1
-farmer2@example.com,+905429876543,2
+Email,Phone
+farmer1@example.com,05321234567
+farmer2@example.com,+905429876543
 ```
 
 ### 2. Full Template
@@ -25,14 +24,13 @@ farmer2@example.com,+905429876543,2
 **İçerik:**
 - Email (Zorunlu)
 - Phone (Zorunlu)
-- CodeCount (Zorunlu)
 - FarmerName (Opsiyonel)
 
 **Kullanım:**
 ```csv
-Email,Phone,CodeCount,FarmerName
-ahmet.yilmaz@gmail.com,05321234567,1,Ahmet Yılmaz
-mehmet.demir@hotmail.com,+905429876543,2,Mehmet Demir
+Email,Phone,FarmerName
+ahmet.yilmaz@gmail.com,05321234567,Ahmet Yılmaz
+mehmet.demir@hotmail.com,+905429876543,Mehmet Demir
 ```
 
 ### 3. Sample Data
@@ -214,12 +212,6 @@ Template'lere uygun veri girişi için kurallar:
   - `0532 123 45 67`
   - `(0532) 123-45-67`
 - Hepsi normalize edilir: `05321234567`
-
-### CodeCount
-- Minimum: 1
-- Maximum: 10
-- Tip: Tam sayı
-- ❌ Hatalı: `0`, `11`, `1.5`, `abc`
 
 ### FarmerName (Opsiyonel)
 - Maximum: 200 karakter

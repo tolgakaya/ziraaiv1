@@ -10,7 +10,6 @@ Excel dosyasının **1. satırı header** olmalıdır ve aşağıdaki sütun isi
 |-----------|---------|----------|
 | Email | ✅ Evet | Farmer'ın email adresi (user kaydı için) |
 | Phone | ✅ Evet | Farmer'ın telefon numarası (SMS göndermek için) |
-| CodeCount | ✅ Evet | Bu farmer'a gönderilecek kod sayısı (1-10 arası) |
 | FarmerName | ❌ Hayır | Farmer'ın adı (SMS'te kullanılır, opsiyonel) |
 
 ### Validasyon Kuralları
@@ -31,11 +30,6 @@ Excel dosyasının **1. satırı header** olmalıdır ve aşağıdaki sütun isi
   - `(0532) 123-45-67` → `05321234567`
 - ✅ Excel içinde duplicate phone olmamalı
 
-#### CodeCount Validasyonu
-- ✅ 1 ile 10 arasında tam sayı olmalı
-- ✅ Her satır için ayrı kod sayısı belirlenebilir
-- ⚠️ Toplam kod ihtiyacı sponsor'ın mevcut kodlarından fazla olamaz
-
 #### FarmerName Validasyonu
 - ❌ Opsiyonel alan (boş bırakılabilir)
 - ✅ Maksimum 200 karakter
@@ -53,23 +47,23 @@ Excel dosyasının **1. satırı header** olmalıdır ve aşağıdaki sütun isi
 ### Minimal Örnek (Sadece Zorunlu Alanlar)
 
 ```
-Email                    | Phone          | CodeCount
--------------------------|----------------|----------
-farmer1@example.com      | 05321234567    | 1
-farmer2@example.com      | +905429876543  | 2
-farmer3@example.com      | 5559876543     | 1
+Email                    | Phone
+-------------------------|----------------
+farmer1@example.com      | 05321234567
+farmer2@example.com      | +905429876543
+farmer3@example.com      | 5559876543
 ```
 
 ### Tam Örnek (Tüm Alanlar)
 
 ```
-Email                    | Phone          | CodeCount | FarmerName
--------------------------|----------------|-----------|------------------
-ahmet.yilmaz@gmail.com   | 05321234567    | 1         | Ahmet Yılmaz
-mehmet.demir@hotmail.com | +905429876543  | 2         | Mehmet Demir
-ayse.kaya@outlook.com    | 5559876543     | 1         | Ayşe Kaya
-fatma.celik@yahoo.com    | 0542 987 65 43 | 3         | Fatma Çelik
-ali.ozturk@gmail.com     | (0532) 111-22-33| 1        | Ali Öztürk
+Email                    | Phone          | FarmerName
+-------------------------|----------------|------------------
+ahmet.yilmaz@gmail.com   | 05321234567    | Ahmet Yılmaz
+mehmet.demir@hotmail.com | +905429876543  | Mehmet Demir
+ayse.kaya@outlook.com    | 5559876543     | Ayşe Kaya
+fatma.celik@yahoo.com    | 0542 987 65 43 | Fatma Çelik
+ali.ozturk@gmail.com     | (0532) 111-22-33| Ali Öztürk
 ```
 
 ### Telefon Format Örnekleri (Hepsi Geçerli)
@@ -164,18 +158,13 @@ Content-Type: multipart/form-data
 }
 ```
 
-```json
-{
-  "success": false,
-  "message": "Excel'de 'CodeCount' sütunu zorunludur"
-}
-```
+
 
 #### Satır Validasyon Hataları
 ```json
 {
   "success": false,
-  "message": "Geçersiz satırlar:\nSatır 3: Geçersiz email - invalid-email\nSatır 5: Geçersiz telefon - 123456\nSatır 7: CodeCount 1-10 arasında olmalı - 15"
+  "message": "Geçersiz satırlar:\nSatır 3: Geçersiz email - invalid-email\nSatır 5: Geçersiz telefon - 123456"
 }
 ```
 
@@ -224,10 +213,6 @@ Content-Type: multipart/form-data
    - `@` karakteri mutlaka olmalı
    - Domain uzantısı olmalı (`.com`, `.tr`, vs.)
 
-4. **CodeCount'u Mantıklı Tutun**
-   - Her farmer için gerçekçi sayıda kod verin
-   - Toplam kodu önceden hesaplayın
-
 ### ❌ Yapılmaması Gerekenler
 
 1. **Boş Satır Bırakmayın**
@@ -241,45 +226,44 @@ Content-Type: multipart/form-data
 3. **Geçersiz Veri Girmeyin**
    - Email formatına uymayan değerler
    - Türkiye dışı telefon numaraları
-   - Negatif veya 0 CodeCount
 
 ## Örnek Kullanım Senaryoları
 
 ### Senaryo 1: Küçük Grup (10 Farmer)
 ```
-Email                    | Phone          | CodeCount | FarmerName
--------------------------|----------------|-----------|------------------
-farmer1@test.com         | 05321111111    | 1         | Farmer 1
-farmer2@test.com         | 05321111112    | 1         | Farmer 2
+Email                    | Phone          | FarmerName
+-------------------------|----------------|------------------
+farmer1@test.com         | 05321111111    | Farmer 1
+farmer2@test.com         | 05321111112    | Farmer 2
 ...
-farmer10@test.com        | 05321111120    | 1         | Farmer 10
+farmer10@test.com        | 05321111120    | Farmer 10
 
-Toplam Kod İhtiyacı: 10
+Toplam Kod İhtiyacı: 10 (Her farmer'a 1 kod)
 ```
 
-### Senaryo 2: Orta Grup (100 Farmer, Farklı Kod Sayıları)
+### Senaryo 2: Orta Grup (100 Farmer)
 ```
-Email                    | Phone          | CodeCount | FarmerName
--------------------------|----------------|-----------|------------------
-vip1@test.com            | 05321111111    | 5         | VIP Farmer 1
-vip2@test.com            | 05321111112    | 5         | VIP Farmer 2
-standard1@test.com       | 05321111113    | 2         | Standard 1
-standard2@test.com       | 05321111114    | 2         | Standard 2
+Email                    | Phone          | FarmerName
+-------------------------|----------------|------------------
+farmer1@test.com         | 05321111111    | Farmer 1
+farmer2@test.com         | 05321111112    | Farmer 2
+farmer3@test.com         | 05321111113    | Farmer 3
+farmer4@test.com         | 05321111114    | Farmer 4
 ...
 
-Toplam Kod İhtiyacı: Dinamik (örn: 250)
+Toplam Kod İhtiyacı: 100 (Her farmer'a 1 kod)
 ```
 
 ### Senaryo 3: Büyük Grup (2000 Farmer - Maksimum)
 ```
-Email                    | Phone          | CodeCount | FarmerName
--------------------------|----------------|-----------|------------------
-bulk1@test.com           | 05321111111    | 1         | Bulk 1
-bulk2@test.com           | 05321111112    | 1         | Bulk 2
+Email                    | Phone          | FarmerName
+-------------------------|----------------|------------------
+bulk1@test.com           | 05321111111    | Bulk 1
+bulk2@test.com           | 05321111112    | Bulk 2
 ...
-bulk2000@test.com        | 05329999999    | 1         | Bulk 2000
+bulk2000@test.com        | 05329999999    | Bulk 2000
 
-Toplam Kod İhtiyacı: 2000
+Toplam Kod İhtiyacı: 2000 (Her farmer'a 1 kod)
 ```
 
 ## SMS Gönderimi

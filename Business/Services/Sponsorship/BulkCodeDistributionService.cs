@@ -157,7 +157,6 @@ namespace Business.Services.Sponsorship
                         Email = row.Email,
                         Phone = row.Phone,
                         FarmerName = row.FarmerName,
-                        CodeCount = row.CodeCount.Value,
                         SendSms = sendSms,
                         QueuedAt = DateTime.Now
                     };
@@ -305,11 +304,6 @@ namespace Business.Services.Sponsorship
                 throw new Exception("Excel'de 'Phone' sütunu zorunludur");
             }
 
-            if (!headers.ContainsKey("CodeCount"))
-            {
-                throw new Exception("Excel'de 'CodeCount' sütunu zorunludur");
-            }
-
             _logger.LogInformation(
                 "📊 Excel headers found: {Headers}",
                 string.Join(", ", headers.Keys));
@@ -319,7 +313,6 @@ namespace Business.Services.Sponsorship
             {
                 var email = worksheet.Cells[row, headers["Email"]].Text?.Trim();
                 var phone = worksheet.Cells[row, headers["Phone"]].Text?.Trim();
-                var codeCountText = worksheet.Cells[row, headers["CodeCount"]].Text?.Trim();
 
                 // FarmerName is optional
                 var farmerName = headers.ContainsKey("FarmerName")
@@ -332,24 +325,12 @@ namespace Business.Services.Sponsorship
                     continue;
                 }
 
-                // Parse CodeCount
-                if (!int.TryParse(codeCountText, out var codeCount) || codeCount <= 0)
-                {
-                    throw new Exception($"Satır {row}: CodeCount geçersiz veya boş - '{codeCountText}'");
-                }
-
-                if (codeCount > 10)
-                {
-                    throw new Exception($"Satır {row}: CodeCount maksimum 10 olabilir - '{codeCount}'");
-                }
-
                 var distributionRow = new FarmerCodeDistributionRow
                 {
                     RowNumber = row,
                     Email = email,
                     Phone = NormalizePhone(phone),
-                    FarmerName = farmerName,
-                    CodeCount = codeCount
+                    FarmerName = farmerName
                 };
 
                 rows.Add(distributionRow);
@@ -387,13 +368,6 @@ namespace Business.Services.Sponsorship
                     continue;
                 }
 
-                // CodeCount validation
-                if (!row.CodeCount.HasValue || row.CodeCount.Value <= 0 || row.CodeCount.Value > 10)
-                {
-                    errors.Add($"Satır {row.RowNumber}: CodeCount 1-10 arasında olmalı - {row.CodeCount}");
-                    continue;
-                }
-
                 // Duplicate check (in file)
                 if (emails.Contains(row.Email))
                 {
@@ -421,7 +395,8 @@ namespace Business.Services.Sponsorship
 
         private int CalculateTotalCodesNeeded(List<FarmerCodeDistributionRow> rows)
         {
-            return rows.Sum(r => r.CodeCount.Value);
+            // Each farmer gets exactly 1 code
+            return rows.Count;
         }
 
         private async Task<IDataResult<int>> CheckCodeAvailabilityAsync(
@@ -546,7 +521,6 @@ namespace Business.Services.Sponsorship
         public string Email { get; set; }
         public string Phone { get; set; }
         public string FarmerName { get; set; }
-        public int? CodeCount { get; set; }
     }
 
     public class FarmerCodeDistributionQueueMessage
@@ -559,7 +533,6 @@ namespace Business.Services.Sponsorship
         public string Email { get; set; }
         public string Phone { get; set; }
         public string FarmerName { get; set; }
-        public int CodeCount { get; set; }
         public bool SendSms { get; set; }
         public DateTime QueuedAt { get; set; }
     }
