@@ -159,7 +159,15 @@ namespace PlantAnalysisWorkerService.Jobs
                 }
 
                 // Step 3: Progress Update Logic (Atomic)
-                var bulkJob = await _bulkJobRepository.IncrementProgressAsync(message.BulkJobId, success);
+                // Each farmer gets exactly 1 code (same as single distribution)
+                var codesDistributed = success ? 1 : 0;
+                var smsSent = success && message.SendSms;
+                
+                var bulkJob = await _bulkJobRepository.IncrementProgressAsync(
+                    message.BulkJobId, 
+                    success, 
+                    codesDistributed, 
+                    smsSent);
 
                 if (bulkJob == null)
                 {
@@ -230,7 +238,11 @@ namespace PlantAnalysisWorkerService.Jobs
                 // Update bulk job with failure using atomic operations
                 try
                 {
-                    await _bulkJobRepository.IncrementProgressAsync(message.BulkJobId, success: false);
+                    await _bulkJobRepository.IncrementProgressAsync(
+                        message.BulkJobId, 
+                        success: false, 
+                        codesDistributed: 0, 
+                        smsSent: false);
                     await _bulkJobRepository.CheckAndMarkCompleteAsync(message.BulkJobId);
                 }
                 catch (Exception innerEx)
