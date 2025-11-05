@@ -215,6 +215,7 @@ builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository,
 builder.Services.AddScoped<DataAccess.Abstract.IDealerInvitationRepository, DataAccess.Concrete.EntityFramework.DealerInvitationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkInvitationJobRepository, DataAccess.Concrete.EntityFramework.BulkInvitationJobRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkCodeDistributionJobRepository, DataAccess.Concrete.EntityFramework.BulkCodeDistributionJobRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.ISmsLogRepository, DataAccess.Concrete.EntityFramework.SmsLogRepository>();
 // 🆕 Add missing repositories required by CreateDealerInvitationCommandHandler
 builder.Services.AddScoped<DataAccess.Abstract.IUserRepository, DataAccess.Concrete.EntityFramework.UserRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IGroupRepository, DataAccess.Concrete.EntityFramework.GroupRepository>();
@@ -249,6 +250,9 @@ builder.Services.AddScoped<Business.Services.Notification.IBulkCodeDistributionN
 builder.Services.AddScoped<Business.Services.Messaging.ISmsService, Business.Services.Messaging.Fakes.MockSmsService>();
 builder.Services.AddScoped<Business.Services.Messaging.TurkcellSmsService>();
 builder.Services.AddScoped<Business.Services.Messaging.IWhatsAppService, Business.Services.Messaging.Fakes.MockWhatsAppService>();
+
+// 🆕 Add SMS Logging Service (config-controlled debugging feature)
+builder.Services.AddScoped<Business.Services.Logging.ISmsLoggingService, Business.Services.Logging.SmsLoggingService>();
 builder.Services.AddScoped<Business.Services.Messaging.WhatsAppBusinessService>();
 builder.Services.AddScoped<Business.Services.Messaging.Factories.IMessagingServiceFactory, Business.Services.Messaging.Factories.MessagingServiceFactory>();
 
