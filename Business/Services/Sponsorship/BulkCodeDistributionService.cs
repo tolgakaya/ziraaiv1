@@ -513,19 +513,23 @@ namespace Business.Services.Sponsorship
             if (cleaned.StartsWith("+"))
                 cleaned = cleaned.Substring(1);
 
+            // Turkish format normalization to 05XXXXXXXXX (local format)
+            // +905321234567 → 05321234567
             if (cleaned.Length == 12 && cleaned.StartsWith("90"))
+            {
+                return "0" + cleaned.Substring(2);
+            }
+
+            // 05321234567 → 05321234567 (already correct)
+            if (cleaned.Length == 11 && cleaned.StartsWith("0"))
             {
                 return cleaned;
             }
 
-            if (cleaned.Length == 11 && cleaned.StartsWith("0"))
-            {
-                return "90" + cleaned.Substring(1);
-            }
-
+            // 5321234567 → 05321234567
             if (cleaned.Length == 10 && cleaned.StartsWith("5"))
             {
-                return "90" + cleaned;
+                return "0" + cleaned;
             }
 
             return cleaned;

@@ -5,6 +5,7 @@ using DataAccess.Abstract;
 using Entities.Concrete;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -29,6 +30,7 @@ namespace PlantAnalysisWorkerService.Jobs
         private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
         private readonly IUserRepository _userRepository;
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
+        private readonly ISponsorProfileRepository _sponsorProfileRepository;
         private readonly IMessagingServiceFactory _messagingFactory;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
@@ -39,6 +41,7 @@ namespace PlantAnalysisWorkerService.Jobs
             ISponsorshipCodeRepository sponsorshipCodeRepository,
             IUserRepository userRepository,
             IUserSubscriptionRepository userSubscriptionRepository,
+            ISponsorProfileRepository sponsorProfileRepository,
             IMessagingServiceFactory messagingFactory,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
@@ -48,6 +51,7 @@ namespace PlantAnalysisWorkerService.Jobs
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _userRepository = userRepository;
             _userSubscriptionRepository = userSubscriptionRepository;
+            _sponsorProfileRepository = sponsorProfileRepository;
             _messagingFactory = messagingFactory;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -100,24 +104,57 @@ namespace PlantAnalysisWorkerService.Jobs
 
                         allocatedCode = code.Code;
 
-                        // 4. Send SMS with code
-                        if (!string.IsNullOrEmpty(user.MobilePhones))
+                        // 4. Send SMS with code (if SendSms is enabled)
+                        if (message.SendSms && !string.IsNullOrEmpty(user.MobilePhones))
                         {
-                            var smsMessage = $"ZiraAI Sponsorship Code: {code.Code}. Use this code in the app to activate your subscription.";
+                            // Get sponsor profile information for SMS template
+                            var sponsorProfile = await _sponsorProfileRepository.GetAsync(sp => sp.SponsorId == message.SponsorId);
+                            var sponsorCompanyName = sponsorProfile?.CompanyName ?? "ZiraAI Sponsor";
+                            
+                            // Get Play Store package name from configuration
+                            var playStorePackageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
+                            var playStoreLink = $"https://play.google.com/store/apps/details?id={playStorePackageName}";
+                            
+                            // Generate redemption deep link
+                            var baseUrl = _configuration["WebAPI:BaseUrl"]
+                                ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
+                                ?? "https://ziraai.com";
+                            var deepLink = $"{baseUrl.TrimEnd('/')}/redeem/{code.Code}";
+                            
+                            // Build SMS message (same format as SendSponsorshipLinkCommand)
+                            var farmerName = message.FarmerName ?? user.FullName ?? "Değerli Üyemiz";
+                            var smsMessage = BuildSmsMessage(farmerName, sponsorCompanyName, code.Code, playStoreLink, deepLink);
+                            
+                            // Normalize phone number before sending
+                            var normalizedPhone = NormalizePhoneNumber(user.MobilePhones);
+                            
                             var smsService = _messagingFactory.GetSmsService();
-                            var smsResult = await smsService.SendSmsAsync(user.MobilePhones, smsMessage);
+                            var smsResult = await smsService.SendSmsAsync(normalizedPhone, smsMessage);
 
                             if (smsResult.Success)
                             {
+                                // Update code entity with distribution info
+                                code.RedemptionLink = deepLink;
+                                code.RecipientPhone = normalizedPhone;
+                                code.RecipientName = farmerName;
+                                code.LinkSentDate = DateTime.Now;
+                                code.LinkSentVia = "SMS";
+                                code.LinkDelivered = true;
+                                code.DistributionChannel = "SMS";
+                                code.DistributionDate = DateTime.Now;
+                                code.DistributedTo = $"{farmerName} ({normalizedPhone})";
+                                
+                                _sponsorshipCodeRepository.Update(code);
+                                
                                 _logger.LogInformation(
                                     "[FARMER_CODE_DISTRIBUTION_SMS_SENT] SMS sent - Phone: {Phone}, Code: {Code}",
-                                    user.MobilePhones, code.Code);
+                                    normalizedPhone, code.Code);
                             }
                             else
                             {
                                 _logger.LogWarning(
                                     "[FARMER_CODE_DISTRIBUTION_SMS_FAILED] SMS failed - Phone: {Phone}, Error: {Error}",
-                                    user.MobilePhones, smsResult.Message);
+                                    normalizedPhone, smsResult.Message);
                             }
                         }
 
@@ -307,6 +344,51 @@ namespace PlantAnalysisWorkerService.Jobs
                 _logger.LogError(ex, "❌ Failed to send completion notification to WebAPI");
                 // Don't throw - notification failure shouldn't stop job processing
             }
+        }
+
+        /// <summary>
+        /// Build SMS message with sponsor info, code, and deep link (same format as SendSponsorshipLinkCommand)
+        /// </summary>
+        private string BuildSmsMessage(string farmerName, string sponsorCompany, string sponsorCode, string playStoreLink, string deepLink)
+        {
+            // SMS-based deferred deep linking: Mobile app will read SMS and auto-extract AGRI-XXXXX code
+            // Deep link allows users to tap and open app directly with code pre-filled
+            return $@"🎁 {sponsorCompany} size sponsorluk paketi hediye etti!
+
+Sponsorluk Kodunuz: {sponsorCode}
+
+Hemen kullanmak için tıklayın:
+{deepLink}
+
+Veya uygulamayı indirin:
+{playStoreLink}";
+        }
+
+        /// <summary>
+        /// Normalize phone number to 05XXXXXXXXX format (Turkish mobile format)
+        /// </summary>
+        private string NormalizePhoneNumber(string phone)
+        {
+            if (string.IsNullOrEmpty(phone))
+                return phone;
+
+            // Remove all non-digit characters
+            var digitsOnly = Regex.Replace(phone, @"\D", string.Empty);
+
+            // Turkish format normalization
+            // +905321234567 → 05321234567
+            if (digitsOnly.StartsWith("90") && digitsOnly.Length == 12)
+            {
+                return "0" + digitsOnly.Substring(2);
+            }
+
+            // 5321234567 → 05321234567
+            if (!digitsOnly.StartsWith("0") && digitsOnly.Length == 10)
+            {
+                return "0" + digitsOnly;
+            }
+
+            return digitsOnly;
         }
     }
 }

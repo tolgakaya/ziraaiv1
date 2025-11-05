@@ -220,6 +220,7 @@ builder.Services.AddScoped<DataAccess.Abstract.IUserRepository, DataAccess.Concr
 builder.Services.AddScoped<DataAccess.Abstract.IGroupRepository, DataAccess.Concrete.EntityFramework.GroupRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IUserGroupRepository, DataAccess.Concrete.EntityFramework.UserGroupRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.ISubscriptionTierRepository, DataAccess.Concrete.EntityFramework.SubscriptionTierRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.ISponsorProfileRepository, DataAccess.Concrete.EntityFramework.SponsorProfileRepository>();
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
 // Use RedisCacheManager to match API's cache provider for cross-service cache invalidation
 builder.Services.AddSingleton<Core.CrossCuttingConcerns.Caching.ICacheManager, Core.CrossCuttingConcerns.Caching.Redis.RedisCacheManager>();
