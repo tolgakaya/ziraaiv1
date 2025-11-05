@@ -69,9 +69,13 @@ namespace PlantAnalysisWorkerService.Jobs
 
             try
             {
-                // Step 1: Get available code from sponsor's purchase (SAME AS SendSponsorshipLinkCommand)
-                var allCodes = await _sponsorshipCodeRepository.GetByPurchaseIdAsync(message.PurchaseId);
-                var code = allCodes.FirstOrDefault(c => !c.IsUsed && c.DistributionDate == null && c.ExpiryDate > DateTime.Now);
+                // Step 1: Atomically allocate a code (prevents race conditions in concurrent processing)
+                // CRITICAL: Use atomic allocation instead of manual filtering to ensure
+                // the same code is NEVER assigned to multiple farmers simultaneously
+                var code = await _sponsorshipCodeRepository.AllocateCodeForDistributionAsync(
+                    message.PurchaseId,
+                    message.Phone,
+                    message.FarmerName);
 
                 if (code == null)
                 {
@@ -114,18 +118,15 @@ namespace PlantAnalysisWorkerService.Jobs
 
                         if (smsResult.Success)
                         {
-                            // Update code entity with distribution info (SAME AS SendSponsorshipLinkCommand)
-                            // NOTE: We do NOT set IsUsed/UsedByUserId/UsedDate here!
-                            // Code is only DISTRIBUTED, not REDEEMED yet
-                            // Farmer will redeem it later through the app
+                            // Update code entity with SMS delivery info
+                            // NOTE: RecipientPhone, RecipientName, and DistributionDate already set by atomic allocation
+                            // We do NOT set IsUsed/UsedByUserId/UsedDate here!
+                            // Code is only DISTRIBUTED, not REDEEMED yet - farmer will redeem it later
                             code.RedemptionLink = deepLink;
-                            code.RecipientPhone = normalizedPhone;
-                            code.RecipientName = farmerName;
                             code.LinkSentDate = DateTime.Now;
                             code.LinkSentVia = "SMS";
                             code.LinkDelivered = true;
                             code.DistributionChannel = "SMS";
-                            code.DistributionDate = DateTime.Now;
                             code.DistributedTo = $"{farmerName} ({normalizedPhone})";
 
                             _sponsorshipCodeRepository.Update(code);

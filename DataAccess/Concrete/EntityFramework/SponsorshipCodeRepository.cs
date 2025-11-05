@@ -170,5 +170,67 @@ namespace DataAccess.Concrete.EntityFramework
 
             return codes;
         }
+
+        /// <summary>
+        /// Atomically allocates an available code for distribution
+        /// Uses raw SQL with UPDATE + WHERE to prevent race conditions in concurrent scenarios
+        /// This ensures the same code is never allocated to multiple farmers simultaneously
+        /// </summary>
+        public async Task<SponsorshipCode> AllocateCodeForDistributionAsync(
+            int purchaseId, 
+            string recipientPhone, 
+            string recipientName)
+        {
+            // Step 1: Use raw SQL to atomically reserve a code
+            // UPDATE with WHERE clause ensures only ONE worker can claim each code
+            // PostgreSQL's MVCC and row-level locking handle concurrency
+            var sql = $@"
+                UPDATE ""SponsorshipCodes""
+                SET 
+                    ""DistributionDate"" = NOW(),
+                    ""RecipientPhone"" = {{0}},
+                    ""RecipientName"" = {{1}}
+                WHERE ""Id"" = (
+                    SELECT ""Id""
+                    FROM ""SponsorshipCodes""
+                    WHERE ""SponsorshipPurchaseId"" = {{2}}
+                      AND ""IsUsed"" = false
+                      AND ""DistributionDate"" IS NULL
+                      AND ""ExpiryDate"" > NOW()
+                    ORDER BY ""Id""
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED  -- Critical: Skip locked rows to prevent blocking
+                )
+                RETURNING ""Id"";";
+
+            // Execute atomic UPDATE and get allocated code ID
+            int? allocatedCodeId = null;
+            
+            try
+            {
+                var result = await Context.Database
+                    .SqlQueryRaw<int>(sql, recipientPhone, recipientName, purchaseId)
+                    .ToListAsync();
+                
+                allocatedCodeId = result.FirstOrDefault();
+            }
+            catch (Exception)
+            {
+                // If UPDATE fails (no available codes), return null
+                return null;
+            }
+
+            if (allocatedCodeId == null || allocatedCodeId == 0)
+            {
+                // No available codes found
+                return null;
+            }
+
+            // Step 2: Fetch the allocated code entity
+            var allocatedCode = await Context.SponsorshipCodes
+                .FirstOrDefaultAsync(c => c.Id == allocatedCodeId);
+
+            return allocatedCode;
+        }
     }
 }

@@ -19,5 +19,12 @@ namespace DataAccess.Abstract
         Task<bool> IsCodeValidAsync(string code);
         Task<bool> MarkAsUsedAsync(string code, int userId, int subscriptionId);
         Task<List<SponsorshipCode>> GenerateCodesAsync(int purchaseId, int sponsorId, int tierId, int quantity, string prefix, int validityDays);
+        
+        /// <summary>
+        /// Atomically allocates (reserves) an available code for distribution
+        /// Uses database-level UPDATE with WHERE clause to prevent race conditions
+        /// Returns the allocated code or null if no codes available
+        /// </summary>
+        Task<SponsorshipCode> AllocateCodeForDistributionAsync(int purchaseId, string recipientPhone, string recipientName);
     }
 }
