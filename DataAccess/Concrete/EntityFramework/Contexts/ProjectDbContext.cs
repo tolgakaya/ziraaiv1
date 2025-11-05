@@ -96,6 +96,7 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         
         // Security System
         public DbSet<SecurityEvent> SecurityEvents { get; set; }
+        public DbSet<SmsLog> SmsLogs { get; set; }
         public DbSet<BlockedEntity> BlockedEntities { get; set; }
 
 

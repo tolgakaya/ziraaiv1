@@ -103,7 +103,8 @@
       "WebSearch",
       "Bash(Business/Services/Analytics/SponsorDealerAnalyticsCacheService.cs)",
       "Bash(TOKEN=\"eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjE1OSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJVc2VyIDExMTQiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOlsiRmFybWVyIiwiU3BvbnNvciJdLCJuYmYiOjE3NjE0OTk0OTEsImV4cCI6MTc2MTUwMzA5MSwiaXNzIjoiWmlyYUFJX1N0YWdpbmciLCJhdWQiOiJaaXJhQUlfU3RhZ2luZ19Vc2VycyJ9.SlMXorY-By-dm4VF6dSvl-oRj38MYIXxkwgcngbK8-s\")",
-      "mcp__serena__think_about_task_adherence"
+      "mcp__serena__think_about_task_adherence",
+      "Bash(Select-String \"Build succeeded|Build FAILED|error\" -Context 0,2)"
     ],
     "deny": [],
     "ask": [],
