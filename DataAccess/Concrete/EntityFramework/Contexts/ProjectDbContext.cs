@@ -74,6 +74,7 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         // Dealer Distribution System
         public DbSet<DealerInvitation> DealerInvitations { get; set; }
         public DbSet<BulkInvitationJob> BulkInvitationJobs { get; set; }
+        public DbSet<BulkCodeDistributionJob> BulkCodeDistributionJobs { get; set; }
 
         // Sponsor Request System
         public DbSet<SponsorRequest> SponsorRequests { get; set; }
@@ -95,6 +96,7 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         
         // Security System
         public DbSet<SecurityEvent> SecurityEvents { get; set; }
+        public DbSet<SmsLog> SmsLogs { get; set; }
         public DbSet<BlockedEntity> BlockedEntities { get; set; }
 
 
