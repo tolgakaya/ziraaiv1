@@ -17,7 +17,7 @@ namespace PlantAnalysisWorkerService.Jobs
 {
     /// <summary>
     /// Job service for processing farmer code distribution requests
-    /// Pattern: Based on DealerInvitationJobService
+    /// Pattern: SAME AS SendSponsorshipLinkCommand - distribute codes without user lookup
     /// </summary>
     public interface IFarmerCodeDistributionJobService
     {
@@ -28,8 +28,6 @@ namespace PlantAnalysisWorkerService.Jobs
     {
         private readonly IBulkCodeDistributionJobRepository _bulkJobRepository;
         private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
-        private readonly IUserRepository _userRepository;
-        private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly ISponsorProfileRepository _sponsorProfileRepository;
         private readonly IMessagingServiceFactory _messagingFactory;
         private readonly IHttpClientFactory _httpClientFactory;
@@ -39,8 +37,6 @@ namespace PlantAnalysisWorkerService.Jobs
         public FarmerCodeDistributionJobService(
             IBulkCodeDistributionJobRepository bulkJobRepository,
             ISponsorshipCodeRepository sponsorshipCodeRepository,
-            IUserRepository userRepository,
-            IUserSubscriptionRepository userSubscriptionRepository,
             ISponsorProfileRepository sponsorProfileRepository,
             IMessagingServiceFactory messagingFactory,
             IHttpClientFactory httpClientFactory,
@@ -49,8 +45,6 @@ namespace PlantAnalysisWorkerService.Jobs
         {
             _bulkJobRepository = bulkJobRepository;
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
-            _userRepository = userRepository;
-            _userSubscriptionRepository = userSubscriptionRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
             _messagingFactory = messagingFactory;
             _httpClientFactory = httpClientFactory;
@@ -71,101 +65,100 @@ namespace PlantAnalysisWorkerService.Jobs
 
             try
             {
-                // Step 4.7: Code Allocation Logic
-                // 1. Find user by email
-                var user = await _userRepository.GetAsync(u => u.Email == message.Email);
-                if (user == null)
+                // Step 1: Get available code from sponsor's purchase (SAME AS SendSponsorshipLinkCommand)
+                var allCodes = await _sponsorshipCodeRepository.GetByPurchaseIdAsync(message.PurchaseId);
+                var code = allCodes.FirstOrDefault(c => !c.IsUsed && c.DistributionDate == null && c.ExpiryDate > DateTime.Now);
+
+                if (code == null)
                 {
-                    errorMessage = $"User not found with email: {message.Email}";
-                    _logger.LogWarning("[FARMER_CODE_DISTRIBUTION_USER_NOT_FOUND] {Error}", errorMessage);
+                    errorMessage = $"No available codes for PurchaseId: {message.PurchaseId}";
+                    _logger.LogWarning("[FARMER_CODE_DISTRIBUTION_NO_CODES] {Error}", errorMessage);
                     success = false;
                 }
                 else
                 {
-                    // 2. Allocate 1 available code from sponsor's purchase
-                    var allCodes = await _sponsorshipCodeRepository.GetByPurchaseIdAsync(message.PurchaseId);
-                    var code = allCodes.FirstOrDefault(c => !c.IsUsed && c.DistributionDate == null);
+                    allocatedCode = code.Code;
 
-                    if (code == null)
+                    // Step 2: Send SMS with code (if SendSms is enabled)
+                    // NOTE: User doesn't need to exist in system - they'll register when redeeming
+                    // This is EXACTLY like SendSponsorshipLinkCommand behavior
+                    if (message.SendSms && !string.IsNullOrEmpty(message.Phone))
                     {
-                        errorMessage = $"No available codes for PurchaseId: {message.PurchaseId}";
-                        _logger.LogWarning("[FARMER_CODE_DISTRIBUTION_NO_CODES] {Error}", errorMessage);
-                        success = false;
+                        // Get sponsor profile information for SMS template
+                        var sponsorProfile = await _sponsorProfileRepository.GetAsync(sp => sp.SponsorId == message.SponsorId);
+                        var sponsorCompanyName = sponsorProfile?.CompanyName ?? "ZiraAI Sponsor";
+
+                        // Get Play Store package name from configuration
+                        var playStorePackageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
+                        var playStoreLink = $"https://play.google.com/store/apps/details?id={playStorePackageName}";
+
+                        // Generate redemption deep link
+                        var baseUrl = _configuration["WebAPI:BaseUrl"]
+                            ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
+                            ?? "https://ziraai.com";
+                        var deepLink = $"{baseUrl.TrimEnd('/')}/redeem/{code.Code}";
+
+                        // Build SMS message (same format as SendSponsorshipLinkCommand)
+                        var farmerName = message.FarmerName ?? "Değerli Üyemiz";
+                        var smsMessage = BuildSmsMessage(farmerName, sponsorCompanyName, code.Code, playStoreLink, deepLink);
+
+                        // Normalize phone number before sending (same as SendSponsorshipLinkCommand.FormatPhoneNumber)
+                        var normalizedPhone = FormatPhoneNumber(message.Phone);
+
+                        var smsService = _messagingFactory.GetSmsService();
+                        var smsResult = await smsService.SendSmsAsync(normalizedPhone, smsMessage);
+
+                        if (smsResult.Success)
+                        {
+                            // Update code entity with distribution info (SAME AS SendSponsorshipLinkCommand)
+                            // NOTE: We do NOT set IsUsed/UsedByUserId/UsedDate here!
+                            // Code is only DISTRIBUTED, not REDEEMED yet
+                            // Farmer will redeem it later through the app
+                            code.RedemptionLink = deepLink;
+                            code.RecipientPhone = normalizedPhone;
+                            code.RecipientName = farmerName;
+                            code.LinkSentDate = DateTime.Now;
+                            code.LinkSentVia = "SMS";
+                            code.LinkDelivered = true;
+                            code.DistributionChannel = "SMS";
+                            code.DistributionDate = DateTime.Now;
+                            code.DistributedTo = $"{farmerName} ({normalizedPhone})";
+
+                            _sponsorshipCodeRepository.Update(code);
+
+                            success = true;
+
+                            _logger.LogInformation(
+                                "[FARMER_CODE_DISTRIBUTION_SMS_SENT] SMS sent - Phone: {Phone}, Code: {Code}",
+                                normalizedPhone, code.Code);
+                        }
+                        else
+                        {
+                            errorMessage = $"SMS failed: {smsResult.Message}";
+                            _logger.LogWarning(
+                                "[FARMER_CODE_DISTRIBUTION_SMS_FAILED] SMS failed - Phone: {Phone}, Error: {Error}",
+                                normalizedPhone, smsResult.Message);
+                            success = false;
+                        }
+                    }
+                    else if (!message.SendSms)
+                    {
+                        // Code allocated but SMS not requested - still success
+                        _logger.LogInformation(
+                            "[FARMER_CODE_DISTRIBUTION_NO_SMS] Code allocated without SMS - Email: {Email}, Code: {Code}",
+                            message.Email, code.Code);
+                        success = true;
                     }
                     else
                     {
-                        // 3. Mark code as used by farmer
-                        code.IsUsed = true;
-                        code.UsedByUserId = user.UserId;
-                        code.UsedDate = DateTime.Now;
-                        code.DealerId = null; // Direct distribution, no dealer
-
-                        _sponsorshipCodeRepository.Update(code);
-
-                        allocatedCode = code.Code;
-
-                        // 4. Send SMS with code (if SendSms is enabled)
-                        if (message.SendSms && !string.IsNullOrEmpty(user.MobilePhones))
-                        {
-                            // Get sponsor profile information for SMS template
-                            var sponsorProfile = await _sponsorProfileRepository.GetAsync(sp => sp.SponsorId == message.SponsorId);
-                            var sponsorCompanyName = sponsorProfile?.CompanyName ?? "ZiraAI Sponsor";
-                            
-                            // Get Play Store package name from configuration
-                            var playStorePackageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
-                            var playStoreLink = $"https://play.google.com/store/apps/details?id={playStorePackageName}";
-                            
-                            // Generate redemption deep link
-                            var baseUrl = _configuration["WebAPI:BaseUrl"]
-                                ?? _configuration["Referral:FallbackDeepLinkBaseUrl"]?.TrimEnd('/').Replace("/ref", "")
-                                ?? "https://ziraai.com";
-                            var deepLink = $"{baseUrl.TrimEnd('/')}/redeem/{code.Code}";
-                            
-                            // Build SMS message (same format as SendSponsorshipLinkCommand)
-                            var farmerName = message.FarmerName ?? user.FullName ?? "Değerli Üyemiz";
-                            var smsMessage = BuildSmsMessage(farmerName, sponsorCompanyName, code.Code, playStoreLink, deepLink);
-                            
-                            // Normalize phone number before sending
-                            var normalizedPhone = NormalizePhoneNumber(user.MobilePhones);
-                            
-                            var smsService = _messagingFactory.GetSmsService();
-                            var smsResult = await smsService.SendSmsAsync(normalizedPhone, smsMessage);
-
-                            if (smsResult.Success)
-                            {
-                                // Update code entity with distribution info
-                                code.RedemptionLink = deepLink;
-                                code.RecipientPhone = normalizedPhone;
-                                code.RecipientName = farmerName;
-                                code.LinkSentDate = DateTime.Now;
-                                code.LinkSentVia = "SMS";
-                                code.LinkDelivered = true;
-                                code.DistributionChannel = "SMS";
-                                code.DistributionDate = DateTime.Now;
-                                code.DistributedTo = $"{farmerName} ({normalizedPhone})";
-                                
-                                _sponsorshipCodeRepository.Update(code);
-                                
-                                _logger.LogInformation(
-                                    "[FARMER_CODE_DISTRIBUTION_SMS_SENT] SMS sent - Phone: {Phone}, Code: {Code}",
-                                    normalizedPhone, code.Code);
-                            }
-                            else
-                            {
-                                _logger.LogWarning(
-                                    "[FARMER_CODE_DISTRIBUTION_SMS_FAILED] SMS failed - Phone: {Phone}, Error: {Error}",
-                                    normalizedPhone, smsResult.Message);
-                            }
-                        }
-
-                        success = true;
-                        _logger.LogInformation(
-                            "[FARMER_CODE_DISTRIBUTION_SUCCESS] Code allocated - Email: {Email}, Code: {Code}, UserId: {UserId}",
-                            message.Email, code.Code, user.UserId);
+                        // No phone number provided
+                        errorMessage = "Phone number is required when SendSms is enabled";
+                        _logger.LogWarning("[FARMER_CODE_DISTRIBUTION_NO_PHONE] {Error}", errorMessage);
+                        success = false;
                     }
                 }
 
-                // Step 4.8: Progress Update Logic (Atomic)
+                // Step 3: Progress Update Logic (Atomic)
                 var bulkJob = await _bulkJobRepository.IncrementProgressAsync(message.BulkJobId, success);
 
                 if (bulkJob == null)
@@ -189,7 +182,7 @@ namespace PlantAnalysisWorkerService.Jobs
                         message.BulkJobId, bulkJob.Status, bulkJob.SuccessfulDistributions, bulkJob.FailedDistributions);
                 }
 
-                // Step 4.9: HTTP Callback Logic
+                // Step 4: HTTP Callback Logic
                 // Send progress notification to WebAPI for SignalR broadcasting
                 var progressDto = new Entities.Dtos.BulkCodeDistributionProgressDto
                 {
@@ -347,7 +340,7 @@ namespace PlantAnalysisWorkerService.Jobs
         }
 
         /// <summary>
-        /// Build SMS message with sponsor info, code, and deep link (same format as SendSponsorshipLinkCommand)
+        /// Build SMS message with sponsor info, code, and deep link (SAME AS SendSponsorshipLinkCommand)
         /// </summary>
         private string BuildSmsMessage(string farmerName, string sponsorCompany, string sponsorCode, string playStoreLink, string deepLink)
         {
@@ -365,30 +358,27 @@ Veya uygulamayı indirin:
         }
 
         /// <summary>
-        /// Normalize phone number to 05XXXXXXXXX format (Turkish mobile format)
+        /// Format phone number (SAME AS SendSponsorshipLinkCommand.FormatPhoneNumber)
+        /// Add Turkey country code and + prefix
         /// </summary>
-        private string NormalizePhoneNumber(string phone)
+        private string FormatPhoneNumber(string phone)
         {
-            if (string.IsNullOrEmpty(phone))
-                return phone;
+            // Remove all non-numeric characters
+            var cleaned = new string(phone.Where(char.IsDigit).ToArray());
 
-            // Remove all non-digit characters
-            var digitsOnly = Regex.Replace(phone, @"\D", string.Empty);
-
-            // Turkish format normalization
-            // +905321234567 → 05321234567
-            if (digitsOnly.StartsWith("90") && digitsOnly.Length == 12)
+            // Add Turkey country code if not present
+            if (!cleaned.StartsWith("90") && cleaned.Length == 10)
             {
-                return "0" + digitsOnly.Substring(2);
+                cleaned = "90" + cleaned;
             }
 
-            // 5321234567 → 05321234567
-            if (!digitsOnly.StartsWith("0") && digitsOnly.Length == 10)
+            // Add + prefix
+            if (!cleaned.StartsWith("+"))
             {
-                return "0" + digitsOnly;
+                cleaned = "+" + cleaned;
             }
 
-            return digitsOnly;
+            return cleaned;
         }
     }
 }

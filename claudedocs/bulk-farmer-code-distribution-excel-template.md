@@ -17,17 +17,17 @@ Excel dosyasının **1. satırı header** olmalıdır ve aşağıdaki sütun isi
 #### Email Validasyonu
 - ✅ Geçerli email formatı olmalı (`user@domain.com`)
 - ✅ Excel içinde duplicate email olmamalı
-- ⚠️ Sistemde kayıtlı olmayan email olması durumunda user bulunmaz hatası verilir
+- ✅ Sistemde kayıtlı olmayan email kabul edilir (user redeem sırasında kayıt olacak)
 
 #### Phone Validasyonu
 - ✅ Türk cep telefonu formatı (5XX XXX XX XX)
 - ✅ Aşağıdaki formatların hepsi kabul edilir ve normalize edilir:
-  - `+905321234567` → `05321234567`
-  - `905321234567` → `05321234567`
-  - `05321234567` → `05321234567`
-  - `5321234567` → `05321234567`
-  - `0532 123 45 67` → `05321234567`
-  - `(0532) 123-45-67` → `05321234567`
+  - `+905321234567` → `+905321234567`
+  - `905321234567` → `+905321234567`
+  - `05321234567` → `+905321234567`
+  - `5321234567` → `+905321234567`
+  - `0532 123 45 67` → `+905321234567`
+  - `(0532) 123-45-67` → `+905321234567`
 - ✅ Excel içinde duplicate phone olmamalı
 
 #### FarmerName Validasyonu
@@ -71,13 +71,13 @@ ali.ozturk@gmail.com     | (0532) 111-22-33| Ali Öztürk
 ```
 Email                    | Phone              | Normalize Sonuç
 -------------------------|--------------------|------------------
-user1@test.com           | +905321234567      | 05321234567
-user2@test.com           | 905321234567       | 05321234567
-user3@test.com           | 05321234567        | 05321234567
-user4@test.com           | 5321234567         | 05321234567
-user5@test.com           | 0532 123 45 67     | 05321234567
-user6@test.com           | (0532) 123-45-67   | 05321234567
-user7@test.com           | 532.123.45.67      | 05321234567
+user1@test.com           | +905321234567      | +905321234567
+user2@test.com           | 905321234567       | +905321234567
+user3@test.com           | 05321234567        | +905321234567
+user4@test.com           | 5321234567         | +905321234567
+user5@test.com           | 0532 123 45 67     | +905321234567
+user6@test.com           | (0532) 123-45-67   | +905321234567
+user7@test.com           | 532.123.45.67      | +905321234567
 ```
 
 ## İşlem Akışı
@@ -284,8 +284,7 @@ https://play.google.com/store/apps/details?id=com.ziraai.app
 ```
 
 **Not:**
-- `FarmerName` boşsa, user'ın `FullName`'i kullanılır
-- `FarmerName` ve `FullName` de boşsa, "Değerli Üyemiz" kullanılır
+- `FarmerName` boşsa, "Değerli Üyemiz" kullanılır (user lookup yapılmaz)
 - Sponsor firma adı `SponsorProfile.CompanyName`'den gelir
 - Boşsa "ZiraAI Sponsor" kullanılır
 
