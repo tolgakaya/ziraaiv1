@@ -496,12 +496,10 @@ connection.onclose((error) => {
 ```typescript
 async function uploadExcelForCodeDistribution(
   file: File,
-  purchaseId: number,
   sendSms: boolean = false
 ): Promise<BulkCodeDistributionJobDto> {
   const formData = new FormData();
   formData.append('excelFile', file);
-  formData.append('purchaseId', purchaseId.toString());
   formData.append('sendSms', sendSms.toString());
 
   const response = await fetch(
@@ -787,7 +785,6 @@ const BulkCodeDistribution: React.FC<BulkCodeDistributionProps> = ({
 
     const formData = new FormData();
     formData.append('excelFile', file);
-    formData.append('purchaseId', '26'); // Example purchase ID
     formData.append('sendSms', 'true');
 
     try {
@@ -865,7 +862,7 @@ export default BulkCodeDistribution;
 
 1. **Request Parameters**:
    - Dealer: `invitationType`, `sendSms`, `sendWhatsApp`, `message`
-   - Farmer: `purchaseId`, `sendSms` only
+   - Farmer: `sendSms` only (purchaseId auto-selected)
 
 2. **Response DTOs**:
    - Dealer: `BulkInvitationJobDto` (simpler)
@@ -889,7 +886,7 @@ export default BulkCodeDistribution;
 
 1. Duplicate dealer invitation component
 2. Replace endpoint URLs
-3. Update request parameters (remove `invitationType`, add `purchaseId`)
+3. Update request parameters (remove `invitationType`, `purchaseId` is auto-selected)
 4. Update SignalR event names
 5. Add result download functionality
 6. Update UI labels and messages

@@ -21,7 +21,6 @@ namespace Business.Services.Sponsorship
         Task<IDataResult<BulkCodeDistributionJobDto>> QueueBulkCodeDistributionAsync(
             IFormFile excelFile,
             int sponsorId,
-            int purchaseId,
             bool sendSms);
     }
 
@@ -59,14 +58,13 @@ namespace Business.Services.Sponsorship
         public async Task<IDataResult<BulkCodeDistributionJobDto>> QueueBulkCodeDistributionAsync(
             IFormFile excelFile,
             int sponsorId,
-            int purchaseId,
             bool sendSms)
         {
             try
             {
                 _logger.LogInformation(
-                    "📤 Starting bulk farmer code distribution - SponsorId: {SponsorId}, PurchaseId: {PurchaseId}, SendSms: {SendSms}",
-                    sponsorId, purchaseId, sendSms);
+                    "📤 Starting bulk farmer code distribution - SponsorId: {SponsorId}, SendSms: {SendSms}",
+                    sponsorId, sendSms);
 
                 // 1. Validate file
                 var fileValidation = ValidateFile(excelFile);
@@ -75,14 +73,15 @@ namespace Business.Services.Sponsorship
                     return new ErrorDataResult<BulkCodeDistributionJobDto>(fileValidation.Message);
                 }
 
-                // 2. Validate purchase ownership and status
-                var purchaseValidation = await ValidatePurchaseAsync(purchaseId, sponsorId);
-                if (!purchaseValidation.Success)
+                // 2. Find latest purchase with available codes
+                var purchaseResult = await FindLatestPurchaseWithAvailableCodesAsync(sponsorId);
+                if (!purchaseResult.Success)
                 {
-                    return new ErrorDataResult<BulkCodeDistributionJobDto>(purchaseValidation.Message);
+                    return new ErrorDataResult<BulkCodeDistributionJobDto>(purchaseResult.Message);
                 }
 
-                var purchase = purchaseValidation.Data;
+                var purchase = purchaseResult.Data;
+                var purchaseId = purchase.Id;
 
                 // 3. Parse Excel (header-based)
                 var rows = await ParseExcelAsync(excelFile);
@@ -246,6 +245,44 @@ namespace Business.Services.Sponsorship
             }
 
             return new SuccessResult();
+        }
+
+        private async Task<IDataResult<SponsorshipPurchase>> FindLatestPurchaseWithAvailableCodesAsync(int sponsorId)
+        {
+            // Get all completed purchases for this sponsor
+            var completedPurchases = await _purchaseRepository.GetListAsync(p =>
+                p.SponsorId == sponsorId &&
+                p.PaymentStatus == "Completed");
+
+            if (!completedPurchases.Any())
+            {
+                return new ErrorDataResult<SponsorshipPurchase>(
+                    "Ödeme tamamlanmış satın alma bulunamadı. Lütfen önce sponsorluk paketi satın alın.");
+            }
+
+            // For each purchase, check if it has available codes
+            foreach (var purchase in completedPurchases.OrderByDescending(p => p.PurchaseDate))
+            {
+                var availableCodes = await _codeRepository.GetListAsync(c =>
+                    c.SponsorId == sponsorId &&
+                    c.SponsorshipPurchaseId == purchase.Id &&
+                    !c.IsUsed &&
+                    c.UsedByUserId == null &&
+                    c.DealerId == null &&
+                    c.DistributionDate == null &&
+                    c.ExpiryDate > DateTime.Now);
+
+                if (availableCodes.Any())
+                {
+                    _logger.LogInformation(
+                        "✅ Auto-selected purchase {PurchaseId} with {AvailableCount} available codes",
+                        purchase.Id, availableCodes.Count());
+                    return new SuccessDataResult<SponsorshipPurchase>(purchase);
+                }
+            }
+
+            return new ErrorDataResult<SponsorshipPurchase>(
+                "Kullanılabilir kodu olan satın alma bulunamadı. Lütfen yeni sponsorluk paketi satın alın veya mevcut kodları kontrol edin.");
         }
 
         private async Task<IDataResult<SponsorshipPurchase>> ValidatePurchaseAsync(int purchaseId, int sponsorId)

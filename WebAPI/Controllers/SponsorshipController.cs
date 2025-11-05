@@ -2605,11 +2605,10 @@ namespace WebAPI.Controllers
 
         /// <summary>
         /// Upload Excel file for bulk farmer code distribution
-        /// Accepts up to 2000 farmer records with email, phone, name, and code count
-        /// Distributes sponsorship codes from a specific purchase to multiple farmers
+        /// Accepts up to 2000 farmer records with email, phone, and name
+        /// Automatically uses the latest purchase with available codes
         /// </summary>
-        /// <param name="excelFile">Excel file with farmer list (Email, Phone, FarmerName, CodeCount columns)</param>
-        /// <param name="purchaseId">Purchase ID to use for code distribution</param>
+        /// <param name="excelFile">Excel file with farmer list (Email, Phone, FarmerName columns)</param>
         /// <param name="sendSms">Send SMS notification to farmers (optional)</param>
         /// <returns>Job ID and status check URL</returns>
         [Authorize(Roles = "Sponsor,Admin")]
@@ -2619,7 +2618,6 @@ namespace WebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> BulkDistributeCodesToFarmers(
             [FromForm] IFormFile excelFile,
-            [FromForm] int purchaseId,
             [FromForm] bool sendSms = false)
         {
             try
@@ -2628,13 +2626,12 @@ namespace WebAPI.Controllers
                 if (!userId.HasValue)
                     return Unauthorized();
 
-                _logger.LogInformation("🔔 Bulk farmer code distribution initiated by sponsor {SponsorId}, PurchaseId: {PurchaseId}, SendSms: {SendSms}",
-                    userId.Value, purchaseId, sendSms);
+                _logger.LogInformation("🔔 Bulk farmer code distribution initiated by sponsor {SponsorId}, SendSms: {SendSms}",
+                    userId.Value, sendSms);
 
                 var result = await _bulkCodeDistributionService.QueueBulkCodeDistributionAsync(
                     excelFile,
                     userId.Value,
-                    purchaseId,
                     sendSms);
 
                 if (result.Success)

@@ -89,10 +89,11 @@ Content-Type: multipart/form-data
 
 {
   "excelFile": [Excel dosyası],
-  "purchaseId": 26,
   "sendSms": true
 }
 ```
+
+**Not:** PurchaseId artık gerekli değil. Sistem otomatik olarak sponsor'ın kullanılabilir kodları olan en son satın almasını kullanır.
 
 ### 2. Validasyon Adımları
 
@@ -101,9 +102,9 @@ Content-Type: multipart/form-data
    - Dosya formatı kontrolü (.xlsx, .xls)
 
 2. **Purchase Validasyonu**
-   - PurchaseId var mı?
-   - Sponsor'a ait mi?
-   - Ödeme tamamlanmış mı?
+   - Sponsor'ın ödeme tamamlanmış satın alması var mı?
+   - Kullanılabilir kodları olan en son satın alma bulunur
+   - Yeterli kod var mı kontrol edilir
 
 3. **Excel Parse**
    - Header satırı okunur
@@ -293,10 +294,9 @@ https://play.google.com/store/apps/details?id=com.ziraai.app
 Excel yükleme için örnek form:
 
 ```typescript
-const uploadExcel = async (file: File, purchaseId: number, sendSms: boolean) => {
+const uploadExcel = async (file: File, sendSms: boolean) => {
   const formData = new FormData();
   formData.append('excelFile', file);
-  formData.append('purchaseId', purchaseId.toString());
   formData.append('sendSms', sendSms.toString());
 
   const response = await fetch('/api/v1/sponsorship/bulk-code-distribution', {
