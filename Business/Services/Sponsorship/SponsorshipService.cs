@@ -534,7 +534,14 @@ namespace Business.Services.Sponsorship
                     query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
                 }
                 
-                query = query.Where(x => x.DistributionDate == null);
+                query = query.Where(x => x.DistributionDate == null)
+
+                
+                    .Where(x => x.IsUsed == false);  // Only include unused codes
+
+                
+                
+
                 
                 // 🆕 Exclude codes reserved for dealer invitations if requested
                 if (excludeReserved)
