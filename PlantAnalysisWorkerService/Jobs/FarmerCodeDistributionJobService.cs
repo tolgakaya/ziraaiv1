@@ -1,3 +1,4 @@
+using Business.Services.Logging;
 using Business.Services.Messaging;
 using Business.Services.Messaging.Factories;
 using Business.Services.Sponsorship;
@@ -30,6 +31,7 @@ namespace PlantAnalysisWorkerService.Jobs
         private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
         private readonly ISponsorProfileRepository _sponsorProfileRepository;
         private readonly IMessagingServiceFactory _messagingFactory;
+        private readonly ISmsLoggingService _smsLoggingService;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<FarmerCodeDistributionJobService> _logger;
@@ -39,6 +41,7 @@ namespace PlantAnalysisWorkerService.Jobs
             ISponsorshipCodeRepository sponsorshipCodeRepository,
             ISponsorProfileRepository sponsorProfileRepository,
             IMessagingServiceFactory messagingFactory,
+            ISmsLoggingService smsLoggingService,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
             ILogger<FarmerCodeDistributionJobService> logger)
@@ -47,6 +50,7 @@ namespace PlantAnalysisWorkerService.Jobs
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
             _messagingFactory = messagingFactory;
+            _smsLoggingService = smsLoggingService;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
@@ -127,6 +131,22 @@ namespace PlantAnalysisWorkerService.Jobs
                             _sponsorshipCodeRepository.Update(code);
 
                             success = true;
+
+                            // Log SMS to database (if enabled via configuration)
+                            await _smsLoggingService.LogCodeDistributeAsync(
+                                phone: normalizedPhone,
+                                message: smsMessage,
+                                code: code.Code,
+                                sponsorId: message.SponsorId,
+                                senderUserId: message.SponsorId,
+                                additionalData: new
+                                {
+                                    farmerName,
+                                    farmerEmail = message.Email,
+                                    bulkJobId = message.BulkJobId,
+                                    rowNumber = message.RowNumber,
+                                    purchaseId = message.PurchaseId
+                                });
 
                             _logger.LogInformation(
                                 "[FARMER_CODE_DISTRIBUTION_SMS_SENT] SMS sent - Phone: {Phone}, Code: {Code}",
