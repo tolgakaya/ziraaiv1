@@ -13,6 +13,7 @@ using Business.Services.Redemption;
 using Business.Services.Notification;
 using Business.Services.SponsorRequest;
 using Business.Services.MobileIntegration;
+using Business.Services.Analytics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
@@ -379,6 +380,11 @@ namespace Business.DependencyResolvers
             }
 
             // Subscription System Services
+
+            // Analytics Services
+            builder.RegisterType<Business.Services.Analytics.SponsorDealerAnalyticsCacheService>()
+                .As<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService>()
+                .InstancePerLifetimeScope();
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
                 .Where(t => !t.IsAssignableTo<IFileStorageService>()) // Exclude file storage services to prevent override

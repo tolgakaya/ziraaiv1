@@ -1,4 +1,5 @@
 using Business.Handlers.Sponsorship.Commands;
+using Business.Handlers.Sponsorship.Commands;
 using Business.Handlers.Sponsorship.Queries;
 using Business.Handlers.Sponsorships.Queries;
 using Business.Handlers.SponsorProfiles.Commands;
@@ -331,6 +332,8 @@ namespace WebAPI.Controllers
         /// <param name="onlyUnsent">Return only codes never sent to farmers (DistributionDate IS NULL) - RECOMMENDED for distribution</param>
         /// <param name="sentDaysAgo">Return codes sent X days ago but still unused (e.g., 7 for codes sent 1 week ago)</param>
         /// <param name="onlySentExpired">Return only codes sent to farmers but expired without being used - OPTIMIZED for millions of rows</param>
+        /// <param name="excludeDealerTransferred">Exclude codes that were transferred to dealers (dealerTransferId != null)</param>
+        /// <param name="excludeReserved">Exclude codes reserved for dealer invitations (reservedForInvitationId != null) - RECOMMENDED for farmer distribution</param>
         /// <param name="page">Page number (default: 1)</param>
         /// <param name="pageSize">Items per page (default: 50, max: 200)</param>
         /// <returns>Paginated list of sponsorship codes with total count and navigation info</returns>
@@ -342,6 +345,7 @@ namespace WebAPI.Controllers
             [FromQuery] int? sentDaysAgo = null,
             [FromQuery] bool onlySentExpired = false,
             [FromQuery] bool excludeDealerTransferred = false,
+            [FromQuery] bool excludeReserved = false,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50)
         {
@@ -364,6 +368,7 @@ namespace WebAPI.Controllers
                 SentDaysAgo = sentDaysAgo,
                 OnlySentExpired = onlySentExpired,
                 ExcludeDealerTransferred = excludeDealerTransferred,
+                ExcludeReserved = excludeReserved,
                 Page = page,
                 PageSize = pageSize
             };
@@ -409,7 +414,7 @@ namespace WebAPI.Controllers
         /// Get farmers sponsored by current sponsor
         /// </summary>
         /// <returns>List of sponsored farmers</returns>
-        [Authorize(Roles = "Sponsor,Admin")]
+        [Authorize(Roles = "Admin")]
         [HttpGet("farmers")]
         public async Task<IActionResult> GetSponsoredFarmers()
         {
@@ -1988,6 +1993,52 @@ namespace WebAPI.Controllers
             {
                 _logger.LogError(ex, "Error accepting dealer invitation for user {UserId}", GetUserId());
                 return StatusCode(500, new ErrorResult($"Invitation acceptance failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Cancel a pending dealer invitation
+        /// Releases reserved codes back to sponsor's available pool
+        /// Only the sponsor who created the invitation can cancel it
+        /// </summary>
+        /// <param name="invitationId">ID of the invitation to cancel</param>
+        /// <returns>Cancellation result with released code count</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpDelete("dealer/invitations/{invitationId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> CancelDealerInvitation([FromRoute] int invitationId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var command = new CancelDealerInvitationCommand
+                {
+                    InvitationId = invitationId,
+                    SponsorId = userId.Value
+                };
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Sponsor {SponsorId} cancelled invitation {InvitationId}",
+                        userId.Value, invitationId);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling invitation {InvitationId} for sponsor {UserId}",
+                    invitationId, GetUserId());
+                return StatusCode(500, new ErrorResult($"Invitation cancellation failed: {ex.Message}"));
             }
         }
 
