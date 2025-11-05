@@ -44,12 +44,12 @@ namespace DataAccess.Concrete.EntityFramework
                 SET
                     ""ProcessedFarmers"" = ""ProcessedFarmers"" + 1,
                     {successField} = {successField} + 1,
-                    ""TotalCodesDistributed"" = ""TotalCodesDistributed"" + {{1}}
+                    ""TotalCodesDistributed"" = ""TotalCodesDistributed"" + {{0}}
                     {smsIncrement}
-                WHERE ""Id"" = {{0}}";
+                WHERE ""Id"" = {{1}}";
 
             // Execute UPDATE without RETURNING (prevents EF Core non-composable SQL error)
-            await Context.Database.ExecuteSqlRawAsync(sql, bulkJobId, codesDistributed);
+            await Context.Database.ExecuteSqlRawAsync(sql, codesDistributed, bulkJobId);
 
             // Fetch the updated entity in a separate query
             var updatedJob = await Context.BulkCodeDistributionJobs
