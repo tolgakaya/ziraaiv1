@@ -8,6 +8,22 @@
 
 ---
 
+## ⚠️ CRITICAL BUG FIX INCLUDED
+
+### Bug Fixed: `onlyUnsent=true` Was Returning Used Codes
+**Problem**: The `onlyUnsent=true` parameter was incorrectly returning codes with `isUsed=true`.
+
+**Root Cause**: `GetUnsentSponsorCodesAsync` only checked `distributionDate==null` but didn't verify `isUsed==false`. This caused used codes (redeemed manually via QR/deep link) to appear as "available for distribution".
+
+**Fix Applied**: Added `.Where(x => x.IsUsed == false)` filter to ensure only truly unused codes are returned.
+
+**Impact**: 
+- ✅ Fixed: Farmer code distribution screens now show only genuinely available codes
+- ✅ Consistent: Now matches behavior of other filtering methods
+- ✅ Data Integrity: Prevents re-distribution of already-used codes
+
+---
+
 ## 📢 What Changed?
 
 ### New API Parameter Available
@@ -18,6 +34,26 @@ Endpoint `GET /api/v1/sponsorship/codes` now supports a new query parameter:
 **Type**: `boolean`
 **Default**: `false` (backward compatible)
 **Purpose**: Exclude codes reserved for dealer invitations from response
+
+
+
+### Bug Fix: `IsUsed` Filter Added to `onlyUnsent`
+
+**Previous Behavior** (❌ BUG):
+```http
+GET /api/v1/sponsorship/codes?onlyUnsent=true
+```
+Returned codes where:
+- `distributionDate == null` ✅
+- **BUT** `isUsed` could be `true` ❌ (WRONG!)
+
+**New Behavior** (✅ FIXED):
+```http
+GET /api/v1/sponsorship/codes?onlyUnsent=true
+```
+Now returns codes where:
+- `distributionDate == null` ✅
+- **AND** `isUsed == false` ✅ (CORRECT!)
 
 ---
 
@@ -133,6 +169,35 @@ this.sponsorshipService.getSponsorshipCodes({
 2. **Component Files**:
    - Any component calling `getSponsorshipCodes()`
    - Update call sites to pass `excludeReserved: true`
+
+---
+
+## 🐛 Critical Bugs Fixed
+
+### Bug 1: Used Codes in "Unsent" List (FIXED ✅)
+**Issue**: `onlyUnsent=true` was incorrectly returning codes with `isUsed=true`
+
+**Root Cause**: Method only checked `distributionDate==null`, missing `isUsed==false` validation
+
+**Example from codes1.json**:
+```json
+{
+  "id": 981,
+  "isUsed": true,              // ❌ Code was USED
+  "distributionDate": null     // But NOT sent via link
+}
+```
+This code appeared in "unsent" list even though already redeemed!
+
+**Fix Applied**: Added `Where(x => x.IsUsed == false)` to `GetUnsentSponsorCodesAsync`
+**File**: `Business/Services/Sponsorship/SponsorshipService.cs:544`
+**Commit**: `1d28e06`
+
+### Bug 2: Reserved Codes in Distribution (FIXED ✅)  
+**Issue**: Codes reserved for dealer invitations appearing in farmer distribution screens
+
+**Fix Applied**: New `excludeReserved` parameter filters `reservedForInvitationId != null`
+**Commit**: `7be638a`
 
 ---
 
