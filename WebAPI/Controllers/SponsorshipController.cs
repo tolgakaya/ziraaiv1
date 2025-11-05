@@ -332,6 +332,8 @@ namespace WebAPI.Controllers
         /// <param name="onlyUnsent">Return only codes never sent to farmers (DistributionDate IS NULL) - RECOMMENDED for distribution</param>
         /// <param name="sentDaysAgo">Return codes sent X days ago but still unused (e.g., 7 for codes sent 1 week ago)</param>
         /// <param name="onlySentExpired">Return only codes sent to farmers but expired without being used - OPTIMIZED for millions of rows</param>
+        /// <param name="excludeDealerTransferred">Exclude codes that were transferred to dealers (dealerTransferId != null)</param>
+        /// <param name="excludeReserved">Exclude codes reserved for dealer invitations (reservedForInvitationId != null) - RECOMMENDED for farmer distribution</param>
         /// <param name="page">Page number (default: 1)</param>
         /// <param name="pageSize">Items per page (default: 50, max: 200)</param>
         /// <returns>Paginated list of sponsorship codes with total count and navigation info</returns>
@@ -343,6 +345,7 @@ namespace WebAPI.Controllers
             [FromQuery] int? sentDaysAgo = null,
             [FromQuery] bool onlySentExpired = false,
             [FromQuery] bool excludeDealerTransferred = false,
+            [FromQuery] bool excludeReserved = false,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50)
         {
@@ -365,6 +368,7 @@ namespace WebAPI.Controllers
                 SentDaysAgo = sentDaysAgo,
                 OnlySentExpired = onlySentExpired,
                 ExcludeDealerTransferred = excludeDealerTransferred,
+                ExcludeReserved = excludeReserved,
                 Page = page,
                 PageSize = pageSize
             };

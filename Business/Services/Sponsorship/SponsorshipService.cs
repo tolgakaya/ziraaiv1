@@ -416,7 +416,7 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false, bool excludeReserved = false)
         {
             try
             {
@@ -432,6 +432,12 @@ namespace Business.Services.Sponsorship
                 {
                     // Include both sponsor's own codes AND dealer-transferred codes (backward compatibility)
                     query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
+                }
+                
+                // 🆕 Exclude codes reserved for dealer invitations if requested
+                if (excludeReserved)
+                {
+                    query = query.Where(x => x.ReservedForInvitationId == null);
                 }
                 
                 query = query.OrderByDescending(x => x.CreatedDate);
@@ -459,7 +465,7 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnusedSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnusedSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false, bool excludeReserved = false)
         {
             try
             {
@@ -477,8 +483,15 @@ namespace Business.Services.Sponsorship
                     query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
                 }
                 
-                query = query.Where(x => x.IsUsed == false)
-                    .OrderByDescending(x => x.CreatedDate);
+                query = query.Where(x => x.IsUsed == false);
+                
+                // 🆕 Exclude codes reserved for dealer invitations if requested
+                if (excludeReserved)
+                {
+                    query = query.Where(x => x.ReservedForInvitationId == null);
+                }
+                
+                query = query.OrderByDescending(x => x.CreatedDate);
 
                 var totalCount = await query.CountAsync();
                 var items = await query
@@ -503,7 +516,7 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnsentSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetUnsentSponsorCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false, bool excludeReserved = false)
         {
             try
             {
@@ -521,8 +534,15 @@ namespace Business.Services.Sponsorship
                     query = query.Where(x => x.SponsorId == sponsorId || x.DealerId == sponsorId);
                 }
                 
-                query = query.Where(x => x.DistributionDate == null)
-                    .OrderByDescending(x => x.CreatedDate);
+                query = query.Where(x => x.DistributionDate == null);
+                
+                // 🆕 Exclude codes reserved for dealer invitations if requested
+                if (excludeReserved)
+                {
+                    query = query.Where(x => x.ReservedForInvitationId == null);
+                }
+                
+                query = query.OrderByDescending(x => x.CreatedDate);
 
                 var totalCount = await query.CountAsync();
                 var items = await query
@@ -548,7 +568,7 @@ namespace Business.Services.Sponsorship
             }
         }
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int sentDaysAgo, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentButUnusedSponsorCodesAsync(int sponsorId, int sentDaysAgo, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false, bool excludeReserved = false)
         {
             try
             {
@@ -570,8 +590,15 @@ namespace Business.Services.Sponsorship
                 
                 query = query.Where(x => x.DistributionDate != null)
                     .Where(x => x.DistributionDate.Value.Date == cutoffDate.Date)
-                    .Where(x => x.IsUsed == false)
-                    .OrderByDescending(x => x.DistributionDate);
+                    .Where(x => x.IsUsed == false);
+                
+                // 🆕 Exclude codes reserved for dealer invitations if requested
+                if (excludeReserved)
+                {
+                    query = query.Where(x => x.ReservedForInvitationId == null);
+                }
+                
+                query = query.OrderByDescending(x => x.DistributionDate);
 
                 var totalCount = await query.CountAsync();
                 var items = await query
@@ -598,7 +625,7 @@ namespace Business.Services.Sponsorship
         }
 
 
-        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentExpiredCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false)
+        public async Task<IDataResult<SponsorshipCodesPaginatedDto>> GetSentExpiredCodesAsync(int sponsorId, int page = 1, int pageSize = 50, bool excludeDealerTransferred = false, bool excludeReserved = false)
         {
             try
             {
@@ -618,8 +645,15 @@ namespace Business.Services.Sponsorship
                 
                 query = query.Where(x => x.DistributionDate != null)
                     .Where(x => x.ExpiryDate < DateTime.Now)
-                    .Where(x => x.IsUsed == false)
-                    .OrderByDescending(x => x.ExpiryDate)
+                    .Where(x => x.IsUsed == false);
+                
+                // 🆕 Exclude codes reserved for dealer invitations if requested
+                if (excludeReserved)
+                {
+                    query = query.Where(x => x.ReservedForInvitationId == null);
+                }
+                
+                query = query.OrderByDescending(x => x.ExpiryDate)
                     .ThenByDescending(x => x.DistributionDate);
 
                 var totalCount = await query.CountAsync();

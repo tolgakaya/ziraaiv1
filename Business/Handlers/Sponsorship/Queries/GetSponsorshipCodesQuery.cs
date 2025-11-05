@@ -17,6 +17,7 @@ namespace Business.Handlers.Sponsorship.Queries
         public int? SentDaysAgo { get; set; } = null;
         public bool OnlySentExpired { get; set; } = false;
         public bool ExcludeDealerTransferred { get; set; } = false;
+        public bool ExcludeReserved { get; set; } = false;
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 50;
 
@@ -38,7 +39,8 @@ namespace Business.Handlers.Sponsorship.Queries
                         request.SponsorId,
                         request.Page,
                         request.PageSize,
-                        request.ExcludeDealerTransferred);
+                        request.ExcludeDealerTransferred,
+                        request.ExcludeReserved);
                 }
 
                 // Priority 2: OnlyUnsent - codes never sent to farmers (DistributionDate IS NULL)
@@ -48,7 +50,8 @@ namespace Business.Handlers.Sponsorship.Queries
                         request.SponsorId,
                         request.Page,
                         request.PageSize,
-                        request.ExcludeDealerTransferred);
+                        request.ExcludeDealerTransferred,
+                        request.ExcludeReserved);
                 }
 
                 // Priority 3: SentDaysAgo - codes sent X days ago but still unused
@@ -59,7 +62,8 @@ namespace Business.Handlers.Sponsorship.Queries
                         request.SentDaysAgo.Value,
                         request.Page,
                         request.PageSize,
-                        request.ExcludeDealerTransferred);
+                        request.ExcludeDealerTransferred,
+                        request.ExcludeReserved);
                 }
 
                 // Priority 4: OnlyUnused - codes not redeemed (includes both sent and unsent)
@@ -69,7 +73,8 @@ namespace Business.Handlers.Sponsorship.Queries
                         request.SponsorId,
                         request.Page,
                         request.PageSize,
-                        request.ExcludeDealerTransferred);
+                        request.ExcludeDealerTransferred,
+                        request.ExcludeReserved);
                 }
 
                 // Default: All codes (paginated)
@@ -77,7 +82,8 @@ namespace Business.Handlers.Sponsorship.Queries
                     request.SponsorId,
                     request.Page,
                     request.PageSize,
-                    request.ExcludeDealerTransferred);
+                    request.ExcludeDealerTransferred,
+                    request.ExcludeReserved);
             }
         }
     }
