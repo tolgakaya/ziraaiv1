@@ -44,17 +44,23 @@ namespace WebAPI.Controllers
         private readonly ISponsorshipTierMappingService _tierMappingService;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
         private readonly IConfiguration _configuration;
+        private readonly IBulkCodeDistributionService _bulkCodeDistributionService;
+        private readonly IBulkCodeDistributionJobRepository _bulkJobRepository;
 
         public SponsorshipController(
             ILogger<SponsorshipController> logger,
             ISponsorshipTierMappingService tierMappingService,
             ISubscriptionTierRepository subscriptionTierRepository,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IBulkCodeDistributionService bulkCodeDistributionService,
+            IBulkCodeDistributionJobRepository bulkJobRepository)
         {
             _logger = logger;
             _tierMappingService = tierMappingService;
             _subscriptionTierRepository = subscriptionTierRepository;
             _configuration = configuration;
+            _bulkCodeDistributionService = bulkCodeDistributionService;
+            _bulkJobRepository = bulkJobRepository;
         }
         /// <summary>
         /// Get subscription tiers for sponsor package purchase selection
@@ -2594,5 +2600,281 @@ namespace WebAPI.Controllers
                 return StatusCode(500, new ErrorResult($"Job history retrieval failed: {ex.Message}"));
             }
         }
+
+        // ====== BULK FARMER CODE DISTRIBUTION ENDPOINTS ======
+
+        /// <summary>
+        /// Upload Excel file for bulk farmer code distribution
+        /// Accepts up to 2000 farmer records with email, phone, name, and code count
+        /// Distributes sponsorship codes from a specific purchase to multiple farmers
+        /// </summary>
+        /// <param name="excelFile">Excel file with farmer list (Email, Phone, FarmerName, CodeCount columns)</param>
+        /// <param name="purchaseId">Purchase ID to use for code distribution</param>
+        /// <param name="sendSms">Send SMS notification to farmers (optional)</param>
+        /// <returns>Job ID and status check URL</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("bulk-code-distribution")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkCodeDistributionJobDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> BulkDistributeCodesToFarmers(
+            [FromForm] IFormFile excelFile,
+            [FromForm] int purchaseId,
+            [FromForm] bool sendSms = false)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                _logger.LogInformation("🔔 Bulk farmer code distribution initiated by sponsor {SponsorId}, PurchaseId: {PurchaseId}, SendSms: {SendSms}",
+                    userId.Value, purchaseId, sendSms);
+
+                var result = await _bulkCodeDistributionService.QueueBulkCodeDistributionAsync(
+                    excelFile,
+                    userId.Value,
+                    purchaseId,
+                    sendSms);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("✅ Bulk code distribution job {JobId} created successfully with {TotalFarmers} farmers",
+                        result.Data.JobId, result.Data.TotalFarmers);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("⚠️ Bulk code distribution failed: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error processing bulk code distribution for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Bulk code distribution processing failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get status of a specific bulk code distribution job
+        /// Returns current progress, success/failure counts, and job status
+        /// </summary>
+        /// <param name="jobId">Bulk job ID</param>
+        /// <returns>Job status with progress details</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("bulk-code-distribution/status/{jobId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkCodeDistributionProgressDto>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetBulkCodeDistributionJobStatus(int jobId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                // Fetch job and verify ownership
+                var job = await _bulkJobRepository.GetAsync(j => j.Id == jobId && j.SponsorId == userId.Value);
+                
+                if (job == null)
+                {
+                    _logger.LogWarning("⚠️ Bulk code distribution job {JobId} not found or access denied for sponsor {SponsorId}", 
+                        jobId, userId.Value);
+                    return NotFound(new ErrorResult("Job bulunamadı veya erişim yetkiniz yok."));
+                }
+
+                // Map to ProgressDto
+                var progressDto = new BulkCodeDistributionProgressDto
+                {
+                    JobId = job.Id,
+                    Status = job.Status,
+                    TotalFarmers = job.TotalFarmers,
+                    ProcessedFarmers = job.ProcessedFarmers,
+                    SuccessfulDistributions = job.SuccessfulDistributions,
+                    FailedDistributions = job.FailedDistributions,
+                    ProgressPercentage = job.TotalFarmers > 0 
+                        ? (int)((job.ProcessedFarmers * 100.0) / job.TotalFarmers) 
+                        : 0,
+                    TotalCodesDistributed = job.TotalCodesDistributed,
+                    TotalSmsSent = job.TotalSmsSent,
+                    CreatedDate = job.CreatedDate,
+                    StartedDate = job.StartedDate,
+                    CompletedDate = job.CompletedDate,
+                    EstimatedTimeRemaining = job.Status == "Processing" && job.ProcessedFarmers > 0
+                        ? $"{((job.TotalFarmers - job.ProcessedFarmers) * 0.5):F1} dakika"
+                        : null,
+                    ResultFileUrl = job.ResultFileUrl,
+                    ErrorSummary = job.ErrorSummary
+                };
+
+                _logger.LogInformation("📊 Bulk code distribution job {JobId} status retrieved for sponsor {SponsorId}: {Status}",
+                    jobId, userId.Value, job.Status);
+
+                return Ok(new SuccessDataResult<BulkCodeDistributionProgressDto>(progressDto, "Job durumu başarıyla alındı."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error retrieving bulk code distribution job status {JobId} for sponsor {UserId}", jobId, GetUserId());
+                return StatusCode(500, new ErrorResult($"Job status retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get history of all bulk code distribution jobs for current sponsor
+        /// Supports optional status filter and pagination
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 20)</param>
+        /// <param name="status">Optional status filter (Pending, Processing, Completed, PartialSuccess, Failed)</param>
+        /// <returns>List of bulk code distribution jobs</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("bulk-code-distribution/history")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<BulkCodeDistributionJob>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetBulkCodeDistributionJobHistory(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string status = null)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                // Build query
+                var query = _bulkJobRepository.GetListAsync(j => j.SponsorId == userId.Value);
+                
+                // Apply status filter if provided
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    query = _bulkJobRepository.GetListAsync(j => 
+                        j.SponsorId == userId.Value && 
+                        j.Status == status);
+                }
+
+                var jobs = await query;
+                
+                // Sort by CreatedDate descending
+                var sortedJobs = jobs.OrderByDescending(j => j.CreatedDate);
+                
+                // Apply pagination
+                var paginatedJobs = sortedJobs
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                _logger.LogInformation("📚 Retrieved {Count} bulk code distribution jobs for sponsor {SponsorId} (Page {Page}/{PageSize}, Status: {Status})",
+                    paginatedJobs.Count, userId.Value, page, pageSize, status ?? "All");
+
+                return Ok(new SuccessDataResult<List<BulkCodeDistributionJob>>(
+                    paginatedJobs, 
+                    $"{paginatedJobs.Count} job bulundu."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error retrieving bulk code distribution job history for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Job history retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Download result Excel file for completed bulk code distribution job
+        /// Contains distribution status for each farmer (success/failure)
+        /// </summary>
+        /// <param name="jobId">Bulk job ID</param>
+        /// <returns>Excel file with distribution results</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("bulk-code-distribution/{jobId}/result")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> DownloadBulkCodeDistributionResult(int jobId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var job = await _bulkJobRepository.GetAsync(j => j.Id == jobId && j.SponsorId == userId.Value);
+                
+                if (job == null)
+                {
+                    return NotFound(new ErrorResult("Job bulunamadı veya erişim yetkiniz yok."));
+                }
+
+                if (string.IsNullOrWhiteSpace(job.ResultFileUrl))
+                {
+                    return NotFound(new ErrorResult("Sonuç dosyası henüz hazır değil."));
+                }
+
+                // TODO: Implement file download from ResultFileUrl
+                // For now, return the URL
+                return Ok(new SuccessDataResult<string>(job.ResultFileUrl, "Sonuç dosyası URL'si alındı."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error downloading result file for job {JobId}", jobId);
+                return StatusCode(500, new ErrorResult($"Result file download failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Worker callback endpoint for bulk code distribution progress updates
+        /// Called by WorkerService after processing each farmer
+        /// </summary>
+        /// <param name="update">Progress update details</param>
+        /// <returns>Acknowledgment</returns>
+        [Authorize(Roles = "Worker,Admin")]
+        [HttpPost("bulk-operations/code-distribution-callback")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> BulkCodeDistributionCallback([FromBody] BulkCodeDistributionCallbackRequest update)
+        {
+            try
+            {
+                _logger.LogInformation("📥 Bulk code distribution callback - JobId: {JobId}, RowNumber: {RowNumber}, Success: {Success}",
+                    update.BulkJobId, update.RowNumber, update.Success);
+
+                // Atomic increment using repository method
+                await _bulkJobRepository.IncrementProgressAsync(
+                    update.BulkJobId,
+                    update.Success,
+                    update.CodesDistributed,
+                    update.SmsSent);
+
+                // Check if job is complete
+                var isComplete = await _bulkJobRepository.CheckAndMarkCompleteAsync(update.BulkJobId);
+
+                if (isComplete)
+                {
+                    _logger.LogInformation("✅ Bulk code distribution job {JobId} marked as complete", update.BulkJobId);
+                    
+                    // TODO: Trigger SignalR notification to client
+                    // await _signalRService.NotifyJobComplete(update.BulkJobId);
+                }
+
+                return Ok(new SuccessResult("Progress updated successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error processing code distribution callback for job {JobId}", update.BulkJobId);
+                return BadRequest(new ErrorResult($"Callback processing failed: {ex.Message}"));
+            }
+        }
     }
+}
+
+/// <summary>
+/// Callback request model for bulk code distribution worker updates
+/// </summary>
+public class BulkCodeDistributionCallbackRequest
+{
+    public int BulkJobId { get; set; }
+    public int RowNumber { get; set; }
+    public bool Success { get; set; }
+    public int CodesDistributed { get; set; }
+    public bool SmsSent { get; set; }
+    public string ErrorMessage { get; set; }
 }

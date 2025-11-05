@@ -214,6 +214,7 @@ builder.Services.AddScoped<DataAccess.Abstract.IReferralRewardRepository, DataAc
 builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository, DataAccess.Concrete.EntityFramework.ReferralConfigurationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IDealerInvitationRepository, DataAccess.Concrete.EntityFramework.DealerInvitationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkInvitationJobRepository, DataAccess.Concrete.EntityFramework.BulkInvitationJobRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IBulkCodeDistributionJobRepository, DataAccess.Concrete.EntityFramework.BulkCodeDistributionJobRepository>();
 // 🆕 Add missing repositories required by CreateDealerInvitationCommandHandler
 builder.Services.AddScoped<DataAccess.Abstract.IUserRepository, DataAccess.Concrete.EntityFramework.UserRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IGroupRepository, DataAccess.Concrete.EntityFramework.GroupRepository>();
@@ -241,6 +242,14 @@ builder.Services.AddScoped<Business.Services.Notification.IPlantAnalysisNotifica
 
 // 🆕 Add Bulk Invitation Notification Service
 builder.Services.AddScoped<Business.Services.Notification.IBulkInvitationNotificationService, Business.Services.Notification.BulkInvitationNotificationService>();
+builder.Services.AddScoped<Business.Services.Notification.IBulkCodeDistributionNotificationService, Business.Services.Notification.BulkCodeDistributionNotificationService>();
+
+// 🆕 Add SMS and WhatsApp Services via Factory Pattern (matches WebAPI approach)
+builder.Services.AddScoped<Business.Services.Messaging.ISmsService, Business.Services.Messaging.Fakes.MockSmsService>();
+builder.Services.AddScoped<Business.Services.Messaging.TurkcellSmsService>();
+builder.Services.AddScoped<Business.Services.Messaging.IWhatsAppService, Business.Services.Messaging.Fakes.MockWhatsAppService>();
+builder.Services.AddScoped<Business.Services.Messaging.WhatsAppBusinessService>();
+builder.Services.AddScoped<Business.Services.Messaging.Factories.IMessagingServiceFactory, Business.Services.Messaging.Factories.MessagingServiceFactory>();
 
 // 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
@@ -252,6 +261,10 @@ builder.Services.AddScoped<IPlantAnalysisJobService, PlantAnalysisJobService>();
 // 🆕 Add Dealer Invitation Worker and Job Service
 builder.Services.AddHostedService<DealerInvitationConsumerWorker>();
 builder.Services.AddScoped<IDealerInvitationJobService, DealerInvitationJobService>();
+
+// 🆕 Add Farmer Code Distribution Worker and Job Service
+builder.Services.AddHostedService<FarmerCodeDistributionConsumerWorker>();
+builder.Services.AddScoped<IFarmerCodeDistributionJobService, FarmerCodeDistributionJobService>();
 
 var host = builder.Build();
 

@@ -219,6 +219,97 @@ namespace WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Send bulk code distribution progress notification via SignalR
+        /// Called by PlantAnalysisWorkerService when processing farmer code distributions
+        /// </summary>
+        [HttpPost("bulk-code-distribution-progress")]
+        public async Task<IActionResult> SendBulkCodeDistributionProgressNotification(
+            [FromBody] InternalBulkCodeDistributionProgressRequest request)
+        {
+            try
+            {
+                // Validate internal secret
+                if (request.InternalSecret != _internalSecret)
+                {
+                    _logger.LogWarning("⚠️ Invalid internal secret from IP: {IP}", HttpContext.Connection.RemoteIpAddress);
+                    return Unauthorized(new { message = "Invalid internal secret" });
+                }
+
+                _logger.LogInformation(
+                    "📨 Received bulk code distribution progress - JobId: {JobId}, Progress: {Progress}%",
+                    request.Progress.JobId,
+                    request.Progress.ProgressPercentage);
+
+                // Get notification service from DI container
+                var bulkNotificationService = HttpContext.RequestServices
+                    .GetRequiredService<Business.Services.Notification.IBulkCodeDistributionNotificationService>();
+
+                // Send notification via SignalR
+                await bulkNotificationService.NotifyProgressAsync(request.Progress);
+
+                _logger.LogInformation(
+                    "✅ Successfully sent code distribution progress notification - JobId: {JobId}",
+                    request.Progress.JobId);
+
+                return Ok(new { success = true, message = "Progress notification sent successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Failed to send code distribution progress notification - JobId: {JobId}", 
+                    request.Progress?.JobId);
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Send bulk code distribution completion notification via SignalR
+        /// Called by PlantAnalysisWorkerService when all code distributions are processed
+        /// </summary>
+        [HttpPost("bulk-code-distribution-completed")]
+        public async Task<IActionResult> SendBulkCodeDistributionCompletedNotification(
+            [FromBody] InternalBulkCodeDistributionCompletedRequest request)
+        {
+            try
+            {
+                // Validate internal secret
+                if (request.InternalSecret != _internalSecret)
+                {
+                    _logger.LogWarning("⚠️ Invalid internal secret from IP: {IP}", HttpContext.Connection.RemoteIpAddress);
+                    return Unauthorized(new { message = "Invalid internal secret" });
+                }
+
+                _logger.LogInformation(
+                    "📨 Received bulk code distribution completion - JobId: {JobId}, Status: {Status}",
+                    request.JobId,
+                    request.Status);
+
+                // Get notification service from DI container
+                var bulkNotificationService = HttpContext.RequestServices
+                    .GetRequiredService<Business.Services.Notification.IBulkCodeDistributionNotificationService>();
+
+                // Send notification via SignalR
+                await bulkNotificationService.NotifyCompletedAsync(
+                    request.JobId,
+                    request.SponsorId,
+                    request.Status,
+                    request.SuccessCount,
+                    request.FailedCount);
+
+                _logger.LogInformation(
+                    "✅ Successfully sent code distribution completion notification - JobId: {JobId}",
+                    request.JobId);
+
+                return Ok(new { success = true, message = "Completion notification sent successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Failed to send code distribution completion notification - JobId: {JobId}", 
+                    request.JobId);
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
         [HttpGet("health")]
         public IActionResult HealthCheck()
         {
@@ -264,6 +355,28 @@ namespace WebAPI.Controllers
     {
         public string InternalSecret { get; set; }
         public int BulkJobId { get; set; }
+        public int SponsorId { get; set; }
+        public string Status { get; set; }
+        public int SuccessCount { get; set; }
+        public int FailedCount { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for internal bulk code distribution progress notification
+    /// </summary>
+    public class InternalBulkCodeDistributionProgressRequest
+    {
+        public string InternalSecret { get; set; }
+        public BulkCodeDistributionProgressDto Progress { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for internal bulk code distribution completion notification
+    /// </summary>
+    public class InternalBulkCodeDistributionCompletedRequest
+    {
+        public string InternalSecret { get; set; }
+        public int JobId { get; set; }
         public int SponsorId { get; set; }
         public string Status { get; set; }
         public int SuccessCount { get; set; }

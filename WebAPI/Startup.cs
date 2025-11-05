@@ -243,8 +243,10 @@ namespace WebAPI
                 Console.WriteLine("📦 Using in-memory SignalR (single instance only)");
             }
 
-            // Register notification service
+            // Register notification services
             services.AddScoped<IPlantAnalysisNotificationService, PlantAnalysisNotificationService>();
+            services.AddScoped<IBulkInvitationNotificationService, BulkInvitationNotificationService>();
+            services.AddScoped<IBulkCodeDistributionNotificationService, BulkCodeDistributionNotificationService>();
 
             base.ConfigureServices(services);
         }

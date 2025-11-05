@@ -151,6 +151,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<BulkInvitationJobRepository>().As<IBulkInvitationJobRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<BulkCodeDistributionJobRepository>().As<IBulkCodeDistributionJobRepository>()
+                .InstancePerLifetimeScope();
+
             // Tier Feature Management repositories
             builder.RegisterType<FeatureRepository>().As<IFeatureRepository>()
                 .InstancePerLifetimeScope();
@@ -197,6 +200,9 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
 
             builder.RegisterType<BulkDealerInvitationService>().As<IBulkDealerInvitationService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkCodeDistributionService>().As<IBulkCodeDistributionService>()
                 .InstancePerLifetimeScope();
 
             builder.RegisterType<SponsorshipTierMappingService>().As<ISponsorshipTierMappingService>()
