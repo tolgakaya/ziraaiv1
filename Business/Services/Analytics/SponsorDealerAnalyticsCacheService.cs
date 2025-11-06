@@ -168,7 +168,6 @@ namespace Business.Services.Analytics
                     TotalCodesDistributed = 0,
                     TotalCodesUsed = 0,
                     TotalCodesAvailable = 0,
-                    TotalCodesReclaimed = 0,
                     OverallUsageRate = 0,
                     Dealers = new List<DealerPerformanceDto>()
                 };
@@ -283,8 +282,7 @@ namespace Business.Services.Analytics
                 TotalCodesDistributed = 0,
                 TotalCodesUsed = 0,
                 TotalCodesAvailable = 0,
-                TotalCodesReclaimed = 0,
-                OverallUsageRate = 0,
+                    OverallUsageRate = 0,
                 Dealers = new List<DealerPerformanceDto>()
             };
         }

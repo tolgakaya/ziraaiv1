@@ -45,22 +45,16 @@ namespace Business.Handlers.Sponsorship.Queries
             var sponsorCodes = await _sponsorshipCodeRepository.GetBySponsorIdAsync(request.UserId);
             
             // 3. Filter codes that were transferred to this dealer
-            var dealerCodes = sponsorCodes.Where(c => c.DealerId == request.DealerId || 
-                                                      (c.DealerId == null && c.TransferredAt.HasValue && c.ReclaimedAt.HasValue))
-                                          .ToList();
-
-            // Currently with dealer (not reclaimed)
-            var currentDealerCodes = dealerCodes.Where(c => c.DealerId == request.DealerId).ToList();
+            var dealerCodes = sponsorCodes.Where(c => c.DealerId == request.DealerId).ToList();
 
             // 4. Calculate statistics
             var totalCodesReceived = dealerCodes.Count(c => c.TransferredAt.HasValue);
-            var codesSent = currentDealerCodes.Count(c => c.DistributionDate.HasValue);
-            var codesUsed = currentDealerCodes.Count(c => c.IsUsed);
-            var codesAvailable = currentDealerCodes.Count(c => !c.IsUsed && c.IsActive && c.ExpiryDate > DateTime.Now && !c.DistributionDate.HasValue);
-            var codesReclaimed = dealerCodes.Count(c => c.ReclaimedAt.HasValue);
+            var codesSent = dealerCodes.Count(c => c.DistributionDate.HasValue);
+            var codesUsed = dealerCodes.Count(c => c.IsUsed);
+            var codesAvailable = dealerCodes.Count(c => !c.IsUsed && c.IsActive && c.ExpiryDate > DateTime.Now && !c.DistributionDate.HasValue);
 
             // 5. Get plant analyses from dealer's codes
-            var dealerCodeIds = currentDealerCodes.Select(c => c.Id).ToList();
+            var dealerCodeIds = dealerCodes.Select(c => c.Id).ToList();
             var allAnalyses = await _plantAnalysisRepository.GetListAsync();
             var dealerAnalyses = allAnalyses.Where(a => a.DealerId == request.DealerId).ToList();
 
@@ -89,7 +83,6 @@ namespace Business.Handlers.Sponsorship.Queries
                 CodesSent = codesSent,
                 CodesUsed = codesUsed,
                 CodesAvailable = codesAvailable,
-                CodesReclaimed = codesReclaimed,
                 UsageRate = Math.Round(usageRate, 2),
                 UniqueFarmersReached = uniqueFarmers,
                 TotalAnalyses = totalAnalyses,

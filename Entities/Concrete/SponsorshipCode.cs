@@ -19,8 +19,6 @@ namespace Entities.Concrete
         public int? DealerId { get; set; } // Dealer who received this code (NULL = direct sponsor distribution)
         public DateTime? TransferredAt { get; set; } // When code was transferred to dealer
         public int? TransferredByUserId { get; set; } // Who transferred the code
-        public DateTime? ReclaimedAt { get; set; } // When code was reclaimed from dealer
-        public int? ReclaimedByUserId { get; set; } // Who reclaimed the code
         
         // Code Reservation System (for dealer invitations)
         /// <summary>

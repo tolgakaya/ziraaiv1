@@ -2160,51 +2160,6 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Reclaim ALL unused codes from a dealer back to main sponsor
-        /// Reclaims all codes that were transferred but not yet used by farmers
-        /// </summary>
-        /// <param name="request">Reclaim request (dealerId and reason)</param>
-        /// <returns>Reclaim result with reclaimed code IDs and count</returns>
-        [Authorize(Roles = "Sponsor,Admin")]
-        [HttpPost("dealer/reclaim-codes")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<ReclaimCodesResponseDto>))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<ReclaimCodesResponseDto>))]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ReclaimDealerCodes([FromBody] ReclaimDealerCodesRequestDto request)
-        {
-            try
-            {
-                var userId = GetUserId();
-                if (!userId.HasValue)
-                    return Unauthorized();
-
-                // Map DTO to Command
-                var command = new ReclaimDealerCodesCommand
-                {
-                    UserId = userId.Value,
-                    DealerId = request.DealerId,
-                    ReclaimReason = request.ReclaimReason
-                };
-
-                var result = await Mediator.Send(command);
-
-                if (result.Success)
-                {
-                    _logger.LogInformation("Successfully reclaimed {Count} codes from dealer {DealerId}", 
-                        result.Data.ReclaimedCount, result.Data.DealerId);
-                    return Ok(result);
-                }
-
-                return BadRequest(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error reclaiming codes from dealer for sponsor {UserId}", GetUserId());
-                return StatusCode(500, new ErrorResult($"Code reclaim failed: {ex.Message}"));
-            }
-        }
-
-        /// <summary>
         /// Get performance analytics for a specific dealer
         /// Shows codes received, sent, used, available, reclaimed, and unique farmers reached
         /// </summary>

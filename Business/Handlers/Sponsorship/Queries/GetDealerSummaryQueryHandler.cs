@@ -40,7 +40,7 @@ namespace Business.Handlers.Sponsorship.Queries
 
             // 2. Get unique dealer IDs
             var dealerIds = sponsorCodes
-                .Where(c => c.DealerId.HasValue || (c.TransferredAt.HasValue && c.ReclaimedAt.HasValue))
+                .Where(c => c.DealerId.HasValue)
                 .Select(c => c.DealerId)
                 .Where(d => d.HasValue)
                 .Distinct()
@@ -59,18 +59,13 @@ namespace Business.Handlers.Sponsorship.Queries
                 if (dealer == null) continue;
 
                 // Get codes for this dealer
-                var dealerCodes = sponsorCodes.Where(c => c.DealerId == dealerId || 
-                                                         (c.DealerId == null && c.TransferredAt.HasValue && c.ReclaimedAt.HasValue))
-                                             .ToList();
-
-                var currentDealerCodes = dealerCodes.Where(c => c.DealerId == dealerId).ToList();
+                var dealerCodes = sponsorCodes.Where(c => c.DealerId == dealerId).ToList();
 
                 // Calculate stats
                 var totalReceived = dealerCodes.Count(c => c.TransferredAt.HasValue);
-                var sent = currentDealerCodes.Count(c => c.DistributionDate.HasValue);
-                var used = currentDealerCodes.Count(c => c.IsUsed);
-                var available = currentDealerCodes.Count(c => !c.IsUsed && c.IsActive && c.ExpiryDate > DateTime.Now && !c.DistributionDate.HasValue);
-                var reclaimed = dealerCodes.Count(c => c.ReclaimedAt.HasValue);
+                var sent = dealerCodes.Count(c => c.DistributionDate.HasValue);
+                var used = dealerCodes.Count(c => c.IsUsed);
+                var available = dealerCodes.Count(c => !c.IsUsed && c.IsActive && c.ExpiryDate > DateTime.Now && !c.DistributionDate.HasValue);
 
                 var dealerAnalyses = allAnalyses.Where(a => a.DealerId == dealerId).ToList();
                 var uniqueFarmers = dealerAnalyses.Select(a => a.UserId).Distinct().Count();
@@ -95,7 +90,6 @@ namespace Business.Handlers.Sponsorship.Queries
                     CodesSent = sent,
                     CodesUsed = used,
                     CodesAvailable = available,
-                    CodesReclaimed = reclaimed,
                     UsageRate = Math.Round(usageRate, 2),
                     UniqueFarmersReached = uniqueFarmers,
                     TotalAnalyses = totalAnalyses,
@@ -111,7 +105,6 @@ namespace Business.Handlers.Sponsorship.Queries
                 TotalCodesDistributed = dealerPerformances.Sum(d => d.TotalCodesReceived),
                 TotalCodesUsed = dealerPerformances.Sum(d => d.CodesUsed),
                 TotalCodesAvailable = dealerPerformances.Sum(d => d.CodesAvailable),
-                TotalCodesReclaimed = dealerPerformances.Sum(d => d.CodesReclaimed),
                 OverallUsageRate = dealerPerformances.Sum(d => d.CodesSent) > 0
                     ? Math.Round((decimal)dealerPerformances.Sum(d => d.CodesUsed) / dealerPerformances.Sum(d => d.CodesSent) * 100, 2)
                     : 0,

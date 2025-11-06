@@ -47,11 +47,6 @@ namespace Entities.Dtos
         public int CodesAvailable { get; set; }
 
         /// <summary>
-        /// Codes reclaimed by main sponsor
-        /// </summary>
-        public int CodesReclaimed { get; set; }
-
-        /// <summary>
         /// Usage percentage (CodesUsed / CodesSent * 100)
         /// </summary>
         public decimal UsageRate { get; set; }
@@ -104,11 +99,6 @@ namespace Entities.Dtos
         public int TotalCodesAvailable { get; set; }
 
         /// <summary>
-        /// Total codes reclaimed from dealers
-        /// </summary>
-        public int TotalCodesReclaimed { get; set; }
-
-        /// <summary>
         /// Overall usage rate across all dealers
         /// </summary>
         public decimal OverallUsageRate { get; set; }
@@ -117,54 +107,6 @@ namespace Entities.Dtos
         /// List of individual dealer performances
         /// </summary>
         public List<DealerPerformanceDto> Dealers { get; set; }
-    }
-
-    /// <summary>
-    /// DTO for reclaiming codes from dealer
-    /// Used in POST /api/Sponsorship/dealer/reclaim-codes
-    /// </summary>
-    public class ReclaimCodesDto : IDto
-    {
-        /// <summary>
-        /// Dealer ID to reclaim codes from
-        /// </summary>
-        public int DealerId { get; set; }
-
-        /// <summary>
-        /// Specific code IDs to reclaim (optional - if empty, reclaim all unused)
-        /// </summary>
-        public List<int> CodeIds { get; set; }
-
-        /// <summary>
-        /// Reason for reclaiming codes
-        /// </summary>
-        public string ReclaimReason { get; set; }
-    }
-
-    /// <summary>
-    /// Response DTO for code reclaim operation
-    /// </summary>
-    public class ReclaimCodesResponseDto : IDto
-    {
-        /// <summary>
-        /// Number of codes successfully reclaimed
-        /// </summary>
-        public int ReclaimedCount { get; set; }
-
-        /// <summary>
-        /// List of reclaimed code IDs
-        /// </summary>
-        public List<int> ReclaimedCodeIds { get; set; }
-
-        /// <summary>
-        /// Dealer ID codes were reclaimed from
-        /// </summary>
-        public int DealerId { get; set; }
-
-        /// <summary>
-        /// Timestamp of reclaim operation
-        /// </summary>
-        public DateTime ReclaimedAt { get; set; }
     }
 
     /// <summary>

@@ -50,10 +50,10 @@ namespace Business.Handlers.Sponsorship.Queries
                     _logger.LogInformation("🔍 Fetching codes for dealer {DealerId}, OnlyUnsent: {OnlyUnsent}, Page: {Page}",
                         request.DealerId, request.OnlyUnsent, request.Page);
 
-                    // Base query: codes transferred to this dealer and not reclaimed
-                    // Performance: Uses index on DealerId + ReclaimedAt
+                    // Base query: codes transferred to this dealer
+                    // Performance: Uses index on DealerId
                     var query = _codeRepository.Query()
-                        .Where(c => c.DealerId == request.DealerId && c.ReclaimedAt == null);
+                        .Where(c => c.DealerId == request.DealerId);
 
                     // Apply unsent filter if requested
                     if (request.OnlyUnsent)

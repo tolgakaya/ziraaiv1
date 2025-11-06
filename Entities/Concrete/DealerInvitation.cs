@@ -24,7 +24,6 @@ namespace Entities.Concrete
         /// <summary>
         /// Pending: Waiting for acceptance
         /// Accepted: Dealer linked and codes transferred
-        /// Reclaimed: Codes reclaimed by sponsor (dealer relationship preserved)
         /// Expired: Token/invitation expired
         /// Cancelled: Sponsor cancelled the invitation
         /// </summary>
@@ -53,7 +52,7 @@ namespace Entities.Concrete
         public string PackageTier { get; set; }
         
         public int CodeCount { get; set; } // Number of codes to transfer
-        
+
         // Dealer Creation Tracking
         public int? CreatedDealerId { get; set; } // Set when dealer account is created/linked
         public DateTime? AcceptedDate { get; set; } // When dealer accepted the invitation
