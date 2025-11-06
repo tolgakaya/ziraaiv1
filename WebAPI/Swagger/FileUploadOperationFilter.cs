@@ -17,6 +17,14 @@ namespace WebAPI.Swagger
     {
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
+            // Check if action has [Consumes("multipart/form-data")]
+            var hasConsumesAttribute = context.ApiDescription.ActionDescriptor.EndpointMetadata
+                .OfType<Microsoft.AspNetCore.Mvc.ConsumesAttribute>()
+                .Any(a => a.ContentTypes.Contains("multipart/form-data"));
+
+            if (!hasConsumesAttribute)
+                return;
+
             var formFileParameters = context.ApiDescription.ParameterDescriptions
                 .Where(p => p.ModelMetadata != null && 
                            (p.ModelMetadata.ModelType == typeof(IFormFile) || 
