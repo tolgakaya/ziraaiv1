@@ -2544,6 +2544,7 @@ namespace WebAPI.Controllers
         /// <param name="command">Bulk invitation command with Excel file</param>
         /// <returns>Job ID and status check URL</returns>
         [Authorize(Roles = "Sponsor,Admin")]
+        [Consumes("multipart/form-data")]
         [HttpPost("dealer/invite-bulk")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkInvitationJobDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
@@ -2685,6 +2686,7 @@ namespace WebAPI.Controllers
         /// <param name="sendSms">Send SMS notification to farmers (optional)</param>
         /// <returns>Job ID and status check URL</returns>
         [Authorize(Roles = "Sponsor,Admin")]
+        [Consumes("multipart/form-data")]
         [HttpPost("bulk-code-distribution")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkCodeDistributionJobDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
