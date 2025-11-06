@@ -1,4 +1,5 @@
 ﻿#nullable enable
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Business.Handlers.Authorizations.Commands;
 using Business.Handlers.Authorizations.Queries;
@@ -92,6 +93,7 @@ namespace WebAPI.Controllers
         /// </summary>
         /// <param name="command"></param>
         /// <returns></returns>
+        [Authorize]
         [Consumes("application/json")]
         [Produces("application/json", "text/plain")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(string))]
@@ -99,6 +101,11 @@ namespace WebAPI.Controllers
         [HttpPut("user-password")]
         public async Task<IActionResult> ChangeUserPassword([FromBody] UserChangePasswordCommand command)
         {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            if (userId == 0)
+                return Unauthorized("User not authenticated");
+
+            command.UserId = userId;
             return GetResponseOnlyResultMessage(await Mediator.Send(command));
         }
 

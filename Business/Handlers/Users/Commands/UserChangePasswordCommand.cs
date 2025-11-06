@@ -14,7 +14,8 @@ namespace Business.Handlers.Users.Commands
     public class UserChangePasswordCommand : IRequest<IResult>
     {
         public int UserId { get; set; }
-        public string Password { get; set; }
+        public string OldPassword { get; set; }
+        public string NewPassword { get; set; }
 
         public class UserChangePasswordCommandHandler : IRequestHandler<UserChangePasswordCommand, IResult>
         {
@@ -31,20 +32,27 @@ namespace Business.Handlers.Users.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(UserChangePasswordCommand request, CancellationToken cancellationToken)
             {
-                var isThereAnyUser = await _userRepository.GetAsync(u => u.UserId == request.UserId);
-                if (isThereAnyUser == null)
+                var user = await _userRepository.GetAsync(u => u.UserId == request.UserId);
+                if (user == null)
                 {
                     return new ErrorResult(Messages.UserNotFound);
                 }
 
-                HashingHelper.CreatePasswordHash(request.Password, out var passwordSalt, out var passwordHash);
+                // Verify old password
+                if (!HashingHelper.VerifyPasswordHash(request.OldPassword, user.PasswordSalt, user.PasswordHash))
+                {
+                    return new ErrorResult(Messages.PasswordError);
+                }
 
-                isThereAnyUser.PasswordHash = passwordHash;
-                isThereAnyUser.PasswordSalt = passwordSalt;
+                // Create new password hash
+                HashingHelper.CreatePasswordHash(request.NewPassword, out var passwordSalt, out var passwordHash);
 
-                _userRepository.Update(isThereAnyUser);
+                user.PasswordHash = passwordHash;
+                user.PasswordSalt = passwordSalt;
+
+                _userRepository.Update(user);
                 await _userRepository.SaveChangesAsync();
-                return new SuccessResult(Messages.Updated);
+                return new SuccessResult(Messages.PasswordChanged);
             }
         }
     }

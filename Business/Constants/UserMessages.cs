@@ -8,5 +8,6 @@
         public static string UserRegisteredSuccessfully => "UserRegisteredSuccessfully";
         public static string InvalidPhoneFormat => "InvalidPhoneFormat";
         public static string PhoneNumberRequired => "PhoneNumberRequired";
+        public static string PasswordChanged => "PasswordChanged";
     }
 }
