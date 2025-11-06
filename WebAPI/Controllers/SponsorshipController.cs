@@ -2682,8 +2682,7 @@ namespace WebAPI.Controllers
         /// Accepts up to 2000 farmer records with email, phone, and name
         /// Automatically uses the latest purchase with available codes
         /// </summary>
-        /// <param name="excelFile">Excel file with farmer list (Email, Phone, FarmerName columns)</param>
-        /// <param name="sendSms">Send SMS notification to farmers (optional)</param>
+        /// <param name="formData">Form data containing Excel file and SMS preference
         /// <returns>Job ID and status check URL</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [Consumes("multipart/form-data")]
@@ -2692,8 +2691,7 @@ namespace WebAPI.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> BulkDistributeCodesToFarmers(
-            [FromForm] IFormFile excelFile,
-            [FromForm] bool sendSms = false)
+            [FromForm] BulkCodeDistributionFormDto formData)
         {
             try
             {
@@ -2702,12 +2700,12 @@ namespace WebAPI.Controllers
                     return Unauthorized();
 
                 _logger.LogInformation("🔔 Bulk farmer code distribution initiated by sponsor {SponsorId}, SendSms: {SendSms}",
-                    userId.Value, sendSms);
+                    userId.Value, formData.SendSms);
 
                 var result = await _bulkCodeDistributionService.QueueBulkCodeDistributionAsync(
-                    excelFile,
+                    formData.ExcelFile,
                     userId.Value,
-                    sendSms);
+                    formData.SendSms);
 
                 if (result.Success)
                 {
