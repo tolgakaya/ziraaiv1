@@ -229,6 +229,79 @@ namespace WebAPI.Controllers
                 return StatusCode(500, new ErrorResult($"Profile update failed: {ex.Message}"));
             }
         }
+
+
+        #region Sponsor Logo Management
+
+        /// <summary>
+        /// Upload sponsor logo
+        /// </summary>
+        /// <param name="file">Logo image file (max 5MB, jpg/png/gif/webp/svg)</param>
+        /// <returns>Logo URLs (full size and thumbnail)</returns>
+        [Authorize]
+        [HttpPost("logo")]
+        [Consumes("multipart/form-data")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        public async Task<IActionResult> UploadSponsorLogo(IFormFile file)
+        {
+            var sponsorId = GetUserId();
+            if (!sponsorId.HasValue)
+                return Unauthorized("User not authenticated");
+
+            var command = new UploadSponsorLogoCommand
+            {
+                SponsorId = sponsorId.Value,
+                File = file
+            };
+
+            var result = await Mediator.Send(command);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Get sponsor logo information (URLs and metadata)
+        /// Returns full resolution and thumbnail URLs with last update timestamp
+        /// </summary>
+        /// <param name="sponsorId">Sponsor ID (optional, defaults to current user)</param>
+        /// <returns>Logo information including full URL, thumbnail URL, and update date</returns>
+        [HttpGet("logo/{sponsorId?}")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<SponsorLogoDto>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(IDataResult<SponsorLogoDto>))]
+        public async Task<IActionResult> GetSponsorLogo(int? sponsorId = null)
+        {
+            var targetSponsorId = sponsorId ?? GetUserId();
+            if (!targetSponsorId.HasValue)
+                return BadRequest("Invalid sponsor ID");
+
+            var query = new GetSponsorLogoQuery { SponsorId = targetSponsorId.Value };
+            var result = await Mediator.Send(query);
+            return result.Success ? Ok(result) : NotFound(result);
+        }
+
+        /// <summary>
+        /// Delete sponsor logo
+        /// </summary>
+        /// <returns>Success message</returns>
+        [Authorize]
+        [HttpDelete("logo")]
+        [Produces("application/json", "text/plain")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        public async Task<IActionResult> DeleteSponsorLogo()
+        {
+            var sponsorId = GetUserId();
+            if (!sponsorId.HasValue)
+                return Unauthorized("User not authenticated");
+
+            var command = new DeleteSponsorLogoCommand { SponsorId = sponsorId.Value };
+            var result = await Mediator.Send(command);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        #endregion
         
         /// <summary>
         /// Purchase subscription packages for distribution to farmers

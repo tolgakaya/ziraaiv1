@@ -280,6 +280,10 @@ namespace Business.DependencyResolvers
                 .As<Business.Services.User.IAvatarService>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<Business.Services.Sponsor.SponsorLogoService>()
+                .As<Business.Services.Sponsor.ISponsorLogoService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<Business.Services.Messaging.AttachmentValidationService>()
                 .As<Business.Services.Messaging.IAttachmentValidationService>()
                 .InstancePerLifetimeScope();
