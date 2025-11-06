@@ -2160,44 +2160,6 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Reclaim unused codes from a dealer back to main sponsor
-        /// Allows main sponsor to reclaim codes that were transferred but not yet distributed
-        /// </summary>
-        /// <param name="command">Reclaim details (dealerId, optional codeIds)</param>
-        /// <returns>Reclaim result with reclaimed code IDs and count</returns>
-        [Authorize(Roles = "Sponsor,Admin")]
-        [HttpPost("dealer/reclaim-codes")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<ReclaimCodesResponseDto>))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<ReclaimCodesResponseDto>))]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ReclaimDealerCodes([FromBody] ReclaimDealerCodesCommand command)
-        {
-            try
-            {
-                var userId = GetUserId();
-                if (!userId.HasValue)
-                    return Unauthorized();
-
-                command.UserId = userId.Value;
-                var result = await Mediator.Send(command);
-
-                if (result.Success)
-                {
-                    _logger.LogInformation("Successfully reclaimed {Count} codes from dealer {DealerId}", 
-                        result.Data.ReclaimedCount, result.Data.DealerId);
-                    return Ok(result);
-                }
-
-                return BadRequest(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error reclaiming codes from dealer for sponsor {UserId}", GetUserId());
-                return StatusCode(500, new ErrorResult($"Code reclaim failed: {ex.Message}"));
-            }
-        }
-
-        /// <summary>
         /// Get performance analytics for a specific dealer
         /// Shows codes received, sent, used, available, reclaimed, and unique farmers reached
         /// </summary>
@@ -2544,6 +2506,7 @@ namespace WebAPI.Controllers
         /// <param name="command">Bulk invitation command with Excel file</param>
         /// <returns>Job ID and status check URL</returns>
         [Authorize(Roles = "Sponsor,Admin")]
+        [Consumes("multipart/form-data")]
         [HttpPost("dealer/invite-bulk")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkInvitationJobDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
@@ -2681,17 +2644,16 @@ namespace WebAPI.Controllers
         /// Accepts up to 2000 farmer records with email, phone, and name
         /// Automatically uses the latest purchase with available codes
         /// </summary>
-        /// <param name="excelFile">Excel file with farmer list (Email, Phone, FarmerName columns)</param>
-        /// <param name="sendSms">Send SMS notification to farmers (optional)</param>
+        /// <param name="formData">Form data containing Excel file and SMS preference
         /// <returns>Job ID and status check URL</returns>
         [Authorize(Roles = "Sponsor,Admin")]
+        [Consumes("multipart/form-data")]
         [HttpPost("bulk-code-distribution")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkCodeDistributionJobDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> BulkDistributeCodesToFarmers(
-            [FromForm] IFormFile excelFile,
-            [FromForm] bool sendSms = false)
+            [FromForm] BulkCodeDistributionFormDto formData)
         {
             try
             {
@@ -2700,12 +2662,12 @@ namespace WebAPI.Controllers
                     return Unauthorized();
 
                 _logger.LogInformation("🔔 Bulk farmer code distribution initiated by sponsor {SponsorId}, SendSms: {SendSms}",
-                    userId.Value, sendSms);
+                    userId.Value, formData.SendSms);
 
                 var result = await _bulkCodeDistributionService.QueueBulkCodeDistributionAsync(
-                    excelFile,
+                    formData.ExcelFile,
                     userId.Value,
-                    sendSms);
+                    formData.SendSms);
 
                 if (result.Success)
                 {

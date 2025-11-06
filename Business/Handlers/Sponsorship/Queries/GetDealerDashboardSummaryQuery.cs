@@ -48,10 +48,10 @@ namespace Business.Handlers.Sponsorship.Queries
                 {
                     _logger.LogInformation("🔍 Fetching dashboard summary for dealer {DealerId}", request.DealerId);
 
-                    // Single query to get all dealer codes (not reclaimed)
-                    // Performance: Uses index on DealerId + ReclaimedAt
+                    // Single query to get all dealer codes
+                    // Performance: Uses index on DealerId
                     var dealerCodes = await _codeRepository.Query()
-                        .Where(c => c.DealerId == request.DealerId && c.ReclaimedAt == null)
+                        .Where(c => c.DealerId == request.DealerId)
                         .Select(c => new
                         {
                             c.IsUsed,

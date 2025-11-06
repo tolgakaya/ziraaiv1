@@ -52,7 +52,7 @@ namespace Entities.Concrete
         public string PackageTier { get; set; }
         
         public int CodeCount { get; set; } // Number of codes to transfer
-        
+
         // Dealer Creation Tracking
         public int? CreatedDealerId { get; set; } // Set when dealer account is created/linked
         public DateTime? AcceptedDate { get; set; } // When dealer accepted the invitation
