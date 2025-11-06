@@ -25,6 +25,14 @@ namespace Business.Handlers.Sponsorship.Queries
         public bool IncludeAnalysisDetails { get; set; } = true; // Default: include full analysis list
         public int TopCodesCount { get; set; } = 10; // Show top N performing codes
 
+        // Pagination
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 50; // Default: 50 codes per page
+
+        // Date filtering
+        public DateTime? StartDate { get; set; } // Filter codes redeemed after this date
+        public DateTime? EndDate { get; set; } // Filter codes redeemed before this date
+
         public class GetCodeAnalysisStatisticsQueryHandler : IRequestHandler<GetCodeAnalysisStatisticsQuery, IDataResult<CodeAnalysisStatisticsDto>>
         {
             private readonly ISponsorshipCodeRepository _codeRepository;
@@ -62,16 +70,33 @@ namespace Business.Handlers.Sponsorship.Queries
             {
                 try
                 {
-                    _logger.LogInformation("Getting code analysis statistics for sponsor {SponsorId}", request.SponsorId);
+                    _logger.LogInformation("Getting code analysis statistics for sponsor {SponsorId}, Page: {Page}, PageSize: {PageSize}",
+                        request.SponsorId, request.Page, request.PageSize);
 
-                    // Get all redeemed codes for this sponsor
-                    var redeemedCodes = await _codeRepository.GetListAsync(c =>
-                        c.SponsorId == request.SponsorId &&
-                        c.IsUsed);
+                    // Validate pagination parameters
+                    if (request.Page < 1) request.Page = 1;
+                    if (request.PageSize < 1) request.PageSize = 50;
+                    if (request.PageSize > 100) request.PageSize = 100; // Max 100 per page
 
-                    var redeemedCodesList = redeemedCodes.ToList();
+                    // Get all redeemed codes for this sponsor with date filtering
+                    var query = _codeRepository.Query()
+                        .Where(c => c.SponsorId == request.SponsorId && c.IsUsed);
 
-                    if (!redeemedCodesList.Any())
+                    // Apply date filtering
+                    if (request.StartDate.HasValue)
+                    {
+                        query = query.Where(c => c.UsedDate >= request.StartDate.Value);
+                    }
+
+                    if (request.EndDate.HasValue)
+                    {
+                        query = query.Where(c => c.UsedDate <= request.EndDate.Value);
+                    }
+
+                    var allRedeemedCodes = query.ToList();
+                    var totalCodes = allRedeemedCodes.Count;
+
+                    if (totalCodes == 0)
                     {
                         return new SuccessDataResult<CodeAnalysisStatisticsDto>(
                             new CodeAnalysisStatisticsDto
@@ -83,10 +108,23 @@ namespace Business.Handlers.Sponsorship.Queries
                                 CodeBreakdowns = new List<CodeAnalysisBreakdown>(),
                                 TopPerformingCodes = new List<CodeAnalysisBreakdown>(),
                                 CropTypeDistribution = new List<CropTypeStatistic>(),
-                                DiseaseDistribution = new List<DiseaseStatistic>()
+                                DiseaseDistribution = new List<DiseaseStatistic>(),
+                                Page = request.Page,
+                                PageSize = request.PageSize,
+                                TotalPages = 0
                             },
                             "No redeemed codes found");
                     }
+
+                    // Calculate pagination
+                    var totalPages = (int)Math.Ceiling(totalCodes / (double)request.PageSize);
+
+                    // Get paginated codes for breakdown details
+                    var redeemedCodesList = allRedeemedCodes
+                        .OrderByDescending(c => c.UsedDate)
+                        .Skip((request.Page - 1) * request.PageSize)
+                        .Take(request.PageSize)
+                        .ToList();
 
                     // Get base URL for analysis details links
                     var baseUrl = _configuration["WebAPI:BaseUrl"] ?? "https://ziraai.com";
@@ -200,10 +238,12 @@ namespace Business.Handlers.Sponsorship.Queries
                         codeBreakdowns.Add(breakdown);
                     }
 
-                    // Calculate overall statistics
+                    // Calculate overall statistics from PAGINATED codes only
                     var totalAnalyses = codeBreakdowns.Sum(c => c.TotalAnalyses);
-                    var averageAnalysesPerCode = redeemedCodesList.Count > 0
-                        ? (decimal)totalAnalyses / redeemedCodesList.Count
+
+                    // Average should be based on ALL codes, not just current page
+                    var averageAnalysesPerCode = totalCodes > 0
+                        ? (decimal)totalAnalyses / totalCodes
                         : 0;
 
                     // Get top performing codes
@@ -245,19 +285,22 @@ namespace Business.Handlers.Sponsorship.Queries
 
                     var statistics = new CodeAnalysisStatisticsDto
                     {
-                        TotalRedeemedCodes = redeemedCodesList.Count,
+                        TotalRedeemedCodes = totalCodes, // Total from ALL codes, not just current page
                         TotalAnalysesPerformed = totalAnalyses,
                         AverageAnalysesPerCode = averageAnalysesPerCode,
                         TotalActiveFarmers = codeBreakdowns.Count(c => c.SubscriptionStatus == "Active"),
                         CodeBreakdowns = codeBreakdowns.OrderByDescending(c => c.TotalAnalyses).ToList(),
                         TopPerformingCodes = topPerformingCodes,
                         CropTypeDistribution = cropTypeDistribution,
-                        DiseaseDistribution = diseaseDistribution
+                        DiseaseDistribution = diseaseDistribution,
+                        Page = request.Page,
+                        PageSize = request.PageSize,
+                        TotalPages = totalPages
                     };
 
                     _logger.LogInformation(
-                        "Code analysis statistics: {RedeemedCodes} codes, {TotalAnalyses} analyses",
-                        redeemedCodesList.Count, totalAnalyses);
+                        "Code analysis statistics: Page {Page}/{TotalPages}, {PageCodes}/{TotalCodes} codes, {TotalAnalyses} analyses",
+                        request.Page, totalPages, redeemedCodesList.Count, totalCodes, totalAnalyses);
 
                     return new SuccessDataResult<CodeAnalysisStatisticsDto>(
                         statistics,

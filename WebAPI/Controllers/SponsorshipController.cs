@@ -616,16 +616,24 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Get code-level analysis statistics: which codes generated how many analyses
+        /// Get code-level analysis statistics: which codes generated how many analyses (with pagination)
         /// </summary>
         /// <param name="includeAnalysisDetails">Include full analysis list per code (default: true)</param>
         /// <param name="topCodesCount">Number of top performing codes to show (default: 10)</param>
-        /// <returns>Detailed code-level analysis statistics with drill-down capability</returns>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Codes per page (default: 50, max: 100)</param>
+        /// <param name="startDate">Filter codes redeemed after this date (optional)</param>
+        /// <param name="endDate">Filter codes redeemed before this date (optional)</param>
+        /// <returns>Paginated code-level analysis statistics with drill-down capability</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpGet("code-analysis-statistics")]
         public async Task<IActionResult> GetCodeAnalysisStatistics(
             [FromQuery] bool includeAnalysisDetails = true,
-            [FromQuery] int topCodesCount = 10)
+            [FromQuery] int topCodesCount = 10,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
         {
             var userId = GetUserId();
             if (!userId.HasValue)
@@ -635,7 +643,11 @@ namespace WebAPI.Controllers
             {
                 SponsorId = userId.Value,
                 IncludeAnalysisDetails = includeAnalysisDetails,
-                TopCodesCount = topCodesCount
+                TopCodesCount = topCodesCount,
+                Page = page,
+                PageSize = pageSize,
+                StartDate = startDate,
+                EndDate = endDate
             };
 
             var result = await Mediator.Send(query);
