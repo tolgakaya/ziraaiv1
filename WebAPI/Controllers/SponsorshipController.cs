@@ -2160,17 +2160,17 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Reclaim unused codes from a dealer back to main sponsor
-        /// Allows main sponsor to reclaim codes that were transferred but not yet distributed
+        /// Reclaim ALL unused codes from a dealer back to main sponsor
+        /// Reclaims all codes that were transferred but not yet used by farmers
         /// </summary>
-        /// <param name="command">Reclaim details (dealerId, optional codeIds)</param>
+        /// <param name="request">Reclaim request (dealerId and reason)</param>
         /// <returns>Reclaim result with reclaimed code IDs and count</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpPost("dealer/reclaim-codes")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<ReclaimCodesResponseDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<ReclaimCodesResponseDto>))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ReclaimDealerCodes([FromBody] ReclaimDealerCodesCommand command)
+        public async Task<IActionResult> ReclaimDealerCodes([FromBody] ReclaimDealerCodesRequestDto request)
         {
             try
             {
@@ -2178,7 +2178,14 @@ namespace WebAPI.Controllers
                 if (!userId.HasValue)
                     return Unauthorized();
 
-                command.UserId = userId.Value;
+                // Map DTO to Command
+                var command = new ReclaimDealerCodesCommand
+                {
+                    UserId = userId.Value,
+                    DealerId = request.DealerId,
+                    ReclaimReason = request.ReclaimReason
+                };
+
                 var result = await Mediator.Send(command);
 
                 if (result.Success)

@@ -42,21 +42,8 @@ namespace Business.Handlers.Sponsorship.Commands
                          && c.ExpiryDate > DateTime.Now)
                 .ToList();
 
-            // If specific code IDs provided, filter further
-            if (request.CodeIds != null && request.CodeIds.Any())
-            {
-                reclaimableCodes = reclaimableCodes
-                    .Where(c => request.CodeIds.Contains(c.Id))
-                    .ToList();
-
-                // Validate all requested codes exist and are reclaimable
-                if (reclaimableCodes.Count != request.CodeIds.Count)
-                {
-                    return new ErrorDataResult<ReclaimCodesResponseDto>(
-                        "Some requested codes are not available for reclaim (already used, expired, or not assigned to this dealer).");
-                }
-            }
-
+            // Reclaim ALL unused codes from dealer (no selective reclaim)
+            
             if (!reclaimableCodes.Any())
             {
                 return new ErrorDataResult<ReclaimCodesResponseDto>("No codes available to reclaim from this dealer.");

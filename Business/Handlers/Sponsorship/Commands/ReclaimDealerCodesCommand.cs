@@ -12,9 +12,19 @@ namespace Business.Handlers.Sponsorship.Commands
     /// </summary>
     public class ReclaimDealerCodesCommand : IRequest<IDataResult<ReclaimCodesResponseDto>>
     {
-        public int UserId { get; set; } // Authenticated main sponsor ID
+        /// <summary>
+        /// Main sponsor user ID (set from authentication token)
+        /// </summary>
+        public int UserId { get; set; }
+        
+        /// <summary>
+        /// Dealer ID to reclaim codes from
+        /// </summary>
         public int DealerId { get; set; }
-        public List<int> CodeIds { get; set; } // Optional - if empty, reclaim all unused
+        
+        /// <summary>
+        /// Reason for reclaiming codes (audit trail)
+        /// </summary>
         public string ReclaimReason { get; set; }
     }
 }
