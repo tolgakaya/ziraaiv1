@@ -17,10 +17,14 @@ namespace Business.Handlers.Sponsorship.Commands
     public class ReclaimDealerCodesCommandHandler : IRequestHandler<ReclaimDealerCodesCommand, IDataResult<ReclaimCodesResponseDto>>
     {
         private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
+        private readonly IDealerInvitationRepository _invitationRepository;
 
-        public ReclaimDealerCodesCommandHandler(ISponsorshipCodeRepository sponsorshipCodeRepository)
+        public ReclaimDealerCodesCommandHandler(
+            ISponsorshipCodeRepository sponsorshipCodeRepository,
+            IDealerInvitationRepository invitationRepository)
         {
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
+            _invitationRepository = invitationRepository;
         }
 
         [SecuredOperation(Priority = 1)]
@@ -29,7 +33,7 @@ namespace Business.Handlers.Sponsorship.Commands
         {
             // 1. Get dealer's codes that belong to this sponsor
             var dealerCodes = await _sponsorshipCodeRepository.GetBySponsorIdAsync(request.UserId);
-            
+
             // Filter codes that:
             // - Are currently assigned to the specified dealer
             // - Are not used
@@ -43,7 +47,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 .ToList();
 
             // Reclaim ALL unused codes from dealer (no selective reclaim)
-            
+
             if (!reclaimableCodes.Any())
             {
                 return new ErrorDataResult<ReclaimCodesResponseDto>("No codes available to reclaim from this dealer.");
@@ -58,13 +62,31 @@ namespace Business.Handlers.Sponsorship.Commands
                 code.DealerId = null; // Remove dealer assignment
                 code.ReclaimedAt = reclaimTime;
                 code.ReclaimedByUserId = request.UserId;
-                
+
                 _sponsorshipCodeRepository.Update(code);
                 reclaimedCodeIds.Add(code.Id);
             }
             await _sponsorshipCodeRepository.SaveChangesAsync();
 
-            // 3. Return response
+            // 3. Update dealer invitation status to "Reclaimed"
+            // Find the accepted invitation for this dealer from this sponsor
+            var invitation = await _invitationRepository.GetAsync(inv =>
+                inv.SponsorId == request.UserId
+                && inv.CreatedDealerId == request.DealerId
+                && inv.Status == "Accepted");
+
+            if (invitation != null)
+            {
+                invitation.Status = "Reclaimed";
+                invitation.Notes = string.IsNullOrEmpty(invitation.Notes)
+                    ? $"Codes reclaimed on {reclaimTime:yyyy-MM-dd HH:mm}: {request.ReclaimReason}"
+                    : invitation.Notes + $"\nCodes reclaimed on {reclaimTime:yyyy-MM-dd HH:mm}: {request.ReclaimReason}";
+
+                _invitationRepository.Update(invitation);
+                await _invitationRepository.SaveChangesAsync();
+            }
+
+            // 4. Return response
             var response = new ReclaimCodesResponseDto
             {
                 ReclaimedCount = reclaimedCodeIds.Count,

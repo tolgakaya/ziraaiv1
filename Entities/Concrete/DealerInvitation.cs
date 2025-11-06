@@ -24,6 +24,7 @@ namespace Entities.Concrete
         /// <summary>
         /// Pending: Waiting for acceptance
         /// Accepted: Dealer linked and codes transferred
+        /// Reclaimed: Codes reclaimed by sponsor (dealer relationship preserved)
         /// Expired: Token/invitation expired
         /// Cancelled: Sponsor cancelled the invitation
         /// </summary>
