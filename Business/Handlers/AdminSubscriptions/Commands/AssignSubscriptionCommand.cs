@@ -24,6 +24,12 @@ namespace Business.Handlers.AdminSubscriptions.Commands
         public int? SponsorId { get; set; }
         public string Notes { get; set; }
 
+        /// <summary>
+        /// Force activation: Cancel existing active sponsorship and activate new one immediately
+        /// Default (false): Queue new sponsorship if active sponsorship exists
+        /// </summary>
+        public bool ForceActivation { get; set; } = false;
+
         // Admin context
         public int AdminUserId { get; set; }
         public string IpAddress { get; set; }
@@ -58,6 +64,163 @@ namespace Business.Handlers.AdminSubscriptions.Commands
                 }
 
                 var now = DateTime.Now;
+
+                // SPONSORSHIP QUEUE CONTROL: Check for active sponsorship
+                if (request.IsSponsoredSubscription)
+                {
+                    var activeSponsorship = await _subscriptionRepository.GetAsync(s =>
+                        s.UserId == request.UserId &&
+                        s.IsSponsoredSubscription &&
+                        s.IsActive &&
+                        s.Status == "Active" &&
+                        s.QueueStatus == SubscriptionQueueStatus.Active &&
+                        s.EndDate > now);
+
+                    if (activeSponsorship != null)
+                    {
+                        // OPTION 1: Force Activation (Cancel existing, activate new immediately)
+                        if (request.ForceActivation)
+                        {
+                            return await HandleForceActivation(request, tier, activeSponsorship, now);
+                        }
+                        // OPTION 2: Queue the new sponsorship (default behavior)
+                        else
+                        {
+                            return await HandleQueueSponsorship(request, tier, activeSponsorship, now);
+                        }
+                    }
+                }
+
+                // No active sponsorship or not a sponsored subscription: Activate immediately
+                return await HandleImmediateActivation(request, tier, now);
+            }
+
+            /// <summary>
+            /// Cancel existing active sponsorship and activate new one immediately
+            /// </summary>
+            private async Task<IResult> HandleForceActivation(
+                AssignSubscriptionCommand request,
+                SubscriptionTier tier,
+                UserSubscription activeSponsorship,
+                DateTime now)
+            {
+                // Cancel existing sponsorship
+                activeSponsorship.IsActive = false;
+                activeSponsorship.Status = "Cancelled";
+                activeSponsorship.QueueStatus = SubscriptionQueueStatus.Cancelled;
+                activeSponsorship.EndDate = now; // Terminate immediately
+                activeSponsorship.UpdatedDate = now;
+
+                _subscriptionRepository.Update(activeSponsorship);
+
+                // Create new active subscription
+                var subscription = new UserSubscription
+                {
+                    UserId = request.UserId,
+                    SubscriptionTierId = request.SubscriptionTierId,
+                    StartDate = now,
+                    EndDate = now.AddMonths(request.DurationMonths),
+                    IsActive = true,
+                    Status = "Active",
+                    IsSponsoredSubscription = request.IsSponsoredSubscription,
+                    SponsorId = request.SponsorId,
+                    SponsorshipNotes = request.Notes,
+                    IsTrialSubscription = false,
+                    CreatedDate = now,
+                    CreatedUserId = request.AdminUserId,
+                    QueueStatus = SubscriptionQueueStatus.Active,
+                    ActivatedDate = now
+                };
+
+                _subscriptionRepository.Add(subscription);
+                await _subscriptionRepository.SaveChangesAsync();
+
+                // Audit log
+                await _auditService.LogAsync(
+                    action: "AssignSubscription_ForceActivation",
+                    adminUserId: request.AdminUserId,
+                    targetUserId: request.UserId,
+                    entityType: "UserSubscription",
+                    entityId: subscription.Id,
+                    isOnBehalfOf: false,
+                    ipAddress: request.IpAddress,
+                    userAgent: request.UserAgent,
+                    requestPath: request.RequestPath,
+                    reason: $"Force activated {tier.TierName} subscription for {request.DurationMonths} months (cancelled subscription {activeSponsorship.Id})",
+                    afterState: new {
+                        NewSubscription = new { subscription.Id, subscription.SubscriptionTierId, subscription.StartDate, subscription.EndDate },
+                        CancelledSubscription = new { activeSponsorship.Id, activeSponsorship.EndDate }
+                    }
+                );
+
+                return new SuccessResult($"Previous sponsorship cancelled. New {tier.TierName} subscription activated. Valid until {subscription.EndDate:yyyy-MM-dd}");
+            }
+
+            /// <summary>
+            /// Queue new sponsorship to activate when current expires
+            /// </summary>
+            private async Task<IResult> HandleQueueSponsorship(
+                AssignSubscriptionCommand request,
+                SubscriptionTier tier,
+                UserSubscription activeSponsorship,
+                DateTime now)
+            {
+                // Create queued subscription
+                var subscription = new UserSubscription
+                {
+                    UserId = request.UserId,
+                    SubscriptionTierId = request.SubscriptionTierId,
+                    StartDate = DateTime.MinValue, // Will be set on activation (using MinValue as placeholder)
+                    EndDate = DateTime.MinValue, // Will be set on activation (using MinValue as placeholder)
+                    IsActive = false, // Not active yet
+                    Status = "Pending", // Queued status
+                    IsSponsoredSubscription = request.IsSponsoredSubscription,
+                    SponsorId = request.SponsorId,
+                    SponsorshipNotes = request.Notes,
+                    IsTrialSubscription = false,
+                    CreatedDate = now,
+                    CreatedUserId = request.AdminUserId,
+                    QueueStatus = SubscriptionQueueStatus.Pending,
+                    QueuedDate = now,
+                    PreviousSponsorshipId = activeSponsorship.Id,
+                    ActivatedDate = null
+                };
+
+                _subscriptionRepository.Add(subscription);
+                await _subscriptionRepository.SaveChangesAsync();
+
+                // Audit log
+                await _auditService.LogAsync(
+                    action: "AssignSubscription_Queued",
+                    adminUserId: request.AdminUserId,
+                    targetUserId: request.UserId,
+                    entityType: "UserSubscription",
+                    entityId: subscription.Id,
+                    isOnBehalfOf: false,
+                    ipAddress: request.IpAddress,
+                    userAgent: request.UserAgent,
+                    requestPath: request.RequestPath,
+                    reason: $"Queued {tier.TierName} subscription for {request.DurationMonths} months (will activate after subscription {activeSponsorship.Id} expires)",
+                    afterState: new {
+                        subscription.Id,
+                        subscription.SubscriptionTierId,
+                        subscription.QueueStatus,
+                        subscription.PreviousSponsorshipId,
+                        EstimatedActivation = activeSponsorship.EndDate
+                    }
+                );
+
+                return new SuccessResult($"Subscription queued successfully. Will activate automatically on {activeSponsorship.EndDate:yyyy-MM-dd} when current sponsorship expires.");
+            }
+
+            /// <summary>
+            /// Activate subscription immediately (no active sponsorship exists)
+            /// </summary>
+            private async Task<IResult> HandleImmediateActivation(
+                AssignSubscriptionCommand request,
+                SubscriptionTier tier,
+                DateTime now)
+            {
                 var subscription = new UserSubscription
                 {
                     UserId = request.UserId,
