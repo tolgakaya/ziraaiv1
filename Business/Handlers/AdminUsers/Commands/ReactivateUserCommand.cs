@@ -26,16 +26,16 @@ namespace Business.Handlers.AdminUsers.Commands
         public class ReactivateUserCommandHandler : IRequestHandler<ReactivateUserCommand, IResult>
         {
             private readonly IUserRepository _userRepository;
-            private readonly IUserClaimRepository _userClaimRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
             private readonly IAdminAuditService _auditService;
 
             public ReactivateUserCommandHandler(
                 IUserRepository userRepository,
-                IUserClaimRepository userClaimRepository,
+                IUserGroupRepository userGroupRepository,
                 IAdminAuditService auditService)
             {
                 _userRepository = userRepository;
-                _userClaimRepository = userClaimRepository;
+                _userGroupRepository = userGroupRepository;
                 _auditService = auditService;
             }
 
@@ -45,8 +45,8 @@ namespace Business.Handlers.AdminUsers.Commands
             {
                 // SECURITY: Prevent reactivating Admin users
                 // Admins should not be able to reactivate other admin accounts
-                var isAdminUser = _userClaimRepository.Query()
-                    .Any(uc => uc.UserId == request.UserId && uc.ClaimId == 1); // ClaimId 1 = Admin role
+                var isAdminUser = _userGroupRepository.Query()
+                    .Any(ug => ug.UserId == request.UserId && ug.GroupId == 1); // GroupId 1 = Admin role
                 
                 if (isAdminUser)
                 {

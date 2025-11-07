@@ -22,16 +22,16 @@ namespace Business.Handlers.AdminUsers.Queries
         public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, IDataResult<UserDto>>
         {
             private readonly IUserRepository _userRepository;
-            private readonly IUserClaimRepository _userClaimRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
             private readonly IMapper _mapper;
 
             public GetUserByIdQueryHandler(
                 IUserRepository userRepository,
-                IUserClaimRepository userClaimRepository,
+                IUserGroupRepository userGroupRepository,
                 IMapper mapper)
             {
                 _userRepository = userRepository;
-                _userClaimRepository = userClaimRepository;
+                _userGroupRepository = userGroupRepository;
                 _mapper = mapper;
             }
 
@@ -41,8 +41,8 @@ namespace Business.Handlers.AdminUsers.Queries
             {
                 // SECURITY: Check if requested user is an Admin
                 // Admins should not be able to view other admin accounts
-                var isAdminUser = _userClaimRepository.Query()
-                    .Any(uc => uc.UserId == request.UserId && uc.ClaimId == 1); // ClaimId 1 = Admin role
+                var isAdminUser = _userGroupRepository.Query()
+                    .Any(ug => ug.UserId == request.UserId && ug.GroupId == 1); // GroupId 1 = Admin role
                 
                 if (isAdminUser)
                 {
