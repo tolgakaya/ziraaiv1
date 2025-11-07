@@ -83,7 +83,8 @@ namespace Business.Handlers.AdminUsers.Queries
                         Address = u.Address,
                         Notes = u.Notes,
                         Gender = u.Gender ?? 0,
-                        Status = u.Status
+                        Status = u.Status,
+                        IsActive = u.IsActive
                     })
                     .ToList();
 
