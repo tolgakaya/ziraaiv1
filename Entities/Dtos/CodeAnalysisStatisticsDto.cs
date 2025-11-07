@@ -29,7 +29,7 @@ namespace Entities.Dtos
         public int TotalActiveFarmers { get; set; }
 
         /// <summary>
-        /// Code-level breakdown with analysis details
+        /// Code-level breakdown with analysis details (paginated)
         /// </summary>
         public List<CodeAnalysisBreakdown> CodeBreakdowns { get; set; }
 
@@ -47,6 +47,21 @@ namespace Entities.Dtos
         /// Disease distribution across all analyses
         /// </summary>
         public List<DiseaseStatistic> DiseaseDistribution { get; set; }
+
+        /// <summary>
+        /// Current page number
+        /// </summary>
+        public int Page { get; set; }
+
+        /// <summary>
+        /// Page size (codes per page)
+        /// </summary>
+        public int PageSize { get; set; }
+
+        /// <summary>
+        /// Total number of pages
+        /// </summary>
+        public int TotalPages { get; set; }
     }
 
     public class CodeAnalysisBreakdown

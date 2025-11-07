@@ -27,11 +27,16 @@ namespace Business.Handlers.AdminUsers.Queries
         public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, IDataResult<IEnumerable<UserDto>>>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
             private readonly IMapper _mapper;
 
-            public GetAllUsersQueryHandler(IUserRepository userRepository, IMapper mapper)
+            public GetAllUsersQueryHandler(
+                IUserRepository userRepository,
+                IUserGroupRepository userGroupRepository,
+                IMapper mapper)
             {
                 _userRepository = userRepository;
+                _userGroupRepository = userGroupRepository;
                 _mapper = mapper;
             }
 
@@ -42,6 +47,15 @@ namespace Business.Handlers.AdminUsers.Queries
             {
                 // Build filter expression
                 var query = _userRepository.Query();
+                
+                // SECURITY: Exclude Admin users from all admin operations
+                // Admins should not be able to view or manage other admin accounts
+                var adminUserIds = _userGroupRepository.Query()
+                    .Where(ug => ug.GroupId == 1) // GroupId 1 = Admin role
+                    .Select(ug => ug.UserId)
+                    .ToList();
+                
+                query = query.Where(u => !adminUserIds.Contains(u.UserId));
 
                 // Filter by IsActive if specified
                 if (request.IsActive.HasValue)
@@ -55,14 +69,24 @@ namespace Business.Handlers.AdminUsers.Queries
                     query = query.Where(u => u.Status.ToString() == request.Status);
                 }
 
-                // Apply pagination
-                var users = query
-                    .OrderByDescending(u => u.RecordDate)
+                // Apply pagination and project to DTO before ToList() to avoid reading DateTime infinity values
+                var userDtoList = query
+                    .OrderByDescending(u => u.UserId)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
+                    .Select(u => new UserDto
+                    {
+                        UserId = u.UserId,
+                        FullName = u.FullName,
+                        Email = u.Email,
+                        MobilePhones = u.MobilePhones,
+                        Address = u.Address,
+                        Notes = u.Notes,
+                        Gender = u.Gender ?? 0,
+                        Status = u.Status,
+                        IsActive = u.IsActive
+                    })
                     .ToList();
-
-                var userDtoList = users.Select(user => _mapper.Map<UserDto>(user)).ToList();
 
                 return new SuccessDataResult<IEnumerable<UserDto>>(userDtoList, "Users retrieved successfully");
             }

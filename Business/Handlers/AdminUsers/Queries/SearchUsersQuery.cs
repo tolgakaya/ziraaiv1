@@ -26,11 +26,16 @@ namespace Business.Handlers.AdminUsers.Queries
         public class SearchUsersQueryHandler : IRequestHandler<SearchUsersQuery, IDataResult<IEnumerable<UserDto>>>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
             private readonly IMapper _mapper;
 
-            public SearchUsersQueryHandler(IUserRepository userRepository, IMapper mapper)
+            public SearchUsersQueryHandler(
+                IUserRepository userRepository,
+                IUserGroupRepository userGroupRepository,
+                IMapper mapper)
             {
                 _userRepository = userRepository;
+                _userGroupRepository = userGroupRepository;
                 _mapper = mapper;
             }
 
@@ -46,17 +51,36 @@ namespace Business.Handlers.AdminUsers.Queries
 
                 var searchTerm = request.SearchTerm.ToLower();
 
-                var users = _userRepository.Query()
+                // SECURITY: Exclude Admin users from search results
+                // Admins should not be able to search for or view other admin accounts
+                var adminUserIds = _userGroupRepository.Query()
+                    .Where(ug => ug.GroupId == 1) // GroupId 1 = Admin role
+                    .Select(ug => ug.UserId)
+                    .ToList();
+
+                // Project to DTO before ToList() to avoid reading DateTime infinity values
+                var userDtoList = _userRepository.Query()
+                    .Where(u => !adminUserIds.Contains(u.UserId))
                     .Where(u =>
                         u.Email.ToLower().Contains(searchTerm) ||
                         u.FullName.ToLower().Contains(searchTerm) ||
                         (u.MobilePhones != null && u.MobilePhones.Contains(searchTerm)))
-                    .OrderByDescending(u => u.RecordDate)
+                    .OrderByDescending(u => u.UserId)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
+                    .Select(u => new UserDto
+                    {
+                        UserId = u.UserId,
+                        FullName = u.FullName,
+                        Email = u.Email,
+                        MobilePhones = u.MobilePhones,
+                        Address = u.Address,
+                        Notes = u.Notes,
+                        Gender = u.Gender ?? 0,
+                        Status = u.Status,
+                        IsActive = u.IsActive
+                    })
                     .ToList();
-
-                var userDtoList = users.Select(user => _mapper.Map<UserDto>(user)).ToList();
 
                 return new SuccessDataResult<IEnumerable<UserDto>>(userDtoList, $"Found {userDtoList.Count} users");
             }

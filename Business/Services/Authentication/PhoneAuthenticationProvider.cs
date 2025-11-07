@@ -111,6 +111,12 @@ namespace Business.Services.Authentication
             {
                 throw new System.Exception(Messages.UserNotFound);
             }
+            
+            // SECURITY: Check if user is deactivated by admin
+            if (!user.IsActive)
+            {
+                throw new System.Exception(Messages.UserDeactivated);
+            }
 
             user.AuthenticationProviderType = ProviderType.ToString();
 

@@ -30,13 +30,16 @@ namespace Business.Handlers.AdminUsers.Commands
         public class BulkDeactivateUsersCommandHandler : IRequestHandler<BulkDeactivateUsersCommand, IResult>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
             private readonly IAdminAuditService _auditService;
 
             public BulkDeactivateUsersCommandHandler(
                 IUserRepository userRepository,
+                IUserGroupRepository userGroupRepository,
                 IAdminAuditService auditService)
             {
                 _userRepository = userRepository;
+                _userGroupRepository = userGroupRepository;
                 _auditService = auditService;
             }
 
@@ -49,7 +52,21 @@ namespace Business.Handlers.AdminUsers.Commands
                     return new ErrorResult("No user IDs provided");
                 }
 
-                var users = _userRepository.GetList(u => request.UserIds.Contains(u.UserId));
+                // SECURITY: Filter out any Admin users from the bulk deactivation
+                // Admins should never be able to deactivate other admin accounts
+                var adminUserIds = _userGroupRepository.Query()
+                    .Where(ug => ug.GroupId == 1) // GroupId 1 = Admin role
+                    .Select(ug => ug.UserId)
+                    .ToList();
+
+                var filteredUserIds = request.UserIds.Where(id => !adminUserIds.Contains(id)).ToList();
+
+                if (!filteredUserIds.Any())
+                {
+                    return new ErrorResult("Cannot deactivate admin users. No valid users to deactivate.");
+                }
+
+                var users = _userRepository.GetList(u => filteredUserIds.Contains(u.UserId));
                 
                 if (!users.Any())
                 {

@@ -55,6 +55,13 @@ namespace Business.Services.Authentication
         {
             var citizenId = long.Parse(command.ExternalUserId);
             var user = await _users.GetAsync(u => u.CitizenId == citizenId);
+            
+            // SECURITY: Check if user is deactivated by admin
+            if (!user.IsActive)
+            {
+                throw new System.Exception(Messages.UserDeactivated);
+            }
+            
             user.AuthenticationProviderType = ProviderType.ToString();
 
             var claims = await _users.GetClaimsAsync(user.UserId);

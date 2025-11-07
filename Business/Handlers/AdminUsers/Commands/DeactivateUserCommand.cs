@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Business.BusinessAspects;
@@ -26,13 +27,16 @@ namespace Business.Handlers.AdminUsers.Commands
         public class DeactivateUserCommandHandler : IRequestHandler<DeactivateUserCommand, IResult>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
             private readonly IAdminAuditService _auditService;
 
             public DeactivateUserCommandHandler(
                 IUserRepository userRepository,
+                IUserGroupRepository userGroupRepository,
                 IAdminAuditService auditService)
             {
                 _userRepository = userRepository;
+                _userGroupRepository = userGroupRepository;
                 _auditService = auditService;
             }
 
@@ -40,6 +44,16 @@ namespace Business.Handlers.AdminUsers.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(DeactivateUserCommand request, CancellationToken cancellationToken)
             {
+                // SECURITY: Prevent deactivating Admin users
+                // Admins should not be able to deactivate other admin accounts
+                var isAdminUser = _userGroupRepository.Query()
+                    .Any(ug => ug.UserId == request.UserId && ug.GroupId == 1); // GroupId 1 = Admin role
+                
+                if (isAdminUser)
+                {
+                    return new ErrorResult("Access denied: Cannot deactivate admin users");
+                }
+
                 var user = await _userRepository.GetAsync(u => u.UserId == request.UserId);
 
                 if (user == null)
