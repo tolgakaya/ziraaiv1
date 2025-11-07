@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Business.BusinessAspects;
@@ -25,13 +26,16 @@ namespace Business.Handlers.AdminUsers.Commands
         public class ReactivateUserCommandHandler : IRequestHandler<ReactivateUserCommand, IResult>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserClaimRepository _userClaimRepository;
             private readonly IAdminAuditService _auditService;
 
             public ReactivateUserCommandHandler(
                 IUserRepository userRepository,
+                IUserClaimRepository userClaimRepository,
                 IAdminAuditService auditService)
             {
                 _userRepository = userRepository;
+                _userClaimRepository = userClaimRepository;
                 _auditService = auditService;
             }
 
@@ -39,6 +43,16 @@ namespace Business.Handlers.AdminUsers.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(ReactivateUserCommand request, CancellationToken cancellationToken)
             {
+                // SECURITY: Prevent reactivating Admin users
+                // Admins should not be able to reactivate other admin accounts
+                var isAdminUser = _userClaimRepository.Query()
+                    .Any(uc => uc.UserId == request.UserId && uc.ClaimId == 1); // ClaimId 1 = Admin role
+                
+                if (isAdminUser)
+                {
+                    return new ErrorResult("Access denied: Cannot reactivate admin users");
+                }
+
                 var user = await _userRepository.GetAsync(u => u.UserId == request.UserId);
 
                 if (user == null)

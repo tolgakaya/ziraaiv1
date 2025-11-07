@@ -27,11 +27,16 @@ namespace Business.Handlers.AdminUsers.Queries
         public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, IDataResult<IEnumerable<UserDto>>>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserClaimRepository _userClaimRepository;
             private readonly IMapper _mapper;
 
-            public GetAllUsersQueryHandler(IUserRepository userRepository, IMapper mapper)
+            public GetAllUsersQueryHandler(
+                IUserRepository userRepository,
+                IUserClaimRepository userClaimRepository,
+                IMapper mapper)
             {
                 _userRepository = userRepository;
+                _userClaimRepository = userClaimRepository;
                 _mapper = mapper;
             }
 
@@ -42,6 +47,15 @@ namespace Business.Handlers.AdminUsers.Queries
             {
                 // Build filter expression
                 var query = _userRepository.Query();
+                
+                // SECURITY: Exclude Admin users from all admin operations
+                // Admins should not be able to view or manage other admin accounts
+                var adminUserIds = _userClaimRepository.Query()
+                    .Where(uc => uc.ClaimId == 1) // ClaimId 1 = Admin role
+                    .Select(uc => uc.UserId)
+                    .ToList();
+                
+                query = query.Where(u => !adminUserIds.Contains(u.UserId));
 
                 // Filter by IsActive if specified
                 if (request.IsActive.HasValue)

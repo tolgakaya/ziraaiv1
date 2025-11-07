@@ -26,11 +26,16 @@ namespace Business.Handlers.AdminUsers.Queries
         public class SearchUsersQueryHandler : IRequestHandler<SearchUsersQuery, IDataResult<IEnumerable<UserDto>>>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserClaimRepository _userClaimRepository;
             private readonly IMapper _mapper;
 
-            public SearchUsersQueryHandler(IUserRepository userRepository, IMapper mapper)
+            public SearchUsersQueryHandler(
+                IUserRepository userRepository,
+                IUserClaimRepository userClaimRepository,
+                IMapper mapper)
             {
                 _userRepository = userRepository;
+                _userClaimRepository = userClaimRepository;
                 _mapper = mapper;
             }
 
@@ -46,7 +51,15 @@ namespace Business.Handlers.AdminUsers.Queries
 
                 var searchTerm = request.SearchTerm.ToLower();
 
+                // SECURITY: Exclude Admin users from search results
+                // Admins should not be able to search for or view other admin accounts
+                var adminUserIds = _userClaimRepository.Query()
+                    .Where(uc => uc.ClaimId == 1) // ClaimId 1 = Admin role
+                    .Select(uc => uc.UserId)
+                    .ToList();
+
                 var users = _userRepository.Query()
+                    .Where(u => !adminUserIds.Contains(u.UserId))
                     .Where(u =>
                         u.Email.ToLower().Contains(searchTerm) ||
                         u.FullName.ToLower().Contains(searchTerm) ||

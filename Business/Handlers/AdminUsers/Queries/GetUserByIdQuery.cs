@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -21,11 +22,16 @@ namespace Business.Handlers.AdminUsers.Queries
         public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, IDataResult<UserDto>>
         {
             private readonly IUserRepository _userRepository;
+            private readonly IUserClaimRepository _userClaimRepository;
             private readonly IMapper _mapper;
 
-            public GetUserByIdQueryHandler(IUserRepository userRepository, IMapper mapper)
+            public GetUserByIdQueryHandler(
+                IUserRepository userRepository,
+                IUserClaimRepository userClaimRepository,
+                IMapper mapper)
             {
                 _userRepository = userRepository;
+                _userClaimRepository = userClaimRepository;
                 _mapper = mapper;
             }
 
@@ -33,6 +39,16 @@ namespace Business.Handlers.AdminUsers.Queries
             [LogAspect(typeof(FileLogger))]
             public async Task<IDataResult<UserDto>> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
             {
+                // SECURITY: Check if requested user is an Admin
+                // Admins should not be able to view other admin accounts
+                var isAdminUser = _userClaimRepository.Query()
+                    .Any(uc => uc.UserId == request.UserId && uc.ClaimId == 1); // ClaimId 1 = Admin role
+                
+                if (isAdminUser)
+                {
+                    return new ErrorDataResult<UserDto>("Access denied: Cannot view admin user details");
+                }
+
                 var user = await _userRepository.GetAsync(u => u.UserId == request.UserId);
 
                 if (user == null)
