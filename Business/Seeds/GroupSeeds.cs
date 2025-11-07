@@ -41,12 +41,22 @@ namespace Business.Seeds
         public static List<GroupClaim> GetDefaultGroupClaims()
         {
             var groupClaims = new List<GroupClaim>();
-            
-            // Administrators - Full access (all claims from 1-91)
+
+            // Administrators - Full access (all claims from 1-91 + admin handler claims 100-106)
             for (int claimId = 1; claimId <= 91; claimId++)
             {
-                groupClaims.Add(new GroupClaim 
-                { 
+                groupClaims.Add(new GroupClaim
+                {
+                    GroupId = 1, // Administrators
+                    ClaimId = claimId
+                });
+            }
+
+            // Add admin-specific handler claims
+            for (int claimId = 100; claimId <= 106; claimId++)
+            {
+                groupClaims.Add(new GroupClaim
+                {
                     GroupId = 1, // Administrators
                     ClaimId = claimId
                 });
