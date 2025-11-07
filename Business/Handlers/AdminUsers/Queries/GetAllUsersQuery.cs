@@ -71,7 +71,7 @@ namespace Business.Handlers.AdminUsers.Queries
 
                 // Apply pagination
                 var users = query
-                    .OrderByDescending(u => u.RecordDate)
+                    .OrderByDescending(u => u.UserId)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .ToList();

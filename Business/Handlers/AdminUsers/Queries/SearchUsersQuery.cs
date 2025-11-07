@@ -64,7 +64,7 @@ namespace Business.Handlers.AdminUsers.Queries
                         u.Email.ToLower().Contains(searchTerm) ||
                         u.FullName.ToLower().Contains(searchTerm) ||
                         (u.MobilePhones != null && u.MobilePhones.Contains(searchTerm)))
-                    .OrderByDescending(u => u.RecordDate)
+                    .OrderByDescending(u => u.UserId)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
                     .ToList();
