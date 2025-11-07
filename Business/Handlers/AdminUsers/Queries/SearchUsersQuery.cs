@@ -58,7 +58,8 @@ namespace Business.Handlers.AdminUsers.Queries
                     .Select(ug => ug.UserId)
                     .ToList();
 
-                var users = _userRepository.Query()
+                // Project to DTO before ToList() to avoid reading DateTime infinity values
+                var userDtoList = _userRepository.Query()
                     .Where(u => !adminUserIds.Contains(u.UserId))
                     .Where(u =>
                         u.Email.ToLower().Contains(searchTerm) ||
@@ -67,9 +68,18 @@ namespace Business.Handlers.AdminUsers.Queries
                     .OrderByDescending(u => u.UserId)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
+                    .Select(u => new UserDto
+                    {
+                        UserId = u.UserId,
+                        FullName = u.FullName,
+                        Email = u.Email,
+                        MobilePhones = u.MobilePhones,
+                        Address = u.Address,
+                        Notes = u.Notes,
+                        Gender = u.Gender ?? 0,
+                        Status = u.Status
+                    })
                     .ToList();
-
-                var userDtoList = users.Select(user => _mapper.Map<UserDto>(user)).ToList();
 
                 return new SuccessDataResult<IEnumerable<UserDto>>(userDtoList, $"Found {userDtoList.Count} users");
             }

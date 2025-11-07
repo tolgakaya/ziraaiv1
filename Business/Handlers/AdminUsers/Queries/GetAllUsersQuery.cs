@@ -69,14 +69,23 @@ namespace Business.Handlers.AdminUsers.Queries
                     query = query.Where(u => u.Status.ToString() == request.Status);
                 }
 
-                // Apply pagination
-                var users = query
+                // Apply pagination and project to DTO before ToList() to avoid reading DateTime infinity values
+                var userDtoList = query
                     .OrderByDescending(u => u.UserId)
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
+                    .Select(u => new UserDto
+                    {
+                        UserId = u.UserId,
+                        FullName = u.FullName,
+                        Email = u.Email,
+                        MobilePhones = u.MobilePhones,
+                        Address = u.Address,
+                        Notes = u.Notes,
+                        Gender = u.Gender ?? 0,
+                        Status = u.Status
+                    })
                     .ToList();
-
-                var userDtoList = users.Select(user => _mapper.Map<UserDto>(user)).ToList();
 
                 return new SuccessDataResult<IEnumerable<UserDto>>(userDtoList, "Users retrieved successfully");
             }
