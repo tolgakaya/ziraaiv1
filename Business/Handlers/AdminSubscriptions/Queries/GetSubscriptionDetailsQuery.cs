@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Business.BusinessAspects;
 using Core.Aspects.Autofac.Logging;
+using Core.Aspects.Autofac.Performance;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -48,6 +49,11 @@ namespace Business.Handlers.AdminSubscriptions.Queries
             }
 
             [SecuredOperation(Priority = 1)]
+
+
+            [PerformanceAspect(5)]
+
+
             [LogAspect(typeof(FileLogger))]
             public async Task<IDataResult<IEnumerable<SubscriptionDetailDto>>> Handle(
                 GetSubscriptionDetailsQuery request, 
