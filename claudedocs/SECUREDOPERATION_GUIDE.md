@@ -573,6 +573,54 @@ at Business.BusinessAspects.SecuredOperation.OnBefore(IInvocation invocation)
    }
    ```
 
+### Hata 3: PerformanceAspect Eksikliği - 401 Unauthorized
+
+**Semptom**: 
+- API endpoint 401 Unauthorized hatası döndürüyor
+- Database'de claim'ler var ve doğru atanmış
+- Diğer admin endpoint'leri çalışıyor
+- Cache temiz, user logout/login yaptı
+
+**Sebep**: Handler'da `[PerformanceAspect]` attribute'u eksik
+
+**Açıklama**:
+Admin handler'larında AOP aspect pipeline'ı şu sırada olmalı:
+```csharp
+[SecuredOperation(Priority = 1)]
+[PerformanceAspect(5)]
+[LogAspect(typeof(FileLogger))]
+```
+
+Eğer `[PerformanceAspect(5)]` eksikse, aspect pipeline düzgün çalışmaz ve authorization başarısız olur.
+
+**Kontrol**:
+```csharp
+// ❌ YANLIŞ - PerformanceAspect eksik
+[SecuredOperation(Priority = 1)]
+[LogAspect(typeof(FileLogger))]
+public async Task<IDataResult<T>> Handle(...)
+
+// ✅ DOĞRU - Tüm aspect'ler mevcut
+[SecuredOperation(Priority = 1)]
+[PerformanceAspect(5)]
+[LogAspect(typeof(FileLogger))]
+public async Task<IDataResult<T>> Handle(...)
+```
+
+**Çözüm**:
+1. Çalışan bir admin handler'ı referans al (örn: `GetAllUsersQuery.cs`)
+2. Aynı using directive'leri ekle:
+   ```csharp
+   using Core.Aspects.Autofac.Logging;
+   using Core.Aspects.Autofac.Performance;  // ← Bunu ekle
+   using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
+   ```
+3. Handler method'una `[PerformanceAspect(5)]` ekle
+4. Build ve test et
+
+**Örnek**:
+`Business/Handlers/AdminSubscriptions/Queries/GetSubscriptionDetailsQuery.cs` bu hatadan etkilenmişti.
+
 ### Hata 3: SQL Migration Hatası - ON CONFLICT
 
 **Semptom**:
@@ -689,6 +737,9 @@ curl -X POST 'https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/dealer/tr
 - [ ] SQL migration'ı staging database'de çalıştır
 - [ ] Handler'a `[SecuredOperation(Priority = 1)]` ekle
 - [ ] Handler'da `using Business.BusinessAspects;` ekle
+- [ ] Admin handler ise: Çalışan admin handler'dan aspect pattern'i kopyala
+  - [ ] `using Core.Aspects.Autofac.Performance;` ekle
+  - [ ] `[PerformanceAspect(5)]` attribute'unu ekle (SecuredOperation ile LogAspect arasına)
 - [ ] Build ve deploy
 - [ ] Test et (Postman veya curl)
 - [ ] Database'de claim'leri verify et
