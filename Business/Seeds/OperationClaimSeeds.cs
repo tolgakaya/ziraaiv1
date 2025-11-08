@@ -88,7 +88,20 @@ namespace Business.Seeds
                 new OperationClaim { Id = 104, Name = "ExtendSubscriptionCommand", Alias = "Extend Subscription", Description = "Extend user subscription" },
                 new OperationClaim { Id = 105, Name = "CancelSubscriptionCommand", Alias = "Cancel Subscription", Description = "Cancel user subscription" },
                 new OperationClaim { Id = 106, Name = "BulkCancelSubscriptionsCommand", Alias = "Bulk Cancel Subscriptions", Description = "Cancel multiple subscriptions" },
-                new OperationClaim { Id = 132, Name = "GetAllSponsorsQuery", Alias = "Get All Sponsors", Description = "Query all users with Sponsor role (GroupId = 3)" }
+                new OperationClaim { Id = 132, Name = "GetAllSponsorsQuery", Alias = "Get All Sponsors", Description = "Query all users with Sponsor role (GroupId = 3)" },
+
+                // Admin Sponsor View Claims (Phase 1)
+                new OperationClaim { Id = 133, Name = "GetSponsorAnalysesAsAdminQuery", Alias = "Get Sponsor Analyses (Admin)", Description = "Admin view of sponsor's analyses with filters and messaging" },
+                new OperationClaim { Id = 134, Name = "GetSponsorAnalysisDetailAsAdminQuery", Alias = "Get Sponsor Analysis Detail (Admin)", Description = "Admin view of detailed sponsor analysis with messages" },
+                new OperationClaim { Id = 135, Name = "GetSponsorMessagesAsAdminQuery", Alias = "Get Sponsor Messages (Admin)", Description = "Admin view of all sponsor messages with filters" },
+                new OperationClaim { Id = 139, Name = "SendMessageAsSponsorCommand", Alias = "Send Message As Sponsor (Admin)", Description = "Admin send message on behalf of sponsor" },
+
+                // Non-Sponsored Farmer Analytics Claims (Phase 2)
+                new OperationClaim { Id = 136, Name = "GetNonSponsoredAnalysesQuery", Alias = "Get Non-Sponsored Analyses", Description = "Query analyses without sponsorship for opportunity identification" },
+                new OperationClaim { Id = 137, Name = "GetNonSponsoredFarmerDetailQuery", Alias = "Get Non-Sponsored Farmer Detail", Description = "Detailed farmer profile for sponsorship targeting" },
+
+                // Sponsorship Comparison Analytics (Phase 3)
+                new OperationClaim { Id = 138, Name = "GetSponsorshipComparisonAnalyticsQuery", Alias = "Get Sponsorship Comparison Analytics", Description = "Compare sponsored vs non-sponsored analysis metrics" }
             };
         }
     }
