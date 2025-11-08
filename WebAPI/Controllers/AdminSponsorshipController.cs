@@ -435,6 +435,47 @@ namespace WebAPI.Controllers
             return GetResponse(result);
         }
 
+        /// <summary>
+        /// Get non-sponsored analyses (admin view of analyses without sponsor codes)
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 20)</param>
+        /// <param name="sortBy">Sort by: date, cropType, status (default: date)</param>
+        /// <param name="sortOrder">Sort order: asc, desc (default: desc)</param>
+        /// <param name="filterByCropType">Filter by crop type (optional)</param>
+        /// <param name="startDate">Filter by start date (optional)</param>
+        /// <param name="endDate">Filter by end date (optional)</param>
+        /// <param name="filterByStatus">Filter by analysis status (optional)</param>
+        /// <param name="userId">Filter by user ID (optional)</param>
+        [HttpGet("non-sponsored/analyses")]
+        public async Task<IActionResult> GetNonSponsoredAnalyses(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string sortBy = "date",
+            [FromQuery] string sortOrder = "desc",
+            [FromQuery] string filterByCropType = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string filterByStatus = null,
+            [FromQuery] int? userId = null)
+        {
+            var query = new GetNonSponsoredAnalysesQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                SortBy = sortBy,
+                SortOrder = sortOrder,
+                FilterByCropType = filterByCropType,
+                StartDate = startDate,
+                EndDate = endDate,
+                FilterByStatus = filterByStatus,
+                UserId = userId
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
         #endregion
     }
 

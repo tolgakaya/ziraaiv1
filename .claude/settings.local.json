@@ -19,7 +19,9 @@
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
       "mcp__serena__list_dir",
-      "mcp__serena__write_memory"
+      "mcp__serena__write_memory",
+      "Bash(git push:*)",
+      "mcp__serena__replace_symbol_body"
     ],
     "deny": [],
     "ask": [],
