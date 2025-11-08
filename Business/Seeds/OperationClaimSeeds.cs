@@ -78,7 +78,16 @@ namespace Business.Seeds
                 
                 // Mobile App Claims
                 new OperationClaim { Id = 90, Name = "Mobile.Access", Alias = "Mobile App Access", Description = "Mobile application access" },
-                new OperationClaim { Id = 91, Name = "Mobile.PushNotifications", Alias = "Push Notifications", Description = "Receive push notifications" }
+                new OperationClaim { Id = 91, Name = "Mobile.PushNotifications", Alias = "Push Notifications", Description = "Receive push notifications" },
+
+                // Admin Query Claims (Handler-specific)
+                new OperationClaim { Id = 100, Name = "GetAllSubscriptionsQuery", Alias = "Get All Subscriptions", Description = "Query all subscriptions" },
+                new OperationClaim { Id = 101, Name = "GetSubscriptionDetailsQuery", Alias = "Get Subscription Details", Description = "Query detailed subscription information" },
+                new OperationClaim { Id = 102, Name = "GetSubscriptionByIdQuery", Alias = "Get Subscription By ID", Description = "Query subscription by ID" },
+                new OperationClaim { Id = 103, Name = "AssignSubscriptionCommand", Alias = "Assign Subscription", Description = "Assign subscription to user" },
+                new OperationClaim { Id = 104, Name = "ExtendSubscriptionCommand", Alias = "Extend Subscription", Description = "Extend user subscription" },
+                new OperationClaim { Id = 105, Name = "CancelSubscriptionCommand", Alias = "Cancel Subscription", Description = "Cancel user subscription" },
+                new OperationClaim { Id = 106, Name = "BulkCancelSubscriptionsCommand", Alias = "Bulk Cancel Subscriptions", Description = "Cancel multiple subscriptions" }
             };
         }
     }

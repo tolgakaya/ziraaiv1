@@ -73,6 +73,77 @@ protected override void OnBefore(IInvocation invocation)
 
 ---
 
+## 🔍 BEFORE Adding New Endpoint: Verification Checklist
+
+**CRITICAL:** Her yeni admin endpoint eklemeden ÖNCE bu adımları takip et!
+
+### Adım 1: Handler Class Adını Doğrula
+
+Handler class adı **mutlaka** "Handler" suffix'i ile bitmeli:
+
+```csharp
+// ✅ DOĞRU
+public class GetSubscriptionDetailsQueryHandler : IRequestHandler<...>
+
+// ❌ YANLIŞ - Handler suffix'i yok
+public class GetSubscriptionDetailsQuery : IRequestHandler<...>
+```
+
+### Adım 2: OperationClaim Adını Hesapla
+
+Claim adı = Handler class adı - "Handler" suffix'i
+
+```
+GetSubscriptionDetailsQueryHandler → GetSubscriptionDetailsQuery
+AssignSubscriptionCommandHandler → AssignSubscriptionCommand
+```
+
+### Adım 3: SQL Migration Script Oluştur
+
+**Template:**
+```sql
+-- Add [Feature] Operation Claims
+INSERT INTO "OperationClaims" ("Id", "Name", "Alias", "Description")
+VALUES
+    (ID, 'ClaimNameFromStep2', 'Display Name', 'Description')
+ON CONFLICT ("Id") DO NOTHING;
+
+INSERT INTO "GroupClaims" ("GroupId", "ClaimId")
+VALUES (1, ID)  -- 1 = Administrators
+ON CONFLICT DO NOTHING;
+```
+
+### Adım 4: Aspect Attributes Ekle
+
+**Admin handler'lar için ZORUNLU aspect sırası:**
+
+```csharp
+[SecuredOperation(Priority = 1)]
+[PerformanceAspect(5)]
+[LogAspect(typeof(FileLogger))]
+public async Task<IDataResult<T>> Handle(...)
+```
+
+**Gerekli using statements:**
+```csharp
+using Business.BusinessAspects;
+using Core.Aspects.Autofac.Logging;
+using Core.Aspects.Autofac.Performance;
+using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
+```
+
+### Adım 5: Deploy ve Test Checklist
+
+- [ ] SQL migration Railway database'de çalıştırıldı
+- [ ] Verification query sonucu: Claim eklendi
+- [ ] Verification query sonucu: Admin grubuna atandı
+- [ ] Code push edildi
+- [ ] Railway deployment tamamlandı
+- [ ] **Logout/Login yapıldı** (cache refresh için ZORUNLU)
+- [ ] Endpoint test edildi (200 OK aldı)
+
+---
+
 ## 📝 OperationClaim Naming Convention
 
 ### Kural: Handler sınıf adı - "Handler" suffix'i = OperationClaim adı
@@ -573,6 +644,54 @@ at Business.BusinessAspects.SecuredOperation.OnBefore(IInvocation invocation)
    }
    ```
 
+### Hata 3: PerformanceAspect Eksikliği - 401 Unauthorized
+
+**Semptom**: 
+- API endpoint 401 Unauthorized hatası döndürüyor
+- Database'de claim'ler var ve doğru atanmış
+- Diğer admin endpoint'leri çalışıyor
+- Cache temiz, user logout/login yaptı
+
+**Sebep**: Handler'da `[PerformanceAspect]` attribute'u eksik
+
+**Açıklama**:
+Admin handler'larında AOP aspect pipeline'ı şu sırada olmalı:
+```csharp
+[SecuredOperation(Priority = 1)]
+[PerformanceAspect(5)]
+[LogAspect(typeof(FileLogger))]
+```
+
+Eğer `[PerformanceAspect(5)]` eksikse, aspect pipeline düzgün çalışmaz ve authorization başarısız olur.
+
+**Kontrol**:
+```csharp
+// ❌ YANLIŞ - PerformanceAspect eksik
+[SecuredOperation(Priority = 1)]
+[LogAspect(typeof(FileLogger))]
+public async Task<IDataResult<T>> Handle(...)
+
+// ✅ DOĞRU - Tüm aspect'ler mevcut
+[SecuredOperation(Priority = 1)]
+[PerformanceAspect(5)]
+[LogAspect(typeof(FileLogger))]
+public async Task<IDataResult<T>> Handle(...)
+```
+
+**Çözüm**:
+1. Çalışan bir admin handler'ı referans al (örn: `GetAllUsersQuery.cs`)
+2. Aynı using directive'leri ekle:
+   ```csharp
+   using Core.Aspects.Autofac.Logging;
+   using Core.Aspects.Autofac.Performance;  // ← Bunu ekle
+   using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
+   ```
+3. Handler method'una `[PerformanceAspect(5)]` ekle
+4. Build ve test et
+
+**Örnek**:
+`Business/Handlers/AdminSubscriptions/Queries/GetSubscriptionDetailsQuery.cs` bu hatadan etkilenmişti.
+
 ### Hata 3: SQL Migration Hatası - ON CONFLICT
 
 **Semptom**:
@@ -678,6 +797,118 @@ curl -X POST 'https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/dealer/tr
 
 ---
 
+## 📚 Real Example: AdminSubscriptions Handlers
+
+Bu gerçek bir örnektir - AdminSubscriptionsController için eklenen tüm handler'lar ve claim'ler:
+
+### Handler → Claim Mapping
+
+| Handler Class | Claim Name (SQL) | ID | Endpoint |
+|---------------|------------------|----|----|
+| `GetAllSubscriptionsQueryHandler` | `GetAllSubscriptionsQuery` | 100 | GET /api/admin/subscriptions |
+| `GetSubscriptionDetailsQueryHandler` | `GetSubscriptionDetailsQuery` | 101 | GET /api/admin/subscriptions/details |
+| `GetSubscriptionByIdQueryHandler` | `GetSubscriptionByIdQuery` | 102 | GET /api/admin/subscriptions/{id} |
+| `AssignSubscriptionCommandHandler` | `AssignSubscriptionCommand` | 103 | POST /api/admin/subscriptions/assign |
+| `ExtendSubscriptionCommandHandler` | `ExtendSubscriptionCommand` | 104 | PUT /api/admin/subscriptions/{id}/extend |
+| `CancelSubscriptionCommandHandler` | `CancelSubscriptionCommand` | 105 | DELETE /api/admin/subscriptions/{id}/cancel |
+| `BulkCancelSubscriptionsCommandHandler` | `BulkCancelSubscriptionsCommand` | 106 | POST /api/admin/subscriptions/bulk-cancel |
+
+### SQL Migration Script (add_admin_claims.sql)
+
+```sql
+-- Insert operation claims
+INSERT INTO "OperationClaims" ("Id", "Name", "Alias", "Description")
+VALUES
+    (100, 'GetAllSubscriptionsQuery', 'Get All Subscriptions', 'Query all subscriptions'),
+    (101, 'GetSubscriptionDetailsQuery', 'Get Subscription Details', 'Query detailed subscription information'),
+    (102, 'GetSubscriptionByIdQuery', 'Get Subscription By ID', 'Query subscription by ID'),
+    (103, 'AssignSubscriptionCommand', 'Assign Subscription', 'Assign subscription to user'),
+    (104, 'ExtendSubscriptionCommand', 'Extend Subscription', 'Extend user subscription'),
+    (105, 'CancelSubscriptionCommand', 'Cancel Subscription', 'Cancel user subscription'),
+    (106, 'BulkCancelSubscriptionsCommand', 'Bulk Cancel Subscriptions', 'Cancel multiple subscriptions')
+ON CONFLICT ("Id") DO NOTHING;
+
+-- Assign to Administrators group
+INSERT INTO "GroupClaims" ("GroupId", "ClaimId")
+VALUES
+    (1, 100), (1, 101), (1, 102), (1, 103), (1, 104), (1, 105), (1, 106)
+ON CONFLICT DO NOTHING;
+```
+
+### Handler Implementation Example
+
+```csharp
+// File: Business/Handlers/AdminSubscriptions/Queries/GetSubscriptionDetailsQuery.cs
+using Business.BusinessAspects;
+using Core.Aspects.Autofac.Logging;
+using Core.Aspects.Autofac.Performance;
+using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
+
+public class GetSubscriptionDetailsQueryHandler : IRequestHandler<...>
+{
+    [SecuredOperation(Priority = 1)]
+    [PerformanceAspect(5)]
+    [LogAspect(typeof(FileLogger))]
+    public async Task<IDataResult<...>> Handle(...)
+    {
+        // Implementation
+    }
+}
+```
+
+### Verification Queries
+
+```sql
+-- Check all admin subscription claims exist
+SELECT "Id", "Name", "Alias"
+FROM "OperationClaims"
+WHERE "Id" BETWEEN 100 AND 106
+ORDER BY "Id";
+
+-- Check all assigned to Administrators
+SELECT gc."ClaimId", oc."Name", g."GroupName"
+FROM "GroupClaims" gc
+JOIN "OperationClaims" oc ON gc."ClaimId" = oc."Id"
+JOIN "Groups" g ON gc."GroupId" = g."Id"
+WHERE gc."ClaimId" BETWEEN 100 AND 106;
+```
+
+### Common Mistakes (❌ vs ✅)
+
+**Mistake 1: Handler suffix eksik**
+```csharp
+❌ public class GetSubscriptionDetailsQuery : IRequestHandler<...>
+✅ public class GetSubscriptionDetailsQueryHandler : IRequestHandler<...>
+```
+
+**Mistake 2: SQL claim adı yanlış**
+```sql
+❌ INSERT INTO "OperationClaims" ("Name") VALUES ('GetSubscriptionDetails')
+✅ INSERT INTO "OperationClaims" ("Name") VALUES ('GetSubscriptionDetailsQuery')
+```
+
+**Mistake 3: PerformanceAspect eksik**
+```csharp
+❌ [SecuredOperation(Priority = 1)]
+   [LogAspect(typeof(FileLogger))]
+   
+✅ [SecuredOperation(Priority = 1)]
+   [PerformanceAspect(5)]
+   [LogAspect(typeof(FileLogger))]
+```
+
+**Mistake 4: GroupClaims ataması unutulmuş**
+```sql
+❌ INSERT INTO "OperationClaims" ... (claim eklendi ama gruba atanmadı)
+
+✅ INSERT INTO "OperationClaims" ...
+   INSERT INTO "GroupClaims" ("GroupId", "ClaimId") VALUES (1, 101)
+```
+
+---
+
+---
+
 ## ✅ Checklist: Yeni Endpoint Authorization Ekleme
 
 - [ ] Handler sınıf adını belirle (örn: `TransferCodesToDealerCommandHandler`)
@@ -689,6 +920,9 @@ curl -X POST 'https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/dealer/tr
 - [ ] SQL migration'ı staging database'de çalıştır
 - [ ] Handler'a `[SecuredOperation(Priority = 1)]` ekle
 - [ ] Handler'da `using Business.BusinessAspects;` ekle
+- [ ] Admin handler ise: Çalışan admin handler'dan aspect pattern'i kopyala
+  - [ ] `using Core.Aspects.Autofac.Performance;` ekle
+  - [ ] `[PerformanceAspect(5)]` attribute'unu ekle (SecuredOperation ile LogAspect arasına)
 - [ ] Build ve deploy
 - [ ] Test et (Postman veya curl)
 - [ ] Database'de claim'leri verify et

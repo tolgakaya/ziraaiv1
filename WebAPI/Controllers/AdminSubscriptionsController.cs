@@ -1,6 +1,8 @@
 using Business.Handlers.AdminSubscriptions.Commands;
+using Business.Handlers.AdminSubscriptions.Commands;
 using Business.Handlers.AdminSubscriptions.Queries;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -55,9 +57,56 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get detailed subscription information with user details, usage stats, and analysis counts
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 50)</param>
+        /// <param name="userId">Filter by user ID (optional)</param>
+        /// <param name="sponsorId">Filter by sponsor ID (optional)</param>
+        /// <param name="status">Filter by status (optional)</param>
+        /// <param name="isActive">Filter by active status (optional)</param>
+        /// <param name="isSponsoredSubscription">Filter by sponsored status (optional)</param>
+        /// <param name="startDateFrom">Filter by start date from (optional)</param>
+        /// <param name="startDateTo">Filter by start date to (optional)</param>
+        [HttpGet("details")]
+        public async Task<IActionResult> GetSubscriptionDetails(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] int? userId = null,
+            [FromQuery] int? sponsorId = null,
+            [FromQuery] string status = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] bool? isSponsoredSubscription = null,
+            [FromQuery] DateTime? startDateFrom = null,
+            [FromQuery] DateTime? startDateTo = null)
+        {
+            var query = new GetSubscriptionDetailsQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                UserId = userId,
+                SponsorId = sponsorId,
+                Status = status,
+                IsActive = isActive,
+                IsSponsoredSubscription = isSponsoredSubscription,
+                StartDateFrom = startDateFrom,
+                StartDateTo = startDateTo
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
         /// Assign a subscription to a user
         /// </summary>
         /// <param name="request">Assignment request details</param>
+        /// <remarks>
+        /// Queue Control:
+        /// - If user has active sponsorship and ForceActivation=false: New sponsorship will be queued
+        /// - If user has active sponsorship and ForceActivation=true: Existing sponsorship cancelled, new one activated immediately
+        /// - If no active sponsorship: Activated immediately regardless of ForceActivation value
+        /// </remarks>
         [HttpPost("assign")]
         public async Task<IActionResult> AssignSubscription([FromBody] AssignSubscriptionRequest request)
         {
@@ -69,6 +118,7 @@ namespace WebAPI.Controllers
                 IsSponsoredSubscription = request.IsSponsoredSubscription,
                 SponsorId = request.SponsorId,
                 Notes = request.Notes,
+                ForceActivation = request.ForceActivation,
                 AdminUserId = AdminUserId,
                 IpAddress = ClientIpAddress,
                 UserAgent = UserAgent,
@@ -180,6 +230,13 @@ namespace WebAPI.Controllers
         /// Notes about the assignment
         /// </summary>
         public string Notes { get; set; }
+
+        /// <summary>
+        /// Force activation: Cancel existing active sponsorship and activate new one immediately.
+        /// Default (false): Queue new sponsorship if active sponsorship exists.
+        /// Only applies to sponsored subscriptions.
+        /// </summary>
+        public bool ForceActivation { get; set; } = false;
     }
 
     /// <summary>
