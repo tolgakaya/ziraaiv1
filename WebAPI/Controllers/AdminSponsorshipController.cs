@@ -360,6 +360,26 @@ namespace WebAPI.Controllers
             return GetResponse(result);
         }
 
+        /// <summary>
+        /// Get specific analysis detail for a sponsor (admin viewing sponsor perspective)
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID</param>
+        /// <param name="plantAnalysisId">Plant analysis ID</param>
+        [HttpGet("sponsors/{sponsorId}/analyses/{plantAnalysisId}")]
+        public async Task<IActionResult> GetSponsorAnalysisDetailAsAdmin(
+            int sponsorId,
+            int plantAnalysisId)
+        {
+            var query = new GetSponsorAnalysisDetailAsAdminQuery
+            {
+                SponsorId = sponsorId,
+                PlantAnalysisId = plantAnalysisId
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
         #endregion
     }
 
