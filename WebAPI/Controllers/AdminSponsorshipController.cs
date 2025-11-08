@@ -380,6 +380,35 @@ namespace WebAPI.Controllers
             return GetResponse(result);
         }
 
+        /// <summary>
+        /// Get message conversation for a specific analysis (admin viewing sponsor perspective)
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID</param>
+        /// <param name="farmerUserId">Farmer user ID</param>
+        /// <param name="plantAnalysisId">Plant analysis ID</param>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 20)</param>
+        [HttpGet("sponsors/{sponsorId}/messages")]
+        public async Task<IActionResult> GetSponsorMessagesAsAdmin(
+            int sponsorId,
+            [FromQuery] int farmerUserId,
+            [FromQuery] int plantAnalysisId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var query = new GetSponsorMessagesAsAdminQuery
+            {
+                SponsorId = sponsorId,
+                FarmerUserId = farmerUserId,
+                PlantAnalysisId = plantAnalysisId,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
         #endregion
     }
 
