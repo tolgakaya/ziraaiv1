@@ -87,7 +87,8 @@ namespace Business.Seeds
                 new OperationClaim { Id = 103, Name = "AssignSubscriptionCommand", Alias = "Assign Subscription", Description = "Assign subscription to user" },
                 new OperationClaim { Id = 104, Name = "ExtendSubscriptionCommand", Alias = "Extend Subscription", Description = "Extend user subscription" },
                 new OperationClaim { Id = 105, Name = "CancelSubscriptionCommand", Alias = "Cancel Subscription", Description = "Cancel user subscription" },
-                new OperationClaim { Id = 106, Name = "BulkCancelSubscriptionsCommand", Alias = "Bulk Cancel Subscriptions", Description = "Cancel multiple subscriptions" }
+                new OperationClaim { Id = 106, Name = "BulkCancelSubscriptionsCommand", Alias = "Bulk Cancel Subscriptions", Description = "Cancel multiple subscriptions" },
+                new OperationClaim { Id = 132, Name = "GetAllSponsorsQuery", Alias = "Get All Sponsors", Description = "Query all users with Sponsor role (GroupId = 3)" }
             };
         }
     }

@@ -53,7 +53,7 @@ namespace Business.Seeds
             }
 
             // Add admin-specific handler claims
-            for (int claimId = 100; claimId <= 106; claimId++)
+            for (int claimId = 100; claimId <= 132; claimId++)
             {
                 groupClaims.Add(new GroupClaim
                 {
