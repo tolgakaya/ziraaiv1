@@ -18,7 +18,8 @@
       "Bash(gh pr close:*)",
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
-      "mcp__serena__list_dir"
+      "mcp__serena__list_dir",
+      "mcp__serena__write_memory"
     ],
     "deny": [],
     "ask": [],

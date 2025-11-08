@@ -307,6 +307,60 @@ namespace WebAPI.Controllers
         }
 
         #endregion
+
+        #region Admin Sponsor View Operations
+
+        /// <summary>
+        /// Get analyses for a specific sponsor (admin viewing sponsor perspective)
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID</param>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 20)</param>
+        /// <param name="sortBy">Sort by: date, healthScore, cropType (default: date)</param>
+        /// <param name="sortOrder">Sort order: asc, desc (default: desc)</param>
+        /// <param name="filterByTier">Filter by tier: S, M, L, XL (optional)</param>
+        /// <param name="filterByCropType">Filter by crop type (optional)</param>
+        /// <param name="startDate">Filter by start date (optional)</param>
+        /// <param name="endDate">Filter by end date (optional)</param>
+        /// <param name="dealerId">Filter by dealer ID (optional)</param>
+        /// <param name="filterByMessageStatus">Filter by message status (optional)</param>
+        /// <param name="hasUnreadMessages">Filter by unread messages (optional)</param>
+        [HttpGet("sponsors/{sponsorId}/analyses")]
+        public async Task<IActionResult> GetSponsorAnalysesAsAdmin(
+            int sponsorId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string sortBy = "date",
+            [FromQuery] string sortOrder = "desc",
+            [FromQuery] string filterByTier = null,
+            [FromQuery] string filterByCropType = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int? dealerId = null,
+            [FromQuery] string filterByMessageStatus = null,
+            [FromQuery] bool? hasUnreadMessages = null)
+        {
+            var query = new GetSponsorAnalysesAsAdminQuery
+            {
+                SponsorId = sponsorId,
+                Page = page,
+                PageSize = pageSize,
+                SortBy = sortBy,
+                SortOrder = sortOrder,
+                FilterByTier = filterByTier,
+                FilterByCropType = filterByCropType,
+                StartDate = startDate,
+                EndDate = endDate,
+                DealerId = dealerId,
+                FilterByMessageStatus = filterByMessageStatus,
+                HasUnreadMessages = hasUnreadMessages
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        #endregion
     }
 
     #region Request Models
