@@ -274,6 +274,36 @@ namespace WebAPI.Controllers
         }
 
         #endregion
+
+        #region User Management
+
+        /// <summary>
+        /// Get all users with Sponsor role (GroupId = 3)
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 50)</param>
+        /// <param name="isActive">Filter by active status (optional)</param>
+        /// <param name="status">Filter by status (optional)</param>
+        [HttpGet("sponsors")]
+        public async Task<IActionResult> GetAllSponsors(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] string status = null)
+        {
+            var query = new GetAllSponsorsQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                IsActive = isActive,
+                Status = status
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        #endregion
     }
 
     #region Request Models
