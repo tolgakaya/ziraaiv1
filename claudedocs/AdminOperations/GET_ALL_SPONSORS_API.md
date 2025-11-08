@@ -12,12 +12,81 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Authentication](#authentication)
-3. [Request Details](#request-details)
-4. [Response Details](#response-details)
-5. [Examples](#examples)
-6. [Error Handling](#error-handling)
-7. [Use Cases](#use-cases)
+2. [Version History](#version-history)
+3. [Authentication](#authentication)
+4. [Request Details](#request-details)
+5. [Response Details](#response-details)
+6. [Examples](#examples)
+7. [Error Handling](#error-handling)
+8. [Use Cases](#use-cases)
+
+---
+
+## Version History
+
+### Version 1.1 (2025-11-08)
+
+**Search Functionality Added** 🔍
+
+Added `searchTerm` parameter to enable searching sponsors by email, name, or mobile phone. This provides the same search capability as the users endpoint for better admin UX.
+
+**Changes:**
+- ✅ Added `searchTerm` query parameter (optional)
+- ✅ Case-insensitive search across email, full name, and mobile phones
+- ✅ Partial matching support (e.g., "sponsor" matches "sponsor@example.com")
+- ✅ Combinable with existing filters (isActive, status, pagination)
+- ✅ Follows same pattern as SearchUsersQuery for consistency
+
+**Usage Examples:**
+```http
+# Search by email
+GET /api/admin/sponsorship/sponsors?searchTerm=sponsor.com
+
+# Search by name
+GET /api/admin/sponsorship/sponsors?searchTerm=john
+
+# Search by phone
+GET /api/admin/sponsorship/sponsors?searchTerm=555123
+
+# Combined search and filter
+GET /api/admin/sponsorship/sponsors?searchTerm=dealer&isActive=true&pageSize=50
+```
+
+**Search Features:**
+- 🔍 **Multi-field Search** - Searches across email, full name, mobile phones
+- 🔤 **Case-insensitive** - Ignores uppercase/lowercase differences
+- ✂️ **Partial Match** - Finds "john" in "john@example.com" or "Johnny Dealer"
+- 🔗 **Combinable** - Works with isActive, status, and pagination filters
+- ⚡ **Performance** - Efficient database queries with proper indexing
+
+**New Examples Added:**
+- Example 5: Search Sponsors by Email
+- Example 6: Search Sponsors by Name
+- Example 7: Search by Mobile Phone
+- Example 8: Combined Search and Filter
+
+**New Use Cases Added:**
+- Use Case 5: Support - Search Sponsor by Email
+- Use Case 6: Admin Dashboard - Quick Sponsor Lookup
+- Use Case 7: Combined Search and Filter
+
+---
+
+### Version 1.0 (2025-11-08)
+
+**Initial Release** 🎉
+
+- ✅ Get all sponsors with pagination
+- ✅ Filter by active status (isActive)
+- ✅ Filter by user status (Active/Inactive)
+- ✅ Group-based filtering (GroupId = 3 - Sponsors)
+- ✅ Admin authorization with operation claim
+- ✅ Comprehensive API documentation
+- ✅ SQL migration script for claim setup
+- ✅ Request/response examples in multiple languages
+
+**Breaking Changes:**
+- Claim ID changed from 107 to 132 (conflict resolution)
 
 ---
 
