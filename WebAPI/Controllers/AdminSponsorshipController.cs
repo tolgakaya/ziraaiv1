@@ -409,6 +409,32 @@ namespace WebAPI.Controllers
             return GetResponse(result);
         }
 
+        /// <summary>
+        /// Send message on behalf of a sponsor (admin sending as sponsor)
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID</param>
+        /// <param name="request">Message send request details</param>
+        [HttpPost("sponsors/{sponsorId}/send-message")]
+        public async Task<IActionResult> SendMessageAsSponsor(
+            int sponsorId,
+            [FromBody] SendMessageAsSponsorRequest request)
+        {
+            var command = new SendMessageAsSponsorCommand
+            {
+                SponsorId = sponsorId,
+                FarmerUserId = request.FarmerUserId,
+                PlantAnalysisId = request.PlantAnalysisId,
+                Message = request.Message,
+                MessageType = request.MessageType ?? "Information",
+                Subject = request.Subject,
+                Priority = request.Priority ?? "Normal",
+                Category = request.Category ?? "General"
+            };
+
+            var result = await Mediator.Send(command);
+            return GetResponse(result);
+        }
+
         #endregion
     }
 
@@ -559,6 +585,47 @@ namespace WebAPI.Controllers
         /// Recipient name (optional)
         /// </summary>
         public string Name { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for admin sending message on behalf of sponsor
+    /// </summary>
+    public class SendMessageAsSponsorRequest
+    {
+        /// <summary>
+        /// Farmer user ID (recipient)
+        /// </summary>
+        public int FarmerUserId { get; set; }
+
+        /// <summary>
+        /// Plant analysis ID
+        /// </summary>
+        public int PlantAnalysisId { get; set; }
+
+        /// <summary>
+        /// Message content
+        /// </summary>
+        public string Message { get; set; }
+
+        /// <summary>
+        /// Message type (default: Information)
+        /// </summary>
+        public string MessageType { get; set; }
+
+        /// <summary>
+        /// Message subject (optional)
+        /// </summary>
+        public string Subject { get; set; }
+
+        /// <summary>
+        /// Priority (default: Normal)
+        /// </summary>
+        public string Priority { get; set; }
+
+        /// <summary>
+        /// Category (default: General)
+        /// </summary>
+        public string Category { get; set; }
     }
 
     #endregion
