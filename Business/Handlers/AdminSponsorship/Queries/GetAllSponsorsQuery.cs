@@ -23,6 +23,7 @@ namespace Business.Handlers.AdminSponsorship.Queries
         public int PageSize { get; set; } = 50;
         public bool? IsActive { get; set; }
         public string Status { get; set; }
+        public string SearchTerm { get; set; }
 
         public class GetAllSponsorsQueryHandler : IRequestHandler<GetAllSponsorsQuery, IDataResult<IEnumerable<UserDto>>>
         {
@@ -54,6 +55,16 @@ namespace Business.Handlers.AdminSponsorship.Queries
                 // Build filter expression
                 var query = _userRepository.Query()
                     .Where(u => sponsorUserIds.Contains(u.UserId));
+
+                // Filter by search term if specified (email, name, or mobile phone)
+                if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+                {
+                    var searchTerm = request.SearchTerm.ToLower();
+                    query = query.Where(u =>
+                        u.Email.ToLower().Contains(searchTerm) ||
+                        u.FullName.ToLower().Contains(searchTerm) ||
+                        (u.MobilePhones != null && u.MobilePhones.Contains(searchTerm)));
+                }
 
                 // Filter by IsActive if specified
                 if (request.IsActive.HasValue)

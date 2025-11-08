@@ -1,10 +1,11 @@
 # Get All Sponsors API Documentation
 
-**Version:** 1.0
+**Version:** 1.1
 **Created:** 2025-11-08
+**Updated:** 2025-11-08
 **Endpoint:** `GET /api/admin/sponsorship/sponsors`
 **Handler:** `GetAllSponsorsQuery`
-**Authorization:** Admin only (Claim ID: 107)
+**Authorization:** Admin only (Claim ID: 132)
 
 ---
 
@@ -29,6 +30,7 @@ This endpoint retrieves a paginated list of all users with the **Sponsor role** 
 ✅ **Group-Based Filtering** - Only returns users with GroupId = 3 (Sponsors)
 ✅ **Pagination** - Supports page-based navigation with configurable page size
 ✅ **Status Filtering** - Filter by active status and user status
+✅ **Search Capability** - Search by email, name, or mobile phone
 ✅ **Security** - Requires admin authorization with specific operation claim
 ✅ **Performance** - Optimized queries with DTO projection
 ✅ **Safe Data Transfer** - Prevents DateTime infinity value errors
@@ -55,7 +57,7 @@ x-dev-arch-version: 1.0
 
 ### Required Claims
 
-- **Claim ID:** 107
+- **Claim ID:** 132
 - **Claim Name:** `GetAllSponsorsQuery`
 - **Assigned To:** Administrators group (GroupId = 1)
 
@@ -97,6 +99,7 @@ GET https://{base_url}/api/admin/sponsorship/sponsors
 | `pageSize` | int | No | 50 | Number of items per page (1-100) |
 | `isActive` | bool? | No | null | Filter by active status (true/false/null) |
 | `status` | string | No | null | Filter by user status ("Active"/"Inactive"/null) |
+| `searchTerm` | string | No | null | Search by email, name, or mobile phone (case-insensitive) |
 
 ### Parameter Details
 
@@ -428,7 +431,213 @@ print(f"Sponsors count: {len(data['data'])}")
 
 ---
 
-### Example 5: Postman Collection
+### Example 5: Search Sponsors by Email
+
+**Request:**
+```http
+GET /api/admin/sponsorship/sponsors?searchTerm=sponsor.com HTTP/1.1
+Host: ziraai-api-sit.up.railway.app
+Authorization: Bearer {token}
+x-dev-arch-version: 1.0
+```
+
+**cURL:**
+```bash
+curl -X GET 'https://ziraai-api-sit.up.railway.app/api/admin/sponsorship/sponsors?searchTerm=sponsor.com' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \
+  -H 'x-dev-arch-version: 1.0' \
+  -H 'Accept: application/json'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Retrieved 5 sponsors successfully",
+  "data": [
+    {
+      "userId": 159,
+      "fullName": "John Sponsor",
+      "email": "john@sponsor.com",
+      "mobilePhones": "+905551234567",
+      "address": "Istanbul, Turkey",
+      "notes": "Premium sponsor",
+      "gender": 1,
+      "status": true,
+      "isActive": true,
+      "password": null,
+      "refreshToken": null
+    }
+  ]
+}
+```
+
+---
+
+### Example 6: Search Sponsors by Name
+
+**Request:**
+```http
+GET /api/admin/sponsorship/sponsors?searchTerm=john HTTP/1.1
+Host: ziraai-api-sit.up.railway.app
+Authorization: Bearer {token}
+x-dev-arch-version: 1.0
+```
+
+**JavaScript (Fetch):**
+```javascript
+const searchSponsors = async (searchTerm) => {
+  const response = await fetch(
+    `https://ziraai-api-sit.up.railway.app/api/admin/sponsorship/sponsors?searchTerm=${encodeURIComponent(searchTerm)}`,
+    {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'x-dev-arch-version': '1.0',
+        'Accept': 'application/json'
+      }
+    }
+  );
+
+  const result = await response.json();
+  return result.data;
+};
+
+// Usage
+const sponsors = await searchSponsors('john');
+console.log(`Found ${sponsors.length} sponsors matching "john"`);
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Retrieved 3 sponsors successfully",
+  "data": [
+    {
+      "userId": 159,
+      "fullName": "John Sponsor",
+      "email": "john@sponsor.com",
+      "mobilePhones": "+905551234567",
+      "address": "Istanbul, Turkey",
+      "notes": "Premium sponsor",
+      "gender": 1,
+      "status": true,
+      "isActive": true,
+      "password": null,
+      "refreshToken": null
+    },
+    {
+      "userId": 142,
+      "fullName": "Johnny Dealer",
+      "email": "johnny@dealer.com",
+      "mobilePhones": "+905559999999",
+      "address": "Izmir, Turkey",
+      "notes": "",
+      "gender": 1,
+      "status": true,
+      "isActive": true,
+      "password": null,
+      "refreshToken": null
+    }
+  ]
+}
+```
+
+---
+
+### Example 7: Search by Mobile Phone
+
+**Request:**
+```http
+GET /api/admin/sponsorship/sponsors?searchTerm=555123 HTTP/1.1
+Host: ziraai-api-sit.up.railway.app
+Authorization: Bearer {token}
+x-dev-arch-version: 1.0
+```
+
+**Python (Requests):**
+```python
+import requests
+
+def search_sponsors_by_phone(phone_number):
+    url = "https://ziraai-api-sit.up.railway.app/api/admin/sponsorship/sponsors"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "x-dev-arch-version": "1.0",
+        "Accept": "application/json"
+    }
+    params = {
+        "searchTerm": phone_number
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+
+    return data['data']
+
+# Usage
+sponsors = search_sponsors_by_phone("555123")
+print(f"Found {len(sponsors)} sponsors with phone containing '555123'")
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Retrieved 2 sponsors successfully",
+  "data": [
+    {
+      "userId": 159,
+      "fullName": "John Sponsor",
+      "email": "john@sponsor.com",
+      "mobilePhones": "+905551234567",
+      "address": "Istanbul, Turkey",
+      "notes": "Premium sponsor",
+      "gender": 1,
+      "status": true,
+      "isActive": true,
+      "password": null,
+      "refreshToken": null
+    }
+  ]
+}
+```
+
+---
+
+### Example 8: Combined Search and Filter
+
+**Request:**
+```http
+GET /api/admin/sponsorship/sponsors?searchTerm=sponsor&isActive=true&pageSize=10 HTTP/1.1
+Host: ziraai-api-sit.up.railway.app
+Authorization: Bearer {token}
+x-dev-arch-version: 1.0
+```
+
+**cURL:**
+```bash
+curl -X GET 'https://ziraai-api-sit.up.railway.app/api/admin/sponsorship/sponsors?searchTerm=sponsor&isActive=true&pageSize=10' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' \
+  -H 'x-dev-arch-version: 1.0' \
+  -H 'Accept: application/json'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Retrieved 4 sponsors successfully",
+  "data": [
+    // ... active sponsors with email/name/phone containing "sponsor"
+  ]
+}
+```
+
+---
+
+### Example 9: Postman Collection
 
 **Request Configuration:**
 
@@ -524,7 +733,7 @@ pm.test("All users have GroupId=3 (Sponsors)", function () {
 #### Issue 3: PerformanceAspect Missing → 401 Error
 
 **Symptoms:**
-- Database has correct claim (ID 107)
+- Database has correct claim (ID 132)
 - User is in Administrators group
 - User logged out/in
 - **Still getting 401 Unauthorized**
@@ -626,24 +835,68 @@ GET /api/admin/sponsorship/sponsors?pageSize=1000
 
 ---
 
-### Use Case 5: Support - Search Sponsor
+### Use Case 5: Support - Search Sponsor by Email
 
-**Scenario:** Support team needs to find sponsor by email
+**Scenario:** Support team needs to quickly find sponsor by email
 
 **Request:**
 ```http
-GET /api/admin/sponsorship/sponsors?pageSize=100
+GET /api/admin/sponsorship/sponsors?searchTerm=sponsor@example.com
 ```
 
-**Client-Side Filtering:**
-```javascript
-const sponsors = response.data.data;
-const found = sponsors.filter(s =>
-  s.email.toLowerCase().includes(searchTerm.toLowerCase())
-);
+**Workflow:**
+1. Support receives email inquiry from sponsor@example.com
+2. Enter email (or partial email) in search box
+3. API returns matching sponsors in real-time
+4. Support agent clicks on sponsor to view details
+5. Access sponsor's purchase history, codes, and notes
+
+**Search Behavior:**
+- Case-insensitive search
+- Partial match support (e.g., "sponsor" matches "sponsor@example.com")
+- Searches across: email, full name, and mobile phones
+- Results filtered to Sponsor role only (GroupId = 3)
+
+---
+
+### Use Case 6: Admin Dashboard - Quick Sponsor Lookup
+
+**Scenario:** Admin needs to find sponsor by name or phone
+
+**Request (by name):**
+```http
+GET /api/admin/sponsorship/sponsors?searchTerm=john&pageSize=20
 ```
 
-**Better Approach:** Use dedicated search endpoint (future enhancement)
+**Request (by phone):**
+```http
+GET /api/admin/sponsorship/sponsors?searchTerm=555123&pageSize=20
+```
+
+**Workflow:**
+1. Admin types "john" in sponsor search box
+2. API returns all sponsors with "john" in name or email
+3. Display results in dropdown/autocomplete
+4. Admin selects correct sponsor
+5. Navigate to sponsor detail page
+
+---
+
+### Use Case 7: Combined Search and Filter
+
+**Scenario:** Find active sponsors matching search criteria
+
+**Request:**
+```http
+GET /api/admin/sponsorship/sponsors?searchTerm=dealer&isActive=true&pageSize=50
+```
+
+**Workflow:**
+1. Admin wants to find active dealers for promotional campaign
+2. Search for "dealer" keyword across all fields
+3. Filter results to only active accounts (isActive=true)
+4. API returns matching active sponsors
+5. Admin bulk-selects for campaign distribution
 
 ---
 

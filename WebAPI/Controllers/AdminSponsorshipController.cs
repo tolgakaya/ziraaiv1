@@ -284,19 +284,22 @@ namespace WebAPI.Controllers
         /// <param name="pageSize">Page size (default: 50)</param>
         /// <param name="isActive">Filter by active status (optional)</param>
         /// <param name="status">Filter by status (optional)</param>
+        /// <param name="searchTerm">Search by email, name, or mobile phone (optional)</param>
         [HttpGet("sponsors")]
         public async Task<IActionResult> GetAllSponsors(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 50,
             [FromQuery] bool? isActive = null,
-            [FromQuery] string status = null)
+            [FromQuery] string status = null,
+            [FromQuery] string searchTerm = null)
         {
             var query = new GetAllSponsorsQuery
             {
                 Page = page,
                 PageSize = pageSize,
                 IsActive = isActive,
-                Status = status
+                Status = status,
+                SearchTerm = searchTerm
             };
 
             var result = await Mediator.Send(query);
