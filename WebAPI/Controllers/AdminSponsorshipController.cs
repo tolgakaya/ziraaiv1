@@ -476,6 +476,22 @@ namespace WebAPI.Controllers
             return GetResponse(result);
         }
 
+        /// <summary>
+        /// Get detailed information about a non-sponsored farmer
+        /// </summary>
+        /// <param name="userId">User ID of the farmer</param>
+        [HttpGet("non-sponsored/farmers/{userId}")]
+        public async Task<IActionResult> GetNonSponsoredFarmerDetail(int userId)
+        {
+            var query = new GetNonSponsoredFarmerDetailQuery
+            {
+                UserId = userId
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
         #endregion
     }
 
