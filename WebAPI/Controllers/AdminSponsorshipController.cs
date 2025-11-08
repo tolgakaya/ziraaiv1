@@ -492,6 +492,26 @@ namespace WebAPI.Controllers
             return GetResponse(result);
         }
 
+        /// <summary>
+        /// Get comparison analytics between sponsored and non-sponsored analyses
+        /// </summary>
+        /// <param name="startDate">Optional start date filter</param>
+        /// <param name="endDate">Optional end date filter</param>
+        [HttpGet("comparison/analytics")]
+        public async Task<IActionResult> GetSponsorshipComparisonAnalytics(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            var query = new GetSponsorshipComparisonAnalyticsQuery
+            {
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
         #endregion
     }
 
