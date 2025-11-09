@@ -90,7 +90,8 @@ namespace Business.Handlers.AdminSponsorship.Commands
                 }
 
                 // Validate Trial tier cannot be purchased
-                if (tier.TierName.Equals("Trial", StringComparison.OrdinalIgnoreCase) || request.SubscriptionTierId == 1)
+                // Note: Trial tier ID is 5, not 1. Check by TierName to be database-agnostic.
+                if (tier.TierName.Equals("Trial", StringComparison.OrdinalIgnoreCase))
                 {
                     return new ErrorDataResult<SponsorshipPurchase>(
                         "Trial tier cannot be purchased. Please select a paid subscription tier (S, M, L, or XL).");
