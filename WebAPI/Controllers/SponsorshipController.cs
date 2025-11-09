@@ -2778,6 +2778,7 @@ namespace WebAPI.Controllers
         /// <returns>Job status with progress details</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpGet("bulk-code-distribution/status/{jobId}")]
+        [HttpGet("bulk-code-distribution/{jobId}")] // Alias route for frontend compatibility
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkCodeDistributionProgressDto>))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorResult))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
