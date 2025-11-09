@@ -13,6 +13,7 @@ using Business.Handlers.MessagingFeatures.Commands;
 using Business.Handlers.MessagingFeatures.Queries;
 using Business.Handlers.FarmerSponsorBlock.Queries;
 using Business.Services.Sponsorship;
+using Business.Services.AdminAudit;
 using Core.Entities.Concrete;
 using Core.Extensions;
 using Core.Utilities.Results;
@@ -46,6 +47,7 @@ namespace WebAPI.Controllers
         private readonly IConfiguration _configuration;
         private readonly IBulkCodeDistributionService _bulkCodeDistributionService;
         private readonly IBulkCodeDistributionJobRepository _bulkJobRepository;
+        private readonly IAdminAuditService _adminAuditService;
 
         public SponsorshipController(
             ILogger<SponsorshipController> logger,
@@ -53,7 +55,8 @@ namespace WebAPI.Controllers
             ISubscriptionTierRepository subscriptionTierRepository,
             IConfiguration configuration,
             IBulkCodeDistributionService bulkCodeDistributionService,
-            IBulkCodeDistributionJobRepository bulkJobRepository)
+            IBulkCodeDistributionJobRepository bulkJobRepository,
+            IAdminAuditService adminAuditService)
         {
             _logger = logger;
             _tierMappingService = tierMappingService;
@@ -61,6 +64,7 @@ namespace WebAPI.Controllers
             _configuration = configuration;
             _bulkCodeDistributionService = bulkCodeDistributionService;
             _bulkJobRepository = bulkJobRepository;
+            _adminAuditService = adminAuditService;
         }
         /// <summary>
         /// Get subscription tiers for sponsor package purchase selection
@@ -2653,19 +2657,31 @@ namespace WebAPI.Controllers
 
         /// <summary>
         /// Upload Excel file for bulk farmer code distribution
+        /// Upload Excel file to distribute sponsorship codes to farmers in bulk
+        /// Supports both Sponsor (self-service) and Admin (on behalf of sponsor) modes
         /// Accepts up to 2000 farmer records with email, phone, and name
         /// Automatically uses the latest purchase with available codes
         /// </summary>
-        /// <param name="formData">Form data containing Excel file and SMS preference
+        /// <param name="formData">Form data containing Excel file and SMS preference</param>
+        /// <param name="onBehalfOfSponsorId">
+        /// (Admin Only) Target sponsor ID when admin is acting on behalf of sponsor.
+        /// Required for Admin role. Ignored for Sponsor role.
+        /// </param>
         /// <returns>Job ID and status check URL</returns>
+        /// <response code="200">Job created successfully</response>
+        /// <response code="400">Invalid request (missing file, admin without sponsorId, insufficient codes, etc.)</response>
+        /// <response code="401">Unauthorized (no valid JWT token)</response>
+        /// <response code="403">Forbidden (sponsor has no access to specified purchase)</response>
         [Authorize(Roles = "Sponsor,Admin")]
         [Consumes("multipart/form-data")]
         [HttpPost("bulk-code-distribution")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkCodeDistributionJobDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> BulkDistributeCodesToFarmers(
-            [FromForm] BulkCodeDistributionFormDto formData)
+            [FromForm] BulkCodeDistributionFormDto formData,
+            [FromQuery] int? onBehalfOfSponsorId = null)
         {
             try
             {
@@ -2673,18 +2689,74 @@ namespace WebAPI.Controllers
                 if (!userId.HasValue)
                     return Unauthorized();
 
-                _logger.LogInformation("🔔 Bulk farmer code distribution initiated by sponsor {SponsorId}, SendSms: {SendSms}",
-                    userId.Value, formData.SendSms);
+                var isAdmin = User.IsInRole("Admin");
+
+                // Determine target sponsor ID
+                int targetSponsorId;
+                if (isAdmin && onBehalfOfSponsorId.HasValue)
+                {
+                    // Admin is acting on behalf of another sponsor
+                    targetSponsorId = onBehalfOfSponsorId.Value;
+
+                    _logger.LogInformation(
+                        "🔐 Admin {AdminId} initiating bulk distribution on behalf of sponsor {SponsorId}",
+                        userId.Value, targetSponsorId);
+                }
+                else if (isAdmin && !onBehalfOfSponsorId.HasValue)
+                {
+                    // Admin must specify sponsor when using this endpoint
+                    _logger.LogWarning("⚠️ Admin {AdminId} attempted bulk distribution without specifying sponsor", userId.Value);
+                    return BadRequest(new ErrorResult(
+                        "Admin users must specify onBehalfOfSponsorId query parameter"));
+                }
+                else
+                {
+                    // Regular sponsor using their own account
+                    targetSponsorId = userId.Value;
+                    _logger.LogInformation("🔔 Bulk farmer code distribution initiated by sponsor {SponsorId}, SendSms: {SendSms}",
+                        targetSponsorId, formData.SendSms);
+                }
 
                 var result = await _bulkCodeDistributionService.QueueBulkCodeDistributionAsync(
                     formData.ExcelFile,
-                    userId.Value,
+                    targetSponsorId,
                     formData.SendSms);
 
                 if (result.Success)
                 {
                     _logger.LogInformation("✅ Bulk code distribution job {JobId} created successfully with {TotalFarmers} farmers",
                         result.Data.JobId, result.Data.TotalFarmers);
+
+                    // Log admin action for audit
+                    if (isAdmin && onBehalfOfSponsorId.HasValue)
+                    {
+                        await _adminAuditService.LogAsync(
+                            action: "BulkDistributeCodes_OnBehalfOf",
+                            adminUserId: userId.Value,
+                            targetUserId: targetSponsorId,
+                            entityType: "BulkCodeDistributionJob",
+                            entityId: result.Data.JobId,
+                            isOnBehalfOf: true,
+                            ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                            userAgent: Request.Headers["User-Agent"].ToString(),
+                            requestPath: Request.Path,
+                            reason: $"Bulk code distribution initiated on behalf of sponsor {targetSponsorId}",
+                            afterState: new
+                            {
+                                JobId = result.Data.JobId,
+                                TotalFarmers = result.Data.TotalFarmers,
+                                SendSms = formData.SendSms,
+                                FileName = formData.ExcelFile.FileName,
+                                FileSize = formData.ExcelFile.Length,
+                                StatusCheckUrl = result.Data.StatusCheckUrl
+                            }
+                        );
+
+                        _logger.LogInformation(
+                            "📝 Audit log created for admin {AdminId} bulk distribution on behalf of sponsor {SponsorId}",
+                            userId.Value, targetSponsorId);
+                    }
+
                     return Ok(result);
                 }
 
@@ -2717,13 +2789,17 @@ namespace WebAPI.Controllers
                 if (!userId.HasValue)
                     return Unauthorized();
 
-                // Fetch job and verify ownership
-                var job = await _bulkJobRepository.GetAsync(j => j.Id == jobId && j.SponsorId == userId.Value);
+                var isAdmin = User.IsInRole("Admin");
+
+                // Fetch job (admin can view any job, sponsor only their own)
+                var job = isAdmin 
+                    ? await _bulkJobRepository.GetAsync(j => j.Id == jobId)
+                    : await _bulkJobRepository.GetAsync(j => j.Id == jobId && j.SponsorId == userId.Value);
                 
                 if (job == null)
                 {
-                    _logger.LogWarning("⚠️ Bulk code distribution job {JobId} not found or access denied for sponsor {SponsorId}", 
-                        jobId, userId.Value);
+                    _logger.LogWarning("⚠️ Bulk code distribution job {JobId} not found or access denied for user {UserId} (Admin: {IsAdmin})", 
+                        jobId, userId.Value, isAdmin);
                     return NotFound(new ErrorResult("Job bulunamadı veya erişim yetkiniz yok."));
                 }
 
@@ -2768,14 +2844,18 @@ namespace WebAPI.Controllers
         /// Supports optional status filter and pagination
         /// </summary>
         /// <param name="page">Page number (default: 1)</param>
+        /// <param name="sponsorId">(Admin Only) Target sponsor ID to view history for</param>
+        /// <param name="page">Page number (default: 1)</param>
         /// <param name="pageSize">Page size (default: 20)</param>
         /// <param name="status">Optional status filter (Pending, Processing, Completed, PartialSuccess, Failed)</param>
         /// <returns>List of bulk code distribution jobs</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpGet("bulk-code-distribution/history")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<BulkCodeDistributionJob>>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetBulkCodeDistributionJobHistory(
+            [FromQuery] int? sponsorId = null,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20,
             [FromQuery] string status = null)
@@ -2786,14 +2866,38 @@ namespace WebAPI.Controllers
                 if (!userId.HasValue)
                     return Unauthorized();
 
+                var isAdmin = User.IsInRole("Admin");
+
+                // Determine target sponsor ID
+                int targetSponsorId;
+                if (isAdmin && sponsorId.HasValue)
+                {
+                    // Admin viewing specific sponsor's jobs
+                    targetSponsorId = sponsorId.Value;
+                    _logger.LogInformation("🔐 Admin {AdminId} viewing bulk distribution history for sponsor {SponsorId}",
+                        userId.Value, targetSponsorId);
+                }
+                else if (isAdmin && !sponsorId.HasValue)
+                {
+                    // Admin must specify sponsor
+                    _logger.LogWarning("⚠️ Admin {AdminId} attempted to view history without specifying sponsor", userId.Value);
+                    return BadRequest(new ErrorResult(
+                        "Admin users must specify sponsorId query parameter"));
+                }
+                else
+                {
+                    // Regular sponsor viewing their own jobs
+                    targetSponsorId = userId.Value;
+                }
+
                 // Build query
-                var query = _bulkJobRepository.GetListAsync(j => j.SponsorId == userId.Value);
+                var query = _bulkJobRepository.GetListAsync(j => j.SponsorId == targetSponsorId);
                 
                 // Apply status filter if provided
                 if (!string.IsNullOrWhiteSpace(status))
                 {
                     query = _bulkJobRepository.GetListAsync(j => 
-                        j.SponsorId == userId.Value && 
+                        j.SponsorId == targetSponsorId && 
                         j.Status == status);
                 }
 
@@ -2809,7 +2913,7 @@ namespace WebAPI.Controllers
                     .ToList();
 
                 _logger.LogInformation("📚 Retrieved {Count} bulk code distribution jobs for sponsor {SponsorId} (Page {Page}/{PageSize}, Status: {Status})",
-                    paginatedJobs.Count, userId.Value, page, pageSize, status ?? "All");
+                    paginatedJobs.Count, targetSponsorId, page, pageSize, status ?? "All");
 
                 return Ok(new SuccessDataResult<List<BulkCodeDistributionJob>>(
                     paginatedJobs, 
