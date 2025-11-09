@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Business.BusinessAspects;
 using Business.Services.AdminAudit;
 using Core.Aspects.Autofac.Logging;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -52,19 +53,22 @@ namespace Business.Handlers.AdminSponsorship.Commands
             private readonly IUserRepository _userRepository;
             private readonly IAdminAuditService _auditService;
             private readonly ISponsorshipCodeRepository _codeRepository;
+            private readonly ICacheManager _cacheManager;
 
             public CreatePurchaseOnBehalfOfCommandHandler(
                 ISponsorshipPurchaseRepository purchaseRepository,
                 ISubscriptionTierRepository tierRepository,
                 IUserRepository userRepository,
                 IAdminAuditService auditService,
-                ISponsorshipCodeRepository codeRepository)
+                ISponsorshipCodeRepository codeRepository,
+                ICacheManager cacheManager)
             {
                 _purchaseRepository = purchaseRepository;
                 _tierRepository = tierRepository;
                 _userRepository = userRepository;
                 _auditService = auditService;
                 _codeRepository = codeRepository;
+                _cacheManager = cacheManager;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -158,6 +162,11 @@ namespace Business.Handlers.AdminSponsorship.Commands
                         AutoApproved = request.AutoApprove
                     }
                 );
+
+                // Invalidate sponsor dashboard cache
+                var cacheKey = $"SponsorDashboard:{request.SponsorId}";
+                _cacheManager.Remove(cacheKey);
+                Console.WriteLine($"[DashboardCache] 🗑️ Invalidated cache for sponsor {request.SponsorId} after admin OBO purchase");
 
                 var message = request.AutoApprove 
                     ? $"Purchase created and auto-approved for {sponsor.FullName}. Total: {totalAmount:C} {request.Currency}"

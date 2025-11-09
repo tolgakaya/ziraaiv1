@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Business.BusinessAspects;
 using Business.Services.AdminAudit;
 using Core.Aspects.Autofac.Logging;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -30,15 +31,18 @@ namespace Business.Handlers.AdminSponsorship.Commands
             private readonly ISponsorshipPurchaseRepository _purchaseRepository;
             private readonly IAdminAuditService _auditService;
             private readonly ISponsorshipCodeRepository _codeRepository;
+            private readonly ICacheManager _cacheManager;
 
             public ApprovePurchaseCommandHandler(
                 ISponsorshipPurchaseRepository purchaseRepository,
                 IAdminAuditService auditService,
-                ISponsorshipCodeRepository codeRepository)
+                ISponsorshipCodeRepository codeRepository,
+                ICacheManager cacheManager)
             {
                 _purchaseRepository = purchaseRepository;
                 _auditService = auditService;
                 _codeRepository = codeRepository;
+                _cacheManager = cacheManager;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -116,6 +120,11 @@ namespace Business.Handlers.AdminSponsorship.Commands
                         purchase.Status
                     }
                 );
+
+                // Invalidate sponsor dashboard cache
+                var cacheKey = $"SponsorDashboard:{purchase.SponsorId}";
+                _cacheManager.Remove(cacheKey);
+                Console.WriteLine($"[DashboardCache] 🗑️ Invalidated cache for sponsor {purchase.SponsorId} after approval");
 
                 return new SuccessResult($"Purchase approved successfully. {purchase.CodesGenerated} codes have been generated.");
             }
