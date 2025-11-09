@@ -51,17 +51,20 @@ namespace Business.Handlers.AdminSponsorship.Commands
             private readonly ISubscriptionTierRepository _tierRepository;
             private readonly IUserRepository _userRepository;
             private readonly IAdminAuditService _auditService;
+            private readonly ISponsorshipCodeRepository _codeRepository;
 
             public CreatePurchaseOnBehalfOfCommandHandler(
                 ISponsorshipPurchaseRepository purchaseRepository,
                 ISubscriptionTierRepository tierRepository,
                 IUserRepository userRepository,
-                IAdminAuditService auditService)
+                IAdminAuditService auditService,
+                ISponsorshipCodeRepository codeRepository)
             {
                 _purchaseRepository = purchaseRepository;
                 _tierRepository = tierRepository;
                 _userRepository = userRepository;
                 _auditService = auditService;
+                _codeRepository = codeRepository;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -114,6 +117,23 @@ namespace Business.Handlers.AdminSponsorship.Commands
 
                 _purchaseRepository.Add(purchase);
                 await _purchaseRepository.SaveChangesAsync();
+
+                // Generate codes if auto-approved
+                if (request.AutoApprove)
+                {
+                    var codes = await _codeRepository.GenerateCodesAsync(
+                        purchase.Id,
+                        request.SponsorId,
+                        request.SubscriptionTierId,
+                        request.Quantity,
+                        purchase.CodePrefix,
+                        purchase.ValidityDays
+                    );
+
+                    purchase.CodesGenerated = codes.Count;
+                    _purchaseRepository.Update(purchase);
+                    await _purchaseRepository.SaveChangesAsync();
+                }
 
                 // Audit log
                 await _auditService.LogAsync(
