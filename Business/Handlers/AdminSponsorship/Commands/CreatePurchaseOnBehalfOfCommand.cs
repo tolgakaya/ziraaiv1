@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Business.BusinessAspects;
 using Business.Services.AdminAudit;
 using Core.Aspects.Autofac.Logging;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -51,17 +52,23 @@ namespace Business.Handlers.AdminSponsorship.Commands
             private readonly ISubscriptionTierRepository _tierRepository;
             private readonly IUserRepository _userRepository;
             private readonly IAdminAuditService _auditService;
+            private readonly ISponsorshipCodeRepository _codeRepository;
+            private readonly ICacheManager _cacheManager;
 
             public CreatePurchaseOnBehalfOfCommandHandler(
                 ISponsorshipPurchaseRepository purchaseRepository,
                 ISubscriptionTierRepository tierRepository,
                 IUserRepository userRepository,
-                IAdminAuditService auditService)
+                IAdminAuditService auditService,
+                ISponsorshipCodeRepository codeRepository,
+                ICacheManager cacheManager)
             {
                 _purchaseRepository = purchaseRepository;
                 _tierRepository = tierRepository;
                 _userRepository = userRepository;
                 _auditService = auditService;
+                _codeRepository = codeRepository;
+                _cacheManager = cacheManager;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -80,6 +87,14 @@ namespace Business.Handlers.AdminSponsorship.Commands
                 if (tier == null)
                 {
                     return new ErrorDataResult<SponsorshipPurchase>("Subscription tier not found");
+                }
+
+                // Validate Trial tier cannot be purchased
+                // Note: Trial tier ID is 5, not 1. Check by TierName to be database-agnostic.
+                if (tier.TierName.Equals("Trial", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new ErrorDataResult<SponsorshipPurchase>(
+                        "Trial tier cannot be purchased. Please select a paid subscription tier (S, M, L, or XL).");
                 }
 
                 var now = DateTime.Now;
@@ -115,6 +130,23 @@ namespace Business.Handlers.AdminSponsorship.Commands
                 _purchaseRepository.Add(purchase);
                 await _purchaseRepository.SaveChangesAsync();
 
+                // Generate codes if auto-approved
+                if (request.AutoApprove)
+                {
+                    var codes = await _codeRepository.GenerateCodesAsync(
+                        purchase.Id,
+                        request.SponsorId,
+                        request.SubscriptionTierId,
+                        request.Quantity,
+                        purchase.CodePrefix,
+                        purchase.ValidityDays
+                    );
+
+                    purchase.CodesGenerated = codes.Count;
+                    _purchaseRepository.Update(purchase);
+                    await _purchaseRepository.SaveChangesAsync();
+                }
+
                 // Audit log
                 await _auditService.LogAsync(
                     action: "CreatePurchaseOnBehalfOf",
@@ -138,6 +170,11 @@ namespace Business.Handlers.AdminSponsorship.Commands
                         AutoApproved = request.AutoApprove
                     }
                 );
+
+                // Invalidate sponsor dashboard cache
+                var cacheKey = $"SponsorDashboard:{request.SponsorId}";
+                _cacheManager.Remove(cacheKey);
+                Console.WriteLine($"[DashboardCache] 🗑️ Invalidated cache for sponsor {request.SponsorId} after admin OBO purchase");
 
                 var message = request.AutoApprove 
                     ? $"Purchase created and auto-approved for {sponsor.FullName}. Total: {totalAmount:C} {request.Currency}"

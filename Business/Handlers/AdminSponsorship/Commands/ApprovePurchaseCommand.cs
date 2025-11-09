@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Business.BusinessAspects;
 using Business.Services.AdminAudit;
 using Core.Aspects.Autofac.Logging;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -29,13 +30,19 @@ namespace Business.Handlers.AdminSponsorship.Commands
         {
             private readonly ISponsorshipPurchaseRepository _purchaseRepository;
             private readonly IAdminAuditService _auditService;
+            private readonly ISponsorshipCodeRepository _codeRepository;
+            private readonly ICacheManager _cacheManager;
 
             public ApprovePurchaseCommandHandler(
                 ISponsorshipPurchaseRepository purchaseRepository,
-                IAdminAuditService auditService)
+                IAdminAuditService auditService,
+                ISponsorshipCodeRepository codeRepository,
+                ICacheManager cacheManager)
             {
                 _purchaseRepository = purchaseRepository;
                 _auditService = auditService;
+                _codeRepository = codeRepository;
+                _cacheManager = cacheManager;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -78,6 +85,20 @@ namespace Business.Handlers.AdminSponsorship.Commands
                 _purchaseRepository.Update(purchase);
                 await _purchaseRepository.SaveChangesAsync();
 
+                // Generate sponsorship codes after approval
+                var codes = await _codeRepository.GenerateCodesAsync(
+                    purchase.Id,
+                    purchase.SponsorId,
+                    purchase.SubscriptionTierId,
+                    purchase.Quantity,
+                    purchase.CodePrefix,
+                    purchase.ValidityDays
+                );
+
+                purchase.CodesGenerated = codes.Count;
+                _purchaseRepository.Update(purchase);
+                await _purchaseRepository.SaveChangesAsync();
+
                 // Audit log
                 await _auditService.LogAsync(
                     action: "ApprovePurchase",
@@ -100,7 +121,12 @@ namespace Business.Handlers.AdminSponsorship.Commands
                     }
                 );
 
-                return new SuccessResult($"Purchase approved successfully. {purchase.Quantity} codes can now be generated.");
+                // Invalidate sponsor dashboard cache
+                var cacheKey = $"SponsorDashboard:{purchase.SponsorId}";
+                _cacheManager.Remove(cacheKey);
+                Console.WriteLine($"[DashboardCache] 🗑️ Invalidated cache for sponsor {purchase.SponsorId} after approval");
+
+                return new SuccessResult($"Purchase approved successfully. {purchase.CodesGenerated} codes have been generated.");
             }
         }
     }

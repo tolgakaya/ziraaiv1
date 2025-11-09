@@ -52,8 +52,8 @@ namespace Business.Seeds
                 });
             }
 
-            // Add admin-specific handler claims
-            for (int claimId = 100; claimId <= 132; claimId++)
+            // Add admin-specific handler claims (including new admin sponsor view claims 133-139)
+            for (int claimId = 100; claimId <= 139; claimId++)
             {
                 groupClaims.Add(new GroupClaim
                 {

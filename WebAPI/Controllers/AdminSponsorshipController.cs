@@ -307,6 +307,245 @@ namespace WebAPI.Controllers
         }
 
         #endregion
+
+        #region Admin Sponsor View Operations
+
+        /// <summary>
+        /// Get analyses for a specific sponsor (admin viewing sponsor perspective)
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID</param>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 20)</param>
+        /// <param name="sortBy">Sort by: date, healthScore, cropType (default: date)</param>
+        /// <param name="sortOrder">Sort order: asc, desc (default: desc)</param>
+        /// <param name="filterByTier">Filter by tier: S, M, L, XL (optional)</param>
+        /// <param name="filterByCropType">Filter by crop type (optional)</param>
+        /// <param name="startDate">Filter by start date (optional)</param>
+        /// <param name="endDate">Filter by end date (optional)</param>
+        /// <param name="dealerId">Filter by dealer ID (optional)</param>
+        /// <param name="filterByMessageStatus">Filter by message status (optional)</param>
+        /// <param name="hasUnreadMessages">Filter by unread messages (optional)</param>
+        [HttpGet("sponsors/{sponsorId}/analyses")]
+        public async Task<IActionResult> GetSponsorAnalysesAsAdmin(
+            int sponsorId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string sortBy = "date",
+            [FromQuery] string sortOrder = "desc",
+            [FromQuery] string filterByTier = null,
+            [FromQuery] string filterByCropType = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int? dealerId = null,
+            [FromQuery] string filterByMessageStatus = null,
+            [FromQuery] bool? hasUnreadMessages = null)
+        {
+            var query = new GetSponsorAnalysesAsAdminQuery
+            {
+                SponsorId = sponsorId,
+                Page = page,
+                PageSize = pageSize,
+                SortBy = sortBy,
+                SortOrder = sortOrder,
+                FilterByTier = filterByTier,
+                FilterByCropType = filterByCropType,
+                StartDate = startDate,
+                EndDate = endDate,
+                DealerId = dealerId,
+                FilterByMessageStatus = filterByMessageStatus,
+                HasUnreadMessages = hasUnreadMessages
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get specific analysis detail for a sponsor (admin viewing sponsor perspective)
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID</param>
+        /// <param name="plantAnalysisId">Plant analysis ID</param>
+        [HttpGet("sponsors/{sponsorId}/analyses/{plantAnalysisId}")]
+        public async Task<IActionResult> GetSponsorAnalysisDetailAsAdmin(
+            int sponsorId,
+            int plantAnalysisId)
+        {
+            var query = new GetSponsorAnalysisDetailAsAdminQuery
+            {
+                SponsorId = sponsorId,
+                PlantAnalysisId = plantAnalysisId
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get message conversation for a specific analysis (admin viewing sponsor perspective)
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID</param>
+        /// <param name="farmerUserId">Farmer user ID</param>
+        /// <param name="plantAnalysisId">Plant analysis ID</param>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 20)</param>
+        [HttpGet("sponsors/{sponsorId}/messages")]
+        public async Task<IActionResult> GetSponsorMessagesAsAdmin(
+            int sponsorId,
+            [FromQuery] int farmerUserId,
+            [FromQuery] int plantAnalysisId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var query = new GetSponsorMessagesAsAdminQuery
+            {
+                SponsorId = sponsorId,
+                FarmerUserId = farmerUserId,
+                PlantAnalysisId = plantAnalysisId,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Send message on behalf of a sponsor (admin sending as sponsor)
+        /// </summary>
+        /// <param name="sponsorId">Sponsor user ID</param>
+        /// <param name="request">Message send request details</param>
+        [HttpPost("sponsors/{sponsorId}/send-message")]
+        public async Task<IActionResult> SendMessageAsSponsor(
+            int sponsorId,
+            [FromBody] SendMessageAsSponsorRequest request)
+        {
+            var command = new SendMessageAsSponsorCommand
+            {
+                SponsorId = sponsorId,
+                FarmerUserId = request.FarmerUserId,
+                PlantAnalysisId = request.PlantAnalysisId,
+                Message = request.Message,
+                MessageType = request.MessageType ?? "Information",
+                Subject = request.Subject,
+                Priority = request.Priority ?? "Normal",
+                Category = request.Category ?? "General"
+            };
+
+            var result = await Mediator.Send(command);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get non-sponsored analyses (admin view of analyses without sponsor codes)
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 20)</param>
+        /// <param name="sortBy">Sort by: date, cropType, status (default: date)</param>
+        /// <param name="sortOrder">Sort order: asc, desc (default: desc)</param>
+        /// <param name="filterByCropType">Filter by crop type (optional)</param>
+        /// <param name="startDate">Filter by start date (optional)</param>
+        /// <param name="endDate">Filter by end date (optional)</param>
+        /// <param name="filterByStatus">Filter by analysis status (optional)</param>
+        /// <param name="userId">Filter by user ID (optional)</param>
+        [HttpGet("non-sponsored/analyses")]
+        public async Task<IActionResult> GetNonSponsoredAnalyses(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string sortBy = "date",
+            [FromQuery] string sortOrder = "desc",
+            [FromQuery] string filterByCropType = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string filterByStatus = null,
+            [FromQuery] int? userId = null)
+        {
+            var query = new GetNonSponsoredAnalysesQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                SortBy = sortBy,
+                SortOrder = sortOrder,
+                FilterByCropType = filterByCropType,
+                StartDate = startDate,
+                EndDate = endDate,
+                FilterByStatus = filterByStatus,
+                UserId = userId
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get detailed information about a non-sponsored farmer
+        /// </summary>
+        /// <param name="userId">User ID of the farmer</param>
+        [HttpGet("non-sponsored/farmers/{userId}")]
+        public async Task<IActionResult> GetNonSponsoredFarmerDetail(int userId)
+        {
+            var query = new GetNonSponsoredFarmerDetailQuery
+            {
+                UserId = userId
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get comparison analytics between sponsored and non-sponsored analyses
+        /// </summary>
+        /// <param name="startDate">Optional start date filter</param>
+        /// <param name="endDate">Optional end date filter</param>
+        [HttpGet("comparison/analytics")]
+        public async Task<IActionResult> GetSponsorshipComparisonAnalytics(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            var query = new GetSponsorshipComparisonAnalyticsQuery
+            {
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get bulk code distribution job history with pagination and filtering
+        /// Returns comprehensive job details with sponsor information
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 50)</param>
+        /// <param name="status">Filter by status: Pending, Processing, Completed, PartialSuccess, Failed (optional)</param>
+        /// <param name="sponsorId">Filter by sponsor ID (optional)</param>
+        /// <param name="startDate">Filter by start date (optional)</param>
+        /// <param name="endDate">Filter by end date (optional)</param>
+        [HttpGet("bulk-code-distribution/history")]
+        public async Task<IActionResult> GetBulkCodeDistributionJobHistory(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] string status = null,
+            [FromQuery] int? sponsorId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            var query = new GetBulkCodeDistributionJobHistoryQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                Status = status,
+                SponsorId = sponsorId,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        #endregion
     }
 
     #region Request Models
@@ -456,6 +695,47 @@ namespace WebAPI.Controllers
         /// Recipient name (optional)
         /// </summary>
         public string Name { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for admin sending message on behalf of sponsor
+    /// </summary>
+    public class SendMessageAsSponsorRequest
+    {
+        /// <summary>
+        /// Farmer user ID (recipient)
+        /// </summary>
+        public int FarmerUserId { get; set; }
+
+        /// <summary>
+        /// Plant analysis ID
+        /// </summary>
+        public int PlantAnalysisId { get; set; }
+
+        /// <summary>
+        /// Message content
+        /// </summary>
+        public string Message { get; set; }
+
+        /// <summary>
+        /// Message type (default: Information)
+        /// </summary>
+        public string MessageType { get; set; }
+
+        /// <summary>
+        /// Message subject (optional)
+        /// </summary>
+        public string Subject { get; set; }
+
+        /// <summary>
+        /// Priority (default: Normal)
+        /// </summary>
+        public string Priority { get; set; }
+
+        /// <summary>
+        /// Category (default: General)
+        /// </summary>
+        public string Category { get; set; }
     }
 
     #endregion
