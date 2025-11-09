@@ -512,6 +512,39 @@ namespace WebAPI.Controllers
             return GetResponse(result);
         }
 
+        /// <summary>
+        /// Get bulk code distribution job history with pagination and filtering
+        /// Returns comprehensive job details with sponsor information
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 50)</param>
+        /// <param name="status">Filter by status: Pending, Processing, Completed, PartialSuccess, Failed (optional)</param>
+        /// <param name="sponsorId">Filter by sponsor ID (optional)</param>
+        /// <param name="startDate">Filter by start date (optional)</param>
+        /// <param name="endDate">Filter by end date (optional)</param>
+        [HttpGet("bulk-code-distribution/history")]
+        public async Task<IActionResult> GetBulkCodeDistributionJobHistory(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] string status = null,
+            [FromQuery] int? sponsorId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
+        {
+            var query = new GetBulkCodeDistributionJobHistoryQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                Status = status,
+                SponsorId = sponsorId,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
         #endregion
     }
 
