@@ -29,13 +29,16 @@ namespace Business.Handlers.AdminSponsorship.Commands
         {
             private readonly ISponsorshipPurchaseRepository _purchaseRepository;
             private readonly IAdminAuditService _auditService;
+            private readonly ISponsorshipCodeRepository _codeRepository;
 
             public ApprovePurchaseCommandHandler(
                 ISponsorshipPurchaseRepository purchaseRepository,
-                IAdminAuditService auditService)
+                IAdminAuditService auditService,
+                ISponsorshipCodeRepository codeRepository)
             {
                 _purchaseRepository = purchaseRepository;
                 _auditService = auditService;
+                _codeRepository = codeRepository;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -78,6 +81,20 @@ namespace Business.Handlers.AdminSponsorship.Commands
                 _purchaseRepository.Update(purchase);
                 await _purchaseRepository.SaveChangesAsync();
 
+                // Generate sponsorship codes after approval
+                var codes = await _codeRepository.GenerateCodesAsync(
+                    purchase.Id,
+                    purchase.SponsorId,
+                    purchase.SubscriptionTierId,
+                    purchase.Quantity,
+                    purchase.CodePrefix,
+                    purchase.ValidityDays
+                );
+
+                purchase.CodesGenerated = codes.Count;
+                _purchaseRepository.Update(purchase);
+                await _purchaseRepository.SaveChangesAsync();
+
                 // Audit log
                 await _auditService.LogAsync(
                     action: "ApprovePurchase",
@@ -100,7 +117,7 @@ namespace Business.Handlers.AdminSponsorship.Commands
                     }
                 );
 
-                return new SuccessResult($"Purchase approved successfully. {purchase.Quantity} codes can now be generated.");
+                return new SuccessResult($"Purchase approved successfully. {purchase.CodesGenerated} codes have been generated.");
             }
         }
     }
