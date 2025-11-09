@@ -134,6 +134,9 @@ namespace DataAccess.Concrete.EntityFramework
 
         public async Task<List<SponsorshipCode>> GenerateCodesAsync(int purchaseId, int sponsorId, int tierId, int quantity, string prefix, int validityDays)
         {
+            // DEBUG: Log parameters to identify tier assignment issue
+            Console.WriteLine($"[GenerateCodesAsync] 🔍 Parameters: purchaseId={purchaseId}, sponsorId={sponsorId}, tierId={tierId}, quantity={quantity}, prefix={prefix}, validityDays={validityDays}");
+
             var codes = new List<SponsorshipCode>();
             var random = new Random();
             var existingCodes = await Context.SponsorshipCodes.Select(sc => sc.Code).ToListAsync();
@@ -161,12 +164,29 @@ namespace DataAccess.Concrete.EntityFramework
                     ExpiryDate = DateTime.Now.AddDays(validityDays)
                 };
 
+                // DEBUG: Log first code's tier assignment
+                if (i == 0)
+                {
+                    Console.WriteLine($"[GenerateCodesAsync] 🏷️ First code tier assignment: Code={code}, TierId={sponsorshipCode.SubscriptionTierId}");
+                }
+
                 codes.Add(sponsorshipCode);
                 existingCodes.Add(code);
             }
 
             await Context.SponsorshipCodes.AddRangeAsync(codes);
             await Context.SaveChangesAsync();
+
+            // DEBUG: Verify tier after save
+            var firstSavedCode = await Context.SponsorshipCodes
+                .Where(sc => sc.SponsorshipPurchaseId == purchaseId)
+                .OrderBy(sc => sc.Id)
+                .FirstOrDefaultAsync();
+
+            if (firstSavedCode != null)
+            {
+                Console.WriteLine($"[GenerateCodesAsync] ✅ Verified first saved code: Id={firstSavedCode.Id}, TierId={firstSavedCode.SubscriptionTierId}, Code={firstSavedCode.Code}");
+            }
 
             return codes;
         }

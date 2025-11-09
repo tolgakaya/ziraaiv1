@@ -59,6 +59,13 @@ namespace Business.Services.Sponsorship
                 if (tier == null)
                     return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>("Subscription tier not found");
 
+                // Validate Trial tier cannot be purchased
+                if (tier.TierName.Equals("Trial", StringComparison.OrdinalIgnoreCase) || tierId == 1)
+                {
+                    return new ErrorDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>(
+                        "Trial tier cannot be purchased. Please select a paid subscription tier (S, M, L, or XL).");
+                }
+
                 // Validate quantity limits
                 if (quantity < tier.MinPurchaseQuantity)
                 {

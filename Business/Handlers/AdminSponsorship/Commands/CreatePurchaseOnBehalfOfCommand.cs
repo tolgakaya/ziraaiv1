@@ -89,6 +89,13 @@ namespace Business.Handlers.AdminSponsorship.Commands
                     return new ErrorDataResult<SponsorshipPurchase>("Subscription tier not found");
                 }
 
+                // Validate Trial tier cannot be purchased
+                if (tier.TierName.Equals("Trial", StringComparison.OrdinalIgnoreCase) || request.SubscriptionTierId == 1)
+                {
+                    return new ErrorDataResult<SponsorshipPurchase>(
+                        "Trial tier cannot be purchased. Please select a paid subscription tier (S, M, L, or XL).");
+                }
+
                 var now = DateTime.Now;
                 var totalAmount = request.UnitPrice * request.Quantity;
 
