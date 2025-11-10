@@ -499,9 +499,13 @@ namespace Business.Services.Admin
             if (string.IsNullOrWhiteSpace(phone))
                 return false;
 
-            // Turkish phone: 10-11 digits
-            var digitsOnly = new string(phone.Where(char.IsDigit).ToArray());
-            return digitsOnly.Length >= 10 && digitsOnly.Length <= 11;
+            var normalized = NormalizePhone(phone);
+            if (string.IsNullOrWhiteSpace(normalized))
+                return false;
+
+            // Normalized format should be 11 digits starting with 05
+            // Example: 05321234567
+            return normalized.Length == 11 && normalized.StartsWith("0");
         }
 
         private string NormalizePhone(string phone)
@@ -509,22 +513,41 @@ namespace Business.Services.Admin
             if (string.IsNullOrWhiteSpace(phone))
                 return null;
 
-            // Remove all non-digits
-            var digitsOnly = new string(phone.Where(char.IsDigit).ToArray());
+            // Remove all non-digit characters (spaces, dashes, parentheses, dots, plus)
+            var cleaned = phone.Replace(" ", "").Replace("-", "")
+                               .Replace("(", "").Replace(")", "")
+                               .Replace(".", "");
 
-            // If starts with 0, remove it (Turkey: 0531 -> 531)
-            if (digitsOnly.StartsWith("0") && digitsOnly.Length == 11)
+            if (cleaned.StartsWith("+"))
+                cleaned = cleaned.Substring(1);
+
+            // Turkish format normalization to 05XXXXXXXXX (local format)
+            // +905321234567 → 05321234567
+            if (cleaned.Length == 12 && cleaned.StartsWith("90"))
             {
-                digitsOnly = digitsOnly.Substring(1);
+                return "0" + cleaned.Substring(2);
             }
 
-            // Add country code if not present
-            if (digitsOnly.Length == 10 && !digitsOnly.StartsWith("90"))
+            // 905321234567 → 05321234567
+            if (cleaned.Length == 11 && cleaned.StartsWith("90"))
             {
-                return "90" + digitsOnly;
+                return "0" + cleaned.Substring(2);
             }
 
-            return digitsOnly;
+            // 05321234567 → 05321234567 (already correct)
+            if (cleaned.Length == 11 && cleaned.StartsWith("0"))
+            {
+                return cleaned;
+            }
+
+            // 5321234567 → 05321234567
+            if (cleaned.Length == 10 && cleaned.StartsWith("5"))
+            {
+                return "0" + cleaned;
+            }
+
+            // Return as-is if format not recognized (will fail validation)
+            return cleaned;
         }
 
         #endregion
