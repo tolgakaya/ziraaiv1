@@ -39,6 +39,11 @@ namespace Entities.Dtos
         public int? UserId { get; set; }
 
         /// <summary>
+        /// User's subscription tier ID
+        /// </summary>
+        public int? TierId { get; set; }
+
+        /// <summary>
         /// User's full name
         /// </summary>
         public string UserFullName { get; set; }

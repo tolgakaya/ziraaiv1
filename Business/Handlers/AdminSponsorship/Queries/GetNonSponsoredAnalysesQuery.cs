@@ -39,13 +39,16 @@ namespace Business.Handlers.AdminSponsorship.Queries
         {
             private readonly IPlantAnalysisRepository _plantAnalysisRepository;
             private readonly IUserRepository _userRepository;
+            private readonly IUserSubscriptionRepository _userSubscriptionRepository;
 
             public GetNonSponsoredAnalysesQueryHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
-                IUserRepository userRepository)
+                IUserRepository userRepository,
+                IUserSubscriptionRepository userSubscriptionRepository)
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _userRepository = userRepository;
+                _userSubscriptionRepository = userSubscriptionRepository;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -128,6 +131,14 @@ namespace Business.Handlers.AdminSponsorship.Queries
                 var users = await _userRepository.GetListAsync(u => userIds.Contains(u.UserId));
                 var userDict = users.ToDictionary(u => u.UserId, u => u);
 
+                // Get active subscriptions for users
+                var userSubscriptions = await _userSubscriptionRepository.GetListAsync(s =>
+                    userIds.Contains(s.UserId) &&
+                    s.IsActive);
+                var subscriptionDict = userSubscriptions
+                    .GroupBy(s => s.UserId)
+                    .ToDictionary(g => g.Key, g => g.FirstOrDefault());
+
                 // Map to DTOs
                 var items = paginatedAnalyses.Select(analysis => new NonSponsoredAnalysisDto
                 {
@@ -137,6 +148,9 @@ namespace Business.Handlers.AdminSponsorship.Queries
                     CropType = analysis.CropType,
                     Location = analysis.Location,
                     UserId = analysis.UserId,
+                    TierId = analysis.UserId.HasValue && subscriptionDict.ContainsKey(analysis.UserId.Value)
+                        ? subscriptionDict[analysis.UserId.Value]?.SubscriptionTierId
+                        : null,
                     UserFullName = analysis.UserId.HasValue && userDict.ContainsKey(analysis.UserId.Value)
                         ? userDict[analysis.UserId.Value].FullName
                         : null,
