@@ -131,13 +131,17 @@ namespace Business.Handlers.AdminSponsorship.Queries
                 var users = await _userRepository.GetListAsync(u => userIds.Contains(u.UserId));
                 var userDict = users.ToDictionary(u => u.UserId, u => u);
 
-                // Get active subscriptions for users
+                // Get latest subscriptions for users (active or inactive)
                 var userSubscriptions = await _userSubscriptionRepository.GetListAsync(s =>
-                    userIds.Contains(s.UserId) &&
-                    s.IsActive);
+                    userIds.Contains(s.UserId));
                 var subscriptionDict = userSubscriptions
                     .GroupBy(s => s.UserId)
-                    .ToDictionary(g => g.Key, g => g.FirstOrDefault());
+                    .Select(g => new
+                    {
+                        UserId = g.Key,
+                        Subscription = g.OrderByDescending(s => s.StartDate).FirstOrDefault()
+                    })
+                    .ToDictionary(x => x.UserId, x => x.Subscription);
 
                 // Map to DTOs
                 var items = paginatedAnalyses.Select(analysis => new NonSponsoredAnalysisDto
