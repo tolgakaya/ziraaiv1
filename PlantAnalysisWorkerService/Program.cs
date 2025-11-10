@@ -271,6 +271,10 @@ builder.Services.AddScoped<IDealerInvitationJobService, DealerInvitationJobServi
 builder.Services.AddHostedService<FarmerCodeDistributionConsumerWorker>();
 builder.Services.AddScoped<IFarmerCodeDistributionJobService, FarmerCodeDistributionJobService>();
 
+// 🆕 Add Farmer Subscription Assignment Worker and Job Service
+builder.Services.AddHostedService<FarmerSubscriptionAssignmentConsumerWorker>();
+builder.Services.AddScoped<IFarmerSubscriptionAssignmentJobService, FarmerSubscriptionAssignmentJobService>();
+
 var host = builder.Build();
 
 // Set ServiceTool for aspects
