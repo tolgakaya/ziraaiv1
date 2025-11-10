@@ -439,7 +439,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 #### Endpoint
 
 ```http
-POST /api/admin/sponsorship/sponsors/{sponsorId}/analyses/{analysisId}/messages
+POST /api/admin/sponsorship/sponsors/{sponsorId}/send-message
 ```
 
 #### Path Parameters
@@ -447,13 +447,18 @@ POST /api/admin/sponsorship/sponsors/{sponsorId}/analyses/{analysisId}/messages
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | sponsorId | integer | Yes | Sponsor's user ID |
-| analysisId | integer | Yes | Plant analysis ID |
 
 #### Request Body
 
 ```json
 {
-  "messageContent": "Merhaba Ahmet Bey, tavsiyelerimizi uyguladığınız için teşekkürler. Lütfen 7 gün sonra tekrar kontrol edin ve sonuçları bize bildirin. Gerekirse ek öneriler sunabiliriz."
+  "farmerUserId": 567,
+  "plantAnalysisId": 1234,
+  "message": "Merhaba Ahmet Bey, tavsiyelerimizi uyguladığınız için teşekkürler. Lütfen 7 gün sonra tekrar kontrol edin ve sonuçları bize bildirin. Gerekirse ek öneriler sunabiliriz.",
+  "messageType": "Information",
+  "subject": "Takip Mesajı",
+  "priority": "Normal",
+  "category": "General"
 }
 ```
 
@@ -461,17 +466,27 @@ POST /api/admin/sponsorship/sponsors/{sponsorId}/analyses/{analysisId}/messages
 
 | Field | Type | Required | Max Length | Description |
 |-------|------|----------|------------|-------------|
-| messageContent | string | Yes | 2000 | Message text to send |
+| farmerUserId | integer | Yes | - | Farmer (recipient) user ID |
+| plantAnalysisId | integer | Yes | - | Plant analysis ID for the conversation |
+| message | string | Yes | 2000 | Message text to send |
+| messageType | string | No | 50 | Message type (default: "Information") |
+| subject | string | No | 200 | Message subject (optional) |
+| priority | string | No | 20 | Priority level (default: "Normal") |
+| category | string | No | 50 | Message category (default: "General") |
 
 #### Example Request
 
 ```http
-POST /api/admin/sponsorship/sponsors/42/analyses/1234/messages
+POST /api/admin/sponsorship/sponsors/42/send-message
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
 
 {
-  "messageContent": "Merhaba Ahmet Bey, tavsiyelerimizi uyguladığınız için teşekkürler."
+  "farmerUserId": 567,
+  "plantAnalysisId": 1234,
+  "message": "Merhaba Ahmet Bey, tavsiyelerimizi uyguladığınız için teşekkürler.",
+  "messageType": "Information",
+  "priority": "Normal"
 }
 ```
 
@@ -1035,11 +1050,15 @@ curl -X GET "https://ziraai-api-sit.up.railway.app/api/admin/sponsorship/sponsor
 **Step 2:** Send expert response on behalf of sponsor:
 
 ```bash
-curl -X POST "https://ziraai-api-sit.up.railway.app/api/admin/sponsorship/sponsors/42/analyses/1234/messages" \
+curl -X POST "https://ziraai-api-sit.up.railway.app/api/admin/sponsorship/sponsors/42/send-message" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "messageContent": "Acil durum nedeniyle uzman ekibimiz yanıtlıyor: Tespit edilen yanıklık hastalığı için derhal bakırlı fungisit uygulayın. 3 gün içinde iyileşme görmezseniz lütfen tekrar bilgi verin."
+    "farmerUserId": 170,
+    "plantAnalysisId": 1234,
+    "message": "Acil durum nedeniyle uzman ekibimiz yanıtlıyor: Tespit edilen yanıklık hastalığı için derhal bakırlı fungisit uygulayın. 3 gün içinde iyileşme görmezseniz lütfen tekrar bilgi verin.",
+    "messageType": "Information",
+    "priority": "High"
   }'
 ```
 
