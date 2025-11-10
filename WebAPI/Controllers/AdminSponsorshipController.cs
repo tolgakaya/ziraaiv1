@@ -477,6 +477,23 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get detailed analysis information for a non-sponsored analysis
+        /// Admin sees the same view as farmer (full analysis details)
+        /// </summary>
+        /// <param name="plantAnalysisId">Plant analysis ID</param>
+        [HttpGet("non-sponsored/analyses/{plantAnalysisId}")]
+        public async Task<IActionResult> GetNonSponsoredAnalysisDetail(int plantAnalysisId)
+        {
+            var query = new GetNonSponsoredAnalysisDetailQuery
+            {
+                PlantAnalysisId = plantAnalysisId
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
         /// Get detailed information about a non-sponsored farmer
         /// </summary>
         /// <param name="userId">User ID of the farmer</param>

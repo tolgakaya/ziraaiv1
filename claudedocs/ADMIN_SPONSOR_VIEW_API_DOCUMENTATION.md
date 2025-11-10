@@ -25,9 +25,10 @@ This document provides complete integration documentation for the Admin Sponsor 
    - [Send Message As Sponsor (Admin)](#4-send-message-as-sponsor-admin)
 3. [Phase 2: Non-Sponsored Farmer Analytics](#phase-2-non-sponsored-farmer-analytics)
    - [Get Non-Sponsored Analyses](#5-get-non-sponsored-analyses)
-   - [Get Non-Sponsored Farmer Detail](#6-get-non-sponsored-farmer-detail)
+   - [Get Non-Sponsored Analysis Detail](#6-get-non-sponsored-analysis-detail)
+   - [Get Non-Sponsored Farmer Detail](#7-get-non-sponsored-farmer-detail)
 4. [Phase 3: Sponsorship Comparison Analytics](#phase-3-sponsorship-comparison-analytics)
-   - [Get Sponsorship Comparison Analytics](#7-get-sponsorship-comparison-analytics)
+   - [Get Sponsorship Comparison Analytics](#8-get-sponsorship-comparison-analytics)
 5. [Operation Claims](#operation-claims)
 6. [Error Responses](#error-responses)
 7. [Usage Examples](#usage-examples)
@@ -637,7 +638,171 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
-### 6. Get Non-Sponsored Farmer Detail
+### 6. Get Non-Sponsored Analysis Detail
+
+**Purpose:** View complete analysis details for a non-sponsored analysis (same view as farmer sees).
+
+**Use Cases:**
+- Review full analysis report for non-sponsored farmers
+- Evaluate analysis quality before sponsor recommendation
+- Understand farmer's plant health issues in detail
+- Prepare detailed sponsorship proposals with context
+
+#### Endpoint
+
+```http
+GET /api/admin/sponsorship/non-sponsored/analyses/{plantAnalysisId}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| plantAnalysisId | integer | Yes | Plant analysis ID |
+
+#### Example Request
+
+```http
+GET /api/admin/sponsorship/non-sponsored/analyses/5678
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+#### Response Structure
+
+Returns complete `PlantAnalysisDetailDto` - same structure as farmer's analysis view. This includes:
+
+- **Basic Information**: Analysis ID, date, status, crop type, location
+- **User Information**: Farmer details (name, email, phone)
+- **Plant Identification**: Species, variety, growth stage, confidence
+- **Health Assessment**: Vigor score, leaf condition, stress indicators, disease symptoms
+- **Nutrient Status**: Detailed nutrient levels (N, P, K, Ca, Mg, etc.) with deficiency analysis
+- **Pest & Disease Details**: Detected pests and diseases with severity and affected areas
+- **Environmental Stress**: Water status, temperature stress, soil health indicators
+- **Analysis Summary**: Overall health score, primary/secondary concerns, prognosis
+- **Recommendations**: Immediate, short-term, preventive actions with resource estimations
+- **Image Information**: Analysis image URL and metadata
+- **Processing Information**: AI model, workflow version, processing timestamp
+
+```json
+{
+  "data": {
+    "id": 5678,
+    "analysisId": "ZIRA-2025-11-07-5678",
+    "analysisDate": "2025-11-07T09:20:00",
+    "analysisStatus": "completed",
+    "userId": 789,
+    "farmerId": "FARMER-789",
+    "cropType": "Tomato",
+    "location": "İzmir, Turkey",
+    "latitude": 38.4237,
+    "longitude": 27.1428,
+    "plantIdentification": {
+      "species": "Solanum lycopersicum",
+      "variety": "Roma Tomato",
+      "growthStage": "Vegetative",
+      "confidence": 0.95,
+      "identifyingFeatures": ["Compound leaves", "Yellow flowers"],
+      "visibleParts": ["Leaves", "Stem", "Flowers"]
+    },
+    "healthAssessment": {
+      "vigorScore": 65,
+      "leafColor": "Slightly yellowing",
+      "leafTexture": "Normal",
+      "severity": "Moderate",
+      "stressIndicators": ["Chlorosis", "Leaf curling"],
+      "diseaseSymptoms": ["Yellowing lower leaves", "Brown spots"]
+    },
+    "nutrientStatus": {
+      "nitrogen": "Deficient",
+      "phosphorus": "Adequate",
+      "potassium": "Adequate",
+      "primaryDeficiency": "Nitrogen",
+      "severity": "Moderate"
+    },
+    "pestDisease": {
+      "pestsDetected": [],
+      "diseasesDetected": [
+        {
+          "type": "Early Blight",
+          "category": "Fungal",
+          "severity": "Moderate",
+          "affectedParts": ["Lower leaves"],
+          "confidence": 0.88
+        }
+      ],
+      "primaryIssue": "Early Blight",
+      "spreadRisk": "Medium"
+    },
+    "summary": {
+      "overallHealthScore": 65,
+      "primaryConcern": "Nutrient deficiency detected",
+      "secondaryConcerns": ["Early Blight infection"],
+      "criticalIssuesCount": 1,
+      "confidenceLevel": 0.92,
+      "prognosis": "Good with immediate intervention"
+    },
+    "recommendations": {
+      "immediate": [
+        {
+          "action": "Apply nitrogen-rich fertilizer",
+          "details": "Use 20-10-10 NPK fertilizer at 2kg per 100m²",
+          "timeline": "Within 3 days",
+          "priority": "High"
+        }
+      ],
+      "shortTerm": [
+        {
+          "action": "Fungicide application",
+          "details": "Apply copper-based fungicide for early blight control",
+          "timeline": "Weekly for 3 weeks",
+          "priority": "Medium"
+        }
+      ],
+      "preventive": [
+        {
+          "action": "Regular soil testing",
+          "details": "Test soil nutrient levels every 2 months",
+          "timeline": "Ongoing",
+          "priority": "Medium"
+        }
+      ]
+    },
+    "imageInfo": {
+      "imageUrl": "https://storage.example.com/analysis-images/5678.jpg",
+      "format": "jpeg",
+      "sizeKb": 245.3
+    },
+    "processingInfo": {
+      "aiModel": "GPT-4o",
+      "workflowVersion": "v2.1",
+      "processingTimestamp": "2025-11-07T09:21:15"
+    },
+    "success": true,
+    "message": "Success"
+  },
+  "success": true,
+  "message": "Analysis detail retrieved successfully"
+}
+```
+
+#### Response Fields
+
+See [PlantAnalysisDetailDto](#plantanalysisdetaildto-complete-reference) for complete field documentation.
+
+**Key Sections:**
+- `plantIdentification`: Species identification and growth stage
+- `healthAssessment`: Plant vigor and health indicators
+- `nutrientStatus`: Nutrient levels for all macro/micro nutrients
+- `pestDisease`: Pest and disease detection results
+- `environmentalStress`: Environmental factors affecting plant
+- `summary`: Overall assessment with health score
+- `recommendations`: Actionable steps (immediate, short-term, preventive)
+- `imageInfo`: Analysis image details
+- `processingInfo`: AI processing metadata
+
+---
+
+### 7. Get Non-Sponsored Farmer Detail
 
 **Purpose:** Get comprehensive profile and analysis history for a non-sponsored farmer.
 
@@ -770,7 +935,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## Phase 3: Sponsorship Comparison Analytics
 
-### 7. Get Sponsorship Comparison Analytics
+### 8. Get Sponsorship Comparison Analytics
 
 **Purpose:** Compare sponsored vs non-sponsored analysis metrics to measure sponsorship impact.
 
