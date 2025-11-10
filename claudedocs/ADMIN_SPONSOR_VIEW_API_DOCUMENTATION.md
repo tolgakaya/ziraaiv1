@@ -57,7 +57,7 @@ Content-Type: application/json
 | 137 | GetNonSponsoredFarmerDetailQuery | Query non-sponsored farmer details |
 | 138 | GetSponsorshipComparisonAnalyticsQuery | Compare sponsored vs non-sponsored metrics |
 | 139 | SendMessageAsSponsorCommand | Send message on behalf of sponsor |
-| 140 | GetNonSponsoredAnalysisDetailQuery | Admin view of non-sponsored analysis details |
+| 158 | GetNonSponsoredAnalysisDetailQuery | Admin view of non-sponsored analysis details |
 
 ---
 

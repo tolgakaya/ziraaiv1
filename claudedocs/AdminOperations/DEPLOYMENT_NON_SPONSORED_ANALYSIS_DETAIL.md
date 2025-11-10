@@ -75,7 +75,7 @@ public async Task<IActionResult> GetNonSponsoredAnalysisDetail(int plantAnalysis
 **File**: `claudedocs/AdminOperations/ADD_ADMIN_NON_SPONSORED_ANALYSIS_DETAIL_CLAIM.sql`
 
 **New Claim**:
-- **ID**: 140
+- **ID**: 158
 - **Name**: `GetNonSponsoredAnalysisDetailQuery`
 - **Alias**: "Admin Non-Sponsored Analysis Detail View"
 - **Description**: "Admin olarak sponsorsuz analiz detayı görüntüleme (farmer görünümü ile aynı)"
@@ -93,7 +93,7 @@ public async Task<IActionResult> GetNonSponsoredAnalysisDetail(int plantAnalysis
 
 ### Step 1: Execute SQL Script on Staging Database ⏳
 
-**Action Required**: Run the SQL script to create claim 140.
+**Action Required**: Run the SQL script to create claim 158.
 
 ```bash
 # Connect to Railway PostgreSQL staging database
@@ -105,8 +105,8 @@ psql -h [staging-host] -U [username] -d [database-name]
 
 **Expected Output**:
 ```
-NOTICE:  Claim 140 (GetNonSponsoredAnalysisDetailQuery) added successfully
-NOTICE:  Claim 140 granted to Administrators group
+NOTICE:  Claim 158 (GetNonSponsoredAnalysisDetailQuery) added successfully
+NOTICE:  Claim 158 granted to Administrators group
 ```
 
 ### Step 2: Verify Claim Created ✅
@@ -120,14 +120,14 @@ SELECT oc."Id", oc."Name", oc."Alias", oc."Description",
             ELSE 'NO - MISSING' END as "HasGroupClaim"
 FROM "OperationClaims" oc
 LEFT JOIN "GroupClaims" gc ON oc."Id" = gc."ClaimId" AND gc."GroupId" = 1
-WHERE oc."Id" = 140;
+WHERE oc."Id" = 158;
 ```
 
 **Expected Result**:
 
 | Id  | Name | Alias | Description | HasGroupClaim |
 |-----|------|-------|-------------|---------------|
-| 140 | GetNonSponsoredAnalysisDetailQuery | Admin Non-Sponsored Analysis Detail View | Admin olarak sponsorsuz analiz detayı görüntüleme (farmer görünümü ile aynı) | YES - GroupId: 1 |
+| 158 | GetNonSponsoredAnalysisDetailQuery | Admin Non-Sponsored Analysis Detail View | Admin olarak sponsorsuz analiz detayı görüntüleme (farmer görünümü ile aynı) | YES - GroupId: 1 |
 
 ### Step 3: Deploy Code Changes 🚀
 
@@ -156,7 +156,7 @@ git pull origin enhancement-for-admin-operations
 **Steps**:
 1. Admin user logs out completely
 2. Admin user logs back in
-3. JWT token will include claim 140
+3. JWT token will include claim 158
 4. Cache will be repopulated with new claim
 
 ### Step 5: Test Endpoint 🧪
@@ -206,7 +206,7 @@ curl -X GET "https://ziraai-api-sit.up.railway.app/api/admin/sponsorship/non-spo
   -H "Authorization: Bearer {farmer-jwt-token}"
 ```
 
-**Expected**: `403 Forbidden` - User doesn't have claim 140
+**Expected**: `403 Forbidden` - User doesn't have claim 158
 
 #### Test 4: Verify Same View as Farmer
 
@@ -242,11 +242,11 @@ git push origin enhancement-for-admin-operations
 ### Revert Database Changes (If Needed)
 
 ```sql
--- Remove claim 140 from group
-DELETE FROM "GroupClaims" WHERE "ClaimId" = 140;
+-- Remove claim 158 from group
+DELETE FROM "GroupClaims" WHERE "ClaimId" = 158;
 
--- Remove claim 140
-DELETE FROM "OperationClaims" WHERE "Id" = 140;
+-- Remove claim 158
+DELETE FROM "OperationClaims" WHERE "Id" = 158;
 ```
 
 ---
@@ -303,13 +303,13 @@ $"{CacheKeys.UserIdForClaim}={userId}"
 ## Success Criteria
 
 ✅ SQL script executes without errors
-✅ Claim 140 exists with GroupId=1
+✅ Claim 158 exists with GroupId=1
 ✅ Admin user can access endpoint (200 OK, not 403)
 ✅ Response includes complete PlantAnalysisDetailDto structure
 ✅ Sponsored analyses return 404 (not accessible via this endpoint)
 ✅ Non-admin users receive 403 Forbidden
 ✅ Response matches farmer's view structure
-✅ No impact on existing endpoints (claims 133-139)
+✅ No impact on existing endpoints (claims 133-157)
 
 ---
 
