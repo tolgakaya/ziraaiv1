@@ -138,21 +138,24 @@ ZiraAI Ekibi
 
 #### 🎯 Admin Bulk Subscription SMS
 ```
-Sayın Ahmet,
+🎉 Tebrikler Ahmet!
 
-Size Medium (M) paketi tanımlandı. 30 gün boyunca kullanabilirsiniz.
+Size Medium (M) aboneliği tanımlandı.
+Süre: 30 gün
 
-Paketiniz otomatik olarak aktif edildi. Detaylar için uygulamayı ziyaret edin.
+Hemen kullanmaya başlayın:
+https://play.google.com/store/apps/details?id=com.ziraai.app
 
-Teşekkürler,
-ZiraAI Ekibi
+ZiraAI ile tarımda başarı!
 ```
 
 **Özellikler:**
 - ❌ Kod yok
 - ✅ Bilgilendirme amaçlı
+- ✅ **Uygulama indirme linki VAR** (önemli!)
 - ❌ Redeem işlemi gerekmez
 - ✅ Direkt kullanıma hazır
+- 🎯 Uygulamayı kurmamış kullanıcılar için Play Store linki
 
 ---
 
