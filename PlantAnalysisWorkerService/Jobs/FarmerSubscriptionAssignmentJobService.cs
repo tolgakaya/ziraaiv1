@@ -31,6 +31,8 @@ namespace PlantAnalysisWorkerService.Jobs
         private readonly IUserRepository _userRepository;
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+        private readonly IGroupRepository _groupRepository;
+        private readonly IUserGroupRepository _userGroupRepository;
         private readonly IMessagingServiceFactory _messagingFactory;
         private readonly ISmsLoggingService _smsLoggingService;
         private readonly IHttpClientFactory _httpClientFactory;
@@ -42,6 +44,8 @@ namespace PlantAnalysisWorkerService.Jobs
             IUserRepository userRepository,
             IUserSubscriptionRepository userSubscriptionRepository,
             ISubscriptionTierRepository subscriptionTierRepository,
+            IGroupRepository groupRepository,
+            IUserGroupRepository userGroupRepository,
             IMessagingServiceFactory messagingFactory,
             ISmsLoggingService smsLoggingService,
             IHttpClientFactory httpClientFactory,
@@ -52,6 +56,8 @@ namespace PlantAnalysisWorkerService.Jobs
             _userRepository = userRepository;
             _userSubscriptionRepository = userSubscriptionRepository;
             _subscriptionTierRepository = subscriptionTierRepository;
+            _groupRepository = groupRepository;
+            _userGroupRepository = userGroupRepository;
             _messagingFactory = messagingFactory;
             _smsLoggingService = smsLoggingService;
             _httpClientFactory = httpClientFactory;
@@ -111,6 +117,29 @@ namespace PlantAnalysisWorkerService.Jobs
                     _logger.LogInformation(
                         "[FARMER_SUBSCRIPTION_NEW_USER] Created new user - Email: {Email}, Phone: {Phone}, UserId: {UserId}",
                         message.Email, message.Phone, user.UserId);
+
+                    // Assign to Farmer group (required for API access)
+                    var farmerGroup = await _groupRepository.GetAsync(g => g.GroupName == "Farmer");
+                    if (farmerGroup != null)
+                    {
+                        var userGroup = new UserGroup
+                        {
+                            UserId = user.UserId,
+                            GroupId = farmerGroup.Id
+                        };
+                        _userGroupRepository.Add(userGroup);
+                        await _userGroupRepository.SaveChangesAsync();
+
+                        _logger.LogInformation(
+                            "[FARMER_SUBSCRIPTION_ROLE_ASSIGNED] User assigned to Farmer group - UserId: {UserId}, GroupId: {GroupId}",
+                            user.UserId, farmerGroup.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "[FARMER_SUBSCRIPTION_ROLE_MISSING] Farmer group not found - UserId: {UserId}",
+                            user.UserId);
+                    }
                 }
 
                 // Step 2: Check if user already has a subscription
