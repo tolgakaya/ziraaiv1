@@ -464,23 +464,45 @@ ZiraAI ile tarımda başarı!";
         }
 
         /// <summary>
-        /// Format phone number - add Turkey country code and + prefix
+        /// Format phone number to Turkish local format (05XXXXXXXXX)
+        /// Matches BulkCodeDistributionService pattern for consistency
         /// </summary>
         private string FormatPhoneNumber(string phone)
         {
-            // Remove all non-numeric characters
-            var cleaned = new string(phone.Where(char.IsDigit).ToArray());
+            if (string.IsNullOrWhiteSpace(phone))
+                return phone;
 
-            // Add Turkey country code if not present
-            if (!cleaned.StartsWith("90") && cleaned.Length == 10)
+            // Remove all non-digit characters
+            var cleaned = phone.Replace(" ", "").Replace("-", "")
+                               .Replace("(", "").Replace(")", "")
+                               .Replace(".", "");
+
+            if (cleaned.StartsWith("+"))
+                cleaned = cleaned.Substring(1);
+
+            // Turkish format normalization to 05XXXXXXXXX (local format)
+            // +905321234567 → 05321234567
+            if (cleaned.Length == 12 && cleaned.StartsWith("90"))
             {
-                cleaned = "90" + cleaned;
+                return "0" + cleaned.Substring(2);
             }
 
-            // Add + prefix
-            if (!cleaned.StartsWith("+"))
+            // 905321234567 → 05321234567
+            if (cleaned.Length == 11 && cleaned.StartsWith("90"))
             {
-                cleaned = "+" + cleaned;
+                return "0" + cleaned.Substring(2);
+            }
+
+            // 05321234567 → 05321234567 (already correct)
+            if (cleaned.Length == 11 && cleaned.StartsWith("0"))
+            {
+                return cleaned;
+            }
+
+            // 5321234567 → 05321234567
+            if (cleaned.Length == 10 && cleaned.StartsWith("5"))
+            {
+                return "0" + cleaned;
             }
 
             return cleaned;
