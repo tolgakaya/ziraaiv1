@@ -22,17 +22,17 @@ namespace Business.Handlers.AdminAnalytics.Queries
         public class GetUserStatisticsQueryHandler : IRequestHandler<GetUserStatisticsQuery, IDataResult<UserStatisticsDto>>
         {
             private readonly IUserRepository _userRepository;
-            private readonly IUserClaimRepository _userClaimRepository;
-            private readonly IOperationClaimRepository _operationClaimRepository;
+            private readonly IGroupRepository _groupRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
 
             public GetUserStatisticsQueryHandler(
                 IUserRepository userRepository,
-                IUserClaimRepository userClaimRepository,
-                IOperationClaimRepository operationClaimRepository)
+                IGroupRepository groupRepository,
+                IUserGroupRepository userGroupRepository)
             {
                 _userRepository = userRepository;
-                _userClaimRepository = userClaimRepository;
-                _operationClaimRepository = operationClaimRepository;
+                _groupRepository = groupRepository;
+                _userGroupRepository = userGroupRepository;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -52,39 +52,35 @@ namespace Business.Handlers.AdminAnalytics.Queries
                     allUsers = allUsers.Where(u => u.RecordDate <= request.EndDate.Value);
                 }
 
-                // Get role-based counts
-                var adminClaimId = _operationClaimRepository.Query()
-                    .Where(c => c.Name == "Admin")
-                    .Select(c => c.Id)
-                    .FirstOrDefault();
+                // Get role-based counts from Groups/UserGroups tables
+                // Group IDs: 1 = Administrators, 2 = Farmer, 3 = Sponsor
+                var adminGroup = await _groupRepository.GetAsync(g => g.GroupName == "Administrators");
+                var farmerGroup = await _groupRepository.GetAsync(g => g.GroupName == "Farmer");
+                var sponsorGroup = await _groupRepository.GetAsync(g => g.GroupName == "Sponsor");
 
-                var farmerClaimId = _operationClaimRepository.Query()
-                    .Where(c => c.Name == "Farmer")
-                    .Select(c => c.Id)
-                    .FirstOrDefault();
+                var adminUsers = adminGroup != null
+                    ? _userGroupRepository.Query()
+                        .Where(ug => ug.GroupId == adminGroup.Id)
+                        .Select(ug => ug.UserId)
+                        .Distinct()
+                        .Count()
+                    : 0;
 
-                var sponsorClaimId = _operationClaimRepository.Query()
-                    .Where(c => c.Name == "Sponsor")
-                    .Select(c => c.Id)
-                    .FirstOrDefault();
+                var farmerUsers = farmerGroup != null
+                    ? _userGroupRepository.Query()
+                        .Where(ug => ug.GroupId == farmerGroup.Id)
+                        .Select(ug => ug.UserId)
+                        .Distinct()
+                        .Count()
+                    : 0;
 
-                var adminUsers = _userClaimRepository.Query()
-                    .Where(uc => uc.ClaimId == adminClaimId)
-                    .Select(uc => uc.UserId)
-                    .Distinct()
-                    .Count();
-
-                var farmerUsers = _userClaimRepository.Query()
-                    .Where(uc => uc.ClaimId == farmerClaimId)
-                    .Select(uc => uc.UserId)
-                    .Distinct()
-                    .Count();
-
-                var sponsorUsers = _userClaimRepository.Query()
-                    .Where(uc => uc.ClaimId == sponsorClaimId)
-                    .Select(uc => uc.UserId)
-                    .Distinct()
-                    .Count();
+                var sponsorUsers = sponsorGroup != null
+                    ? _userGroupRepository.Query()
+                        .Where(ug => ug.GroupId == sponsorGroup.Id)
+                        .Select(ug => ug.UserId)
+                        .Distinct()
+                        .Count()
+                    : 0;
 
                 var stats = new UserStatisticsDto
                 {
