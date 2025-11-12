@@ -26,6 +26,13 @@ VALUES (
     164 -- GetCompetitiveBenchmarkingQuery
 );
 
+-- Step 3: Assign to Sponsors Group (GroupId = 3)
+INSERT INTO "GroupClaims" ("GroupId", "ClaimId")
+VALUES (
+    3, -- Sponsors group
+    164 -- GetCompetitiveBenchmarkingQuery
+);
+
 -- ================================================================
 -- Verification Queries (Run after migration to verify)
 -- ================================================================
@@ -33,7 +40,7 @@ VALUES (
 -- Verify OperationClaim was created
 -- SELECT * FROM "OperationClaims" WHERE "Id" = 164;
 
--- Verify GroupClaim was assigned to Administrators
+-- Verify GroupClaim was assigned to Administrators and Sponsors
 -- SELECT gc.*, oc."Name", g."Name" as "GroupName"
 -- FROM "GroupClaims" gc
 -- JOIN "OperationClaims" oc ON gc."ClaimId" = oc."Id"
