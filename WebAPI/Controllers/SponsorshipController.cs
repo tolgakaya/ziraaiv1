@@ -956,6 +956,59 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get competitive benchmarking analytics comparing sponsor performance with industry averages
+        /// Provides percentile rankings, gap analysis vs industry benchmarks, and actionable recommendations
+        /// Requires minimum 3 sponsors in system for anonymization and privacy protection
+        /// Cache TTL: 24 hours for relatively stable benchmark data
+        /// </summary>
+        /// <param name="timePeriodDays">Time period in days for analysis (default: 90 days)</param>
+        /// <returns>Competitive benchmarking with industry comparisons, percentile rankings, and gap analysis</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("competitive-benchmarking")]
+        public async Task<IActionResult> GetCompetitiveBenchmarking([FromQuery] int timePeriodDays = 90)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[CompetitiveBenchmarking] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Admin sees industry-wide benchmarks only, Sponsor sees their performance vs industry
+                var sponsorId = isAdmin ? (int?)null : userId.Value;
+
+                _logger.LogInformation("[CompetitiveBenchmarking] Fetching benchmarks for {Role} (SponsorId: {SponsorId}, Period: {Days} days)",
+                    isAdmin ? "Admin (industry-wide)" : "Sponsor", sponsorId, timePeriodDays);
+
+                var query = new GetCompetitiveBenchmarkingQuery
+                {
+                    SponsorId = sponsorId,
+                    TimePeriodDays = timePeriodDays
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[CompetitiveBenchmarking] Successfully retrieved benchmarks for {Role}", isAdmin ? "Admin" : $"Sponsor {sponsorId}");
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[CompetitiveBenchmarking] Failed to retrieve benchmarks: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[CompetitiveBenchmarking] Error retrieving benchmarks for {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Competitive benchmarking retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
         /// Send sponsorship links via SMS or WhatsApp to farmers
         /// </summary>
         /// <param name="command">Link sending details with recipients</param>
