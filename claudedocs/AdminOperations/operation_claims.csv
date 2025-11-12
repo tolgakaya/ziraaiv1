@@ -164,3 +164,4 @@
 164	GetCompetitiveBenchmarkingQuery	sponsorship.analytics.competitive-benchmarking	comparing sponsor performance with industry averages, percentile rankings, and gap analysis
 165	GetFarmerJourneyQuery	sponsorship.analytics.farmer-journey	farmer journey analytics including timeline, behavioral patterns, and AI-driven recommendations
 166	GetCropDiseaseMatrixQuery	sponsorship.analytics.crop-disease-matrix	View crop-disease correlation analytics for sponsors with market opportunities
+167	GetMessageEngagementQuery	sponsorship.analytics.message-engagement	View message engagement analytics including response rates, engagement score, and optimal messaging times

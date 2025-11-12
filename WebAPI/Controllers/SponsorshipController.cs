@@ -1009,6 +1009,59 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get message engagement analytics showing sponsor-farmer messaging effectiveness
+        /// Analyzes response rates, average response times, engagement score (0-10), message breakdowns
+        /// Provides best performing message templates and optimal time-of-day analysis for messaging
+        /// Enables data-driven communication strategy, template optimization, and farmer engagement improvement
+        /// Cache TTL: 6 hours for messaging pattern analysis
+        /// </summary>
+        /// <returns>Message engagement analytics with response metrics, template performance, and timing insights</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("message-engagement")]
+        public async Task<IActionResult> GetMessageEngagement()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[MessageEngagement] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Admin sees all messages across all sponsors, Sponsor sees only their messages
+                var sponsorId = isAdmin ? (int?)null : userId.Value;
+
+                _logger.LogInformation("[MessageEngagement] Fetching message engagement for {Role} (SponsorId: {SponsorId})",
+                    isAdmin ? "Admin (all messages)" : "Sponsor", sponsorId);
+
+                var query = new GetMessageEngagementQuery
+                {
+                    SponsorId = sponsorId
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[MessageEngagement] Successfully retrieved message engagement for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[MessageEngagement] Failed to retrieve message engagement for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[MessageEngagement] Error retrieving message engagement for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Message engagement retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
         /// Get competitive benchmarking analytics comparing sponsor performance with industry averages
         /// Provides percentile rankings, gap analysis vs industry benchmarks, and actionable recommendations
         /// Requires minimum 3 sponsors in system for anonymization and privacy protection
