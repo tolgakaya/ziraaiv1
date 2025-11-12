@@ -65,8 +65,11 @@ namespace WebAPI.Controllers
                 return NotFound(new ErrorResult("Voice message not found"));
             }
 
-            // Authorization: Only sender or receiver can access
-            if (message.FromUserId != userId.Value && message.ToUserId != userId.Value)
+            // Authorization: Sender, receiver, or admin can access
+            var isAdmin = User.HasClaim(c => c.Type.EndsWith("role") && c.Value == "Admin");
+            var isParticipant = message.FromUserId == userId.Value || message.ToUserId == userId.Value;
+
+            if (!isParticipant && !isAdmin)
             {
                 _logger.LogWarning(
                     "Unauthorized voice message access attempt. User: {UserId}, Message: {MessageId}, From: {FromUserId}, To: {ToUserId}",
@@ -141,8 +144,11 @@ namespace WebAPI.Controllers
                 return NotFound(new ErrorResult("Message not found"));
             }
 
-            // Authorization: Only sender or receiver can access
-            if (message.FromUserId != userId.Value && message.ToUserId != userId.Value)
+            // Authorization: Sender, receiver, or admin can access
+            var isAdmin = User.HasClaim(c => c.Type.EndsWith("role") && c.Value == "Admin");
+            var isParticipant = message.FromUserId == userId.Value || message.ToUserId == userId.Value;
+
+            if (!isParticipant && !isAdmin)
             {
                 _logger.LogWarning(
                     "Unauthorized attachment access attempt. User: {UserId}, Message: {MessageId}, From: {FromUserId}, To: {ToUserId}",

@@ -11,6 +11,7 @@ using Business.Services.Sponsorship;
 using Business.Services.Subscription;
 using Business.Services.Redemption;
 using Business.Services.Notification;
+using Business.Services.Admin;
 using Business.Services.SponsorRequest;
 using Business.Services.MobileIntegration;
 using Business.Services.Analytics;
@@ -154,6 +155,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<BulkCodeDistributionJobRepository>().As<IBulkCodeDistributionJobRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<BulkSubscriptionAssignmentJobRepository>().As<IBulkSubscriptionAssignmentJobRepository>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SmsLogRepository>().As<ISmsLogRepository>()
                 .InstancePerLifetimeScope();
 
@@ -206,6 +210,9 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
 
             builder.RegisterType<BulkCodeDistributionService>().As<IBulkCodeDistributionService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkSubscriptionAssignmentService>().As<IBulkSubscriptionAssignmentService>()
                 .InstancePerLifetimeScope();
 
             builder.RegisterType<SponsorshipTierMappingService>().As<ISponsorshipTierMappingService>()

@@ -215,6 +215,7 @@ builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository,
 builder.Services.AddScoped<DataAccess.Abstract.IDealerInvitationRepository, DataAccess.Concrete.EntityFramework.DealerInvitationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkInvitationJobRepository, DataAccess.Concrete.EntityFramework.BulkInvitationJobRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkCodeDistributionJobRepository, DataAccess.Concrete.EntityFramework.BulkCodeDistributionJobRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IBulkSubscriptionAssignmentJobRepository, DataAccess.Concrete.EntityFramework.BulkSubscriptionAssignmentJobRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.ISmsLogRepository, DataAccess.Concrete.EntityFramework.SmsLogRepository>();
 // 🆕 Add missing repositories required by CreateDealerInvitationCommandHandler
 builder.Services.AddScoped<DataAccess.Abstract.IUserRepository, DataAccess.Concrete.EntityFramework.UserRepository>();
@@ -270,6 +271,10 @@ builder.Services.AddScoped<IDealerInvitationJobService, DealerInvitationJobServi
 // 🆕 Add Farmer Code Distribution Worker and Job Service
 builder.Services.AddHostedService<FarmerCodeDistributionConsumerWorker>();
 builder.Services.AddScoped<IFarmerCodeDistributionJobService, FarmerCodeDistributionJobService>();
+
+// 🆕 Add Farmer Subscription Assignment Worker and Job Service
+builder.Services.AddHostedService<FarmerSubscriptionAssignmentConsumerWorker>();
+builder.Services.AddScoped<IFarmerSubscriptionAssignmentJobService, FarmerSubscriptionAssignmentJobService>();
 
 var host = builder.Build();
 

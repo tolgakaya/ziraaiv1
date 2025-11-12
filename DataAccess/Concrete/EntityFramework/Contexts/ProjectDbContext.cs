@@ -75,6 +75,7 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<DealerInvitation> DealerInvitations { get; set; }
         public DbSet<BulkInvitationJob> BulkInvitationJobs { get; set; }
         public DbSet<BulkCodeDistributionJob> BulkCodeDistributionJobs { get; set; }
+        public DbSet<BulkSubscriptionAssignmentJob> BulkSubscriptionAssignmentJobs { get; set; }
 
         // Sponsor Request System
         public DbSet<SponsorRequest> SponsorRequests { get; set; }
