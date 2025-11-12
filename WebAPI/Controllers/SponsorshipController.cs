@@ -923,11 +923,17 @@ namespace WebAPI.Controllers
                     return Unauthorized();
                 }
 
-                _logger.LogInformation("[FarmerSegmentation] Fetching segmentation for sponsor {SponsorId}", userId.Value);
+                var isAdmin = User.IsInRole("Admin");
+
+                // Admin sees all farmers across all sponsors, Sponsor sees only their farmers
+                var sponsorId = isAdmin ? (int?)null : userId.Value;
+
+                _logger.LogInformation("[FarmerSegmentation] Fetching segmentation for {Role} (SponsorId: {SponsorId})",
+                    isAdmin ? "Admin (all farmers)" : "Sponsor", sponsorId);
 
                 var query = new GetFarmerSegmentationQuery
                 {
-                    SponsorId = userId.Value
+                    SponsorId = sponsorId
                 };
 
                 var result = await Mediator.Send(query);
