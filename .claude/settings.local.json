@@ -22,7 +22,8 @@
       "mcp__serena__write_memory",
       "Bash(git push:*)",
       "mcp__serena__replace_symbol_body",
-      "Bash(Select-Object -Last 50)"
+      "Bash(Select-Object -Last 50)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": [],

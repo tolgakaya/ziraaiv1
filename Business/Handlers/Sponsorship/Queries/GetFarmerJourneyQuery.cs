@@ -135,7 +135,7 @@ namespace Business.Handlers.Sponsorship.Queries
 
                     // Analyze behavioral patterns
                     var behavioralPatterns = AnalyzeBehavioralPatterns(
-                        relevantAnalyses, messagesList, subscriptionsList);
+                        relevantAnalyses, messagesList, subscriptionsList, request.FarmerId);
 
                     // Generate recommended actions
                     var recommendedActions = GenerateRecommendedActions(
@@ -335,7 +335,8 @@ namespace Business.Handlers.Sponsorship.Queries
             private BehavioralPatternsDto AnalyzeBehavioralPatterns(
                 List<Entities.Concrete.PlantAnalysis> analyses,
                 List<Entities.Concrete.AnalysisMessage> messages,
-                List<Entities.Concrete.UserSubscription> subscriptions)
+                List<Entities.Concrete.UserSubscription> subscriptions,
+                int farmerId)
             {
                 if (!analyses.Any())
                 {
@@ -385,18 +386,71 @@ namespace Business.Handlers.Sponsorship.Queries
                     .ToList();
 
                 // Common issues (top 5 diseases)
+                // Parse Diseases JSON to extract individual disease names
                 var commonIssues = analyses
                     .Where(a => !string.IsNullOrEmpty(a.Diseases))
-                    .GroupBy(a => a.Diseases)
+                    .SelectMany(a =>
+                    {
+                        try
+                        {
+                            // Diseases is a JSON array like: ["Disease1", "Disease2"]
+                            var diseases = System.Text.Json.JsonSerializer.Deserialize<List<string>>(a.Diseases);
+                            return diseases ?? new List<string>();
+                        }
+                        catch
+                        {
+                            // If not JSON, treat as single disease
+                            return new List<string> { a.Diseases };
+                        }
+                    })
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .GroupBy(d => d)
                     .OrderByDescending(g => g.Count())
                     .Take(5)
                     .Select(g => g.Key)
                     .ToList();
 
-                // Message response rate (assume IsRead means responded)
-                var totalMessages = messages.Count;
-                var respondedMessages = messages.Count(m => m.IsRead == true);
-                var messageResponseRate = totalMessages > 0 ? (decimal)respondedMessages / totalMessages * 100 : 0;
+                // Message response rate calculation
+                // Count sponsor messages (sent TO farmer) and farmer responses (sent BY farmer)
+                var sponsorMessages = messages.Where(m => m.ToUserId == farmerId).ToList();
+                var farmerResponses = messages.Where(m => m.FromUserId == farmerId).ToList();
+                var totalSponsorMessages = sponsorMessages.Count;
+                
+                // Calculate how many sponsor messages received farmer responses
+                var sponsorMessagesWithResponses = sponsorMessages
+                    .Where(sm => farmerResponses.Any(fr => 
+                        fr.ParentMessageId == sm.Id || 
+                        (fr.PlantAnalysisId == sm.PlantAnalysisId && fr.CreatedDate > sm.CreatedDate)))
+                    .Count();
+                
+                var messageResponseRate = totalSponsorMessages > 0 
+                    ? (decimal)sponsorMessagesWithResponses / totalSponsorMessages * 100 
+                    : 0;
+                
+                // Average response time calculation
+                // Calculate time difference between sponsor messages and farmer responses
+                var responseTimes = new List<double>();
+                foreach (var sponsorMsg in sponsorMessages)
+                {
+                    var farmerResponse = farmerResponses
+                        .Where(fr => fr.ParentMessageId == sponsorMsg.Id || 
+                                   (fr.PlantAnalysisId == sponsorMsg.PlantAnalysisId && fr.CreatedDate > sponsorMsg.CreatedDate))
+                        .OrderBy(fr => fr.CreatedDate)
+                        .FirstOrDefault();
+                    
+                    if (farmerResponse != null)
+                    {
+                        var responseTime = (farmerResponse.CreatedDate - sponsorMsg.CreatedDate).TotalHours;
+                        if (responseTime > 0) // Only count positive response times
+                        {
+                            responseTimes.Add(responseTime);
+                        }
+                    }
+                }
+                
+                var avgResponseTimeHours = responseTimes.Any() 
+                    ? (decimal)responseTimes.Average() 
+                    : 0;
 
                 // Most active weekday
                 var weekdayCounts = analyses
@@ -443,7 +497,7 @@ namespace Business.Handlers.Sponsorship.Queries
                     PreferredCrops = preferredCrops,
                     CommonIssues = commonIssues,
                     MessageResponseRate = messageResponseRate,
-                    AverageMessageResponseTimeHours = 0, // Would need message timestamps to calculate
+                    AverageMessageResponseTimeHours = avgResponseTimeHours,
                     MostActiveWeekday = mostActiveWeekday,
                     EngagementTrend = engagementTrend,
                     ChurnRiskScore = churnRiskScore
