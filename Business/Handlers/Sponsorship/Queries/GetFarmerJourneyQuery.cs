@@ -178,10 +178,27 @@ namespace Business.Handlers.Sponsorship.Queries
                     : 0;
 
                 // Get the most recent active subscription (subscriptions already sorted by CreatedDate DESC)
+                // Debug: Log all subscriptions to diagnose tier selection
+                foreach (var sub in subscriptions.OrderByDescending(s => s.CreatedDate))
+                {
+                    var tierName = await _tierRepository.GetAsync(t => t.Id == sub.SubscriptionTierId);
+                    _logger.LogInformation(
+                        "[FarmerJourney] Subscription check - Tier: {TierName}, IsActive: {IsActive}, EndDate: {EndDate}, CreatedDate: {CreatedDate}",
+                        tierName?.TierName ?? "Unknown", sub.IsActive, sub.EndDate, sub.CreatedDate);
+                }
+
                 var activeSubscription = subscriptions
                     .Where(s => s.IsActive && s.EndDate >= DateTime.Now)
                     .OrderByDescending(s => s.CreatedDate)
                     .FirstOrDefault();
+
+                if (activeSubscription != null)
+                {
+                    var selectedTier = await _tierRepository.GetAsync(t => t.Id == activeSubscription.SubscriptionTierId);
+                    _logger.LogInformation(
+                        "[FarmerJourney] Selected active subscription - Tier: {TierName}, EndDate: {EndDate}",
+                        selectedTier?.TierName ?? "Unknown", activeSubscription.EndDate);
+                }
 
                 var daysUntilRenewal = activeSubscription?.EndDate != null
                     ? (int?)(activeSubscription.EndDate - DateTime.Now).Days
