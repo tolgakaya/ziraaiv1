@@ -904,6 +904,52 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get farmer segmentation analytics for current sponsor
+        /// Segments farmers into Heavy Users, Regular Users, At-Risk, and Dormant categories
+        /// Provides actionable insights for targeted engagement and retention strategies
+        /// Cache TTL: 6 hours for relatively stable segmentation data
+        /// </summary>
+        /// <returns>Farmer segmentation with behavioral analysis and recommended actions</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("farmer-segmentation")]
+        public async Task<IActionResult> GetFarmerSegmentation()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[FarmerSegmentation] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                _logger.LogInformation("[FarmerSegmentation] Fetching segmentation for sponsor {SponsorId}", userId.Value);
+
+                var query = new GetFarmerSegmentationQuery
+                {
+                    SponsorId = userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[FarmerSegmentation] Successfully retrieved segmentation for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[FarmerSegmentation] Failed to retrieve segmentation for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[FarmerSegmentation] Error retrieving segmentation for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Farmer segmentation retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
         /// Send sponsorship links via SMS or WhatsApp to farmers
         /// </summary>
         /// <param name="command">Link sending details with recipients</param>
