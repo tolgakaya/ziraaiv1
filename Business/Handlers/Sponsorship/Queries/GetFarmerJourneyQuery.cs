@@ -179,12 +179,12 @@ namespace Business.Handlers.Sponsorship.Queries
 
                 // Get active subscription using same logic as other subscription endpoints for consistency
                 // This ensures currentTier matches what usage-status and my-subscription endpoints return
+                // Uses same selection logic as GetActiveSubscriptionByUserIdAsync (order by ID, lowest first)
                 var activeSubscription = subscriptions
                     .Where(s => s.IsActive
                         && s.Status == "Active"  // Must have Active status, not just IsActive flag
                         && s.EndDate > DateTime.Now)  // Future end date
-                    .OrderByDescending(s => s.EndDate)  // Prioritize subscription with furthest end date
-                    .ThenByDescending(s => s.CreatedDate)  // If same end date, use most recent
+                    .OrderBy(s => s.Id)  // Order by ID to match FirstOrDefaultAsync behavior (lowest ID first)
                     .FirstOrDefault();
 
                 var daysUntilRenewal = activeSubscription?.EndDate != null

@@ -788,8 +788,8 @@
                 "Domates"
             ],
             "commonIssues": [],
-            "messageResponseRate": 94.11764705882352941176470588,
-            "averageMessageResponseTimeHours": 0,
+            "messageResponseRate": 75.609756097560975609756097560,
+            "averageMessageResponseTimeHours": 2.64805278681004,
             "mostActiveWeekday": "Wednesday",
             "engagementTrend": "Increasing",
             "churnRiskScore": 20
