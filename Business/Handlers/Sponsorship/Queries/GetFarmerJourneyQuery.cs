@@ -177,8 +177,11 @@ namespace Business.Handlers.Sponsorship.Queries
                     ? (DateTime.Now - firstRedemption.Value).Days
                     : 0;
 
+                // Get the most recent active subscription (subscriptions already sorted by CreatedDate DESC)
                 var activeSubscription = subscriptions
-                    .FirstOrDefault(s => s.IsActive && s.EndDate >= DateTime.Now);
+                    .Where(s => s.IsActive && s.EndDate >= DateTime.Now)
+                    .OrderByDescending(s => s.CreatedDate)
+                    .FirstOrDefault();
 
                 var daysUntilRenewal = activeSubscription?.EndDate != null
                     ? (int?)(activeSubscription.EndDate - DateTime.Now).Days
@@ -523,8 +526,11 @@ namespace Business.Handlers.Sponsorship.Queries
                 else if (engagementTrend == "Stable") riskScore += 10;
 
                 // Factor 3: Subscription status (30% weight)
+                // Use the most recent active subscription
                 var activeSubscription = subscriptions
-                    .FirstOrDefault(s => s.IsActive && s.EndDate >= DateTime.Now);
+                    .Where(s => s.IsActive && s.EndDate >= DateTime.Now)
+                    .OrderByDescending(s => s.CreatedDate)
+                    .FirstOrDefault();
 
                 if (activeSubscription == null)
                 {

@@ -23,7 +23,8 @@
       "Bash(git push:*)",
       "mcp__serena__replace_symbol_body",
       "Bash(Select-Object -Last 50)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],
