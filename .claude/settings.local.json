@@ -21,7 +21,8 @@
       "mcp__serena__list_dir",
       "mcp__serena__write_memory",
       "Bash(git push:*)",
-      "mcp__serena__replace_symbol_body"
+      "mcp__serena__replace_symbol_body",
+      "Bash(Select-Object -Last 50)"
     ],
     "deny": [],
     "ask": [],

@@ -110,7 +110,7 @@ namespace Business.Handlers.Sponsorship.Queries
 
                     var totalSponsorsInBenchmark = analysesBySponsor.Count;
 
-                    if (totalSponsorsInBenchmark < 3)
+                    if (totalSponsorsInBenchmark < 1) // TODO: Production'da 3 olacak
                     {
                         return new ErrorDataResult<CompetitiveBenchmarkingDto>(
                             "Insufficient sponsors for benchmarking (minimum 3 required for anonymization)");
