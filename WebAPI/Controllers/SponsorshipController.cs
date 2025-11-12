@@ -3117,6 +3117,64 @@ namespace WebAPI.Controllers
                 return BadRequest(new ErrorResult($"Callback processing failed: {ex.Message}"));
             }
         }
+
+        #region Sponsor Advanced Analytics - Farmer Journey
+
+        /// <summary>
+        /// Get complete journey analytics for a specific farmer
+        /// Shows lifecycle from code redemption through ongoing engagement
+        /// </summary>
+        /// <param name="farmerId">Farmer user ID</param>
+        /// <returns>Comprehensive journey analytics with timeline, patterns, and recommendations</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("farmer-journey")]
+        [ProducesResponseType(typeof(SuccessDataResult<FarmerJourneyDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetFarmerJourney([FromQuery] int farmerId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(new ErrorResult("User ID not found in token"));
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Sponsors can only view farmers they have relationships with
+                // Admins can view all farmers
+                var query = new GetFarmerJourneyQuery
+                {
+                    FarmerId = farmerId,
+                    RequestingSponsorId = isAdmin ? null : (int?)userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (!result.Success)
+                {
+                    _logger.LogWarning("❌ Failed to retrieve farmer journey for farmer {FarmerId}: {Message}",
+                        farmerId, result.Message);
+                    return NotFound(result);
+                }
+
+                _logger.LogInformation("✅ Retrieved farmer journey analytics for farmer {FarmerId} (Requester: {UserId}, Role: {Role})",
+                    farmerId, userId.Value, isAdmin ? "Admin" : "Sponsor");
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error retrieving farmer journey for farmer {FarmerId}", farmerId);
+                return StatusCode(500, new ErrorResult($"Farmer journey retrieval failed: {ex.Message}"));
+            }
+        }
+
+        #endregion
     }
 }
 

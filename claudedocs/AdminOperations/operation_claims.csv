@@ -162,4 +162,5 @@
 161,GetBulkSubscriptionAssignmentHistoryQuery,Get Bulk Subscription Assignment History,Allows admin to view historical bulk subscription assignment jobs
 162,GetBulkSubscriptionAssignmentResultQuery,Get Bulk Subscription Assignment Result,Allows admin to download result file with success/failure details
 163,GetFarmerSegmentationQuery,sponsorship.analytics.farmer-segmentation,"View farmer behavioral segmentation analytics (Heavy Users, Regular Users, At-Risk, Dormant)"
-164,GetCompetitiveBenchmarkingQuery,sponsorship.analytics.competitive-benchmarking,"View competitive benchmarking analytics comparing sponsor performance with industry averages, percentile rankings, and gap analysis"
+164,GetCompetitiveBenchmarkingQuery,sponsorship.analytics.competitive-benchmarking,"comparing sponsor performance with industry averages, percentile rankings, and gap analysis"
+165,GetFarmerJourneyQuery,sponsorship.analytics.farmer-journey,"View complete farmer journey analytics including timeline, behavioral patterns, and AI-driven recommendations"
