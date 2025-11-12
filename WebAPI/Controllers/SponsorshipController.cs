@@ -956,6 +956,59 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get crop-disease correlation matrix analytics for sponsor
+        /// Analyzes disease patterns across different crop types with market opportunities
+        /// Provides breakdown of diseases per crop, seasonal trends, affected regions, and product recommendations
+        /// Enables data-driven product development, regional sales strategy, and partnership opportunities
+        /// Cache TTL: 6 hours for relatively stable correlation data
+        /// </summary>
+        /// <returns>Crop-disease matrix with disease breakdowns and top market opportunities</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("crop-disease-matrix")]
+        public async Task<IActionResult> GetCropDiseaseMatrix()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[CropDiseaseMatrix] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Admin sees all analyses across all sponsors, Sponsor sees only their analyses
+                var sponsorId = isAdmin ? (int?)null : userId.Value;
+
+                _logger.LogInformation("[CropDiseaseMatrix] Fetching crop-disease matrix for {Role} (SponsorId: {SponsorId})",
+                    isAdmin ? "Admin (all analyses)" : "Sponsor", sponsorId);
+
+                var query = new GetCropDiseaseMatrixQuery
+                {
+                    SponsorId = sponsorId
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[CropDiseaseMatrix] Successfully retrieved crop-disease matrix for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[CropDiseaseMatrix] Failed to retrieve crop-disease matrix for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[CropDiseaseMatrix] Error retrieving crop-disease matrix for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Crop-disease matrix retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
         /// Get competitive benchmarking analytics comparing sponsor performance with industry averages
         /// Provides percentile rankings, gap analysis vs industry benchmarks, and actionable recommendations
         /// Requires minimum 3 sponsors in system for anonymization and privacy protection
