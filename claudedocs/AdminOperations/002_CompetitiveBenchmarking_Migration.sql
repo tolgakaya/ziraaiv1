@@ -1,0 +1,55 @@
+-- ================================================================
+-- Migration: Add Competitive Benchmarking Analytics Endpoint
+-- Date: 2025-11-12
+-- Feature: Sponsor Advanced Analytics - Competitive Benchmarking
+-- ================================================================
+--
+-- This migration adds the GetCompetitiveBenchmarkingQuery operation claim
+-- and assigns it to the Administrators group (GroupId = 1) for admin access.
+--
+-- Sponsors can also access this endpoint through the Sponsor role check in the controller.
+-- ================================================================
+
+-- Step 1: Insert OperationClaim for GetCompetitiveBenchmarkingQuery
+INSERT INTO "OperationClaims" ("Id", "Name", "Alias", "Description")
+VALUES (
+    164,
+    'GetCompetitiveBenchmarkingQuery',
+    'sponsorship.analytics.competitive-benchmarking',
+    'View competitive benchmarking analytics comparing sponsor performance with industry averages, percentile rankings, and gap analysis'
+);
+
+-- Step 2: Assign to Administrators Group (GroupId = 1)
+INSERT INTO "GroupClaims" ("GroupId", "ClaimId")
+VALUES (
+    1, -- Administrators group
+    164 -- GetCompetitiveBenchmarkingQuery
+);
+
+-- Step 3: Assign to Sponsors Group (GroupId = 3)
+INSERT INTO "GroupClaims" ("GroupId", "ClaimId")
+VALUES (
+    3, -- Sponsors group
+    164 -- GetCompetitiveBenchmarkingQuery
+);
+
+-- ================================================================
+-- Verification Queries (Run after migration to verify)
+-- ================================================================
+
+-- Verify OperationClaim was created
+-- SELECT * FROM "OperationClaims" WHERE "Id" = 164;
+
+-- Verify GroupClaim was assigned to Administrators and Sponsors
+-- SELECT gc.*, oc."Name", g."Name" as "GroupName"
+-- FROM "GroupClaims" gc
+-- JOIN "OperationClaims" oc ON gc."ClaimId" = oc."Id"
+-- JOIN "Groups" g ON gc."GroupId" = g."Id"
+-- WHERE oc."Id" = 164;
+
+-- ================================================================
+-- Rollback (if needed)
+-- ================================================================
+
+-- DELETE FROM "GroupClaims" WHERE "ClaimId" = 164;
+-- DELETE FROM "OperationClaims" WHERE "Id" = 164;

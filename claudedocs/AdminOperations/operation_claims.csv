@@ -1,163 +1,167 @@
-"Id","Name","Alias","Description"
-1,GetUserLookupQuery,,
-2,GetUserQuery,,
-3,GetUsersQuery,,
-4,CreateUserCommand,,
-5,DeleteUserCommand,,
-6,UpdateUserCommand,,
-7,UserChangePasswordCommand,,
-8,GetUserGroupLookupByUserIdQuery,,
-9,GetUserGroupLookupQuery,,
-10,GetUserGroupQuery,,
-11,GetUserGroupsQuery,,
-12,GetUsersInGroupLookupByGroupIdQuery,,
-13,CreateUserGroupClaimsCommand,,
-14,CreateUserGroupCommand,,
-15,DeleteUserGroupCommand,,
-16,UpdateUserGroupByGroupIdCommand,,
-17,UpdateUserGroupCommand,,
-18,GetUserClaimLookupByUserIdQuery,,
-19,GetUserClaimLookupQuery,,
-20,GetUserClaimsQuery,,
-21,CreateUserClaimCommand,,
-22,DeleteUserClaimCommand,,
-23,UpdateUserClaimCommand,,
-24,GetTranslateListDtoQuery,,
-25,GetTranslateQuery,,
-26,GetTranslatesQuery,,
-27,GetTranslateWordListQuery,,
-28,CreateTranslateCommand,,
-29,DeleteTranslateCommand,,
-30,UpdateTranslateCommand,,
-31,GetOperationClaimLookupQuery,,
-32,GetOperationClaimQuery,,
-33,GetOperationClaimsQuery,,
-34,CreateOperationClaimCommand,,
-35,DeleteOperationClaimCommand,,
-36,UpdateOperationClaimCommand,,
-37,GetLanguageQuery,,
-38,GetLanguagesLookUpQuery,,
-39,GetLanguagesQuery,,
-40,CreateLanguageCommand,,
-41,DeleteLanguageCommand,,
-42,UpdateLanguageCommand,,
-43,GetGroupQuery,,
-44,GetGroupsQuery,,
-45,SearchGroupsByNameQuery,,
-46,CreateGroupCommand,,
-47,DeleteGroupCommand,,
-48,UpdateGroupCommand,,
-49,GetGroupClaimQuery,,
-50,GetGroupClaimsLookupByGroupIdQuery,,
-51,GetGroupClaimsQuery,,
-52,CreateGroupClaimCommand,,
-53,DeleteGroupClaimCommand,,
-54,UpdateGroupClaimCommand,,
-55,ForgotPasswordCommand,,
-56,RegisterUserCommand,,
-57,SubscriptionManagement,subscription.management,Manage subscription tiers and user subscriptions
-58,SubscriptionView,subscription.view,View subscription information and usage
-59,PlantAnalysisCreate,plant.analysis.create,Create plant analysis requests
-60,PlantAnalysisView,plant.analysis.view,View plant analysis results
-61,AdminPanel,admin.panel,Access admin panel and system management
-62,GetLinkStatisticsQuery,,
-63,SendSponsorshipLinkCommand,,
-64,GetSponsorDisplayInfoForAnalysisQuery,,
-65,GetReferralCreditBreakdownQuery,,
-66,GetReferralRewardsQuery,,
-67,GetReferralStatsQuery,,
-68,GetUserReferralCodesQuery,,
-69,DisableReferralCodeCommand,,
-70,GenerateReferralLinkCommand,,
-71,GetCodeAnalysisStatisticsQuery,,
-72,GetPackageDistributionStatisticsQuery,,
-73,GetAllUsersQuery,,
-74,GetUserByIdQuery,,
-75,SearchUsersQuery,,
-76,DeactivateUserCommand,,
-77,ReactivateUserCommand,,
-78,GetAllSubscriptionsQuery,,
-79,GetSubscriptionByIdQuery,,
-80,AssignSubscriptionCommand,,
-81,CancelSubscriptionCommand,,
-82,ExtendSubscriptionCommand,,
-83,GetAllPurchasesQuery,,
-84,GetPurchaseByIdQuery,,
-85,ApprovePurchaseCommand,,
-86,RefundPurchaseCommand,,
-87,GetAllCodesQuery,,
-88,GetCodeByIdQuery,,
-89,DeactivateCodeCommand,,
-90,GetSponsorshipStatisticsQuery,,
-91,GetSubscriptionStatisticsQuery,,
-92,GetUserStatisticsQuery,,
-93,GetAllAuditLogsQuery,,
-94,GetAuditLogsByAdminQuery,,
-95,GetAuditLogsByTargetQuery,,
-96,GetUserAnalysesQuery,,
-97,CreatePlantAnalysisOnBehalfOfCommand,,
-98,BulkDeactivateUsersCommand,,
-99,BulkCancelSubscriptionsCommand,,
-100,ExportStatisticsQuery,,
-101,GetSubscriptionDetailsQuery,Get Subscription Details,Query detailed subscription information with user and usage data
-102,BulkSendCodesCommand,,
-103,CreatePurchaseOnBehalfOfCommand,,
-104,ExtendSubscriptionCommand,Extend Subscription,Extend user subscription
-105,CancelSubscriptionCommand,Cancel Subscription,Cancel user subscription
-106,BulkCancelSubscriptionsCommand,Bulk Cancel Subscriptions,Cancel multiple subscriptions
-107,Admin,,
-108,admin.users.manage,,
-109,admin.subscriptions.manage,,
-110,admin.sponsorship.manage,,
-111,admin.analytics.view,,
-112,admin.audit.view,,
-113,admin.plantanalysis.manage,,
-114,GetActivityLogsQuery,,
-115,GetAllOBOAnalysesQuery,,
-116,GetSponsorImpactAnalyticsQuery,,
-117,GetSponsorMessagingAnalyticsQuery,,
-118,GetSponsorROIAnalyticsQuery,,
-119,GetSponsorTemporalAnalyticsQuery,,
-120,GetPackageDistributionStatisticsQueryHandler,Package Distribution Statistics,View package distribution analytics for sponsors
-121,GetCodeAnalysisStatisticsQueryHandler,Code Analysis Statistics,View code-level analysis statistics for sponsors
-122,GetSponsorMessagingAnalyticsQueryHandler,Messaging Analytics,View messaging analytics for sponsors
-123,GetSponsorImpactAnalyticsQueryHandler,Impact Analytics,View impact analytics for sponsors
-124,GetSponsorTemporalAnalyticsQueryHandler,Temporal Analytics,View temporal analytics for sponsors
-125,GetSponsorROIAnalyticsQueryHandler,ROI Analytics,View ROI analytics for sponsors
-126,GetPackageDistributionStatisticsQuery,Package Distribution Query,View package distribution analytics
-127,GetCodeAnalysisStatisticsQuery,Code Analysis Query,View code analysis statistics
-128,GetSponsorMessagingAnalyticsQuery,Messaging Analytics Query,View messaging analytics
-129,GetSponsorImpactAnalyticsQuery,Impact Analytics Query,View impact analytics
-130,GetSponsorTemporalAnalyticsQuery,Temporal Analytics Query,View temporal analytics
-131,GetSponsorROIAnalyticsQuery,ROI Analytics Query,View ROI analytics
-132,GetAllSponsorsQuery,Get All Sponsors,Query all users with Sponsor role (GroupId = 3)
-133,GetSponsorAnalysesAsAdminQuery,Admin Sponsor Analyses View,Admin olarak sponsor analizlerini görüntüleme
-134,GetSponsorAnalysisDetailAsAdminQuery,Admin Sponsor Analysis Detail View,Admin olarak sponsor analiz detayı görüntüleme
-135,GetSponsorMessagesAsAdminQuery,Admin Sponsor Messages View,Admin olarak sponsor mesajlarını görüntüleme
-136,GetNonSponsoredAnalysesQuery,Admin Non-Sponsored Analyses View,Admin olarak sponsorsuz analizleri görüntüleme
-137,GetNonSponsoredFarmerDetailQuery,Admin Non-Sponsored Farmer Detail,Admin olarak sponsorsuz çiftçi detayı görüntüleme
-138,GetSponsorshipComparisonAnalyticsQuery,Admin Sponsorship Comparison Analytics,Admin sponsor karşılaştırma analitiği görüntüleme
-139,SendMessageAsSponsorCommand,Admin Send Message As Sponsor,Admin olarak sponsor adına mesaj gönderme
-140,CreateDealerInvitationCommand,dealer.invite,Create dealer invitation (Invite/AutoCreate)
-141,ReclaimDealerCodesCommand,dealer.reclaim,Reclaim unused codes from dealer
-142,GetDealerPerformanceQuery,dealer.analytics,View dealer performance analytics
-143,GetDealerSummaryQuery,dealer.summary,View all dealers summary
-144,GetDealerInvitationsQuery,dealer.invitations,List dealer invitations
-145,SearchDealerByEmailQuery,dealer.search,Search dealer by email
-146,BulkDealerInvitationCommand,dealer.bulk-invite,Create bulk dealer invitations from Excel file
-147,GetSubscriptionDetailsQuery,,
-148,GetSponsorDetailedReportQuery,,
-149,GetSponsorAnalysesAsAdminQuery,,
-150,GetSponsorAnalysisDetailAsAdminQuery,,
-151,GetSponsorMessagesAsAdminQuery,,
-152,SendMessageAsSponsorCommand,,
-153,GetNonSponsoredAnalysesQuery,,
-154,GetNonSponsoredFarmerDetailQuery,,
-155,GetSponsorshipComparisonAnalyticsQuery,,
-156,GetBulkCodeDistributionJobHistoryQuery,,
-157,GetNonSponsoredAnalysisDetailQuery,,
-158,GetNonSponsoredAnalysisDetailQuery,Admin Non-Sponsored Analysis Detail View,Admin olarak sponsorsuz analiz detayı görüntüleme (farmer görünümü ile aynı)
-159,QueueBulkSubscriptionAssignmentCommand,Queue Bulk Subscription Assignment,Allows admin to upload Excel file and queue bulk subscription assignments for farmers
-160,GetBulkSubscriptionAssignmentStatusQuery,Get Bulk Subscription Assignment Status,Allows admin to check status and progress of bulk subscription assignment job
-161,GetBulkSubscriptionAssignmentHistoryQuery,Get Bulk Subscription Assignment History,Allows admin to view historical bulk subscription assignment jobs
-162,GetBulkSubscriptionAssignmentResultQuery,Get Bulk Subscription Assignment Result,Allows admin to download result file with success/failure details
+1	GetUserLookupQuery		
+2	GetUserQuery		
+3	GetUsersQuery		
+4	CreateUserCommand		
+5	DeleteUserCommand		
+6	UpdateUserCommand		
+7	UserChangePasswordCommand		
+8	GetUserGroupLookupByUserIdQuery		
+9	GetUserGroupLookupQuery		
+10	GetUserGroupQuery		
+11	GetUserGroupsQuery		
+12	GetUsersInGroupLookupByGroupIdQuery		
+13	CreateUserGroupClaimsCommand		
+14	CreateUserGroupCommand		
+15	DeleteUserGroupCommand		
+16	UpdateUserGroupByGroupIdCommand		
+17	UpdateUserGroupCommand		
+18	GetUserClaimLookupByUserIdQuery		
+19	GetUserClaimLookupQuery		
+20	GetUserClaimsQuery		
+21	CreateUserClaimCommand		
+22	DeleteUserClaimCommand		
+23	UpdateUserClaimCommand		
+24	GetTranslateListDtoQuery		
+25	GetTranslateQuery		
+26	GetTranslatesQuery		
+27	GetTranslateWordListQuery		
+28	CreateTranslateCommand		
+29	DeleteTranslateCommand		
+30	UpdateTranslateCommand		
+31	GetOperationClaimLookupQuery		
+32	GetOperationClaimQuery		
+33	GetOperationClaimsQuery		
+34	CreateOperationClaimCommand		
+35	DeleteOperationClaimCommand		
+36	UpdateOperationClaimCommand		
+37	GetLanguageQuery		
+38	GetLanguagesLookUpQuery		
+39	GetLanguagesQuery		
+40	CreateLanguageCommand		
+41	DeleteLanguageCommand		
+42	UpdateLanguageCommand		
+43	GetGroupQuery		
+44	GetGroupsQuery		
+45	SearchGroupsByNameQuery		
+46	CreateGroupCommand		
+47	DeleteGroupCommand		
+48	UpdateGroupCommand		
+49	GetGroupClaimQuery		
+50	GetGroupClaimsLookupByGroupIdQuery		
+51	GetGroupClaimsQuery		
+52	CreateGroupClaimCommand		
+53	DeleteGroupClaimCommand		
+54	UpdateGroupClaimCommand		
+55	ForgotPasswordCommand		
+56	RegisterUserCommand		
+57	SubscriptionManagement	subscription.management	Manage subscription tiers and user subscriptions
+58	SubscriptionView	subscription.view	View subscription information and usage
+59	PlantAnalysisCreate	plant.analysis.create	Create plant analysis requests
+60	PlantAnalysisView	plant.analysis.view	View plant analysis results
+61	AdminPanel	admin.panel	Access admin panel and system management
+62	GetLinkStatisticsQuery		
+63	SendSponsorshipLinkCommand		
+64	GetSponsorDisplayInfoForAnalysisQuery		
+65	GetReferralCreditBreakdownQuery		
+66	GetReferralRewardsQuery		
+67	GetReferralStatsQuery		
+68	GetUserReferralCodesQuery		
+69	DisableReferralCodeCommand		
+70	GenerateReferralLinkCommand		
+71	GetCodeAnalysisStatisticsQuery		
+72	GetPackageDistributionStatisticsQuery		
+73	GetAllUsersQuery		
+74	GetUserByIdQuery		
+75	SearchUsersQuery		
+76	DeactivateUserCommand		
+77	ReactivateUserCommand		
+78	GetAllSubscriptionsQuery		
+79	GetSubscriptionByIdQuery		
+80	AssignSubscriptionCommand		
+81	CancelSubscriptionCommand		
+82	ExtendSubscriptionCommand		
+83	GetAllPurchasesQuery		
+84	GetPurchaseByIdQuery		
+85	ApprovePurchaseCommand		
+86	RefundPurchaseCommand		
+87	GetAllCodesQuery		
+88	GetCodeByIdQuery		
+89	DeactivateCodeCommand		
+90	GetSponsorshipStatisticsQuery		
+91	GetSubscriptionStatisticsQuery		
+92	GetUserStatisticsQuery		
+93	GetAllAuditLogsQuery		
+94	GetAuditLogsByAdminQuery		
+95	GetAuditLogsByTargetQuery		
+96	GetUserAnalysesQuery		
+97	CreatePlantAnalysisOnBehalfOfCommand		
+98	BulkDeactivateUsersCommand		
+99	BulkCancelSubscriptionsCommand		
+100	ExportStatisticsQuery		
+102	BulkSendCodesCommand		
+103	CreatePurchaseOnBehalfOfCommand		
+107	Admin		
+108	admin.users.manage		
+109	admin.subscriptions.manage		
+110	admin.sponsorship.manage		
+111	admin.analytics.view		
+112	admin.audit.view		
+113	admin.plantanalysis.manage		
+114	GetActivityLogsQuery		
+115	GetAllOBOAnalysesQuery		
+116	GetSponsorImpactAnalyticsQuery		
+117	GetSponsorMessagingAnalyticsQuery		
+118	GetSponsorROIAnalyticsQuery		
+119	GetSponsorTemporalAnalyticsQuery		
+120	GetPackageDistributionStatisticsQueryHandler	Package Distribution Statistics	View package distribution analytics for sponsors
+121	GetCodeAnalysisStatisticsQueryHandler	Code Analysis Statistics	View code-level analysis statistics for sponsors
+122	GetSponsorMessagingAnalyticsQueryHandler	Messaging Analytics	View messaging analytics for sponsors
+123	GetSponsorImpactAnalyticsQueryHandler	Impact Analytics	View impact analytics for sponsors
+124	GetSponsorTemporalAnalyticsQueryHandler	Temporal Analytics	View temporal analytics for sponsors
+125	GetSponsorROIAnalyticsQueryHandler	ROI Analytics	View ROI analytics for sponsors
+101	GetSubscriptionDetailsQuery	Get Subscription Details	Query detailed subscription information with user and usage data
+126	GetPackageDistributionStatisticsQuery	Package Distribution Query	View package distribution analytics
+127	GetCodeAnalysisStatisticsQuery	Code Analysis Query	View code analysis statistics
+128	GetSponsorMessagingAnalyticsQuery	Messaging Analytics Query	View messaging analytics
+129	GetSponsorImpactAnalyticsQuery	Impact Analytics Query	View impact analytics
+130	GetSponsorTemporalAnalyticsQuery	Temporal Analytics Query	View temporal analytics
+131	GetSponsorROIAnalyticsQuery	ROI Analytics Query	View ROI analytics
+140	CreateDealerInvitationCommand	dealer.invite	Create dealer invitation (Invite/AutoCreate)
+141	ReclaimDealerCodesCommand	dealer.reclaim	Reclaim unused codes from dealer
+142	GetDealerPerformanceQuery	dealer.analytics	View dealer performance analytics
+143	GetDealerSummaryQuery	dealer.summary	View all dealers summary
+144	GetDealerInvitationsQuery	dealer.invitations	List dealer invitations
+145	SearchDealerByEmailQuery	dealer.search	Search dealer by email
+146	BulkDealerInvitationCommand	dealer.bulk-invite	Create bulk dealer invitations from Excel file
+147	GetSubscriptionDetailsQuery		
+104	ExtendSubscriptionCommand	Extend Subscription	Extend user subscription
+105	CancelSubscriptionCommand	Cancel Subscription	Cancel user subscription
+106	BulkCancelSubscriptionsCommand	Bulk Cancel Subscriptions	Cancel multiple subscriptions
+132	GetAllSponsorsQuery	Get All Sponsors	Query all users with Sponsor role (GroupId = 3)
+148	GetSponsorDetailedReportQuery		
+149	GetSponsorAnalysesAsAdminQuery		
+150	GetSponsorAnalysisDetailAsAdminQuery		
+151	GetSponsorMessagesAsAdminQuery		
+152	SendMessageAsSponsorCommand		
+153	GetNonSponsoredAnalysesQuery		
+154	GetNonSponsoredFarmerDetailQuery		
+155	GetSponsorshipComparisonAnalyticsQuery		
+156	GetBulkCodeDistributionJobHistoryQuery		
+133	GetSponsorAnalysesAsAdminQuery	Admin Sponsor Analyses View	Admin olarak sponsor analizlerini görüntüleme
+134	GetSponsorAnalysisDetailAsAdminQuery	Admin Sponsor Analysis Detail View	Admin olarak sponsor analiz detayı görüntüleme
+135	GetSponsorMessagesAsAdminQuery	Admin Sponsor Messages View	Admin olarak sponsor mesajlarını görüntüleme
+136	GetNonSponsoredAnalysesQuery	Admin Non-Sponsored Analyses View	Admin olarak sponsorsuz analizleri görüntüleme
+137	GetNonSponsoredFarmerDetailQuery	Admin Non-Sponsored Farmer Detail	Admin olarak sponsorsuz çiftçi detayı görüntüleme
+138	GetSponsorshipComparisonAnalyticsQuery	Admin Sponsorship Comparison Analytics	Admin sponsor karşılaştırma analitiği görüntüleme
+139	SendMessageAsSponsorCommand	Admin Send Message As Sponsor	Admin olarak sponsor adına mesaj gönderme
+157	GetNonSponsoredAnalysisDetailQuery		
+158	GetNonSponsoredAnalysisDetailQuery	Admin Non-Sponsored Analysis Detail View	Admin olarak sponsorsuz analiz detayı görüntüleme (farmer görünümü ile aynı)
+159	QueueBulkSubscriptionAssignmentCommand	Queue Bulk Subscription Assignment	Allows admin to upload Excel file and queue bulk subscription assignments for farmers
+160	GetBulkSubscriptionAssignmentStatusQuery	Get Bulk Subscription Assignment Status	Allows admin to check status and progress of bulk subscription assignment job
+161	GetBulkSubscriptionAssignmentHistoryQuery	Get Bulk Subscription Assignment History	Allows admin to view historical bulk subscription assignment jobs
+162	GetBulkSubscriptionAssignmentResultQuery	Get Bulk Subscription Assignment Result	Allows admin to download result file with success/failure details
+163	GetFarmerSegmentationQuery	sponsorship.analytics.farmer-segmentation	View farmer behavioral segmentation analytics (Heavy Users, Regular Users, At-Risk, Dormant)
+164	GetCompetitiveBenchmarkingQuery	sponsorship.analytics.competitive-benchmarking	comparing sponsor performance with industry averages, percentile rankings, and gap analysis
+165	GetFarmerJourneyQuery	sponsorship.analytics.farmer-journey	farmer journey analytics including timeline, behavioral patterns, and AI-driven recommendations
+166	GetCropDiseaseMatrixQuery	sponsorship.analytics.crop-disease-matrix	View crop-disease correlation analytics for sponsors with market opportunities
+167	GetMessageEngagementQuery	sponsorship.analytics.message-engagement	View message engagement analytics including response rates, engagement score, and optimal messaging times

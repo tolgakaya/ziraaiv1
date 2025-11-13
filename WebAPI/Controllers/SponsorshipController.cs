@@ -904,6 +904,217 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get farmer segmentation analytics for current sponsor
+        /// Segments farmers into Heavy Users, Regular Users, At-Risk, and Dormant categories
+        /// Provides actionable insights for targeted engagement and retention strategies
+        /// Cache TTL: 6 hours for relatively stable segmentation data
+        /// </summary>
+        /// <returns>Farmer segmentation with behavioral analysis and recommended actions</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("farmer-segmentation")]
+        public async Task<IActionResult> GetFarmerSegmentation()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[FarmerSegmentation] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Admin sees all farmers across all sponsors, Sponsor sees only their farmers
+                var sponsorId = isAdmin ? (int?)null : userId.Value;
+
+                _logger.LogInformation("[FarmerSegmentation] Fetching segmentation for {Role} (SponsorId: {SponsorId})",
+                    isAdmin ? "Admin (all farmers)" : "Sponsor", sponsorId);
+
+                var query = new GetFarmerSegmentationQuery
+                {
+                    SponsorId = sponsorId
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[FarmerSegmentation] Successfully retrieved segmentation for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[FarmerSegmentation] Failed to retrieve segmentation for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[FarmerSegmentation] Error retrieving segmentation for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Farmer segmentation retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get crop-disease correlation matrix analytics for sponsor
+        /// Analyzes disease patterns across different crop types with market opportunities
+        /// Provides breakdown of diseases per crop, seasonal trends, affected regions, and product recommendations
+        /// Enables data-driven product development, regional sales strategy, and partnership opportunities
+        /// Cache TTL: 6 hours for relatively stable correlation data
+        /// </summary>
+        /// <returns>Crop-disease matrix with disease breakdowns and top market opportunities</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("crop-disease-matrix")]
+        public async Task<IActionResult> GetCropDiseaseMatrix()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[CropDiseaseMatrix] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Admin sees all analyses across all sponsors, Sponsor sees only their analyses
+                var sponsorId = isAdmin ? (int?)null : userId.Value;
+
+                _logger.LogInformation("[CropDiseaseMatrix] Fetching crop-disease matrix for {Role} (SponsorId: {SponsorId})",
+                    isAdmin ? "Admin (all analyses)" : "Sponsor", sponsorId);
+
+                var query = new GetCropDiseaseMatrixQuery
+                {
+                    SponsorId = sponsorId
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[CropDiseaseMatrix] Successfully retrieved crop-disease matrix for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[CropDiseaseMatrix] Failed to retrieve crop-disease matrix for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[CropDiseaseMatrix] Error retrieving crop-disease matrix for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Crop-disease matrix retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get message engagement analytics showing sponsor-farmer messaging effectiveness
+        /// Analyzes response rates, average response times, engagement score (0-10), message breakdowns
+        /// Provides best performing message templates and optimal time-of-day analysis for messaging
+        /// Enables data-driven communication strategy, template optimization, and farmer engagement improvement
+        /// Cache TTL: 6 hours for messaging pattern analysis
+        /// </summary>
+        /// <returns>Message engagement analytics with response metrics, template performance, and timing insights</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("message-engagement")]
+        public async Task<IActionResult> GetMessageEngagement()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[MessageEngagement] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Admin sees all messages across all sponsors, Sponsor sees only their messages
+                var sponsorId = isAdmin ? (int?)null : userId.Value;
+
+                _logger.LogInformation("[MessageEngagement] Fetching message engagement for {Role} (SponsorId: {SponsorId})",
+                    isAdmin ? "Admin (all messages)" : "Sponsor", sponsorId);
+
+                var query = new GetMessageEngagementQuery
+                {
+                    SponsorId = sponsorId
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[MessageEngagement] Successfully retrieved message engagement for sponsor {SponsorId}", userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[MessageEngagement] Failed to retrieve message engagement for sponsor {SponsorId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[MessageEngagement] Error retrieving message engagement for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Message engagement retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get competitive benchmarking analytics comparing sponsor performance with industry averages
+        /// Provides percentile rankings, gap analysis vs industry benchmarks, and actionable recommendations
+        /// Requires minimum 3 sponsors in system for anonymization and privacy protection
+        /// Cache TTL: 24 hours for relatively stable benchmark data
+        /// </summary>
+        /// <param name="timePeriodDays">Time period in days for analysis (default: 90 days)</param>
+        /// <returns>Competitive benchmarking with industry comparisons, percentile rankings, and gap analysis</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("competitive-benchmarking")]
+        public async Task<IActionResult> GetCompetitiveBenchmarking([FromQuery] int timePeriodDays = 90)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("[CompetitiveBenchmarking] User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Admin sees industry-wide benchmarks only, Sponsor sees their performance vs industry
+                var sponsorId = isAdmin ? (int?)null : userId.Value;
+
+                _logger.LogInformation("[CompetitiveBenchmarking] Fetching benchmarks for {Role} (SponsorId: {SponsorId}, Period: {Days} days)",
+                    isAdmin ? "Admin (industry-wide)" : "Sponsor", sponsorId, timePeriodDays);
+
+                var query = new GetCompetitiveBenchmarkingQuery
+                {
+                    SponsorId = sponsorId,
+                    TimePeriodDays = timePeriodDays
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("[CompetitiveBenchmarking] Successfully retrieved benchmarks for {Role}", isAdmin ? "Admin" : $"Sponsor {sponsorId}");
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("[CompetitiveBenchmarking] Failed to retrieve benchmarks: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[CompetitiveBenchmarking] Error retrieving benchmarks for {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Competitive benchmarking retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
         /// Send sponsorship links via SMS or WhatsApp to farmers
         /// </summary>
         /// <param name="command">Link sending details with recipients</param>
@@ -3012,6 +3223,64 @@ namespace WebAPI.Controllers
                 return BadRequest(new ErrorResult($"Callback processing failed: {ex.Message}"));
             }
         }
+
+        #region Sponsor Advanced Analytics - Farmer Journey
+
+        /// <summary>
+        /// Get complete journey analytics for a specific farmer
+        /// Shows lifecycle from code redemption through ongoing engagement
+        /// </summary>
+        /// <param name="farmerId">Farmer user ID</param>
+        /// <returns>Comprehensive journey analytics with timeline, patterns, and recommendations</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("farmer-journey")]
+        [ProducesResponseType(typeof(SuccessDataResult<FarmerJourneyDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetFarmerJourney([FromQuery] int farmerId)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    return Unauthorized(new ErrorResult("User ID not found in token"));
+                }
+
+                var isAdmin = User.IsInRole("Admin");
+
+                // Sponsors can only view farmers they have relationships with
+                // Admins can view all farmers
+                var query = new GetFarmerJourneyQuery
+                {
+                    FarmerId = farmerId,
+                    RequestingSponsorId = isAdmin ? null : (int?)userId.Value
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (!result.Success)
+                {
+                    _logger.LogWarning("❌ Failed to retrieve farmer journey for farmer {FarmerId}: {Message}",
+                        farmerId, result.Message);
+                    return NotFound(result);
+                }
+
+                _logger.LogInformation("✅ Retrieved farmer journey analytics for farmer {FarmerId} (Requester: {UserId}, Role: {Role})",
+                    farmerId, userId.Value, isAdmin ? "Admin" : "Sponsor");
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error retrieving farmer journey for farmer {FarmerId}", farmerId);
+                return StatusCode(500, new ErrorResult($"Farmer journey retrieval failed: {ex.Message}"));
+            }
+        }
+
+        #endregion
     }
 }
 
