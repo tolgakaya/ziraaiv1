@@ -49,6 +49,16 @@ namespace Business.Handlers.Farmers.Commands
                     return new ErrorResult("Kullanıcı bulunamadı.");
                 }
 
+                // Check if email is changing and if new email already exists
+                if (user.Email != request.Email)
+                {
+                    var emailExists = await _userRepository.GetAsync(u => u.Email == request.Email);
+                    if (emailExists != null)
+                    {
+                        return new ErrorResult("Bu e-posta adresi başka bir kullanıcı tarafından kullanılıyor.");
+                    }
+                }
+
                 // Update allowed fields
                 user.FullName = request.FullName;
                 user.Email = request.Email;
