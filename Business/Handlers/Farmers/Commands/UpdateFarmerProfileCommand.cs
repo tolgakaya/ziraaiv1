@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Business.BusinessAspects;
 using Business.Constants;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
@@ -38,7 +37,6 @@ namespace Business.Handlers.Farmers.Commands
                 _userRepository = userRepository;
             }
 
-            [SecuredOperation(Priority = 1)]
             [CacheRemoveAspect()]
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(UpdateFarmerProfileCommand request, CancellationToken cancellationToken)
