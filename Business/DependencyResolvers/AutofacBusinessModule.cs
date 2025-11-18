@@ -164,6 +164,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<TicketMessageRepository>().As<ITicketMessageRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<AppInfoRepository>().As<IAppInfoRepository>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SmsLogRepository>().As<ISmsLogRepository>()
                 .InstancePerLifetimeScope();
 
