@@ -11,6 +11,7 @@ namespace WebAPI.Controllers
     /// <summary>
     /// Admin app info management endpoints (About Us page management)
     /// </summary>
+    [Route("api/admin/appinfo")]
     public class AdminAppInfoController : AdminBaseController
     {
         /// <summary>
