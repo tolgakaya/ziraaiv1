@@ -158,6 +158,12 @@ namespace Business.DependencyResolvers
             builder.RegisterType<BulkSubscriptionAssignmentJobRepository>().As<IBulkSubscriptionAssignmentJobRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<TicketRepository>().As<ITicketRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<TicketMessageRepository>().As<ITicketMessageRepository>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SmsLogRepository>().As<ISmsLogRepository>()
                 .InstancePerLifetimeScope();
 
