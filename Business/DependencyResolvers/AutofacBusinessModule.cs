@@ -248,6 +248,10 @@ namespace Business.DependencyResolvers
             builder.RegisterType<Business.Services.Messaging.TurkcellSmsService>()
                 .InstancePerLifetimeScope();
 
+            // Register Real SMS Service (NetGSM)
+            builder.RegisterType<Business.Services.Messaging.NetgsmSmsService>()
+                .InstancePerLifetimeScope();
+
             // Register Real WhatsApp Service (WhatsApp Business API)
             builder.RegisterType<Business.Services.Messaging.WhatsAppBusinessService>()
                 .InstancePerLifetimeScope();

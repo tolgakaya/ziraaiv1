@@ -178,3 +178,8 @@
 177,AssignTicketCommand,Talep Ata,Admin talebi birine atayabilir
 178,AdminRespondTicketCommand,Talebe Yanıt Ver,Admin talebe yanıt verebilir
 179,UpdateTicketStatusCommand,Talep Durumunu Güncelle,Admin talep durumunu güncelleyebilir
+180,GetAppInfoQuery,appinfo.get,View app info (About Us page)
+181,GetAppInfoAsAdminQuery,appinfo.admin.get,View app info with admin metadata
+182,UpdateAppInfoCommand,appinfo.admin.update,Update app info (About Us page)
+183,TestSmsCommand,sms.admin.test,Test SMS sending to verify provider configuration
+184,GetSmsProviderInfoQuery,sms.admin.provider-info,View SMS provider information and status
