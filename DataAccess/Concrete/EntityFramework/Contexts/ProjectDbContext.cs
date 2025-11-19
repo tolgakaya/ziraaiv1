@@ -110,6 +110,13 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         // Admin Operations & Audit
         public DbSet<AdminOperationLog> AdminOperationLogs { get; set; }
 
+        // Ticketing System
+        public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<TicketMessage> TicketMessages { get; set; }
+
+        // App Info System
+        public DbSet<AppInfo> AppInfos { get; set; }
+
         protected IConfiguration Configuration { get; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
