@@ -443,7 +443,8 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
-                .Where(t => !t.IsAssignableTo<IFileStorageService>()) // Exclude file storage services to prevent override
+                .Where(t => !t.IsAssignableTo<IFileStorageService>() // Exclude file storage services to prevent override
+                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>()) // Exclude SMS services to use configuration-driven registration
                 .EnableInterfaceInterceptors(new ProxyGenerationOptions()
                 {
                     Selector = new AspectInterceptorSelector()
