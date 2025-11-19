@@ -356,7 +356,7 @@ namespace Business.DependencyResolvers
                 c.Resolve<IUserRepository>(),
                 c.Resolve<IMobileLoginRepository>(),
                 c.Resolve<ITokenHelper>(),
-                c.Resolve<Business.Adapters.SmsService.ISmsService>(),
+                c.Resolve<Business.Services.Messaging.ISmsService>(),
                 c.Resolve<ILogger<Business.Services.Authentication.PhoneAuthenticationProvider>>(),
                 c.Resolve<ICacheManager>()
             )).InstancePerLifetimeScope();

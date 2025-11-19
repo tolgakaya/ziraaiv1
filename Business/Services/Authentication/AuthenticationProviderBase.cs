@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Business.Adapters.SmsService;
 using Business.Constants;
 using Business.Services.Authentication.Model;
+using Business.Services.Messaging;
 using Core.Entities.Concrete;
 using Core.Utilities.Results;
 using Core.Utilities.Toolkit;
@@ -98,9 +98,10 @@ namespace Business.Services.Authentication
                 _logger?.LogInformation("[PrepareOTP] Creating new OTP code {Code} for {Phone}", mobileCode, externalUserId);
                 try
                 {
-                    var sendSms = await _smsService.SendAssist(
-                        $"SAAT {DateTime.Now.ToShortTimeString()} TALEP ETTIGINIZ 24 SAAT GECERLI PAROLANIZ : {mobileCode}",
-                        cellPhone);
+                    // Use OTP-specific endpoint for faster delivery (max 3 minutes)
+                    var result = await _smsService.SendOtpAsync(cellPhone, mobileCode.ToString());
+                    var sendSms = result.Success;
+
                     _logins.Add(new MobileLogin
                     {
                         Code = mobileCode,
@@ -111,9 +112,15 @@ namespace Business.Services.Authentication
                         IsUsed = false
                     });
                     await _logins.SaveChangesAsync();
+
+                    if (!sendSms)
+                    {
+                        _logger?.LogWarning("[PrepareOTP] SMS sending failed: {Message}", result.Message);
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger?.LogError(ex, "[PrepareOTP] Error sending OTP SMS to {Phone}", cellPhone);
                     return new LoginUserResult
                         { Message = Messages.SmsServiceNotFound, Status = LoginUserResult.LoginStatus.ServiceError };
                 }

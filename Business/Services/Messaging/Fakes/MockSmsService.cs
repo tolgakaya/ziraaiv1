@@ -79,6 +79,50 @@ namespace Business.Services.Messaging.Fakes
             return new SuccessResult($"SMS sent successfully. MessageId: {messageId}");
         }
 
+        public async Task<IResult> SendOtpAsync(string phoneNumber, string otpCode)
+        {
+            // Simulate network delay
+            await Task.Delay(100);
+
+            var messageId = GenerateMessageId();
+            var normalizedPhone = NormalizePhoneNumber(phoneNumber);
+
+            // Use fixed code for testing if configured
+            var displayCode = _useFixedCode ? _fixedCode : otpCode;
+            var otpMessage = $"Dogrulama kodunuz: {displayCode}. Bu kodu kimseyle paylasmayin.";
+
+            if (_logToConsole)
+            {
+                Console.WriteLine($"📱 MOCK OTP SMS");
+                Console.WriteLine($"   To: {normalizedPhone}");
+                Console.WriteLine($"   OTP Code: {displayCode}");
+                if (_useFixedCode && displayCode != otpCode)
+                {
+                    Console.WriteLine($"   (Original: {otpCode})");
+                }
+                Console.WriteLine($"   MessageId: {messageId}");
+                Console.WriteLine();
+            }
+
+            _logger.LogInformation(
+                "📱 MOCK OTP sent. To={Phone}, Code={Code}, MessageId={MessageId}",
+                normalizedPhone, displayCode, messageId);
+
+            // Store delivery status for later queries
+            _deliveryStatusCache[messageId] = new SmsDeliveryStatus
+            {
+                MessageId = messageId,
+                PhoneNumber = normalizedPhone,
+                Status = "Delivered",
+                SentDate = DateTime.Now,
+                DeliveredDate = DateTime.Now.AddSeconds(1), // OTP is faster
+                Cost = 0.05m,
+                Provider = "Mock-OTP"
+            };
+
+            return new SuccessResult($"OTP sent successfully. MessageId: {messageId}");
+        }
+
         public async Task<IResult> SendBulkSmsAsync(BulkSmsRequest request)
         {
             _logger.LogInformation("📱 MOCK Bulk SMS to {Count} recipients", request.Recipients.Length);

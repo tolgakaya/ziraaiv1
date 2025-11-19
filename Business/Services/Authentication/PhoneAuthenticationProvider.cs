@@ -1,8 +1,8 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Business.Adapters.SmsService;
 using Business.Constants;
 using Business.Services.Authentication.Model;
+using Business.Services.Messaging;
 using Core.Entities.Concrete;
 using Core.Utilities.Security.Jwt;
 using Core.CrossCuttingConcerns.Caching;

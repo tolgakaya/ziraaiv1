@@ -8,6 +8,7 @@ namespace Business.Services.Messaging
     public interface ISmsService
     {
         Task<IResult> SendSmsAsync(string phoneNumber, string message);
+        Task<IResult> SendOtpAsync(string phoneNumber, string otpCode);
         Task<IResult> SendBulkSmsAsync(BulkSmsRequest request);
         Task<IDataResult<SmsDeliveryStatus>> GetDeliveryStatusAsync(string messageId);
         Task<IDataResult<SmsSenderInfo>> GetSenderInfoAsync();
