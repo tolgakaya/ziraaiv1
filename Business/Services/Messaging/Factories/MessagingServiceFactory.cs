@@ -48,7 +48,7 @@ namespace Business.Services.Messaging.Factories
             {
                 "mock" => (ISmsService)_serviceProvider.GetService(typeof(ISmsService)),
                 "twilio" => throw new NotImplementedException("Twilio SMS provider not yet implemented. Use Mock for development."),
-                "netgsm" => throw new NotImplementedException("Netgsm SMS provider not yet implemented. Use Mock for development."),
+                "netgsm" => (ISmsService)_serviceProvider.GetService(typeof(NetgsmSmsService)),
                 "turkcell" => (ISmsService)_serviceProvider.GetService(typeof(TurkcellSmsService)),
                 _ => throw new InvalidOperationException($"Unknown SMS provider: {provider}. Supported: Mock, Twilio, Netgsm, Turkcell")
             };

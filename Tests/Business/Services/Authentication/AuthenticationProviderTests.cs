@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Business.Adapters.SmsService;
 using Business.Services.Authentication;
 using Business.Services.Authentication.Model;
+using Business.Services.Messaging;
 using Core.DataAccess;
 using Core.Entities.Concrete;
 using Core.Utilities.Security.Jwt;

@@ -102,6 +102,64 @@ namespace Business.Services.Messaging
             }
         }
 
+        public async Task<IResult> SendOtpAsync(string phoneNumber, string otpCode)
+        {
+            try
+            {
+                var normalizedPhone = NormalizeTurkishPhoneNumber(phoneNumber);
+                var otpMessage = $"Dogrulama kodunuz: {otpCode}. Bu kodu kimseyle paylasmayin.";
+
+                _logger.LogInformation("Sending OTP SMS to {Phone} via Turkcell", normalizedPhone);
+
+                var smsRequest = new
+                {
+                    username = _username,
+                    password = _password,
+                    sender = _senderId,
+                    message = otpMessage,
+                    phones = new[] { normalizedPhone },
+                    unicode = "0", // OTP messages should use ASCII for faster delivery
+                    encoding = "UTF-8",
+                    priority = "high" // Request high priority for OTP
+                };
+
+                var jsonContent = JsonSerializer.Serialize(smsRequest);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PostAsync("/send", content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = JsonSerializer.Deserialize<TurkcellSmsResponse>(responseContent);
+
+                    if (result.Status == "Success")
+                    {
+                        _logger.LogInformation("OTP SMS sent successfully to {Phone}. MessageId: {MessageId}",
+                            normalizedPhone, result.MessageId);
+                        return new SuccessResult($"OTP SMS başarıyla gönderildi. Mesaj ID: {result.MessageId}");
+                    }
+                    else
+                    {
+                        _logger.LogError("OTP SMS sending failed to {Phone}. Error: {Error}",
+                            normalizedPhone, result.ErrorMessage);
+                        return new ErrorResult($"OTP SMS gönderilemedi: {result.ErrorMessage}");
+                    }
+                }
+                else
+                {
+                    _logger.LogError("HTTP error sending OTP SMS to {Phone}. Status: {Status}, Content: {Content}",
+                        normalizedPhone, response.StatusCode, responseContent);
+                    return new ErrorResult($"OTP SMS servisi hatası: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception sending OTP SMS to {Phone}", phoneNumber);
+                return new ErrorResult($"OTP SMS gönderimi sırasında hata oluştu: {ex.Message}");
+            }
+        }
+
         public async Task<IResult> SendBulkSmsAsync(BulkSmsRequest request)
         {
             try

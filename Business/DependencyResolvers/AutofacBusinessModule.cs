@@ -234,18 +234,19 @@ namespace Business.DependencyResolvers
             // Messaging Services (SMS & WhatsApp)
             // ============================================
 
-            // Register Mock SMS Service (Modern Interface)
+            // Register all SMS service implementations first
             builder.RegisterType<Business.Services.Messaging.Fakes.MockSmsService>()
-                .As<Business.Services.Messaging.ISmsService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.Messaging.TurkcellSmsService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.Messaging.NetgsmSmsService>()
                 .InstancePerLifetimeScope();
 
             // Register Mock WhatsApp Service
             builder.RegisterType<Business.Services.Messaging.Fakes.MockWhatsAppService>()
                 .As<Business.Services.Messaging.IWhatsAppService>()
-                .InstancePerLifetimeScope();
-
-            // Register Real SMS Service (Turkcell)
-            builder.RegisterType<Business.Services.Messaging.TurkcellSmsService>()
                 .InstancePerLifetimeScope();
 
             // Register Real WhatsApp Service (WhatsApp Business API)
@@ -256,6 +257,27 @@ namespace Business.DependencyResolvers
             builder.RegisterType<Business.Services.Messaging.Factories.MessagingServiceFactory>()
                 .As<Business.Services.Messaging.Factories.IMessagingServiceFactory>()
                 .InstancePerLifetimeScope();
+
+            // SMS Service - Configuration-driven registration (like FileStorage)
+            // Read SmsService:Provider from configuration (supports environment variables)
+            builder.Register<Business.Services.Messaging.ISmsService>(c =>
+            {
+                var context = c.Resolve<IComponentContext>();
+                var config = context.Resolve<IConfiguration>();
+
+                // Read provider from configuration (supports environment variables like SmsService__Provider)
+                var provider = config["SmsService:Provider"] ?? "Mock";
+
+                Console.WriteLine($"[SMS DI] Selected provider: {provider}");
+
+                return provider.ToLower() switch
+                {
+                    "netgsm" => context.Resolve<Business.Services.Messaging.NetgsmSmsService>(),
+                    "turkcell" => context.Resolve<Business.Services.Messaging.TurkcellSmsService>(),
+                    "mock" => context.Resolve<Business.Services.Messaging.Fakes.MockSmsService>(),
+                    _ => context.Resolve<Business.Services.Messaging.Fakes.MockSmsService>() // Default fallback
+                };
+            }).InstancePerLifetimeScope();
 
             // Register legacy services for backward compatibility
             builder.RegisterType<Business.Fakes.SmsService.MockSmsService>()
@@ -352,7 +374,7 @@ namespace Business.DependencyResolvers
                 c.Resolve<IUserRepository>(),
                 c.Resolve<IMobileLoginRepository>(),
                 c.Resolve<ITokenHelper>(),
-                c.Resolve<Business.Adapters.SmsService.ISmsService>(),
+                c.Resolve<Business.Services.Messaging.ISmsService>(),
                 c.Resolve<ILogger<Business.Services.Authentication.PhoneAuthenticationProvider>>(),
                 c.Resolve<ICacheManager>()
             )).InstancePerLifetimeScope();
@@ -421,7 +443,8 @@ namespace Business.DependencyResolvers
                 .InstancePerLifetimeScope();
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
-                .Where(t => !t.IsAssignableTo<IFileStorageService>()) // Exclude file storage services to prevent override
+                .Where(t => !t.IsAssignableTo<IFileStorageService>() // Exclude file storage services to prevent override
+                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>()) // Exclude SMS services to use configuration-driven registration
                 .EnableInterfaceInterceptors(new ProxyGenerationOptions()
                 {
                     Selector = new AspectInterceptorSelector()
