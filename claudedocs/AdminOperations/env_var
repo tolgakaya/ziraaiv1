@@ -1,0 +1,62 @@
+NetGSM SMS Service - Environment Variables Konfigürasyonu
+NetgsmSmsService'te environment variable'ları öncelikli olacak şekilde yapılandırdım. İşte Railway'de eklenmesi gereken değişkenler:
+Zorunlu Environment Variables (Railway'de Eklenecek)
+# SMS Provider Selection
+SmsService__Provider="Netgsm"
+
+# NetGSM Credentials
+NETGSM_USERCODE="kullanici_adi"
+NETGSM_PASSWORD="sifre"
+NETGSM_MSGHEADER="ZIRAAI"
+Opsiyonel Environment Variables
+# API URL (varsayılan: https://api.netgsm.com.tr)
+NETGSM_API_URL="https://api.netgsm.com.tr"
+
+# Alternatif konfigürasyon formatı (appsettings yapısı)
+SmsProvider__Netgsm__ApiUrl="https://api.netgsm.com.tr"
+SmsProvider__Netgsm__UserCode="kullanici_adi"
+SmsProvider__Netgsm__Password="sifre"
+SmsProvider__Netgsm__MsgHeader="ZIRAAI"
+Öncelik Sırası
+NetgsmSmsService konfigürasyonları şu sırayla alınır:
+Environment Variable (en yüksek öncelik)
+NETGSM_USERCODE
+NETGSM_PASSWORD
+NETGSM_MSGHEADER
+NETGSM_API_URL
+appsettings.json (fallback)
+SmsProvider:Netgsm:UserCode
+SmsProvider:Netgsm:Password
+SmsProvider:Netgsm:MsgHeader
+SmsProvider:Netgsm:ApiUrl
+Mevcut Environment Variables ile Karşılaştırma
+Mevcut yapınıza bakarak, benzer pattern'ler kullanıldığını görüyorum:
+TokenOptions__* → JWT ayarları
+FileStorage__* → Dosya depolama
+RabbitMQ__* → Mesaj kuyruğu
+CacheOptions__* → Redis
+SMS için de aynı pattern'i kullanabilirsiniz:
+# Tercih edilen format (mevcut yapıya uygun)
+SmsService__Provider="Netgsm"
+SmsProvider__Netgsm__UserCode="kullanici_adi"
+SmsProvider__Netgsm__Password="sifre"
+SmsProvider__Netgsm__MsgHeader="ZIRAAI"
+Test İçin Mock Kullanımı
+Staging'de test amaçlı Mock kullanmak isterseniz:
+SmsService__Provider="Mock"
+Mock modunda:
+Gerçek SMS gönderilmez
+Konsola log yazılır
+OTP kodları 123456 olarak sabitlenir
+NetGSM Panel Ayarları
+Railway'de yapılandırma tamamlandıktan sonra NetGSM panelinde:
+API Erişimi: Ayarlar → API İşlemleri → API erişimini aktif et
+IP Whitelist: Railway IP'lerini ekle (veya tüm IP'lere izin ver - test için)
+Mesaj Başlığı: ZIRAAI başlığının onaylı olduğundan emin ol
+Özet - Railway'e Eklenecek Değişkenler
+Variable	Value	Açıklama
+SmsService__Provider	Netgsm	Provider seçimi
+NETGSM_USERCODE	***	NetGSM kullanıcı adı
+NETGSM_PASSWORD	***	NetGSM şifresi
+NETGSM_MSGHEADER	ZIRAAI	Gönderici adı
+Bunları ekledikten sonra /api/admin/sms/provider endpoint'i ile konfigürasyonu doğrulayabilirsiniz.

@@ -13,7 +13,10 @@
       "Bash(Select-Object -First 10)",
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
-      "Bash(Select-String -Pattern \"error|Build succeeded\")"
+      "Bash(Select-String -Pattern \"error|Build succeeded\")",
+      "Bash(gh pr create:*)",
+      "Bash(S3)",
+      "Bash(FreeImageHost)"
     ],
     "deny": [],
     "ask": [],
