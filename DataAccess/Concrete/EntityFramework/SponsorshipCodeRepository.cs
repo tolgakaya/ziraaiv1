@@ -134,6 +134,9 @@ namespace DataAccess.Concrete.EntityFramework
 
         public async Task<List<SponsorshipCode>> GenerateCodesAsync(int purchaseId, int sponsorId, int tierId, int quantity, string prefix, int validityDays)
         {
+            // DEBUG: Log parameters to identify tier assignment issue
+            Console.WriteLine($"[GenerateCodesAsync] 🔍 Parameters: purchaseId={purchaseId}, sponsorId={sponsorId}, tierId={tierId}, quantity={quantity}, prefix={prefix}, validityDays={validityDays}");
+
             var codes = new List<SponsorshipCode>();
             var random = new Random();
             var existingCodes = await Context.SponsorshipCodes.Select(sc => sc.Code).ToListAsync();
@@ -161,6 +164,12 @@ namespace DataAccess.Concrete.EntityFramework
                     ExpiryDate = DateTime.Now.AddDays(validityDays)
                 };
 
+                // DEBUG: Log first code's tier assignment
+                if (i == 0)
+                {
+                    Console.WriteLine($"[GenerateCodesAsync] 🏷️ First code tier assignment: Code={code}, TierId={sponsorshipCode.SubscriptionTierId}");
+                }
+
                 codes.Add(sponsorshipCode);
                 existingCodes.Add(code);
             }
@@ -168,7 +177,80 @@ namespace DataAccess.Concrete.EntityFramework
             await Context.SponsorshipCodes.AddRangeAsync(codes);
             await Context.SaveChangesAsync();
 
+            // DEBUG: Verify tier after save
+            var firstSavedCode = await Context.SponsorshipCodes
+                .Where(sc => sc.SponsorshipPurchaseId == purchaseId)
+                .OrderBy(sc => sc.Id)
+                .FirstOrDefaultAsync();
+
+            if (firstSavedCode != null)
+            {
+                Console.WriteLine($"[GenerateCodesAsync] ✅ Verified first saved code: Id={firstSavedCode.Id}, TierId={firstSavedCode.SubscriptionTierId}, Code={firstSavedCode.Code}");
+            }
+
             return codes;
+        }
+
+        /// <summary>
+        /// Atomically allocates an available code for distribution
+        /// Uses raw SQL with UPDATE + WHERE to prevent race conditions in concurrent scenarios
+        /// This ensures the same code is never allocated to multiple farmers simultaneously
+        /// </summary>
+        public async Task<SponsorshipCode> AllocateCodeForDistributionAsync(
+            int purchaseId, 
+            string recipientPhone, 
+            string recipientName)
+        {
+            // Step 1: Use raw SQL to atomically reserve a code
+            // UPDATE with WHERE clause ensures only ONE worker can claim each code
+            // PostgreSQL's MVCC and row-level locking handle concurrency
+            var sql = $@"
+                UPDATE ""SponsorshipCodes""
+                SET 
+                    ""DistributionDate"" = NOW(),
+                    ""RecipientPhone"" = {{0}},
+                    ""RecipientName"" = {{1}}
+                WHERE ""Id"" = (
+                    SELECT ""Id""
+                    FROM ""SponsorshipCodes""
+                    WHERE ""SponsorshipPurchaseId"" = {{2}}
+                      AND ""IsUsed"" = false
+                      AND ""DistributionDate"" IS NULL
+                      AND ""ExpiryDate"" > NOW()
+                    ORDER BY ""Id""
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED  -- Critical: Skip locked rows to prevent blocking
+                )
+                RETURNING ""Id"";";
+
+            // Execute atomic UPDATE and get allocated code ID
+            int? allocatedCodeId = null;
+            
+            try
+            {
+                var result = await Context.Database
+                    .SqlQueryRaw<int>(sql, recipientPhone, recipientName, purchaseId)
+                    .ToListAsync();
+                
+                allocatedCodeId = result.FirstOrDefault();
+            }
+            catch (Exception)
+            {
+                // If UPDATE fails (no available codes), return null
+                return null;
+            }
+
+            if (allocatedCodeId == null || allocatedCodeId == 0)
+            {
+                // No available codes found
+                return null;
+            }
+
+            // Step 2: Fetch the allocated code entity
+            var allocatedCode = await Context.SponsorshipCodes
+                .FirstOrDefaultAsync(c => c.Id == allocatedCodeId);
+
+            return allocatedCode;
         }
     }
 }

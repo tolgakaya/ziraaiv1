@@ -94,6 +94,18 @@ namespace Core.Utilities.Security.Jwt
                 claims.AddName($"{user.FullName}");
             }
 
+            // Add email if available (for email-based login)
+            if (!string.IsNullOrEmpty(user.Email))
+            {
+                claims.Add(new Claim(ClaimTypes.Email, user.Email));
+            }
+
+            // Add mobile phone if available (for phone-based login)
+            if (!string.IsNullOrEmpty(user.MobilePhones))
+            {
+                claims.Add(new Claim(ClaimTypes.MobilePhone, user.MobilePhones));
+            }
+
             // Add user groups as roles
             if (userGroups != null && userGroups.Any())
             {

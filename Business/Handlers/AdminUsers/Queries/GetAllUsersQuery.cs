@@ -1,0 +1,95 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using AutoMapper;
+using Business.BusinessAspects;
+using Core.Aspects.Autofac.Logging;
+using Core.Aspects.Autofac.Performance;
+using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
+using Core.Entities.Dtos;
+using Core.Utilities.Results;
+using DataAccess.Abstract;
+using MediatR;
+
+namespace Business.Handlers.AdminUsers.Queries
+{
+    /// <summary>
+    /// Admin query to get all users with pagination
+    /// </summary>
+    public class GetAllUsersQuery : IRequest<IDataResult<IEnumerable<UserDto>>>
+    {
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 50;
+        public bool? IsActive { get; set; }
+        public string Status { get; set; }
+
+        public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, IDataResult<IEnumerable<UserDto>>>
+        {
+            private readonly IUserRepository _userRepository;
+            private readonly IUserGroupRepository _userGroupRepository;
+            private readonly IMapper _mapper;
+
+            public GetAllUsersQueryHandler(
+                IUserRepository userRepository,
+                IUserGroupRepository userGroupRepository,
+                IMapper mapper)
+            {
+                _userRepository = userRepository;
+                _userGroupRepository = userGroupRepository;
+                _mapper = mapper;
+            }
+
+            [SecuredOperation(Priority = 1)]
+            [PerformanceAspect(5)]
+            [LogAspect(typeof(FileLogger))]
+            public async Task<IDataResult<IEnumerable<UserDto>>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
+            {
+                // Build filter expression
+                var query = _userRepository.Query();
+                
+                // SECURITY: Exclude Admin users from all admin operations
+                // Admins should not be able to view or manage other admin accounts
+                var adminUserIds = _userGroupRepository.Query()
+                    .Where(ug => ug.GroupId == 1) // GroupId 1 = Admin role
+                    .Select(ug => ug.UserId)
+                    .ToList();
+                
+                query = query.Where(u => !adminUserIds.Contains(u.UserId));
+
+                // Filter by IsActive if specified
+                if (request.IsActive.HasValue)
+                {
+                    query = query.Where(u => u.IsActive == request.IsActive.Value);
+                }
+
+                // Filter by Status if specified
+                if (!string.IsNullOrEmpty(request.Status))
+                {
+                    query = query.Where(u => u.Status.ToString() == request.Status);
+                }
+
+                // Apply pagination and project to DTO before ToList() to avoid reading DateTime infinity values
+                var userDtoList = query
+                    .OrderByDescending(u => u.UserId)
+                    .Skip((request.Page - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .Select(u => new UserDto
+                    {
+                        UserId = u.UserId,
+                        FullName = u.FullName,
+                        Email = u.Email,
+                        MobilePhones = u.MobilePhones,
+                        Address = u.Address,
+                        Notes = u.Notes,
+                        Gender = u.Gender ?? 0,
+                        Status = u.Status,
+                        IsActive = u.IsActive
+                    })
+                    .ToList();
+
+                return new SuccessDataResult<IEnumerable<UserDto>>(userDtoList, "Users retrieved successfully");
+            }
+        }
+    }
+}

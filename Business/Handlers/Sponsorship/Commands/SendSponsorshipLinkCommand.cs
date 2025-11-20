@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Business.BusinessAspects;
 using Business.Constants;
-
+using Business.Services.Analytics;
 using Business.Services.Messaging;
 using Business.Services.Messaging.Factories;
 using Business.Services.Redemption;
@@ -46,6 +46,7 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly IConfiguration _configuration;
             private readonly ILogger<SendSponsorshipLinkCommandHandler> _logger;
             private readonly ICacheManager _cacheManager;
+            private readonly ISponsorDealerAnalyticsCacheService _analyticsCache;
 
             public SendSponsorshipLinkCommandHandler(
                 ISponsorshipCodeRepository codeRepository,
@@ -53,7 +54,8 @@ namespace Business.Handlers.Sponsorship.Commands
                 IMessagingServiceFactory messagingFactory,
                 IConfiguration configuration,
                 ILogger<SendSponsorshipLinkCommandHandler> logger,
-                ICacheManager cacheManager)
+                ICacheManager cacheManager,
+                ISponsorDealerAnalyticsCacheService analyticsCache)
             {
                 _codeRepository = codeRepository;
                 _sponsorProfileRepository = sponsorProfileRepository;
@@ -61,6 +63,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 _configuration = configuration;
                 _logger = logger;
                 _cacheManager = cacheManager;
+                _analyticsCache = analyticsCache;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -76,15 +79,16 @@ namespace Business.Handlers.Sponsorship.Commands
                     // Validate codes exist and are available
                     var codes = request.Recipients.Select(r => r.Code).ToList();
                     
-                    // Fetch codes based on AllowResendExpired flag
+                    // ✅ FIX: Fetch codes based on AllowResendExpired flag
+                    // Support both sponsor (original owner) and dealer (transferred to)
                     var validCodes = request.AllowResendExpired
                         ? await _codeRepository.GetListAsync(c => 
                             codes.Contains(c.Code) && 
-                            c.SponsorId == request.SponsorId && 
+                            (c.SponsorId == request.SponsorId || c.DealerId == request.SponsorId) &&  // ✅ Check both!
                             !c.IsUsed)  // Allow expired codes if AllowResendExpired=true
                         : await _codeRepository.GetListAsync(c => 
                             codes.Contains(c.Code) && 
-                            c.SponsorId == request.SponsorId && 
+                            (c.SponsorId == request.SponsorId || c.DealerId == request.SponsorId) &&  // ✅ Check both!
                             !c.IsUsed && 
                             c.ExpiryDate > DateTime.Now);  // Only non-expired codes
 
@@ -183,6 +187,12 @@ namespace Business.Handlers.Sponsorship.Commands
                                 codeEntity.DistributedTo = $"{recipient.Name} ({formattedPhone})";
 
                                 _codeRepository.Update(codeEntity);
+
+                                // Update analytics cache - code distributed by dealer
+                if (codeEntity.SponsorId > 0 && codeEntity.DealerId.HasValue)
+                {
+                    await _analyticsCache.OnCodeDistributedAsync(codeEntity.SponsorId, codeEntity.DealerId.Value);
+                }
 
                                 results.Add(new SendResult
                                 {

@@ -1,10 +1,11 @@
 using System.Linq;
 using System.Threading.Tasks;
-using Business.Adapters.SmsService;
 using Business.Constants;
 using Business.Services.Authentication.Model;
+using Business.Services.Messaging;
 using Core.Entities.Concrete;
 using Core.Utilities.Security.Jwt;
+using Core.CrossCuttingConcerns.Caching;
 using DataAccess.Abstract;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ namespace Business.Services.Authentication
         private readonly IUserRepository _users;
         private readonly ITokenHelper _tokenHelper;
         private readonly ILogger<PhoneAuthenticationProvider> _logger;
+        private readonly ICacheManager _cacheManager;
 
         public PhoneAuthenticationProvider(
             AuthenticationProviderType providerType,
@@ -26,13 +28,15 @@ namespace Business.Services.Authentication
             IMobileLoginRepository mobileLogins,
             ITokenHelper tokenHelper,
             ISmsService smsService,
-            ILogger<PhoneAuthenticationProvider> logger)
+            ILogger<PhoneAuthenticationProvider> logger,
+            ICacheManager cacheManager)
             : base(mobileLogins, smsService, logger)
         {
             _users = users;
             ProviderType = providerType;
             _tokenHelper = tokenHelper;
             _logger = logger;
+            _cacheManager = cacheManager;
         }
 
         public AuthenticationProviderType ProviderType { get; }
@@ -107,13 +111,29 @@ namespace Business.Services.Authentication
             {
                 throw new System.Exception(Messages.UserNotFound);
             }
+            
+            // SECURITY: Check if user is deactivated by admin
+            if (!user.IsActive)
+            {
+                throw new System.Exception(Messages.UserDeactivated);
+            }
 
             user.AuthenticationProviderType = ProviderType.ToString();
 
             var claims = await _users.GetClaimsAsync(user.UserId);
             var userGroups = await _users.GetUserGroupsAsync(user.UserId);
+            
+            // DEBUG: Log claims for troubleshooting
+            _logger.LogInformation($"[PhoneAuth:Claims] User {user.UserId} has {claims.Count} claims: {string.Join(", ", claims.Take(10).Select(x => x.Name))}");
+            
             var accessToken = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
             accessToken.Provider = ProviderType;
+
+            // Add user claims to cache for authorization checks
+            var claimNames = claims.Select(x => x.Name).ToList();
+            _cacheManager.Add($"{CacheKeys.UserIdForClaim}={user.UserId}", claimNames);
+            
+            _logger.LogInformation($"[PhoneAuth:Cache] Added {claimNames.Count} claims to cache for user {user.UserId}");
 
             return accessToken;
         }

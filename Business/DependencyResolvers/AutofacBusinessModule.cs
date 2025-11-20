@@ -8,15 +8,19 @@ using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
 using Business.Services.MessageQueue;
 using Business.Services.Sponsorship;
+using Business.Services.Subscription;
 using Business.Services.Redemption;
 using Business.Services.Notification;
+using Business.Services.Admin;
 using Business.Services.SponsorRequest;
 using Business.Services.MobileIntegration;
+using Business.Services.Analytics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
 using Core.Utilities.Interceptors;
 using Core.Utilities.Security.Jwt;
+using Core.CrossCuttingConcerns.Caching;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
 using DataAccess.Concrete.EntityFramework.Contexts;
@@ -142,6 +146,37 @@ namespace Business.DependencyResolvers
             builder.RegisterType<MessagingFeatureRepository>().As<IMessagingFeatureRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<DealerInvitationRepository>().As<IDealerInvitationRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkInvitationJobRepository>().As<IBulkInvitationJobRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkCodeDistributionJobRepository>().As<IBulkCodeDistributionJobRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkSubscriptionAssignmentJobRepository>().As<IBulkSubscriptionAssignmentJobRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<TicketRepository>().As<ITicketRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<TicketMessageRepository>().As<ITicketMessageRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<AppInfoRepository>().As<IAppInfoRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<SmsLogRepository>().As<ISmsLogRepository>()
+                .InstancePerLifetimeScope();
+
+            // Tier Feature Management repositories
+            builder.RegisterType<FeatureRepository>().As<IFeatureRepository>()
+                .InstancePerLifetimeScope();
+            
+            builder.RegisterType<TierFeatureRepository>().As<ITierFeatureRepository>()
+                .InstancePerLifetimeScope();
+
             // Referral System repositories
             builder.RegisterType<ReferralCodeRepository>().As<IReferralCodeRepository>()
                 .InstancePerLifetimeScope();
@@ -180,6 +215,15 @@ namespace Business.DependencyResolvers
             builder.RegisterType<SponsorshipService>().As<ISponsorshipService>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<BulkDealerInvitationService>().As<IBulkDealerInvitationService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkCodeDistributionService>().As<IBulkCodeDistributionService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkSubscriptionAssignmentService>().As<IBulkSubscriptionAssignmentService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SponsorshipTierMappingService>().As<ISponsorshipTierMappingService>()
                 .InstancePerLifetimeScope();
 
@@ -190,18 +234,19 @@ namespace Business.DependencyResolvers
             // Messaging Services (SMS & WhatsApp)
             // ============================================
 
-            // Register Mock SMS Service (Modern Interface)
+            // Register all SMS service implementations first
             builder.RegisterType<Business.Services.Messaging.Fakes.MockSmsService>()
-                .As<Business.Services.Messaging.ISmsService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.Messaging.TurkcellSmsService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<Business.Services.Messaging.NetgsmSmsService>()
                 .InstancePerLifetimeScope();
 
             // Register Mock WhatsApp Service
             builder.RegisterType<Business.Services.Messaging.Fakes.MockWhatsAppService>()
                 .As<Business.Services.Messaging.IWhatsAppService>()
-                .InstancePerLifetimeScope();
-
-            // Register Real SMS Service (Turkcell)
-            builder.RegisterType<Business.Services.Messaging.TurkcellSmsService>()
                 .InstancePerLifetimeScope();
 
             // Register Real WhatsApp Service (WhatsApp Business API)
@@ -213,6 +258,27 @@ namespace Business.DependencyResolvers
                 .As<Business.Services.Messaging.Factories.IMessagingServiceFactory>()
                 .InstancePerLifetimeScope();
 
+            // SMS Service - Configuration-driven registration (like FileStorage)
+            // Read SmsService:Provider from configuration (supports environment variables)
+            builder.Register<Business.Services.Messaging.ISmsService>(c =>
+            {
+                var context = c.Resolve<IComponentContext>();
+                var config = context.Resolve<IConfiguration>();
+
+                // Read provider from configuration (supports environment variables like SmsService__Provider)
+                var provider = config["SmsService:Provider"] ?? "Mock";
+
+                Console.WriteLine($"[SMS DI] Selected provider: {provider}");
+
+                return provider.ToLower() switch
+                {
+                    "netgsm" => context.Resolve<Business.Services.Messaging.NetgsmSmsService>(),
+                    "turkcell" => context.Resolve<Business.Services.Messaging.TurkcellSmsService>(),
+                    "mock" => context.Resolve<Business.Services.Messaging.Fakes.MockSmsService>(),
+                    _ => context.Resolve<Business.Services.Messaging.Fakes.MockSmsService>() // Default fallback
+                };
+            }).InstancePerLifetimeScope();
+
             // Register legacy services for backward compatibility
             builder.RegisterType<Business.Fakes.SmsService.MockSmsService>()
                 .As<Business.Adapters.SmsService.ISmsService>()
@@ -221,7 +287,18 @@ namespace Business.DependencyResolvers
             // Notification Services
             builder.RegisterType<NotificationService>().As<INotificationService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<DealerInvitationNotificationService>().As<IDealerInvitationNotificationService>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<BulkInvitationNotificationService>().As<IBulkInvitationNotificationService>()
+                .InstancePerLifetimeScope();
+
+            // SMS Logging Service
+            builder.RegisterType<Business.Services.Logging.SmsLoggingService>()
+                .As<Business.Services.Logging.ISmsLoggingService>()
+                .InstancePerLifetimeScope();
+
             // Sponsor Request Services
             builder.RegisterType<SponsorRequestService>().As<ISponsorRequestService>()
                 .InstancePerLifetimeScope();
@@ -241,6 +318,10 @@ namespace Business.DependencyResolvers
                 .As<Business.Services.User.IAvatarService>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<Business.Services.Sponsor.SponsorLogoService>()
+                .As<Business.Services.Sponsor.ISponsorLogoService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<Business.Services.Messaging.AttachmentValidationService>()
                 .As<Business.Services.Messaging.IAttachmentValidationService>()
                 .InstancePerLifetimeScope();
@@ -254,6 +335,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<SponsorDataAccessService>().As<ISponsorDataAccessService>()
                 .InstancePerLifetimeScope();
             
+            builder.RegisterType<TierFeatureService>().As<ITierFeatureService>()
+                .InstancePerLifetimeScope();
+            
             // Deep Links services
             builder.RegisterType<Business.Services.MobileIntegration.DeepLinkService>().As<Business.Services.MobileIntegration.IDeepLinkService>()
                 .InstancePerLifetimeScope();
@@ -261,6 +345,11 @@ namespace Business.DependencyResolvers
             // Referral System Services
             builder.RegisterType<Business.Services.Referral.ReferralConfigurationService>()
                 .As<Business.Services.Referral.IReferralConfigurationService>()
+                .InstancePerLifetimeScope();
+            
+            // Dealer Invitation Services
+            builder.RegisterType<Business.Services.DealerInvitation.DealerInvitationConfigurationService>()
+                .As<Business.Services.DealerInvitation.IDealerInvitationConfigurationService>()
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<Business.Services.Referral.ReferralCodeService>()
@@ -285,8 +374,9 @@ namespace Business.DependencyResolvers
                 c.Resolve<IUserRepository>(),
                 c.Resolve<IMobileLoginRepository>(),
                 c.Resolve<ITokenHelper>(),
-                c.Resolve<Business.Adapters.SmsService.ISmsService>(),
-                c.Resolve<ILogger<Business.Services.Authentication.PhoneAuthenticationProvider>>()
+                c.Resolve<Business.Services.Messaging.ISmsService>(),
+                c.Resolve<ILogger<Business.Services.Authentication.PhoneAuthenticationProvider>>(),
+                c.Resolve<ICacheManager>()
             )).InstancePerLifetimeScope();
             
             
@@ -346,12 +436,15 @@ namespace Business.DependencyResolvers
             }
 
             // Subscription System Services
-            builder.RegisterType<Business.Services.Subscription.SubscriptionValidationService>()
-                .As<Business.Services.Subscription.ISubscriptionValidationService>()
+
+            // Analytics Services
+            builder.RegisterType<Business.Services.Analytics.SponsorDealerAnalyticsCacheService>()
+                .As<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService>()
                 .InstancePerLifetimeScope();
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
-                .Where(t => !t.IsAssignableTo<IFileStorageService>()) // Exclude file storage services to prevent override
+                .Where(t => !t.IsAssignableTo<IFileStorageService>() // Exclude file storage services to prevent override
+                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>()) // Exclude SMS services to use configuration-driven registration
                 .EnableInterfaceInterceptors(new ProxyGenerationOptions()
                 {
                     Selector = new AspectInterceptorSelector()

@@ -1,0 +1,555 @@
+{
+    "data": {
+        "farmerId": 114,
+        "farmerName": "farmer65 Test",
+        "journeySummary": {
+            "totalDaysAsCustomer": 0,
+            "totalAnalyses": 38,
+            "totalSpent": 0,
+            "totalValueGenerated": 1900.00,
+            "currentTier": "None",
+            "lifecycleStage": "Dormant"
+        },
+        "timeline": [
+            {
+                "date": "2025-10-04T10:54:19.944+00:00",
+                "eventType": "High Activity Period",
+                "details": "10 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-04T10:47:04.527+00:00",
+                "eventType": "High Activity Period",
+                "details": "11 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-04T10:17:41.992+00:00",
+                "eventType": "High Activity Period",
+                "details": "12 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-04T10:05:30.18+00:00",
+                "eventType": "High Activity Period",
+                "details": "13 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-04T08:30:15.057+00:00",
+                "eventType": "High Activity Period",
+                "details": "14 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-04T08:18:11.566+00:00",
+                "eventType": "High Activity Period",
+                "details": "15 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-04T08:08:21.101+00:00",
+                "eventType": "High Activity Period",
+                "details": "16 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-04T07:24:46.41+00:00",
+                "eventType": "High Activity Period",
+                "details": "17 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-04T06:27:35.552+00:00",
+                "eventType": "High Activity Period",
+                "details": "18 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-03T14:57:51.369+00:00",
+                "eventType": "High Activity Period",
+                "details": "19 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-03T14:48:30.041+00:00",
+                "eventType": "High Activity Period",
+                "details": "20 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-03T14:38:42.502+00:00",
+                "eventType": "High Activity Period",
+                "details": "21 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-03T14:24:03.028+00:00",
+                "eventType": "High Activity Period",
+                "details": "22 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T19:51:09.073+00:00",
+                "eventType": "High Activity Period",
+                "details": "23 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T19:24:58.98+00:00",
+                "eventType": "High Activity Period",
+                "details": "24 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T19:03:47.31+00:00",
+                "eventType": "High Activity Period",
+                "details": "25 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T16:46:58.573+00:00",
+                "eventType": "Analysis",
+                "details": "Unknown crop - Analysis performed",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T15:04:22.394+00:00",
+                "eventType": "High Activity Period",
+                "details": "26 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T14:46:05.488+00:00",
+                "eventType": "High Activity Period",
+                "details": "27 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T14:31:54.908+00:00",
+                "eventType": "High Activity Period",
+                "details": "28 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T14:23:08.201+00:00",
+                "eventType": "High Activity Period",
+                "details": "29 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T14:12:12.824+00:00",
+                "eventType": "High Activity Period",
+                "details": "30 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T14:04:06.827+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T13:55:21.864+00:00",
+                "eventType": "High Activity Period",
+                "details": "31 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T13:49:25.322+00:00",
+                "eventType": "High Activity Period",
+                "details": "32 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T13:39:35.424+00:00",
+                "eventType": "High Activity Period",
+                "details": "33 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T13:33:24.792+00:00",
+                "eventType": "High Activity Period",
+                "details": "34 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T13:19:12.018+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "düşük",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T12:30:06.57+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T11:55:32.79+00:00",
+                "eventType": "Analysis",
+                "details": "Unknown crop - Analysis performed",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T11:49:30.929+00:00",
+                "eventType": "Analysis",
+                "details": "Unknown crop - Analysis performed",
+                "severity": "düşük",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T11:34:56.758+00:00",
+                "eventType": "Analysis",
+                "details": "Unknown crop - Analysis performed",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T11:34:53.499+00:00",
+                "eventType": "High Activity Period",
+                "details": "35 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T11:23:16.775+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T11:09:34.491+00:00",
+                "eventType": "High Activity Period",
+                "details": "36 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T11:09:21.513+00:00",
+                "eventType": "High Activity Period",
+                "details": "37 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-10-01T11:06:49.94+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T10:54:19.944+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T10:47:04.527+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T10:17:41.992+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "düşük",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T10:05:30.18+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T08:30:15.057+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T08:18:11.566+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T08:08:21.101+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T07:24:46.41+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-10-01T06:27:35.552+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-30T14:57:51.369+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-30T14:48:30.041+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "düşük",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-30T14:38:42.502+00:00",
+                "eventType": "Analysis",
+                "details": "Unknown crop - Analysis performed",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-30T14:24:03.028+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-30T13:31:46.663+00:00",
+                "eventType": "High Activity Period",
+                "details": "38 analyses in 7 days",
+                "trigger": "Activity Pattern",
+                "alertLevel": "Info"
+            },
+            {
+                "date": "2025-09-28T19:51:09.073+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T19:24:58.98+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T19:03:47.31+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T15:04:22.394+00:00",
+                "eventType": "Analysis",
+                "details": "Domates - Analysis performed",
+                "cropType": "Domates",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T14:46:05.488+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T14:31:54.908+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T14:23:08.201+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T14:12:12.824+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T13:55:21.864+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T13:49:25.322+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T13:39:35.424+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T13:33:24.792+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T11:34:53.499+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T11:34:42.695+00:00",
+                "eventType": "Subscription Created",
+                "details": "XL tier subscription activated",
+                "tier": "XL",
+                "trigger": "System Action"
+            },
+            {
+                "date": "2025-09-28T11:09:34.491+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "orta",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-28T11:09:21.513+00:00",
+                "eventType": "Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "düşük",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-27T13:31:46.663+00:00",
+                "eventType": "First Analysis",
+                "details": "Salatalık - Analysis performed",
+                "cropType": "Salatalık",
+                "severity": "düşük",
+                "trigger": "User Action"
+            },
+            {
+                "date": "2025-09-27T13:24:54.448+00:00",
+                "eventType": "Subscription Created",
+                "details": "Trial tier subscription activated",
+                "tier": "Trial",
+                "trigger": "System Action"
+            }
+        ],
+        "behavioralPatterns": {
+            "preferredContactTime": "14:00-17:00",
+            "averageDaysBetweenAnalyses": 1,
+            "mostActiveSeason": "Fall",
+            "preferredCrops": [
+                "Domates",
+                "Salatalık"
+            ],
+            "commonIssues": [],
+            "messageResponseRate": 0,
+            "averageMessageResponseTimeHours": 0,
+            "mostActiveWeekday": "Wednesday",
+            "engagementTrend": "Increasing",
+            "churnRiskScore": 60
+        },
+        "recommendedActions": [
+            "Launch win-back campaign with special offer",
+            "Schedule follow-up in 1 days (typical cycle)",
+            "Share seasonal tips for Domates, Salatalık",
+            "Consider upselling to higher tier (engagement is growing)"
+        ]
+    },
+    "success": true,
+    "message": "Farmer journey retrieved from cache"
+}

@@ -1,0 +1,284 @@
+using Business.Handlers.AdminSubscriptions.Commands;
+using Business.Handlers.AdminSubscriptions.Commands;
+using Business.Handlers.AdminSubscriptions.Queries;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace WebAPI.Controllers
+{
+    /// <summary>
+    /// Admin controller for subscription management operations
+    /// Provides endpoints for viewing, assigning, extending, and canceling subscriptions
+    /// </summary>
+    [Route("api/admin/subscriptions")]
+    public class AdminSubscriptionsController : AdminBaseController
+    {
+        /// <summary>
+        /// Get all subscriptions with pagination and filtering
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 50)</param>
+        /// <param name="status">Filter by status (optional)</param>
+        /// <param name="isActive">Filter by active status (optional)</param>
+        /// <param name="isSponsoredSubscription">Filter by sponsored status (optional)</param>
+        [HttpGet]
+        public async Task<IActionResult> GetAllSubscriptions(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] string status = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] bool? isSponsoredSubscription = null)
+        {
+            var query = new GetAllSubscriptionsQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                Status = status,
+                IsActive = isActive,
+                IsSponsoredSubscription = isSponsoredSubscription
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get subscription by ID
+        /// </summary>
+        /// <param name="subscriptionId">Subscription ID</param>
+        [HttpGet("{subscriptionId}")]
+        public async Task<IActionResult> GetSubscriptionById(int subscriptionId)
+        {
+            var query = new GetSubscriptionByIdQuery { SubscriptionId = subscriptionId };
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Get detailed subscription information with user details, usage stats, and analysis counts
+        /// </summary>
+        /// <param name="page">Page number (default: 1)</param>
+        /// <param name="pageSize">Page size (default: 50)</param>
+        /// <param name="userId">Filter by user ID (optional)</param>
+        /// <param name="sponsorId">Filter by sponsor ID (optional)</param>
+        /// <param name="status">Filter by status (optional)</param>
+        /// <param name="isActive">Filter by active status (optional)</param>
+        /// <param name="isSponsoredSubscription">Filter by sponsored status (optional)</param>
+        /// <param name="startDateFrom">Filter by start date from (optional)</param>
+        /// <param name="startDateTo">Filter by start date to (optional)</param>
+        [HttpGet("details")]
+        public async Task<IActionResult> GetSubscriptionDetails(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50,
+            [FromQuery] int? userId = null,
+            [FromQuery] int? sponsorId = null,
+            [FromQuery] string status = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] bool? isSponsoredSubscription = null,
+            [FromQuery] DateTime? startDateFrom = null,
+            [FromQuery] DateTime? startDateTo = null)
+        {
+            var query = new GetSubscriptionDetailsQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                UserId = userId,
+                SponsorId = sponsorId,
+                Status = status,
+                IsActive = isActive,
+                IsSponsoredSubscription = isSponsoredSubscription,
+                StartDateFrom = startDateFrom,
+                StartDateTo = startDateTo
+            };
+
+            var result = await Mediator.Send(query);
+            return GetResponse(result);
+        }
+
+        /// <summary>
+        /// Assign a subscription to a user
+        /// </summary>
+        /// <param name="request">Assignment request details</param>
+        /// <remarks>
+        /// Queue Control:
+        /// - If user has active sponsorship and ForceActivation=false: New sponsorship will be queued
+        /// - If user has active sponsorship and ForceActivation=true: Existing sponsorship cancelled, new one activated immediately
+        /// - If no active sponsorship: Activated immediately regardless of ForceActivation value
+        /// </remarks>
+        [HttpPost("assign")]
+        public async Task<IActionResult> AssignSubscription([FromBody] AssignSubscriptionRequest request)
+        {
+            var command = new AssignSubscriptionCommand
+            {
+                UserId = request.UserId,
+                SubscriptionTierId = request.SubscriptionTierId,
+                DurationMonths = request.DurationMonths,
+                IsSponsoredSubscription = request.IsSponsoredSubscription,
+                SponsorId = request.SponsorId,
+                Notes = request.Notes,
+                ForceActivation = request.ForceActivation,
+                AdminUserId = AdminUserId,
+                IpAddress = ClientIpAddress,
+                UserAgent = UserAgent,
+                RequestPath = RequestPath
+            };
+
+            var result = await Mediator.Send(command);
+            return GetResponseOnlyResult(result);
+        }
+
+        /// <summary>
+        /// Extend an existing subscription
+        /// </summary>
+        /// <param name="subscriptionId">Subscription ID to extend</param>
+        /// <param name="request">Extension request details</param>
+        [HttpPost("{subscriptionId}/extend")]
+        public async Task<IActionResult> ExtendSubscription(int subscriptionId, [FromBody] ExtendSubscriptionRequest request)
+        {
+            var command = new ExtendSubscriptionCommand
+            {
+                SubscriptionId = subscriptionId,
+                ExtensionMonths = request.ExtensionMonths,
+                Notes = request.Notes,
+                AdminUserId = AdminUserId,
+                IpAddress = ClientIpAddress,
+                UserAgent = UserAgent,
+                RequestPath = RequestPath
+            };
+
+            var result = await Mediator.Send(command);
+            return GetResponseOnlyResult(result);
+        }
+
+        /// <summary>
+        /// Cancel an active subscription
+        /// </summary>
+        /// <param name="subscriptionId">Subscription ID to cancel</param>
+        /// <param name="request">Cancellation request details</param>
+        [HttpPost("{subscriptionId}/cancel")]
+        public async Task<IActionResult> CancelSubscription(int subscriptionId, [FromBody] CancelSubscriptionRequest request)
+        {
+            var command = new CancelSubscriptionCommand
+            {
+                SubscriptionId = subscriptionId,
+                CancellationReason = request.CancellationReason,
+                AdminUserId = AdminUserId,
+                IpAddress = ClientIpAddress,
+                UserAgent = UserAgent,
+                RequestPath = RequestPath
+            };
+
+            var result = await Mediator.Send(command);
+            return GetResponseOnlyResult(result);
+        }
+
+        /// <summary>
+        /// Bulk cancel multiple subscriptions
+        /// </summary>
+        /// <param name="request">Bulk cancellation request</param>
+        [HttpPost("bulk/cancel")]
+        public async Task<IActionResult> BulkCancelSubscriptions([FromBody] BulkCancelSubscriptionsRequest request)
+        {
+            var command = new BulkCancelSubscriptionsCommand
+            {
+                SubscriptionIds = request.SubscriptionIds,
+                CancellationReason = request.CancellationReason,
+                AdminUserId = AdminUserId,
+                IpAddress = ClientIpAddress,
+                UserAgent = UserAgent,
+                RequestPath = RequestPath
+            };
+
+            var result = await Mediator.Send(command);
+            return GetResponseOnlyResult(result);
+        }
+    }
+
+    /// <summary>
+    /// Request model for assigning a subscription
+    /// </summary>
+    public class AssignSubscriptionRequest
+    {
+        /// <summary>
+        /// User ID to assign subscription to
+        /// </summary>
+        public int UserId { get; set; }
+
+        /// <summary>
+        /// Subscription tier ID
+        /// </summary>
+        public int SubscriptionTierId { get; set; }
+
+        /// <summary>
+        /// Duration in months
+        /// </summary>
+        public int DurationMonths { get; set; }
+
+        /// <summary>
+        /// Whether this is a sponsored subscription
+        /// </summary>
+        public bool IsSponsoredSubscription { get; set; }
+
+        /// <summary>
+        /// Sponsor user ID (if sponsored)
+        /// </summary>
+        public int? SponsorId { get; set; }
+
+        /// <summary>
+        /// Notes about the assignment
+        /// </summary>
+        public string Notes { get; set; }
+
+        /// <summary>
+        /// Force activation: Cancel existing active sponsorship and activate new one immediately.
+        /// Default (false): Queue new sponsorship if active sponsorship exists.
+        /// Only applies to sponsored subscriptions.
+        /// </summary>
+        public bool ForceActivation { get; set; } = false;
+    }
+
+    /// <summary>
+    /// Request model for extending a subscription
+    /// </summary>
+    public class ExtendSubscriptionRequest
+    {
+        /// <summary>
+        /// Number of months to extend
+        /// </summary>
+        public int ExtensionMonths { get; set; }
+
+        /// <summary>
+        /// Notes about the extension
+        /// </summary>
+        public string Notes { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for canceling a subscription
+    /// </summary>
+    public class CancelSubscriptionRequest
+    {
+        /// <summary>
+        /// Reason for cancellation
+        /// </summary>
+        public string CancellationReason { get; set; }
+    }
+
+    /// <summary>
+    /// Request model for bulk canceling subscriptions
+    /// </summary>
+    public class BulkCancelSubscriptionsRequest
+    {
+        /// <summary>
+        /// List of subscription IDs to cancel
+        /// </summary>
+        public List<int> SubscriptionIds { get; set; }
+
+        /// <summary>
+        /// Reason for bulk cancellation
+        /// </summary>
+        public string CancellationReason { get; set; }
+    }
+}

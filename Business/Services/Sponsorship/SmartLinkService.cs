@@ -1,3 +1,4 @@
+using Business.Services.Subscription;
 using DataAccess.Abstract;
 using System;
 using System.Collections.Generic;
@@ -12,15 +13,18 @@ namespace Business.Services.Sponsorship
         private readonly ISmartLinkRepository _smartLinkRepository;
         private readonly ISponsorProfileRepository _sponsorProfileRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ITierFeatureService _tierFeatureService;
 
         public SmartLinkService(
             ISmartLinkRepository smartLinkRepository,
             ISponsorProfileRepository sponsorProfileRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            ITierFeatureService tierFeatureService)
         {
             _smartLinkRepository = smartLinkRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
             _userRepository = userRepository;
+            _tierFeatureService = tierFeatureService;
         }
 
         public async Task<bool> CanCreateSmartLinksAsync(int sponsorId)
@@ -40,19 +44,20 @@ namespace Business.Services.Sponsorship
                     return false;
                 }
 
-                // Sadece XL paketi smart link oluşturabilir
+                // Check if sponsor has smart_links feature in any of their active purchases
                 if (profile.SponsorshipPurchases != null && profile.SponsorshipPurchases.Any())
                 {
                     foreach (var purchase in profile.SponsorshipPurchases)
                     {
-                        // XL tier (ID=4) smart link oluşturabilir
-                        if (purchase.SubscriptionTierId == 4) // XL tier
+                        // Use TierFeatureService to check if tier has smart_links feature
+                        var hasSmartLinks = await _tierFeatureService.HasFeatureAccessAsync(purchase.SubscriptionTierId, "smart_links");
+                        if (hasSmartLinks)
                         {
-                            Console.WriteLine($"[SmartLinkService] Sponsor {sponsorId} has XL tier, can create smart links");
+                            Console.WriteLine($"[SmartLinkService] Sponsor {sponsorId} has smart_links feature, can create smart links");
                             return true;
                         }
                     }
-                    Console.WriteLine($"[SmartLinkService] Sponsor {sponsorId} does not have XL tier");
+                    Console.WriteLine($"[SmartLinkService] Sponsor {sponsorId} does not have smart_links feature");
                 }
                 else
                 {

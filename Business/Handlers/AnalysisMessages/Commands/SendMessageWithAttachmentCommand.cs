@@ -4,6 +4,7 @@ using Business.Services.Sponsorship;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Entities.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Business.Handlers.AnalysisMessages.Commands
 {
-    public class SendMessageWithAttachmentCommand : IRequest<IDataResult<AnalysisMessage>>
+    public class SendMessageWithAttachmentCommand : IRequest<IDataResult<AnalysisMessageDto>>
     {
         public int FromUserId { get; set; }
         public int ToUserId { get; set; }
@@ -24,7 +25,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
         public string MessageType { get; set; } = "Information";
         public List<IFormFile> Attachments { get; set; }
 
-        public class SendMessageWithAttachmentCommandHandler : IRequestHandler<SendMessageWithAttachmentCommand, IDataResult<AnalysisMessage>>
+        public class SendMessageWithAttachmentCommandHandler : IRequestHandler<SendMessageWithAttachmentCommand, IDataResult<AnalysisMessageDto>>
         {
             private readonly IAnalysisMessageRepository _messageRepository;
             private readonly IAnalysisMessagingService _messagingService;
@@ -33,6 +34,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly LocalFileStorageService _localStorage; // Local for documents
             private readonly IUserGroupRepository _userGroupRepository;
             private readonly IGroupRepository _groupRepository;
+            private readonly DataAccess.Abstract.IUserRepository _userRepository;
 
             public SendMessageWithAttachmentCommandHandler(
                 IAnalysisMessageRepository messageRepository,
@@ -41,7 +43,8 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 IFileStorageService imageStorage, // FreeImageHost via DI
                 LocalFileStorageService localStorage, // Local for non-images
                 IUserGroupRepository userGroupRepository,
-                IGroupRepository groupRepository)
+                IGroupRepository groupRepository,
+                DataAccess.Abstract.IUserRepository userRepository)
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
@@ -50,9 +53,10 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 _localStorage = localStorage;
                 _userGroupRepository = userGroupRepository;
                 _groupRepository = groupRepository;
+                _userRepository = userRepository;
             }
 
-            public async Task<IDataResult<AnalysisMessage>> Handle(SendMessageWithAttachmentCommand request, CancellationToken cancellationToken)
+            public async Task<IDataResult<AnalysisMessageDto>> Handle(SendMessageWithAttachmentCommand request, CancellationToken cancellationToken)
             {
                 // Determine user role
                 var userGroups = await _userGroupRepository.GetListAsync(ug => ug.UserId == request.FromUserId);
@@ -71,7 +75,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         request.PlantAnalysisId);
 
                     if (!canSend.canSend)
-                        return new ErrorDataResult<AnalysisMessage>(canSend.errorMessage);
+                        return new ErrorDataResult<AnalysisMessageDto>(canSend.errorMessage);
                 }
                 else if (isFarmer)
                 {
@@ -82,23 +86,23 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         request.PlantAnalysisId);
 
                     if (!canReply.canReply)
-                        return new ErrorDataResult<AnalysisMessage>(canReply.errorMessage);
+                        return new ErrorDataResult<AnalysisMessageDto>(canReply.errorMessage);
                 }
                 else
                 {
-                    return new ErrorDataResult<AnalysisMessage>("Only sponsors and farmers can send messages");
+                    return new ErrorDataResult<AnalysisMessageDto>("Only sponsors and farmers can send messages");
                 }
 
-                // Validate attachments
+                // Validate attachments based on ANALYSIS tier
                 if (request.Attachments == null || !request.Attachments.Any())
-                    return new ErrorDataResult<AnalysisMessage>("No attachments provided");
+                    return new ErrorDataResult<AnalysisMessageDto>("No attachments provided");
 
                 var validationResult = await _attachmentValidation.ValidateAttachmentsAsync(
                     request.Attachments,
-                    request.FromUserId);
+                    request.PlantAnalysisId);
 
                 if (!validationResult.Success)
-                    return new ErrorDataResult<AnalysisMessage>(validationResult.Message);
+                    return new ErrorDataResult<AnalysisMessageDto>(validationResult.Message);
 
                 // Upload attachments
                 var uploadedUrls = new List<string>();
@@ -146,7 +150,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                                     // Log but don't fail cleanup
                                 }
                             }
-                            return new ErrorDataResult<AnalysisMessage>($"Failed to upload {file.FileName}");
+                            return new ErrorDataResult<AnalysisMessageDto>($"Failed to upload {file.FileName}");
                         }
 
                         uploadedUrls.Add(url);
@@ -178,10 +182,94 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         AttachmentNames = JsonSerializer.Serialize(attachmentNames)
                     };
 
+                    // ✅ IMPORTANT: Database stores physical URLs (for FilesController to locate files)
+                    // Response DTO will contain API endpoint URLs (for secure access)
                     _messageRepository.Add(message);
+                    await _messageRepository.SaveChangesAsync();
 
-                    return new SuccessDataResult<AnalysisMessage>(
-                        message,
+                    // Generate API endpoint URLs for response (database has physical URLs)
+                    var apiAttachmentUrls = new List<string>();
+                    var apiThumbnailUrls = new List<string>();
+                    var baseUrl = _localStorage.BaseUrl;
+                    for (int i = 0; i < uploadedUrls.Count; i++)
+                    {
+                        apiAttachmentUrls.Add($"{baseUrl}/api/v1/files/attachments/{message.Id}/{i}");
+                        // Thumbnail URL - same as full-size for now (FilesController will handle resizing)
+                        apiThumbnailUrls.Add($"{baseUrl}/api/v1/files/attachments/{message.Id}/{i}");
+                    }
+
+                    // Get sender's avatar URLs
+                    var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);
+
+                    // 🔔 Send real-time SignalR notification to recipient
+                    var senderRole = isSponsor ? "Sponsor" : "Farmer";
+                    await _messagingService.SendMessageNotificationAsync(
+                        message, 
+                        senderRole,
+                        attachmentUrls: apiAttachmentUrls.ToArray(),
+                        attachmentThumbnails: apiThumbnailUrls.ToArray());
+
+                    var messageDto = new AnalysisMessageDto
+                    {
+                        Id = message.Id,
+                        PlantAnalysisId = message.PlantAnalysisId,
+                        FromUserId = message.FromUserId,
+                        ToUserId = message.ToUserId,
+                        Message = message.Message,
+                        MessageType = message.MessageType,
+                        Subject = message.Subject,
+                        
+                        // Status fields
+                        MessageStatus = message.MessageStatus ?? "Sent",
+                        IsRead = message.IsRead,
+                        SentDate = message.SentDate,
+                        DeliveredDate = message.DeliveredDate,
+                        ReadDate = message.ReadDate,
+                        
+                        // Sender info
+                        SenderRole = message.SenderRole,
+                        SenderName = message.SenderName,
+                        SenderCompany = message.SenderCompany,
+                        
+                        // Avatar URLs
+                        SenderAvatarUrl = sender?.AvatarUrl,
+                        SenderAvatarThumbnailUrl = sender?.AvatarThumbnailUrl,
+                        
+                        // Classification
+                        Priority = message.Priority,
+                        Category = message.Category,
+                        
+                        // Attachments - use API endpoint URLs (not physical paths)
+                        HasAttachments = message.HasAttachments,
+                        AttachmentCount = message.AttachmentCount,
+                        AttachmentUrls = apiAttachmentUrls.ToArray(),
+                        AttachmentThumbnails = apiThumbnailUrls.ToArray(),
+                        AttachmentTypes = !string.IsNullOrEmpty(message.AttachmentTypes)
+                            ? JsonSerializer.Deserialize<string[]>(message.AttachmentTypes)
+                            : null,
+                        AttachmentSizes = !string.IsNullOrEmpty(message.AttachmentSizes)
+                            ? JsonSerializer.Deserialize<long[]>(message.AttachmentSizes)
+                            : null,
+                        AttachmentNames = !string.IsNullOrEmpty(message.AttachmentNames)
+                            ? JsonSerializer.Deserialize<string[]>(message.AttachmentNames)
+                            : null,
+                        
+                        // Voice Messages
+                        IsVoiceMessage = false,
+                        VoiceMessageUrl = null,
+                        VoiceMessageDuration = null,
+                        VoiceMessageWaveform = null,
+                        
+                        // Edit/Delete/Forward
+                        IsEdited = message.IsEdited,
+                        EditedDate = message.EditedDate,
+                        IsForwarded = message.IsForwarded,
+                        ForwardedFromMessageId = message.ForwardedFromMessageId,
+                        IsActive = true
+                    };
+
+                    return new SuccessDataResult<AnalysisMessageDto>(
+                        messageDto,
                         $"Message sent with {uploadedUrls.Count} attachment(s)");
                 }
                 catch (Exception ex)
@@ -202,7 +290,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         }
                     }
 
-                    return new ErrorDataResult<AnalysisMessage>($"Failed to send message with attachments: {ex.Message}");
+                    return new ErrorDataResult<AnalysisMessageDto>($"Failed to send message with attachments: {ex.Message}");
                 }
             }
         }

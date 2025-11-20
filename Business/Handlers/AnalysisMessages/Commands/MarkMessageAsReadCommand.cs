@@ -20,13 +20,16 @@ namespace Business.Handlers.AnalysisMessages.Commands
         {
             private readonly IAnalysisMessageRepository _messageRepository;
             private readonly IHubContext<PlantAnalysisHub> _hubContext;
+            private readonly IPlantAnalysisRepository _plantAnalysisRepository;
 
             public MarkMessageAsReadCommandHandler(
                 IAnalysisMessageRepository messageRepository,
-                IHubContext<PlantAnalysisHub> hubContext)
+                IHubContext<PlantAnalysisHub> hubContext,
+                IPlantAnalysisRepository plantAnalysisRepository)
             {
                 _messageRepository = messageRepository;
                 _hubContext = hubContext;
+                _plantAnalysisRepository = plantAnalysisRepository;
             }
 
             public async Task<IResult> Handle(MarkMessageAsReadCommand request, CancellationToken cancellationToken)
@@ -40,14 +43,27 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 if (message.ToUserId != request.UserId)
                     return new ErrorResult("You can only mark messages sent to you as read");
 
+                // AUTHORIZATION CHECK: Verify user has access to this analysis
+                // Get the analysis to check attribution
+                var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == message.PlantAnalysisId);
+                if (analysis == null)
+                    return new ErrorResult("Analysis not found");
+
+                // Check if user has permission to access this analysis's messages
+                // - Farmer: UserId matches analysis.UserId
+                // - Sponsor/Dealer: SponsorUserId or DealerId matches
+                bool hasAccess = (analysis.UserId == request.UserId) ||  // Farmer
+                                 (analysis.SponsorUserId == request.UserId) ||  // Main Sponsor
+                                 (analysis.DealerId == request.UserId);  // Dealer
+
+                if (!hasAccess)
+                    return new ErrorResult("You don't have access to this analysis");
+
                 // Only update if not already read
                 if (!message.IsRead)
                 {
-                    message.IsRead = true;
-                    message.ReadDate = DateTime.Now;
-                    message.MessageStatus = "Read";
-
-                    _messageRepository.Update(message);
+                    // ✅ FIX: Use repository method that includes SaveChanges
+                    await _messageRepository.MarkAsReadAsync(request.MessageId);
 
                     // Send SignalR notification to sender
                     await _hubContext.Clients.User(message.FromUserId.ToString())
@@ -55,7 +71,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         {
                             MessageId = message.Id,
                             ReadByUserId = request.UserId,
-                            ReadAt = message.ReadDate
+                            ReadAt = DateTime.Now
                         });
                 }
 

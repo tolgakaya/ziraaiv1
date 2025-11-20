@@ -1,0 +1,1317 @@
+{
+	"info": {
+		"_postman_id": "admin-ops-2025-01-23",
+		"name": "ZiraAI - Admin Operations API",
+		"description": "Complete Postman collection for Admin Operations API\n\n## Features Covered:\n- User Management (6 endpoints)\n- Subscription Management (6 endpoints)\n- Sponsorship Management (8 endpoints)\n- Analytics & Reporting (4 endpoints)\n- Audit Logs (4 endpoints)\n- Plant Analysis Management (3 endpoints)\n\n## Total: 31 endpoints\n\n## Setup:\n1. Set environment variable `baseUrl` to your API base URL\n2. Set environment variable `adminToken` with your admin JWT token\n3. Run authentication request first to get token\n\n## Version: 1.0\n## Last Updated: 2025-01-23",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{adminToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "0. Authentication",
+			"item": [
+				{
+					"name": "Login as Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.accessToken) {",
+									"        pm.environment.set('adminToken', jsonData.data.accessToken);",
+									"        console.log('Admin token saved:', jsonData.data.accessToken);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@ziraai.com\",\n  \"password\": \"Admin@123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login with admin credentials and automatically save the JWT token to environment variable"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints to get admin token"
+		},
+		{
+			"name": "1. User Management",
+			"item": [
+				{
+					"name": "1.1 Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users?page=1&pageSize=20&isActive=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "isActive",
+									"value": "true"
+								},
+								{
+									"key": "role",
+									"value": "Farmer",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of all users with optional filters"
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "123"
+								}
+							]
+						},
+						"description": "Get detailed information for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 Search Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/search?searchTerm=ahmet&page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								"search"
+							],
+							"query": [
+								{
+									"key": "searchTerm",
+									"value": "ahmet"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Search users by name, email, or phone"
+					},
+					"response": []
+				},
+				{
+					"name": "1.4 Deactivate User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Spam activity detected - multiple reports from users\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId/deactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								":userId",
+								"deactivate"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "123"
+								}
+							]
+						},
+						"description": "Deactivate a user account with reason"
+					},
+					"response": []
+				},
+				{
+					"name": "1.5 Reactivate User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"False positive - user identity verified\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/:userId/reactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								":userId",
+								"reactivate"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "123"
+								}
+							]
+						},
+						"description": "Reactivate a previously deactivated user"
+					},
+					"response": []
+				},
+				{
+					"name": "1.6 Bulk Deactivate Users",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userIds\": [101, 102, 103],\n  \"reason\": \"Bulk cleanup - inactive accounts over 1 year\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/users/bulk/deactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								"bulk",
+								"deactivate"
+							]
+						},
+						"description": "Deactivate multiple users at once"
+					},
+					"response": []
+				}
+			],
+			"description": "User management endpoints"
+		},
+		{
+			"name": "2. Subscription Management",
+			"item": [
+				{
+					"name": "2.1 Get All Subscriptions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/subscriptions?page=1&pageSize=20&status=Active",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"subscriptions"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "Active"
+								},
+								{
+									"key": "tierName",
+									"value": "M",
+									"disabled": true
+								},
+								{
+									"key": "userId",
+									"value": "123",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of all subscriptions with filters"
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Get Subscription By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/subscriptions/:subscriptionId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"subscriptions",
+								":subscriptionId"
+							],
+							"variable": [
+								{
+									"key": "subscriptionId",
+									"value": "456"
+								}
+							]
+						},
+						"description": "Get details of a specific subscription"
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 Assign Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": 123,\n  \"tierName\": \"M\",\n  \"durationDays\": 30,\n  \"reason\": \"Premium trial for beta tester\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/subscriptions/assign",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"subscriptions",
+								"assign"
+							]
+						},
+						"description": "Assign a new subscription to a user"
+					},
+					"response": []
+				},
+				{
+					"name": "2.4 Extend Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"additionalDays\": 15,\n  \"reason\": \"Compensation for service downtime\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/subscriptions/:subscriptionId/extend",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"subscriptions",
+								":subscriptionId",
+								"extend"
+							],
+							"variable": [
+								{
+									"key": "subscriptionId",
+									"value": "456"
+								}
+							]
+						},
+						"description": "Extend an existing subscription"
+					},
+					"response": []
+				},
+				{
+					"name": "2.5 Cancel Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"User requested cancellation\",\n  \"refundAmount\": 50.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/subscriptions/:subscriptionId/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"subscriptions",
+								":subscriptionId",
+								"cancel"
+							],
+							"variable": [
+								{
+									"key": "subscriptionId",
+									"value": "456"
+								}
+							]
+						},
+						"description": "Cancel an active subscription"
+					},
+					"response": []
+				},
+				{
+					"name": "2.6 Bulk Cancel Subscriptions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"subscriptionIds\": [501, 502, 503],\n  \"reason\": \"Service discontinuation\",\n  \"refundAmount\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/subscriptions/bulk/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"subscriptions",
+								"bulk",
+								"cancel"
+							]
+						},
+						"description": "Cancel multiple subscriptions at once"
+					},
+					"response": []
+				}
+			],
+			"description": "Subscription management endpoints"
+		},
+		{
+			"name": "3. Sponsorship Management",
+			"item": [
+				{
+					"name": "3.1 Get All Purchases",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/purchases?page=1&pageSize=20&paymentStatus=Completed",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"purchases"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "Active",
+									"disabled": true
+								},
+								{
+									"key": "paymentStatus",
+									"value": "Completed"
+								},
+								{
+									"key": "sponsorId",
+									"value": "234",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of sponsorship purchases"
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 Get Purchase By ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/purchases/:purchaseId",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"purchases",
+								":purchaseId"
+							],
+							"variable": [
+								{
+									"key": "purchaseId",
+									"value": "892"
+								}
+							]
+						},
+						"description": "Get details of a specific purchase"
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 Approve Purchase",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"notes\": \"Payment verified via bank transfer\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/purchases/:purchaseId/approve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"purchases",
+								":purchaseId",
+								"approve"
+							],
+							"variable": [
+								{
+									"key": "purchaseId",
+									"value": "892"
+								}
+							]
+						},
+						"description": "Approve a pending sponsorship purchase"
+					},
+					"response": []
+				},
+				{
+					"name": "3.4 Refund Purchase",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refundReason\": \"Duplicate payment - customer error\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/purchases/:purchaseId/refund",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"purchases",
+								":purchaseId",
+								"refund"
+							],
+							"variable": [
+								{
+									"key": "purchaseId",
+									"value": "892"
+								}
+							]
+						},
+						"description": "Process a refund for a purchase"
+					},
+					"response": []
+				},
+				{
+					"name": "3.5 Create Purchase On Behalf Of Sponsor",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sponsorId\": 234,\n  \"subscriptionTierId\": 3,\n  \"quantity\": 50,\n  \"unitPrice\": 99.99,\n  \"autoApprove\": true,\n  \"paymentMethod\": \"BankTransfer\",\n  \"paymentReference\": \"TRX-2025-0123-001\",\n  \"companyName\": \"Tarım Teknolojileri A.Ş.\",\n  \"taxNumber\": \"1234567890\",\n  \"invoiceAddress\": \"İstanbul, Turkey\",\n  \"codePrefix\": \"TARIM\",\n  \"validityDays\": 365,\n  \"notes\": \"Corporate partnership - annual package\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/purchases/create-on-behalf-of",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"purchases",
+								"create-on-behalf-of"
+							]
+						},
+						"description": "Admin creates a sponsorship purchase on behalf of a sponsor (supports manual/offline payments)"
+					},
+					"response": []
+				},
+				{
+					"name": "3.6 Bulk Send Codes",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"sponsorId\": 234,\n  \"purchaseId\": 892,\n  \"recipients\": [\n    {\n      \"phoneNumber\": \"+905551234567\",\n      \"name\": \"Mehmet Demir\"\n    },\n    {\n      \"phoneNumber\": \"+905557654321\",\n      \"name\": \"Ayşe Kaya\"\n    },\n    {\n      \"phoneNumber\": \"+905559876543\",\n      \"name\": \"Ali Öztürk\"\n    }\n  ],\n  \"sendVia\": \"SMS\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/codes/bulk-send",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"codes",
+								"bulk-send"
+							]
+						},
+						"description": "Send sponsorship codes to multiple farmers via SMS/WhatsApp/Email"
+					},
+					"response": []
+				},
+				{
+					"name": "3.7 Get Sponsor Detailed Report",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/sponsor/:sponsorId/report",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"sponsor",
+								":sponsorId",
+								"report"
+							],
+							"variable": [
+								{
+									"key": "sponsorId",
+									"value": "234"
+								}
+							]
+						},
+						"description": "Get comprehensive report for a specific sponsor (purchases, codes, statistics)"
+					},
+					"response": []
+				},
+				{
+					"name": "3.8 Get All Codes",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/codes?page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"codes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "isUsed",
+									"value": "false",
+									"disabled": true
+								},
+								{
+									"key": "isActive",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "sponsorId",
+									"value": "234",
+									"disabled": true
+								},
+								{
+									"key": "purchaseId",
+									"value": "892",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of sponsorship codes"
+					},
+					"response": []
+				},
+				{
+					"name": "3.9 Deactivate Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Code reported as spam\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/sponsorship/codes/:codeId/deactivate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"sponsorship",
+								"codes",
+								":codeId",
+								"deactivate"
+							],
+							"variable": [
+								{
+									"key": "codeId",
+									"value": "1523"
+								}
+							]
+						},
+						"description": "Deactivate a sponsorship code"
+					},
+					"response": []
+				}
+			],
+			"description": "Sponsorship management endpoints including OBO operations"
+		},
+		{
+			"name": "4. Analytics & Reporting",
+			"item": [
+				{
+					"name": "4.1 Get User Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/analytics/users?startDate=2024-12-01&endDate=2025-01-23",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"analytics",
+								"users"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-12-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-23"
+								}
+							]
+						},
+						"description": "Get overall user statistics with optional date range"
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 Get Subscription Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/analytics/subscriptions?startDate=2025-01-01",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"analytics",
+								"subscriptions"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-23",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get subscription-related statistics"
+					},
+					"response": []
+				},
+				{
+					"name": "4.3 Get Sponsorship Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/analytics/sponsorship",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"analytics",
+								"sponsorship"
+							],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-23",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get sponsorship-related statistics"
+					},
+					"response": []
+				},
+				{
+					"name": "4.4 Export Statistics to CSV",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/analytics/export?reportType=Sponsorship&startDate=2024-01-01&endDate=2025-01-23",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"analytics",
+								"export"
+							],
+							"query": [
+								{
+									"key": "reportType",
+									"value": "Sponsorship",
+									"description": "Users, Subscriptions, or Sponsorship"
+								},
+								{
+									"key": "startDate",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-23"
+								}
+							]
+						},
+						"description": "Export analytics data to CSV file (Content-Type: text/csv)"
+					},
+					"response": []
+				}
+			],
+			"description": "Analytics and reporting endpoints with CSV export"
+		},
+		{
+			"name": "5. Audit Logs",
+			"item": [
+				{
+					"name": "5.1 Get All Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/audit?page=1&pageSize=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"audit"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "50"
+								},
+								{
+									"key": "action",
+									"value": "DeactivateUser",
+									"disabled": true
+								},
+								{
+									"key": "entityType",
+									"value": "User",
+									"disabled": true
+								},
+								{
+									"key": "isOnBehalfOf",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "startDate",
+									"value": "2025-01-01",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-23",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of all audit logs with filters"
+					},
+					"response": []
+				},
+				{
+					"name": "5.2 Get Audit Logs By Admin",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/audit/admin/:adminUserId?page=1&pageSize=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"audit",
+								"admin",
+								":adminUserId"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "50"
+								},
+								{
+									"key": "startDate",
+									"value": "2025-01-01",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-23",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "adminUserId",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get all operations performed by a specific admin"
+					},
+					"response": []
+				},
+				{
+					"name": "5.3 Get Audit Logs By Target User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/audit/target/:targetUserId?page=1&pageSize=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"audit",
+								"target",
+								":targetUserId"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "50"
+								},
+								{
+									"key": "startDate",
+									"value": "2025-01-01",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-23",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "targetUserId",
+									"value": "123"
+								}
+							]
+						},
+						"description": "Get all admin operations that affected a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "5.4 Get On-Behalf-Of Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/audit/on-behalf-of?page=1&pageSize=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"audit",
+								"on-behalf-of"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "50"
+								},
+								{
+									"key": "startDate",
+									"value": "2025-01-01",
+									"disabled": true
+								},
+								{
+									"key": "endDate",
+									"value": "2025-01-23",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all on-behalf-of operations"
+					},
+					"response": []
+				}
+			],
+			"description": "Audit log viewing and tracking endpoints"
+		},
+		{
+			"name": "6. Plant Analysis Management",
+			"item": [
+				{
+					"name": "6.1 Create Analysis On Behalf Of User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetUserId\": 123,\n  \"imageUrl\": \"https://storage.ziraai.com/images/plant-12345.jpg\",\n  \"analysisResult\": \"Plant: Tomato\\nDisease: Early Blight\\nSeverity: Moderate\\nRecommendation: Apply fungicide treatment\",\n  \"notes\": \"Sample analysis for demonstration\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/plant-analysis/on-behalf-of",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"plant-analysis",
+								"on-behalf-of"
+							]
+						},
+						"description": "Admin creates a plant analysis on behalf of a farmer"
+					},
+					"response": []
+				},
+				{
+					"name": "6.2 Get User Analyses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/plant-analysis/user/:userId?page=1&pageSize=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"plant-analysis",
+								"user",
+								":userId"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "completed",
+									"disabled": true
+								},
+								{
+									"key": "isOnBehalfOf",
+									"value": "true",
+									"disabled": true
+								}
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "123"
+								}
+							]
+						},
+						"description": "Get all analyses for a specific user with filters"
+					},
+					"response": []
+				},
+				{
+					"name": "6.3 Get All OBO Analyses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/plant-analysis/on-behalf-of?page=1&pageSize=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"plant-analysis",
+								"on-behalf-of"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Get all on-behalf-of plant analysis operations (redirects to audit logs)"
+					},
+					"response": []
+				}
+			],
+			"description": "Plant analysis admin management endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://localhost:5001",
+			"type": "string"
+		},
+		{
+			"key": "adminToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

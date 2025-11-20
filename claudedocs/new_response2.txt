@@ -1,0 +1,287 @@
+{
+    "data": {
+        "items": [
+            {
+                "analysisId": 76,
+                "analysisDate": "2025-10-26T17:47:46.4",
+                "analysisStatus": "Completed",
+                "cropType": "Domates",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            },
+            {
+                "analysisId": 75,
+                "analysisDate": "2025-10-26T17:46:36.411",
+                "analysisStatus": "Completed",
+                "cropType": "Domates",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            },
+            {
+                "analysisId": 74,
+                "analysisDate": "2025-10-26T17:36:41.132",
+                "analysisStatus": "Completed",
+                "cropType": "Domates",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            },
+            {
+                "analysisId": 73,
+                "analysisDate": "2025-10-26T17:35:32.215",
+                "analysisStatus": "Completed",
+                "cropType": "Domates",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            },
+            {
+                "analysisId": 72,
+                "analysisDate": "2025-10-26T17:34:16.466",
+                "analysisStatus": "Completed",
+                "cropType": "Domates",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            },
+            {
+                "analysisId": 62,
+                "analysisDate": "2025-10-22T19:16:16.21",
+                "analysisStatus": "Completed",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            },
+            {
+                "analysisId": 61,
+                "analysisDate": "2025-10-22T18:51:20.997",
+                "analysisStatus": "Completed",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            },
+            {
+                "analysisId": 60,
+                "analysisDate": "2025-10-17T09:02:48.888",
+                "analysisStatus": "Completed",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": true,
+                    "totalMessageCount": 42,
+                    "unreadCount": 0,
+                    "lastMessageDate": "2025-10-26T19:04:27.827885",
+                    "lastMessagePreview": "Auth sonras resimli",
+                    "lastMessageBy": "sponsor",
+                    "hasFarmerResponse": true,
+                    "lastFarmerResponseDate": "2025-10-21T15:46:45.933397",
+                    "conversationStatus": "Active"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 42,
+                "lastMessageDate": "2025-10-26T19:04:27.827885",
+                "lastMessagePreview": "Auth sonras resimli",
+                "lastMessageSenderRole": "sponsor",
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "Active"
+            },
+            {
+                "analysisId": 59,
+                "analysisDate": "2025-10-17T08:51:12.786",
+                "analysisStatus": "Completed",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": true,
+                    "totalMessageCount": 37,
+                    "unreadCount": 0,
+                    "lastMessageDate": "2025-10-24T13:26:29.511729",
+                    "lastMessagePreview": "selaaaaam",
+                    "lastMessageBy": "sponsor",
+                    "hasFarmerResponse": true,
+                    "lastFarmerResponseDate": "2025-10-22T19:13:21.312497",
+                    "conversationStatus": "Active"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 37,
+                "lastMessageDate": "2025-10-24T13:26:29.511729",
+                "lastMessagePreview": "selaaaaam",
+                "lastMessageSenderRole": "sponsor",
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "Active"
+            },
+            {
+                "analysisId": 58,
+                "analysisDate": "2025-10-17T08:42:44.931",
+                "analysisStatus": "Completed",
+                "tierName": "Unknown",
+                "accessPercentage": 0,
+                "canMessage": false,
+                "canViewLogo": true,
+                "sponsorInfo": {
+                    "sponsorId": 159,
+                    "companyName": "dort tarim"
+                },
+                "messagingStatus": {
+                    "hasMessages": false,
+                    "totalMessageCount": 0,
+                    "unreadCount": 0,
+                    "hasFarmerResponse": false,
+                    "conversationStatus": "NoContact"
+                },
+                "unreadMessageCount": 0,
+                "totalMessageCount": 0,
+                "hasUnreadFromFarmer": false,
+                "conversationStatus": "None"
+            }
+        ],
+        "totalCount": 18,
+        "page": 1,
+        "pageSize": 10,
+        "totalPages": 2,
+        "hasNextPage": true,
+        "hasPreviousPage": false,
+        "summary": {
+            "totalAnalyses": 18,
+            "averageHealthScore": 4.38888888888889,
+            "topCropTypes": [
+                "Domates"
+            ],
+            "analysesThisMonth": 18,
+            "contactedAnalyses": 3,
+            "notContactedAnalyses": 15,
+            "activeConversations": 3,
+            "pendingResponses": 0,
+            "totalUnreadMessages": 0,
+            "analysesWithUnread": 0
+        }
+    },
+    "success": true,
+    "message": "Retrieved 10 analyses (page 1 of 2)"
+}

@@ -61,13 +61,22 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         
         // Subscription System
         public DbSet<SubscriptionTier> SubscriptionTiers { get; set; }
+
+        public DbSet<Feature> Features { get; set; }
+        public DbSet<TierFeature> TierFeatures { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<SubscriptionUsageLog> SubscriptionUsageLogs { get; set; }
         
         // Sponsorship System
         public DbSet<SponsorshipCode> SponsorshipCodes { get; set; }
         public DbSet<SponsorshipPurchase> SponsorshipPurchases { get; set; }
-        
+
+        // Dealer Distribution System
+        public DbSet<DealerInvitation> DealerInvitations { get; set; }
+        public DbSet<BulkInvitationJob> BulkInvitationJobs { get; set; }
+        public DbSet<BulkCodeDistributionJob> BulkCodeDistributionJobs { get; set; }
+        public DbSet<BulkSubscriptionAssignmentJob> BulkSubscriptionAssignmentJobs { get; set; }
+
         // Sponsor Request System
         public DbSet<SponsorRequest> SponsorRequests { get; set; }
         public DbSet<SponsorContact> SponsorContacts { get; set; }
@@ -88,6 +97,7 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         
         // Security System
         public DbSet<SecurityEvent> SecurityEvents { get; set; }
+        public DbSet<SmsLog> SmsLogs { get; set; }
         public DbSet<BlockedEntity> BlockedEntities { get; set; }
 
 
@@ -96,6 +106,17 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
         public DbSet<ReferralTracking> ReferralTrackings { get; set; }
         public DbSet<ReferralReward> ReferralRewards { get; set; }
         public DbSet<ReferralConfiguration> ReferralConfigurations { get; set; }
+
+        // Admin Operations & Audit
+        public DbSet<AdminOperationLog> AdminOperationLogs { get; set; }
+
+        // Ticketing System
+        public DbSet<Ticket> Tickets { get; set; }
+        public DbSet<TicketMessage> TicketMessages { get; set; }
+
+        // App Info System
+        public DbSet<AppInfo> AppInfos { get; set; }
+
         protected IConfiguration Configuration { get; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

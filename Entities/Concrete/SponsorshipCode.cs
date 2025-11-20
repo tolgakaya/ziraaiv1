@@ -15,6 +15,25 @@ namespace Entities.Concrete
         public int SubscriptionTierId { get; set; } // Which subscription tier this code provides
         public int SponsorshipPurchaseId { get; set; } // Link to bulk purchase record
         
+        // Dealer Distribution (NEW)
+        public int? DealerId { get; set; } // Dealer who received this code (NULL = direct sponsor distribution)
+        public DateTime? TransferredAt { get; set; } // When code was transferred to dealer
+        public int? TransferredByUserId { get; set; } // Who transferred the code
+        
+        // Code Reservation System (for dealer invitations)
+        /// <summary>
+        /// Invitation ID for which this code is reserved.
+        /// Prevents double-allocation during pending invitations.
+        /// Cleared when invitation is accepted/expired/cancelled.
+        /// </summary>
+        public int? ReservedForInvitationId { get; set; }
+        
+        /// <summary>
+        /// Timestamp when the code was reserved for an invitation.
+        /// Reservation expires with the invitation expiry date.
+        /// </summary>
+        public DateTime? ReservedAt { get; set; }
+        
         // Usage Information
         public bool IsUsed { get; set; }
         public int? UsedByUserId { get; set; } // Farmer who redeemed the code

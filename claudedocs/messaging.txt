@@ -1,0 +1,40 @@
+TierFeatures 
+"Id","SubscriptionTierId","FeatureId","IsEnabled","ConfigurationJson","EffectiveDate","ExpiryDate","CreatedDate","UpdatedDate","CreatedByUserId","ModifiedByUserId"
+15,3,4,true,,,,2025-10-26 23:07:03.297,,1,
+16,3,6,true,"{""showLogo"": true, ""showProfile"": false}",,,2025-10-26 23:07:03.297,,1,
+18,4,1,true,,,,2025-10-26 23:07:03.297,,1,
+19,4,4,true,,,,2025-10-26 23:07:03.297,,1,
+20,4,5,true,,,,2025-10-26 23:07:03.297,,1,
+21,4,6,true,"{""showLogo"": true, ""showProfile"": true}",,,2025-10-26 23:07:03.297,,1,
+23,4,8,true,"{""responseTimeHours"": 12}",,,2025-10-26 23:07:03.297,,1,
+24,5,1,true,,,,2025-10-26 23:07:03.297,,1,
+25,5,2,true,,,,2025-10-26 23:07:03.297,,1,
+26,5,3,true,,,,2025-10-26 23:07:03.297,,1,
+27,5,4,true,,,,2025-10-26 23:07:03.297,,1,
+28,5,5,true,,,,2025-10-26 23:07:03.297,,1,
+29,5,6,true,"{""showLogo"": true, ""showProfile"": true}",,,2025-10-26 23:07:03.297,,1,
+31,5,8,true,"{""responseTimeHours"": 6}",,,2025-10-26 23:07:03.297,,1,
+22,4,7,true,"{""percentage"": 100}",,,2025-10-26 23:07:03.297,2025-10-27 11:24:11.726,1,1
+14,2,7,true,"{""percentage"": 60}",,,2025-10-26 23:07:03.297,2025-10-27 11:29:39.560,1,1
+17,3,7,true,"{""percentage"": 100}",,,2025-10-26 23:07:03.297,2025-10-27 11:29:45.369,1,1
+30,5,7,true,"{""percentage"": 0}",,,2025-10-26 23:07:03.297,2025-10-27 11:29:49.754,1,1
+32,1,7,true,"{""percentage"": 30}",,,2025-10-27 11:30:10.156,,1,
+
+SubscriptionTiers
+"Id","TierName","DisplayName","Description","DailyRequestLimit","MonthlyRequestLimit","MonthlyPrice","YearlyPrice","Currency","PrioritySupport","AdvancedAnalytics","ApiAccess","ResponseTimeHours","AdditionalFeatures","IsActive","DisplayOrder","CreatedDate","UpdatedDate","CreatedUserId","UpdatedUserId","MinPurchaseQuantity","MaxPurchaseQuantity","RecommendedQuantity"
+5,Trial,Trial,Free trial for new users - try our service risk-free,1,30,0.00,0.00,TRY,false,false,true,72,"[""Basic email support"", ""Community forum access"", ""Getting started guide""]",true,0,2025-08-13 18:50:06.745 +0300,,,,1,10,5
+1,S,Small,Perfect for small farms and hobby gardeners,5,50,99.99,1079.99,TRY,false,false,true,48,"[""Basic email support""]",true,1,2025-08-13 17:02:31.476 +0300,,,,10,100,50
+2,M,Medium,Ideal for professional farmers,20,200,299.99,3239.99,TRY,true,false,true,24,"[""Priority support""]",true,2,2025-08-13 17:02:31.476 +0300,,,,10,100,50
+3,L,Large,For large farms and companies,50,500,599.99,6479.99,TRY,true,true,true,12,"[""Advanced analytics""]",true,3,2025-08-13 17:02:31.476 +0300,,,,10,100,50
+4,XL,Extra Large,Enterprise solution,200,2000,1499.99,16199.99,TRY,true,true,true,4,"[""Dedicated manager""]",true,4,2025-08-13 17:02:31.476 +0300,,,,10,100,50
+
+Features 
+"Id","FeatureKey","DisplayName","Description","DefaultConfigJson","RequiresConfiguration","IsActive","IsDeprecated","CreatedDate","UpdatedDate"
+1,messaging,Messaging,Allows sponsors to send messages to farmers,,false,true,false,2025-10-26 23:03:35.474,
+2,voice_messages,Voice Messages,Allows sponsors to send voice messages to farmers,,false,true,false,2025-10-26 23:03:35.474,
+3,smart_links,Smart Links,Advanced smart link management and analytics,,false,true,false,2025-10-26 23:03:35.474,
+4,advanced_analytics,Advanced Analytics,Access to detailed analytics and reports,,false,true,false,2025-10-26 23:03:35.474,
+5,api_access,API Access,Access to REST API endpoints for integration,,false,true,false,2025-10-26 23:03:35.474,
+6,sponsor_visibility,Sponsor Visibility,Profile and logo visibility to farmers,"{""showLogo"": false, ""showProfile"": false}",true,true,false,2025-10-26 23:03:35.474,
+8,priority_support,Priority Support,Priority customer support with guaranteed response time,"{""responseTimeHours"": 24}",true,true,false,2025-10-26 23:03:35.474,
+7,data_access_percentage,Data Access Percentage,Percentage of farmer data accessible to sponsor,"{""percentage"": 100}",true,true,false,2025-10-26 23:03:35.474,

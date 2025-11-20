@@ -6,10 +6,19 @@ namespace Business.Services.Sponsorship
 {
     public interface IAnalysisMessagingService
     {
-        Task<bool> CanSendMessageAsync(int sponsorId);
+        Task<bool> CanSendMessageAsync(int userId, int plantAnalysisId);
         Task<(bool canSend, string errorMessage)> CanSendMessageForAnalysisAsync(int sponsorId, int farmerId, int plantAnalysisId);
         Task<(bool canReply, string errorMessage)> CanFarmerReplyAsync(int farmerId, int sponsorId, int plantAnalysisId);
+
+        Task<Entities.Concrete.PlantAnalysis> GetPlantAnalysisAsync(int plantAnalysisId);
         Task<AnalysisMessage> SendMessageAsync(int fromUserId, int toUserId, int plantAnalysisId, string message, string messageType = "Information");
+        Task SendMessageNotificationAsync(
+            AnalysisMessage message, 
+            string senderRole,
+            string[] attachmentUrls = null,
+            string[] attachmentThumbnails = null,
+            string voiceMessageUrl = null,
+            string voiceMessageWaveform = null);
         Task<List<AnalysisMessage>> GetConversationAsync(int fromUserId, int toUserId, int plantAnalysisId);
         Task<List<AnalysisMessage>> GetUnreadMessagesAsync(int userId);
         Task<int> GetUnreadCountAsync(int userId);
@@ -18,7 +27,7 @@ namespace Business.Services.Sponsorship
         Task<bool> CanReplyToMessageAsync(int userId, int messageId);
         Task<AnalysisMessage> ReplyToMessageAsync(int userId, int parentMessageId, string message);
         Task<List<AnalysisMessage>> GetRecentMessagesAsync(int userId, int count = 10);
-        Task<bool> HasMessagingPermissionAsync(int sponsorId);
+        Task<bool> HasMessagingPermissionAsync(int sponsorId, int plantAnalysisId);
         Task DeleteMessageAsync(int messageId, int userId);
         Task FlagMessageAsync(int messageId, int flaggedByUserId, string reason);
         Task<List<AnalysisMessage>> GetMessagesByPriorityAsync(int userId, string priority);

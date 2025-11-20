@@ -15,6 +15,7 @@ namespace Entities.Concrete
         public string CompanyName { get; set; }
         public string CompanyDescription { get; set; }
         public string SponsorLogoUrl { get; set; }
+        public string SponsorLogoThumbnailUrl { get; set; } // Thumbnail for logo (128x128)
         public string WebsiteUrl { get; set; }
         
         // Contact Information

@@ -1,0 +1,16 @@
+Email,Phone,FirstName,LastName,TierName,DurationDays,Notes
+ahmet.yilmaz@example.com,+905551234567,Ahmet,Yılmaz,S,30,Normal email ve telefon ile kayıt
+ayse.kaya@example.com,,Ayşe,Kaya,M,60,Sadece email ile kayıt
+,+905559876543,Mehmet,Demir,S,30,Sadece telefon ile kayıt
+fatma.celik@example.com,+905557654321,Fatma,Çelik,L,90,3 aylık premium subscription
+,+905558765432,Ali,Arslan,Trial,7,7 günlük deneme sürümü
+zeynep.ozturk@example.com,,Zeynep,Öztürk,XL,365,1 yıllık XL subscription
+mustafa.sahin@example.com,+905553456789,Mustafa,Şahin,M,30,Standart M tier
+,+905552345678,Elif,Yıldız,S,60,2 aylık S subscription
+hasan.koc@example.com,,Hasan,Koç,L,180,6 aylık L tier
+,+905556789012,Emine,Aydın,M,90,3 aylık M subscription
+can.polat@example.com,+905554567890,Can,Polat,XL,180,6 aylık XL - SmartLink özelliği
+deniz.aksoy@example.com,,Deniz,Aksoy,S,30,Basit S tier kayıt
+,+905551122334,Seda,Türk,Trial,14,14 günlük trial extension
+burak.erdem@example.com,+905553344556,Burak,Erdem,L,120,4 aylık L subscription
+ece.yavuz@example.com,,Ece,Yavuz,M,45,1.5 aylık özel süre

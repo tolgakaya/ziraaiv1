@@ -3,9 +3,11 @@ using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
+using Entities.Concrete;
 using Entities.Dtos;
 using MediatR;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,6 +34,36 @@ namespace Business.Handlers.PlantAnalyses.Queries
         public string FilterByCropType { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        
+        /// <summary>
+        /// Filter by dealer ID to show only analyses distributed by specific dealer
+        /// Used for dealer view (their own analyses) or main sponsor view (monitoring dealer)
+        /// </summary>
+        public int? DealerId { get; set; }
+
+
+        // NEW: Message Status Filters
+        /// <summary>
+        /// Filter by message status: all, contacted, notContacted, hasResponse, noResponse, active, idle
+        /// </summary>
+        public string FilterByMessageStatus { get; set; }
+
+        /// <summary>
+        /// Filter to show only analyses with unread messages (from any sender)
+        /// &lt;/summary&gt;
+        public bool? HasUnreadMessages { get; set; }
+
+        /// &lt;summary&gt;
+        /// Filter to show only analyses with unread messages FOR current user (sent TO them)
+        /// For farmers: unread messages FROM sponsor
+        /// For sponsors: unread messages FROM farmer
+        /// &lt;/summary&gt;
+        public bool? HasUnreadForCurrentUser { get; set; }
+
+        /// &lt;summary&gt;
+        /// Filter to show analyses with at least this many unread messages
+        /// &lt;/summary&gt;
+        public int? UnreadMessagesMin { get; set; }
 
         public class GetSponsoredAnalysesListQueryHandler : IRequestHandler<GetSponsoredAnalysesListQuery, IDataResult<SponsoredAnalysesListResponseDto>>
         {
@@ -40,19 +72,25 @@ namespace Business.Handlers.PlantAnalyses.Queries
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
             private readonly IUserRepository _userRepository;
             private readonly ISubscriptionTierRepository _subscriptionTierRepository;
+            private readonly IAnalysisMessageRepository _messageRepository;
+            private readonly IUserSubscriptionRepository _userSubscriptionRepository; // NEW: For analysis tier lookup
 
             public GetSponsoredAnalysesListQueryHandler(
                 IPlantAnalysisRepository plantAnalysisRepository,
                 ISponsorDataAccessService dataAccessService,
                 ISponsorProfileRepository sponsorProfileRepository,
                 IUserRepository userRepository,
-                ISubscriptionTierRepository subscriptionTierRepository)
+                ISubscriptionTierRepository subscriptionTierRepository,
+                IAnalysisMessageRepository messageRepository,
+                IUserSubscriptionRepository userSubscriptionRepository) // NEW
             {
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _dataAccessService = dataAccessService;
                 _sponsorProfileRepository = sponsorProfileRepository;
                 _userRepository = userRepository;
                 _subscriptionTierRepository = subscriptionTierRepository;
+                _messageRepository = messageRepository;
+                _userSubscriptionRepository = userSubscriptionRepository; // NEW
             }
 
             [LogAspect(typeof(FileLogger))]
@@ -65,17 +103,26 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     return new ErrorDataResult<SponsoredAnalysesListResponseDto>("Sponsor profile not found or inactive");
                 }
 
-                // Get sponsor's access percentage
-                var accessPercentage = await _dataAccessService.GetDataAccessPercentageAsync(request.SponsorId);
+                // ✅ REMOVED: No longer using sponsor's tier - each analysis has its own tier
 
-                // Build query: Get all analyses where sponsor has sponsored the farmer
+                // Build query: Get all analyses where user is involved as sponsor OR dealer
+                // - As Sponsor: SponsorUserId = userId (codes distributed directly by sponsor)
+                // - As Dealer: DealerId = userId (codes distributed by dealer on behalf of sponsor)
+                // - Both roles: Show analyses from both capacities
                 var query = _plantAnalysisRepository.GetListAsync(a =>
-                    a.SponsorUserId == request.SponsorId &&
+                    (a.SponsorUserId == request.SponsorId || a.DealerId == request.SponsorId) &&
                     a.AnalysisStatus != null
                 );
 
                 var allAnalyses = await query;
                 var analysesQuery = allAnalyses.AsQueryable();
+                
+                // Optional: Filter by specific DealerId if provided (for admin/sponsor monitoring specific dealer)
+                if (request.DealerId.HasValue && request.DealerId.Value != request.SponsorId)
+                {
+                    // Admin/Sponsor wants to see a specific dealer's analyses
+                    analysesQuery = analysesQuery.Where(a => a.DealerId == request.DealerId.Value);
+                }
 
                 // Apply filters
                 if (!string.IsNullOrEmpty(request.FilterByCropType))
@@ -110,6 +157,49 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 };
 
                 var filteredAnalyses = analysesQuery.ToList();
+
+                // NEW: Fetch messaging status for all analyses (BEFORE pagination)
+                var analysisIds = filteredAnalyses.Select(a => a.Id).ToArray();
+                var messagingStatuses = await _messageRepository.GetMessagingStatusForAnalysesAsync(
+                    request.SponsorId,
+                    analysisIds);
+
+                // NEW: Apply messaging filters
+                if (!string.IsNullOrEmpty(request.FilterByMessageStatus))
+                {
+                    filteredAnalyses = ApplyMessageStatusFilter(
+                        filteredAnalyses,
+                        messagingStatuses,
+                        request.FilterByMessageStatus).ToList();
+                }
+
+                if (request.HasUnreadMessages.HasValue && request.HasUnreadMessages.Value)
+                {
+                    filteredAnalyses = filteredAnalyses
+                        .Where(a => messagingStatuses.ContainsKey(a.Id) &&
+                                   messagingStatuses[a.Id].UnreadCount > 0)
+                        .ToList();
+                }
+
+                // 🆕 NEW: Filter for unread messages FOR current user (from farmer to sponsor)
+                if (request.HasUnreadForCurrentUser.HasValue && request.HasUnreadForCurrentUser.Value)
+                {
+                    filteredAnalyses = filteredAnalyses
+                        .Where(a => messagingStatuses.ContainsKey(a.Id) &&
+                                   messagingStatuses[a.Id].UnreadCount > 0 &&
+                                   messagingStatuses[a.Id].LastMessageBy == "farmer") // Sponsor receives FROM farmer
+                        .ToList();
+                }
+
+                if (request.UnreadMessagesMin.HasValue)
+                {
+                    filteredAnalyses = filteredAnalyses
+                        .Where(a => messagingStatuses.ContainsKey(a.Id) &&
+                                   messagingStatuses[a.Id].UnreadCount >= request.UnreadMessagesMin.Value)
+                        .ToList();
+                }
+
+                // Update total count after messaging filters
                 var totalCount = filteredAnalyses.Count;
 
                 // Calculate pagination
@@ -117,13 +207,57 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 var skip = (request.Page - 1) * request.PageSize;
                 var pagedAnalyses = filteredAnalyses.Skip(skip).Take(request.PageSize).ToList();
 
-                // Map to DTOs with tier-based filtering
-                var items = pagedAnalyses.Select(analysis => MapToSummaryDto(
-                    analysis,
-                    accessPercentage,
-                    sponsorProfile
-                )).ToArray();
+                // Map to DTOs with messaging status (async for tier lookup)
+                var items = new List<SponsoredAnalysisSummaryDto>();
+                foreach (var analysis in pagedAnalyses)
+                {
+                    // ✅ FIX: Get tier from analysis (via ActiveSponsorshipId), not from user
+                    var analysisTier = await GetAnalysisUsedTierAsync(analysis);
+                    
+                    var dto = MapToSummaryDto(
+                        analysis,
+                        sponsorProfile,
+                        analysisTier);
 
+                    // Add messaging status (both nested and flat for backward compatibility)
+                    var messagingStatus = messagingStatuses.ContainsKey(analysis.Id)
+                        ? messagingStatuses[analysis.Id]
+                        : new MessagingStatusDto
+                        {
+                            HasMessages = false,
+                            TotalMessageCount = 0,
+                            UnreadCount = 0,
+                            ConversationStatus = ConversationStatus.NoContact
+                        };
+
+                    // Nested format (DEPRECATED but kept for backward compatibility)
+                    dto.MessagingStatus = messagingStatus;
+
+                    // 🆕 Flat fields (Mobile team preference)
+                    if (messagingStatus.HasMessages)
+                    {
+                        dto.UnreadMessageCount = messagingStatus.UnreadCount;
+                        dto.TotalMessageCount = messagingStatus.TotalMessageCount;
+                        dto.LastMessageDate = messagingStatus.LastMessageDate;
+                        dto.LastMessagePreview = messagingStatus.LastMessagePreview;
+                        dto.LastMessageSenderRole = messagingStatus.LastMessageBy;
+                        dto.HasUnreadFromFarmer = messagingStatus.UnreadCount > 0 && messagingStatus.LastMessageBy == "farmer";
+                        dto.ConversationStatus = messagingStatus.ConversationStatus.ToString();
+                    }
+                    else
+                    {
+                        // No messages - all fields null (mobile team requirement)
+                        dto.UnreadMessageCount = 0;
+                        dto.TotalMessageCount = 0;
+                        dto.LastMessageDate = null;
+                        dto.LastMessagePreview = null;
+                        dto.LastMessageSenderRole = null;
+                        dto.HasUnreadFromFarmer = false;
+                        dto.ConversationStatus = "None";
+                    }
+
+                    items.Add(dto);
+                }
                 // Calculate summary statistics
                 var summary = new SponsoredAnalysesListSummaryDto
                 {
@@ -140,12 +274,23 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         .ToArray(),
                     AnalysesThisMonth = filteredAnalyses
                         .Count(a => a.AnalysisDate.Month == DateTime.Now.Month &&
-                                    a.AnalysisDate.Year == DateTime.Now.Year)
+                                    a.AnalysisDate.Year == DateTime.Now.Year),
+
+                    // Messaging statistics
+                    ContactedAnalyses = messagingStatuses.Count(kvp => kvp.Value.HasMessages),
+                    NotContactedAnalyses = totalCount - messagingStatuses.Count(kvp => kvp.Value.HasMessages),
+                    ActiveConversations = messagingStatuses.Count(kvp =>
+                        kvp.Value.ConversationStatus == ConversationStatus.Active),
+                    PendingResponses = messagingStatuses.Count(kvp =>
+                        kvp.Value.ConversationStatus == ConversationStatus.Pending),
+                    TotalUnreadMessages = messagingStatuses.Sum(kvp => kvp.Value.UnreadCount),
+                    // 🆕 Mobile team requirement: count of analyses with unread messages
+                    AnalysesWithUnread = messagingStatuses.Count(kvp => kvp.Value.UnreadCount > 0)
                 };
 
                 var response = new SponsoredAnalysesListResponseDto
                 {
-                    Items = items,
+                    Items = items.ToArray(),
                     TotalCount = totalCount,
                     Page = request.Page,
                     PageSize = request.PageSize,
@@ -157,28 +302,34 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
                 return new SuccessDataResult<SponsoredAnalysesListResponseDto>(
                     response,
-                    $"Retrieved {items.Length} analyses (page {request.Page} of {totalPages})"
+                    $"Retrieved {items.Count} analyses (page {request.Page} of {totalPages})"
                 );
             }
 
             private SponsoredAnalysisSummaryDto MapToSummaryDto(
                 Entities.Concrete.PlantAnalysis analysis,
-                int accessPercentage,
-                Entities.Concrete.SponsorProfile sponsorProfile)
+                Entities.Concrete.SponsorProfile sponsorProfile,
+                Entities.Concrete.SubscriptionTier tier)
             {
+                // Tier-based feature permissions
+                var tierName = tier?.TierName ?? "Unknown";
+                var canMessage = IsTierAllowedToMessage(tierName);
+                var canViewLogo = IsTierAllowedToViewLogo(tierName);
+                var canViewFarmerContact = IsTierAllowedToViewFarmerContact(tierName);
+
                 var dto = new SponsoredAnalysisSummaryDto
                 {
-                    // Core fields (always available)
+                    // Core fields
                     AnalysisId = analysis.Id,
                     AnalysisDate = analysis.AnalysisDate,
                     AnalysisStatus = analysis.AnalysisStatus,
                     CropType = analysis.CropType,
 
-                    // Tier info
-                    TierName = GetTierName(accessPercentage),
-                    AccessPercentage = accessPercentage,
-                    CanMessage = accessPercentage >= 30, // M, L, XL
-                    CanViewLogo = true, // All tiers on result screen
+                    // Tier info (from actual tier, not access percentage)
+                    TierName = tierName,
+                    AccessPercentage = 100, // Always 100 - no field/count restrictions
+                    CanMessage = canMessage,
+                    CanViewLogo = canViewLogo,
 
                     // Sponsor info
                     SponsorInfo = new SponsorDisplayInfoDto
@@ -187,50 +338,33 @@ namespace Business.Handlers.PlantAnalyses.Queries
                         CompanyName = sponsorProfile.CompanyName,
                         LogoUrl = sponsorProfile.SponsorLogoUrl,
                         WebsiteUrl = sponsorProfile.WebsiteUrl
-                    }
+                    },
+
+                    // ALL analysis fields (always visible)
+                    OverallHealthScore = analysis.OverallHealthScore,
+                    PlantSpecies = analysis.PlantSpecies,
+                    PlantVariety = analysis.PlantVariety,
+                    GrowthStage = analysis.GrowthStage,
+                    ImageUrl = !string.IsNullOrEmpty(analysis.ImageUrl)
+                        ? analysis.ImageUrl
+                        : analysis.ImagePath,
+                    VigorScore = analysis.VigorScore,
+                    HealthSeverity = analysis.HealthSeverity,
+                    PrimaryConcern = analysis.PrimaryConcern,
+                    Location = analysis.Location
                 };
 
-                // 30% Access Fields (S & M tiers)
-                if (accessPercentage >= 30)
+                // Farmer contact info - only for allowed tiers
+                if (canViewFarmerContact && analysis.UserId.HasValue)
                 {
-                    dto.OverallHealthScore = analysis.OverallHealthScore;
-                    dto.PlantSpecies = analysis.PlantSpecies;
-                    dto.PlantVariety = analysis.PlantVariety;
-                    dto.GrowthStage = analysis.GrowthStage;
-                    // Use ImageUrl (original) or ImagePath (thumbnail) - prefer original for better quality
-                    dto.ImageUrl = !string.IsNullOrEmpty(analysis.ImageUrl)
-                        ? analysis.ImageUrl
-                        : analysis.ImagePath;
-                }
-
-                // 60% Access Fields (L tier)
-                if (accessPercentage >= 60)
-                {
-                    dto.VigorScore = analysis.VigorScore;
-                    dto.HealthSeverity = analysis.HealthSeverity;
-                    dto.PrimaryConcern = analysis.PrimaryConcern;
-                    dto.Location = analysis.Location;
-                    // Recommendations removed from list view - too large for list display
-                    // Use GET /api/v1/sponsorship/analyses/{id} for full details including recommendations
-                }
-
-                // 100% Access Fields (XL tier)
-                if (accessPercentage >= 100)
-                {
-                    // Fetch farmer info from User entity if available
-                    if (analysis.UserId.HasValue)
+                    var farmer = _userRepository.Get(u => u.UserId == analysis.UserId.Value);
+                    if (farmer != null)
                     {
-                        var farmer = _userRepository.Get(u => u.UserId == analysis.UserId.Value);
-                        if (farmer != null)
-                        {
-                            dto.FarmerName = farmer.FullName;
-                            dto.FarmerPhone = farmer.MobilePhones ?? analysis.ContactPhone;
-                            dto.FarmerEmail = farmer.Email ?? analysis.ContactEmail;
-                        }
+                        dto.FarmerName = farmer.FullName;
+                        dto.FarmerPhone = farmer.MobilePhones ?? analysis.ContactPhone;
+                        dto.FarmerEmail = farmer.Email ?? analysis.ContactEmail;
                     }
-
-                    // Fallback to analysis contact info if User not found
-                    if (string.IsNullOrEmpty(dto.FarmerName))
+                    else
                     {
                         dto.FarmerPhone = analysis.ContactPhone;
                         dto.FarmerEmail = analysis.ContactEmail;
@@ -240,16 +374,103 @@ namespace Business.Handlers.PlantAnalyses.Queries
                 return dto;
             }
 
-            private string GetTierName(int accessPercentage)
+            /// <summary>
+            /// Get the tier that was used for a specific analysis
+            /// This is the CORRECT approach - tier comes from the analysis, not from user
+            /// </summary>
+            private async Task<Entities.Concrete.SubscriptionTier> GetAnalysisUsedTierAsync(Entities.Concrete.PlantAnalysis analysis)
             {
-                return accessPercentage switch
+                if (!analysis.ActiveSponsorshipId.HasValue)
+                    return null;
+
+                var subscription = await _userSubscriptionRepository.GetAsync(
+                    s => s.Id == analysis.ActiveSponsorshipId.Value);
+
+                if (subscription == null)
+                    return null;
+
+                return await _subscriptionTierRepository.GetAsync(
+                    t => t.Id == subscription.SubscriptionTierId);
+            }
+
+            private int GetTierPriority(string tierName)
+            {
+                return tierName?.ToUpper() switch
                 {
-                    30 => "S/M",
-                    60 => "L",
-                    100 => "XL",
-                    _ => "Unknown"
+                    "XL" => 5,
+                    "L" => 4,
+                    "M" => 3,
+                    "S" => 2,
+                    "TRIAL" => 1,
+                    _ => 0
                 };
             }
+
+            private bool IsTierAllowedToMessage(string tierName)
+            {
+                // M, L, XL can message
+                return tierName?.ToUpper() switch
+                {
+                    "M" => true,
+                    "L" => true,
+                    "XL" => true,
+                    _ => false
+                };
+            }
+
+            private bool IsTierAllowedToViewLogo(string tierName)
+            {
+                // All tiers can view logo
+                return true;
+            }
+
+            private bool IsTierAllowedToViewFarmerContact(string tierName)
+            {
+                // Only XL tier can view farmer contact
+                return tierName?.ToUpper() == "XL";
+            }
+
+
+            /// <summary>
+            /// Apply message status filter to analyses list
+            /// </summary>
+            private IEnumerable<Entities.Concrete.PlantAnalysis> ApplyMessageStatusFilter(
+                IEnumerable<Entities.Concrete.PlantAnalysis> analyses,
+                Dictionary<int, MessagingStatusDto> messagingStatuses,
+                string filterValue)
+            {
+                return filterValue?.ToLower() switch
+                {
+                    "contacted" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasMessages),
+
+                    "notcontacted" => analyses.Where(a =>
+                        !messagingStatuses.ContainsKey(a.Id) ||
+                        !messagingStatuses[a.Id].HasMessages),
+
+                    "hasresponse" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasFarmerResponse),
+
+                    "noresponse" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].HasMessages &&
+                        !messagingStatuses[a.Id].HasFarmerResponse),
+
+                    "active" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].ConversationStatus == ConversationStatus.Active),
+
+                    "idle" => analyses.Where(a =>
+                        messagingStatuses.ContainsKey(a.Id) &&
+                        messagingStatuses[a.Id].ConversationStatus == ConversationStatus.Idle),
+
+                    _ => analyses // "all" or invalid value - return unfiltered
+                };
+            }
+
+            // 🎯 REMOVED: GetTierName method - no longer using tier-based logic
         }
     }
 }

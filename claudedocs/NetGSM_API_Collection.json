@@ -1,0 +1,1582 @@
+{
+	"info": {
+		"_postman_id": "22a2c8f1-5c4a-47b1-9a2a-195614f2b99a",
+		"name": "NETGSM API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17020991"
+	},
+	"item": [
+		{
+			"name": "SMS",
+			"item": [
+				{
+					"name": "SMS Gönderimi",
+					"item": [
+						{
+							"name": "SMS Gönderimi",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "{{vault:authorization-password}}",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "850XXXXXXX",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"msgheader\": \"850xxxxxxx\",\r\n    \"startdate\": \"\",\r\n    \"stopdate\": \"\",\r\n    \"appname\": \"\",\r\n    \"iysfilter\": \"\",\r\n    \"partnercode\": \"\",\r\n    \"encoding\": \"TR\",\r\n    \"messages\": [\r\n        {\r\n            \"msg\": \"test1\",\r\n            \"no\": \"554xxxxxxx\"\r\n        },\r\n        {\r\n            \"msg\": \"test2\",\r\n            \"no\": \"510xxxxxxx\"\r\n        }\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/rest/v2/send",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"rest",
+										"v2",
+										"send"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "SMS İptali",
+					"item": [
+						{
+							"name": "SMS İptali",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "{{vault:authorization-password}}",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "850XXXXXXX",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"jobid\": \"17411822587291945377189121\",\r\n    \"appname\":\"app name\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/rest/v2/cancel",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"rest",
+										"v2",
+										"cancel"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "SMS Sorgulama",
+					"item": [
+						{
+							"name": "SMS Sorgulama",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "{{vault:authorization-password}}",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "850XXXXXXX",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"appname\": \"uygulama_adi\",\r\n  \"startdate\": \"10.03.2025 00:00:09\",\r\n  \"stopdate\": \"10.03.2025 23:44:00\",\r\n  \"jobids\": [\r\n    \"1741611906XXXX945377171144\",\r\n    \"17416119577XXXX45377160152\"\r\n  ],\r\n  \"pagenumber\": 0,\r\n  \"pagesize\": 3\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/rest/v2/report",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"rest",
+										"v2",
+										"report"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "OTP SMS",
+					"item": [
+						{
+							"name": "XML POST",
+							"item": [
+								{
+									"name": "XML POST OTP SMS",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version=\"1.0\"?>\r\n<mainbody>\r\n   <header>\r\n       <usercode>kullanıcıadı</usercode>\r\n       <password>şifre</password>\r\n       <msgheader>mesajbaşlığı</msgheader>\r\n       <appkey>xxx</appkey> \r\n   </header>\r\n   <body>\r\n       <msg>\r\n           <![CDATA[TestMesajı]]>\r\n       </msg>\r\n       <no>5XXXXXXXXX</no>\r\n   </body>\r\n</mainbody>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/send/otp",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"send",
+												"otp"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Gelen SMS",
+					"item": [
+						{
+							"name": "Gelen SMS",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "{{vault:authorization-password}}",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "850XXXXXXX",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"appname\": \"uygulama_adi\",\r\n  \"startdate\": \"100320250000\",\r\n  \"stopdate\": \"100320252344\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/rest/v2/inbox",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"rest",
+										"v2",
+										"inbox"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Gönderici Adı Sorgulama",
+					"item": [
+						{
+							"name": "Gönderici Adı Sorgulama",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "username",
+											"value": "850XXXXXXX",
+											"type": "string"
+										},
+										{
+											"key": "password",
+											"value": "{{vault:authorization-password}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/rest/v2/msgheader",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"rest",
+										"v2",
+										"msgheader"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Kara Liste",
+					"item": [
+						{
+							"name": "XML POST Kara Liste",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\"?>\r\n<mainbody>\r\n  <header>  \r\n    <usercode>kullaniciadiniz</usercode>\r\n    <password>sifreniz</password>\r\n    <tip>1</tip>\r\n    <appkey>xxx</appkey> \r\n  </header>\r\n  <body>\r\n    <number>05*********</number>\r\n  </body>\r\n</mainbody>",
+									"options": {
+										"raw": {
+											"language": "xml"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/blacklist",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"blacklist"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "NETIYS",
+			"item": [
+				{
+					"name": "İYS Adres Yükleme",
+					"item": [
+						{
+							"name": "JSON POST ile Adres Ekle",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"header\": {\r\n        \"username\": \"kullaniciadi\",\r\n        \"password\": \"sifre\",       \r\n        \"brandCode\": \"markakodu\",\r\n        \"appkey\":\"xxx\"\r\n    },\r\n    \"body\": {\r\n        \"data\": [\r\n            {\r\n                \"type\": \"EPOSTA\",\r\n                \"source\": \"HS_WEB\",\r\n                \"recipient\": \"****\",\r\n                \"status\": \"ONAY\",\r\n                \"consentDate\": \"2021-07-29 09:40:00\",\r\n                \"recipientType\": \"BIREYSEL\"\r\n            },\r\n            {\r\n                \"type\": \"MESAJ\",\r\n                \"source\": \"HS_MESAJ\",\r\n                \"recipient\": \"+905*********\",\r\n                \"status\": \"ONAY\",\r\n                \"consentDate\": \"2021-07-29 09:40:00\",\r\n                \"recipientType\": \"BIREYSEL\"               \r\n            }                     \r\n        ]\r\n    }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/iys/add",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"iys",
+										"add"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "İYS Adres Sorgulama",
+					"item": [
+						{
+							"name": "JSON POST ile Adres Sorgula",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"header\": {\r\n        \"username\": \"kullaniciadi\",\r\n        \"password\": \"sifre\",\r\n        \"brandCode\": \"markakodu\",\r\n        \"appkey\":\"xxxx\"\r\n    },\r\n    \"body\": {\r\n        \"data\": [\r\n            {\r\n                \"type\": \"MESAJ\",\r\n                \"recipient\": \"+905*********\",\r\n                \"recipientType\": \"BIREYSEL\"          \r\n            }\r\n        ]\r\n    }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/iys/search",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"iys",
+										"search"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "SABİT TELEFON",
+			"item": [
+				{
+					"name": "Görüşme Detayı",
+					"item": [
+						{
+							"name": "XML POST Görüşme Detayı",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version='1.0' encoding='UTF-8'?>\r\n<mainbody>\r\n   <header>\r\n       <usercode>kullaniciadiniz</usercode>\r\n       <password>sifreniz</password>\r\n       <date>100520211000</date>\r\n       <direction>1</direction>\r\n       <appkey>xxx</appkey>       \r\n   </header>\r\n</mainbody>",
+									"options": {
+										"raw": {
+											"language": "xml"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/voice/report",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"voice",
+										"report"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Telesekreter Mesajları",
+					"item": [
+						{
+							"name": "XML POST Telesekreter Mesajları",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version='1.0'?>\r\n     <mainbody>\r\n       <header>  \r\n         <usercode>kullaniciadiniz</usercode>\r\n         <password>sifreniz</password>\r\n         <startdate>080520210000</startdate>\r\n         <stopdate>090520210000</stopdate>\r\n         <appkey>xxx</appkey> \r\n       </header>\r\n     </mainbody>",
+									"options": {
+										"raw": {
+											"language": "xml"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/voicesms/receive",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"voicesms",
+										"receive"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "SESLİ MESAJ",
+			"item": [
+				{
+					"name": "Sesli Mesaj Başlarma",
+					"item": [
+						{
+							"name": "Basit Sesli Mesaj",
+							"item": [
+								{
+									"name": "XML POST Basit Sesli Mesaj",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version='1.0'?>\r\n       <mainbody>\r\n       <header>\r\n       <usercode>8XXXXXXXXX</usercode>\r\n       <password>XXXX</password>\r\n       <startdate>10052021</startdate>\r\n       <starttime>1418</starttime>\r\n       <stopdate>10052021</stopdate>\r\n       <stoptime>1430</stoptime>\r\n       <appkey>xxx</appkey> \r\n       <key>1</key>          \r\n       </header>\r\n       <body>\r\n       <text>ilk okunacak metin</text>\r\n       <no>905*********</no>\r\n       <keys>\r\n          <keydetail>\r\n              <keyinfo>1</keyinfo>\r\n              <text>1i tuslayanlara okutulacak metin</text>\r\n          </keydetail>\r\n          <keydetail>\r\n              <keyinfo>2</keyinfo>\r\n              <text>2yi tuslayanlara okutulacak metin</text>\r\n          </keydetail>\r\n      </keys>\r\n       </body>\r\n       </mainbody>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/voicesms/send",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"voicesms",
+												"send"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Dinamik Sesli Mesaj",
+							"item": [
+								{
+									"name": "XML POST Dinamik Sesli Mesaj",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version='1.0' encoding='UTF-8'?>\r\n <mainbody>\r\n <header>         \r\n     <usercode>kullaniciadiniz</usercode>\r\n     <password>sifreniz</password>\r\n     <startdate>10052021</startdate>\r\n     <starttime>1215</starttime>\r\n     <stopdate>10052021</stopdate>\r\n     <stoptime>1218</stoptime>\r\n     <key>1</key>\r\n     <appkey>xxx</appkey> \r\n </header>         \r\n <body>            \r\n <voicemail>\r\n       <scenario>\r\n          <series s='1'>\r\n           <text>birinci metin</text>\r\n          </series>\r\n           <series s='2'>\r\n            <text>ikinci metin</text>\r\n           </series>\r\n           <number>\r\n               <no>05*********</no>\r\n           </number>\r\n           <keys>\r\n              <keydetail>\r\n                  <keyinfo>1</keyinfo>\r\n                  <text>1i tuslayanlara okutulacak metin</text>\r\n              </keydetail>\r\n              <keydetail>\r\n                  <keyinfo>2</keyinfo>\r\n                  <text>2yi tuslayanlara okutulacak metin</text>\r\n              </keydetail>\r\n          </keys>\r\n      </scenario>\r\n  </voicemail>    \r\n </body>            \r\n </mainbody>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/voicesms/send",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"voicesms",
+												"send"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "JSON POST Sesli mesaj",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"header\":{\r\n      \"username\":\"312XXXXXXXX\",\r\n      \"password\":\"XXXXX\",\r\n      \"key\":\"1\",\r\n      \"url\":\"\",\r\n      \"appkey\":\"xxxx\"\r\n  },\r\n  \"body\":{\r\n      \"scenario\":{\r\n        \"series\":[\r\n            {\r\n              \"seri\":\"1\",\r\n              \"text\":\"test mesajı\"\r\n            }\r\n        ],\r\n        \"numbers\":[\r\n            {\r\n              \"no\":\"5XXXXXXXXX\",\r\n              \"no\":\"5XXXXXXXXX\"\r\n              \r\n            }\r\n        ],\r\n        \"keys\":[\r\n            {\r\n              \"keyinfo\":\"1\",\r\n              \"text\":\"test bir \"\r\n            },\r\n            {\r\n              \"keyinfo\":\"2\",\r\n              \"text\":\"test iki\"\r\n            }\r\n        ]\r\n      }\r\n  }\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/voicesms/send",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"voicesms",
+												"send"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Raporlama Servisi",
+					"item": [
+						{
+							"name": "Sesli Mesaj Raporlar",
+							"item": [
+								{
+									"name": "HTTP POST Sesli Mesaj Rapor",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "https://api.netgsm.com.tr/voicesms/report?usercode=kullaniciadi&password=sifre&bulkid=27221105&type=0&status=0&tus=1&appkey=xxxxx",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"voicesms",
+												"report"
+											],
+											"query": [
+												{
+													"key": "usercode",
+													"value": "kullaniciadi"
+												},
+												{
+													"key": "password",
+													"value": "sifre"
+												},
+												{
+													"key": "bulkid",
+													"value": "27221105"
+												},
+												{
+													"key": "type",
+													"value": "0"
+												},
+												{
+													"key": "status",
+													"value": "0"
+												},
+												{
+													"key": "tus",
+													"value": "1"
+												},
+												{
+													"key": "appkey",
+													"value": "xxxxx"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "FAKS",
+			"item": [
+				{
+					"name": "Dosya Yükleme",
+					"item": [
+						{
+							"name": "Form Data Dosya Yükleme",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "dosya",
+											"type": "file",
+											"src": "/C:/Users/meryem.basut/Desktop/fakstest.PNG"
+										},
+										{
+											"key": "username",
+											"value": "kullaniciadi",
+											"type": "text"
+										},
+										{
+											"key": "password",
+											"value": "sifre",
+											"type": "text"
+										},
+										{
+											"key": "refid",
+											"value": "123456",
+											"type": "text"
+										},
+										{
+											"key": "parametre",
+											"value": "1",
+											"type": "text"
+										},
+										{
+											"key": "appkey",
+											"value": "xxxx",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/fax/send",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"fax",
+										"send"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Faks Gönderme",
+					"item": [
+						{
+							"name": "Form Data Faks Gönderme",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "username",
+											"value": "kullaniiciadi",
+											"type": "text"
+										},
+										{
+											"key": "password",
+											"value": "sifre",
+											"type": "text"
+										},
+										{
+											"key": "refid",
+											"value": "123456",
+											"type": "text"
+										},
+										{
+											"key": "telefon",
+											"value": "85********",
+											"type": "text"
+										},
+										{
+											"key": "parametre",
+											"value": "2",
+											"type": "text"
+										},
+										{
+											"key": "appkey",
+											"value": "xxx",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/fax/send",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"fax",
+										"send"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Gelen Faks",
+					"item": [
+						{
+							"name": "XML POST Gelen Fax",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version=\"1.0\"?>\r\n<mainbody>\r\n\t<header>\r\n\t\t<company>Netgsm</company>\r\n\t\t<usercode>kullaniciadi</usercode>\r\n\t\t<password>sifre</password>\r\n\t\t<startdate>150320210101</startdate>\r\n\t\t<stopdate>100420210101</stopdate>\r\n\t\t<type>1</type>\r\n        <appkey>xxx</appkey> \r\n\t</header>\r\n</mainbody>",
+									"options": {
+										"raw": {
+											"language": "xml"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/fax/receive",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"fax",
+										"receive"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Raporlama",
+					"item": [
+						{
+							"name": "HTTP POST Raporlama",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "https://api.netgsm.com.tr/fax/report?usercode=kullaniciadi&password=sifre&bulkid=1434555&type=0&status=1&appkey=xxxx",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"fax",
+										"report"
+									],
+									"query": [
+										{
+											"key": "usercode",
+											"value": "kullaniciadi"
+										},
+										{
+											"key": "password",
+											"value": "sifre"
+										},
+										{
+											"key": "bulkid",
+											"value": "1434555"
+										},
+										{
+											"key": "type",
+											"value": "0"
+										},
+										{
+											"key": "status",
+											"value": "1"
+										},
+										{
+											"key": "appkey",
+											"value": "xxxx"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "HESAP APILERİ",
+			"item": [
+				{
+					"name": "Kredi & Paket Sorgulama",
+					"item": [
+						{
+							"name": "JSON POST",
+							"item": [
+								{
+									"name": "JSON POST Kredi /& Paket",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n\"usercode\": \"abone_numarasi\",\r\n\"password\":\"alt_kullanici_sifresi\",\r\n\"stip\":2,\r\n\"appkey\":\"xxx\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/balance",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"balance"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "ESKİ APILER",
+			"item": [
+				{
+					"name": "SMS Gönderimi",
+					"item": [
+						{
+							"name": "JSON POST",
+							"item": [
+								{
+									"name": "SMS Gönderimi",
+									"request": {
+										"auth": {
+											"type": "basic",
+											"basic": [
+												{
+													"key": "password",
+													"value": "",
+													"type": "string"
+												},
+												{
+													"key": "username",
+													"value": "",
+													"type": "string"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"msgheader\": \"850xxxxxxx\",\r\n    \"startdate\": \"\",\r\n    \"stopdate\": \"\",\r\n    \"appname\": \"\",\r\n    \"iysfilter\": \"\",\r\n    \"partnercode\": \"\",\r\n    \"encoding\": \"TR\",\r\n    \"messages\": [\r\n        {\r\n            \"msg\": \"test1\",\r\n            \"no\": \"554xxxxxxx\"\r\n        },\r\n        {\r\n            \"msg\": \"test2\",\r\n            \"no\": \"510xxxxxxx\"\r\n        }\r\n    ]\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/send/rest/v1",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"send",
+												"rest",
+												"v1"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "XML POST",
+							"item": [
+								{
+									"name": "1:n Gönderim",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n <mainbody>\r\n <header>\r\n <company dil=\"TR\">Netgsm</company>        \r\n <usercode>KullaniciAdi</usercode>\r\n <password>Sifre</password>\r\n <type>1:n</type>\r\n <appkey>xxx</appkey> \r\n <msgheader>Baslik</msgheader>\r\n </header>\r\n <body>\r\n <msg>\r\n <![CDATA[Mesaj Metnim]]>\r\n </msg>\r\n <no>5XXXXXXXXX</no>\r\n <no>5XXXXXXXXX</no>\r\n </body>\r\n </mainbody>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/send/xml",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"send",
+												"xml"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "n:n Gönderim",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n   <mainbody>\r\n   <header>\r\n   <company dil=\"TR\">Netgsm</company>\r\n   <usercode>KullaniciAdi</usercode>\r\n   <password>Sifre</password>\r\n   <type>n:n</type>\r\n   <msgheader>Baslik</msgheader>\r\n   <appkey>xxx</appkey> \r\n   </header>\r\n   <body>\r\n   <mp><msg><![CDATA[Mesaj1]]></msg><no>5XXXXXXXXX</no></mp>\r\n   <mp><msg><![CDATA[Mesaj2]]></msg><no>5XXXXXXXXX</no></mp>\r\n   </body>\r\n   </mainbody>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/send/xml",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"send",
+												"xml"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "İleri tarihli gönderim",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n <mainbody>\r\n <header>\r\n <company dil=\"TR\">Netgsm</company>\r\n <usercode>kullanıcıadı</usercode>\r\n <password>şifre</password>\r\n <type>1:n</type>\r\n <msgheader>mesajbaşlığı</msgheader>\r\n <startdate>230520221300</startdate>\r\n <stopdate>230520221900</stopdate>\r\n <appkey>xxx</appkey> \r\n </header>\r\n <body>\r\n <msg>\r\n <![CDATA[Mesaj Metnim]]>\r\n </msg>\r\n <no>5XXXXXXXXX</no>\r\n </body>\r\n </mainbody>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/send/xml",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"send",
+												"xml"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "SMS İptali",
+					"item": [
+						{
+							"name": "İleri tarihli SMS tarih güncelleme",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version='1.0' encoding='UTF-8'?>\r\n<mainbody>\r\n   <header>\r\n       <usercode>kullanıcıadı</usercode>\r\n       <password>şifre</password>\r\n       <startdate>230520222000</startdate>\r\n       <stopdate>230520222300</stopdate>\r\n       <gorevid>1086407717</gorevid>\r\n       <type>1</type>\r\n       <appkey>xxx</appkey> \r\n   </header>\r\n</mainbody>",
+									"options": {
+										"raw": {
+											"language": "xml"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/edit",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"edit"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "İleri tarihli SMS iptali",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "<?xml version='1.0' encoding='UTF-8'?>\r\n<mainbody>\r\n   <header>\r\n       <usercode>kullanıcıadı</usercode>\r\n       <password>şifre</password>\r\n       <gorevid>görevid</gorevid>\r\n       <type>0</type>\r\n       <appkey>xxx</appkey> \r\n   </header>\r\n</mainbody>",
+									"options": {
+										"raw": {
+											"language": "xml"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/edit",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"edit"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "SMS Sorgulama",
+					"item": [
+						{
+							"name": "HTTP POST",
+							"item": [
+								{
+									"name": "HTTP POST Rapor",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/report?usercode=kullanicidiniz&password=sifreniz&bulkid=748372846&type=0&status=100&version=2&appkey=xxxx",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"report"
+											],
+											"query": [
+												{
+													"key": "usercode",
+													"value": "kullanicidiniz",
+													"description": "Abone numaranız"
+												},
+												{
+													"key": "password",
+													"value": "sifreniz",
+													"description": "Kullanıcı şifreniz"
+												},
+												{
+													"key": "bulkid",
+													"value": "748372846",
+													"description": "Görev id"
+												},
+												{
+													"key": "type",
+													"value": "0",
+													"description": "Sorgulama tipi"
+												},
+												{
+													"key": "status",
+													"value": "100",
+													"description": "Sorgulama yapılacak mesaj durumu"
+												},
+												{
+													"key": "version",
+													"value": "2"
+												},
+												{
+													"key": "appkey",
+													"value": "xxxx"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "SOAP Servisi",
+							"item": [
+								{
+									"name": "SOAP Servisi ile SMS Sorgulama",
+									"protocolProfileBehavior": {
+										"disabledSystemHeaders": {
+											"content-type": true
+										}
+									},
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "text/xml",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version=\"1.0\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\"\r\n             xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\r\n  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n    <SOAP-ENV:Body>\r\n        <ns3:raporV3 xmlns:ns3=\"http://sms/\">\r\n            <username>8XXXXXXXXX</username>\r\n            <password>XXXX</password>\r\n            <bulkid>görevid</bulkid>\r\n            <appkey>xxx</appkey> \r\n        </ns3:raporV3>\r\n    </SOAP-ENV:Body>\r\n</SOAP-ENV:Envelope>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://soap.netgsm.com.tr:8080/Sms_webservis/SMS?wsdl=",
+											"protocol": "http",
+											"host": [
+												"soap",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"port": "8080",
+											"path": [
+												"Sms_webservis",
+												"SMS"
+											],
+											"query": [
+												{
+													"key": "wsdl",
+													"value": ""
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "JSON POST",
+							"item": [
+								{
+									"name": "JSON POST RAPOR",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"report\": {\r\n        \"usercode\": \"abonenumarasi\",\r\n        \"password\": \"alt_kullanıcı_sifresi\",\r\n        \"bulkid\": \"1895512113,1814793052\",\r\n        \"appkey\": \"uygulama_kodu\",\r\n        \"type\": 1,\r\n        \"status\": 1,\r\n        \"version\": 2,\r\n        \"bastar\": \"220720240000\",\r\n        \"bittar\": \"280720240000\"\r\n    \r\n    }\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/report",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"report"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "XML POST",
+							"item": [
+								{
+									"name": "XML POST RAPOR",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "<report>\r\n    <usercode>abone_numarasi</usercode>\r\n    <password>alt_kullanıcı_sifresi</password>\r\n    <bulkid>1892746890,1892746939</bulkid>\r\n    <appkey>uygulama_kodu</appkey>\r\n    <type>2</type>\r\n    <status>1</status>\r\n    <version>2</version>\r\n    <bastar>05/05/2024</bastar>\r\n    <bittar>17072024</bittar>\r\n    <telno>5437428359,5452730107</telno>\r\n</report>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/report",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"report"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Gelen SMS",
+					"item": [
+						{
+							"name": "XML POST",
+							"item": [
+								{
+									"name": "XML POST Gelen SMS",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version='1.0' encoding='UTF-8'?>\r\n<mainbody>\r\n   <header>\r\n       <usercode>kullanıcıadı</usercode>\r\n       <password>şifre</password>\r\n       <startdate>230520220800</startdate>\r\n       <stopdate>230520220947</stopdate>\r\n       <type>0</type>\r\n       <appkey>xxx</appkey> \r\n   </header>\r\n</mainbody>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://api.netgsm.com.tr/sms/receive",
+											"protocol": "https",
+											"host": [
+												"api",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"path": [
+												"sms",
+												"receive"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "SOAP Servisi",
+							"item": [
+								{
+									"name": "SOAP Servisi ile Gelen SMS",
+									"protocolProfileBehavior": {
+										"disabledSystemHeaders": {
+											"content-type": true
+										}
+									},
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "text/xml",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version=\"1.0\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\"\r\n             xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\r\n  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n    <SOAP-ENV:Body>\r\n        <ns3:gelensmsV2 xmlns:ns3=\"http://sms/\">\r\n            <username>8XXXXXXX</username>\r\n            <password>XXXX</password>\r\n            <startdate>090920211710</startdate>\r\n            <stopdate>090920211723</stopdate>\r\n            <appkey>xxx</appkey> \r\n        </ns3:gelensmsV2>\r\n    </SOAP-ENV:Body>\r\n</SOAP-ENV:Envelope>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://soap.netgsm.com.tr:8080/Sms_webservis/SMS?wsdl=",
+											"protocol": "http",
+											"host": [
+												"soap",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"port": "8080",
+											"path": [
+												"Sms_webservis",
+												"SMS"
+											],
+											"query": [
+												{
+													"key": "wsdl",
+													"value": ""
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Gönderici Adı Sorgulama",
+					"item": [
+						{
+							"name": "SOAP Servisi",
+							"item": [
+								{
+									"name": "SOAP Servisi ile Gönderici adı Sorgulama",
+									"protocolProfileBehavior": {
+										"disabledSystemHeaders": {
+											"content-type": true
+										}
+									},
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "text/xml",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "<?xml version=\"1.0\"?>\r\n<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\"\r\n             xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\r\n  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n    <SOAP-ENV:Body>\r\n        <ns3:gondericiadlari xmlns:ns3=\"http://sms/\">\r\n            <username>8XXXXXXXXX</username>\r\n            <password>XXXX</password>\r\n            <appkey>xxx</appkey> \r\n        </ns3:gondericiadlari>\r\n    </SOAP-ENV:Body>\r\n</SOAP-ENV:Envelope>",
+											"options": {
+												"raw": {
+													"language": "xml"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://soap.netgsm.com.tr:8080/Sms_webservis/SMS?wsdl=",
+											"protocol": "http",
+											"host": [
+												"soap",
+												"netgsm",
+												"com",
+												"tr"
+											],
+											"port": "8080",
+											"path": [
+												"Sms_webservis",
+												"SMS"
+											],
+											"query": [
+												{
+													"key": "wsdl",
+													"value": ""
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Gönderici Adı Sorgulama",
+							"request": {
+								"auth": {
+									"type": "basic",
+									"basic": [
+										{
+											"key": "password",
+											"value": "{{vault:authorization-password}}",
+											"type": "string"
+										},
+										{
+											"key": "username",
+											"value": "850XXXXXXX",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"usercode\": \"850xxxxxxx\",\r\n    \"password\": \"XXXXXXX\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://api.netgsm.com.tr/sms/rest/v2/msgheader",
+									"protocol": "https",
+									"host": [
+										"api",
+										"netgsm",
+										"com",
+										"tr"
+									],
+									"path": [
+										"sms",
+										"rest",
+										"v2",
+										"msgheader"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -13,7 +13,7 @@ namespace Business.Handlers.MessagingFeatures.Queries
     /// </summary>
     public class GetMessagingFeaturesQuery : IRequest<IDataResult<MessagingFeaturesDto>>
     {
-        public int UserId { get; set; }
+        public int PlantAnalysisId { get; set; }
 
         public class GetMessagingFeaturesQueryHandler : IRequestHandler<GetMessagingFeaturesQuery, IDataResult<MessagingFeaturesDto>>
         {
@@ -26,7 +26,7 @@ namespace Business.Handlers.MessagingFeatures.Queries
 
             public async Task<IDataResult<MessagingFeaturesDto>> Handle(GetMessagingFeaturesQuery request, CancellationToken cancellationToken)
             {
-                return await _messagingFeatureService.GetUserFeaturesAsync(request.UserId);
+                return await _messagingFeatureService.GetUserFeaturesAsync(request.PlantAnalysisId);
             }
         }
     }

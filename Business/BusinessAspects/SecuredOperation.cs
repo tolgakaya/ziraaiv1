@@ -8,6 +8,7 @@ using Core.Utilities.Interceptors;
 using Core.Utilities.IoC;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Business.BusinessAspects
 {
@@ -40,8 +41,26 @@ namespace Business.BusinessAspects
 
             var oprClaims = _cacheManager.Get<IEnumerable<string>>($"{CacheKeys.UserIdForClaim}={userId}");
 
-            var operationName = invocation.TargetType.ReflectedType.Name;
-            if (oprClaims.Contains(operationName))
+            // Get operation name from handler class name
+            // Example: "TransferCodesToDealerCommandHandler" -> "TransferCodesToDealerCommand"
+            // Use TargetType to get the actual handler class, not the interface
+            var operationName = invocation.TargetType?.Name;
+
+            if (string.IsNullOrEmpty(operationName))
+            {
+                throw new SecurityException(Messages.AuthorizationsDenied);
+            }
+
+            // Remove only "Handler" suffix to match OperationClaim naming convention
+            // Claims are stored as: "CreateUserCommand", "GetUsersQuery", etc. (without "Handler")
+            operationName = operationName.Replace("Handler", "");
+
+            // DEBUG: Log for troubleshooting
+            var logger = ServiceTool.ServiceProvider.GetService<ILogger<SecuredOperation>>();
+            logger?.LogInformation($"[SecuredOperation] UserId: {userId}, Operation: {operationName}, CachedClaims: {(oprClaims != null ? string.Join(", ", oprClaims) : "NULL")}");
+
+            // If operation claims exist and contain this operation, allow access
+            if (oprClaims != null && oprClaims.Contains(operationName))
             {
                 return;
             }

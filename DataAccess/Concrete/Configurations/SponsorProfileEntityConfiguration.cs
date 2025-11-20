@@ -21,6 +21,9 @@ namespace DataAccess.Concrete.Configurations
             builder.Property(x => x.SponsorLogoUrl)
                 .HasMaxLength(500);
             
+            builder.Property(x => x.SponsorLogoThumbnailUrl)
+                .HasMaxLength(500);
+            
             builder.Property(x => x.WebsiteUrl)
                 .HasMaxLength(500);
             

@@ -8,5 +8,7 @@
         public static string UserRegisteredSuccessfully => "UserRegisteredSuccessfully";
         public static string InvalidPhoneFormat => "InvalidPhoneFormat";
         public static string PhoneNumberRequired => "PhoneNumberRequired";
+        public static string PasswordChanged => "PasswordChanged";
+        public static string UserDeactivated => "Your account has been deactivated by an administrator. Please contact support for assistance.";
     }
 }

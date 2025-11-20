@@ -48,9 +48,13 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     message.IsRead = true;
                     message.ReadDate = now;
                     message.MessageStatus = "Read";
+                    message.UpdatedDate = now;
                     _messageRepository.Update(message);
                     markedCount++;
                 }
+
+                // ✅ FIX: Save changes to database
+                await _messageRepository.SaveChangesAsync();
 
                 return new SuccessDataResult<int>(markedCount, $"{markedCount} message(s) marked as read");
             }

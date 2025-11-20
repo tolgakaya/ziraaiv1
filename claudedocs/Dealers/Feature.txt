@@ -1,0 +1,120 @@
+SubscriptionTiers
+"Id","TierName","DisplayName","Description","DailyRequestLimit","MonthlyRequestLimit","MonthlyPrice","YearlyPrice","Currency","PrioritySupport","AdvancedAnalytics","ApiAccess","ResponseTimeHours","AdditionalFeatures","IsActive","DisplayOrder","CreatedDate","UpdatedDate","CreatedUserId","UpdatedUserId","MinPurchaseQuantity","MaxPurchaseQuantity","RecommendedQuantity"
+5,Trial,Trial,Free trial for new users - try our service risk-free,1,30,0.00,0.00,TRY,false,false,true,72,"[""Basic email support"", ""Community forum access"", ""Getting started guide""]",true,0,2025-08-13 18:50:06.745 +0300,,,,1,10,5
+1,S,Small,Perfect for small farms and hobby gardeners,5,50,99.99,1079.99,TRY,false,false,true,48,"[""Basic email support""]",true,1,2025-08-13 17:02:31.476 +0300,,,,10,100,50
+2,M,Medium,Ideal for professional farmers,20,200,299.99,3239.99,TRY,true,false,true,24,"[""Priority support""]",true,2,2025-08-13 17:02:31.476 +0300,,,,10,100,50
+3,L,Large,For large farms and companies,50,500,599.99,6479.99,TRY,true,true,true,12,"[""Advanced analytics""]",true,3,2025-08-13 17:02:31.476 +0300,,,,10,100,50
+4,XL,Extra Large,Enterprise solution,200,2000,1499.99,16199.99,TRY,true,true,true,4,"[""Dedicated manager""]",true,4,2025-08-13 17:02:31.476 +0300,,,,10,100,50
+
+
+
+CREATE TABLE public."SubscriptionTiers" (
+	"Id" serial4 NOT NULL,
+	"TierName" varchar(10) NOT NULL,
+	"DisplayName" varchar(50) NOT NULL,
+	"Description" text NULL,
+	"DailyRequestLimit" int4 NOT NULL,
+	"MonthlyRequestLimit" int4 NOT NULL,
+	"MonthlyPrice" numeric(10, 2) NOT NULL,
+	"YearlyPrice" numeric(10, 2) NULL,
+	"Currency" varchar(3) DEFAULT 'TRY'::character varying NULL,
+	"PrioritySupport" bool DEFAULT false NULL,
+	"AdvancedAnalytics" bool DEFAULT false NULL,
+	"ApiAccess" bool DEFAULT true NULL,
+	"ResponseTimeHours" int4 DEFAULT 48 NULL,
+	"AdditionalFeatures" text DEFAULT '[]'::text NULL,
+	"IsActive" bool DEFAULT true NULL,
+	"DisplayOrder" int4 DEFAULT 0 NULL,
+	"CreatedDate" timestamptz DEFAULT CURRENT_TIMESTAMP NULL,
+	"UpdatedDate" timestamptz NULL,
+	"CreatedUserId" int4 NULL,
+	"UpdatedUserId" int4 NULL,
+	"MinPurchaseQuantity" int4 DEFAULT 10 NOT NULL,
+	"MaxPurchaseQuantity" int4 DEFAULT 10000 NOT NULL,
+	"RecommendedQuantity" int4 DEFAULT 100 NOT NULL,
+	CONSTRAINT "CK_SubscriptionTiers_MaxQuantity_GreaterThanMin" CHECK (("MaxPurchaseQuantity" >= "MinPurchaseQuantity")),
+	CONSTRAINT "CK_SubscriptionTiers_MinQuantity_Positive" CHECK (("MinPurchaseQuantity" > 0)),
+	CONSTRAINT "CK_SubscriptionTiers_RecommendedQuantity_InRange" CHECK ((("RecommendedQuantity" >= "MinPurchaseQuantity") AND ("RecommendedQuantity" <= "MaxPurchaseQuantity"))),
+	CONSTRAINT "SubscriptionTiers_pkey" PRIMARY KEY ("Id"),
+	CONSTRAINT unique_tier_name UNIQUE ("TierName")
+);
+CREATE INDEX "IX_SubscriptionTiers_Quantities" ON public."SubscriptionTiers" USING btree ("MinPurchaseQuantity", "MaxPurchaseQuantity");
+
+
+TierFeatures
+"Id","FeatureKey","DisplayName","Description","DefaultConfigJson","RequiresConfiguration","IsActive","IsDeprecated","CreatedDate","UpdatedDate"
+1,messaging,Messaging,Allows sponsors to send messages to farmers,,false,true,false,2025-10-26 23:03:35.474,
+2,voice_messages,Voice Messages,Allows sponsors to send voice messages to farmers,,false,true,false,2025-10-26 23:03:35.474,
+3,smart_links,Smart Links,Advanced smart link management and analytics,,false,true,false,2025-10-26 23:03:35.474,
+4,advanced_analytics,Advanced Analytics,Access to detailed analytics and reports,,false,true,false,2025-10-26 23:03:35.474,
+5,api_access,API Access,Access to REST API endpoints for integration,,false,true,false,2025-10-26 23:03:35.474,
+6,sponsor_visibility,Sponsor Visibility,Profile and logo visibility to farmers,"{""showLogo"": false, ""showProfile"": false}",true,true,false,2025-10-26 23:03:35.474,
+8,priority_support,Priority Support,Priority customer support with guaranteed response time,"{""responseTimeHours"": 24}",true,true,false,2025-10-26 23:03:35.474,
+7,data_access_percentage,Data Access Percentage,Percentage of farmer data accessible to sponsor,"{""percentage"": 100}",true,true,false,2025-10-26 23:03:35.474,
+
+-- public."TierFeatures" definition
+
+-- Drop table
+
+-- DROP TABLE public."TierFeatures";
+
+CREATE TABLE public."TierFeatures" (
+	"Id" serial4 NOT NULL,
+	"SubscriptionTierId" int4 NOT NULL,
+	"FeatureId" int4 NOT NULL,
+	"IsEnabled" bool DEFAULT true NOT NULL,
+	"ConfigurationJson" varchar(2000) NULL,
+	"EffectiveDate" timestamp NULL,
+	"ExpiryDate" timestamp NULL,
+	"CreatedDate" timestamp DEFAULT now() NOT NULL,
+	"UpdatedDate" timestamp NULL,
+	"CreatedByUserId" int4 NOT NULL,
+	"ModifiedByUserId" int4 NULL,
+	CONSTRAINT "TierFeatures_pkey" PRIMARY KEY ("Id"),
+	CONSTRAINT "UQ_TierFeatures_TierId_FeatureId" UNIQUE ("SubscriptionTierId", "FeatureId")
+);
+CREATE INDEX "IX_TierFeatures_FeatureId" ON public."TierFeatures" USING btree ("FeatureId");
+CREATE INDEX "IX_TierFeatures_IsEnabled" ON public."TierFeatures" USING btree ("IsEnabled");
+CREATE INDEX "IX_TierFeatures_SubscriptionTierId" ON public."TierFeatures" USING btree ("SubscriptionTierId");
+
+
+-- public."TierFeatures" foreign keys
+
+ALTER TABLE public."TierFeatures" ADD CONSTRAINT "FK_TierFeatures_Features" FOREIGN KEY ("FeatureId") REFERENCES public."Features"("Id") ON DELETE CASCADE;
+ALTER TABLE public."TierFeatures" ADD CONSTRAINT "FK_TierFeatures_SubscriptionTiers" FOREIGN KEY ("SubscriptionTierId") REFERENCES public."SubscriptionTiers"("Id") ON DELETE CASCADE;
+
+
+
+Features
+"Id","FeatureKey","DisplayName","Description","DefaultConfigJson","RequiresConfiguration","IsActive","IsDeprecated","CreatedDate","UpdatedDate"
+1,messaging,Messaging,Allows sponsors to send messages to farmers,,false,true,false,2025-10-26 23:03:35.474,
+2,voice_messages,Voice Messages,Allows sponsors to send voice messages to farmers,,false,true,false,2025-10-26 23:03:35.474,
+3,smart_links,Smart Links,Advanced smart link management and analytics,,false,true,false,2025-10-26 23:03:35.474,
+4,advanced_analytics,Advanced Analytics,Access to detailed analytics and reports,,false,true,false,2025-10-26 23:03:35.474,
+5,api_access,API Access,Access to REST API endpoints for integration,,false,true,false,2025-10-26 23:03:35.474,
+6,sponsor_visibility,Sponsor Visibility,Profile and logo visibility to farmers,"{""showLogo"": false, ""showProfile"": false}",true,true,false,2025-10-26 23:03:35.474,
+8,priority_support,Priority Support,Priority customer support with guaranteed response time,"{""responseTimeHours"": 24}",true,true,false,2025-10-26 23:03:35.474,
+7,data_access_percentage,Data Access Percentage,Percentage of farmer data accessible to sponsor,"{""percentage"": 100}",true,true,false,2025-10-26 23:03:35.474,
+
+-- public."Features" definition
+
+-- Drop table
+
+-- DROP TABLE public."Features";
+
+CREATE TABLE public."Features" (
+	"Id" serial4 NOT NULL,
+	"FeatureKey" varchar(100) NOT NULL,
+	"DisplayName" varchar(200) NOT NULL,
+	"Description" varchar(1000) NULL,
+	"DefaultConfigJson" varchar(2000) NULL,
+	"RequiresConfiguration" bool DEFAULT false NOT NULL,
+	"IsActive" bool DEFAULT true NOT NULL,
+	"IsDeprecated" bool DEFAULT false NOT NULL,
+	"CreatedDate" timestamp DEFAULT now() NOT NULL,
+	"UpdatedDate" timestamp NULL,
+	CONSTRAINT "Features_pkey" PRIMARY KEY ("Id"),
+	CONSTRAINT "UQ_Features_FeatureKey" UNIQUE ("FeatureKey")
+);
+CREATE INDEX "IX_Features_FeatureKey" ON public."Features" USING btree ("FeatureKey");
+CREATE INDEX "IX_Features_IsActive" ON public."Features" USING btree ("IsActive");

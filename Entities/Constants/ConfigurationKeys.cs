@@ -25,6 +25,13 @@ namespace Entities.Constants
             public const string N8NTimeout = "N8N_TIMEOUT_SECONDS";
         }
         
+        // Messaging Configuration Keys
+        public static class Messaging
+        {
+            public const string DailyMessageLimitPerFarmer = "MESSAGING_DAILY_LIMIT_PER_FARMER";
+            public const string EnableRateLimit = "MESSAGING_ENABLE_RATE_LIMIT";
+        }
+        
         // RabbitMQ Configuration Keys
         public static class RabbitMQ
         {

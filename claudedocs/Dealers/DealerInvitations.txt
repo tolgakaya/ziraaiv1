@@ -1,0 +1,47 @@
+-- public."DealerInvitations" definition
+
+-- Drop table
+
+-- DROP TABLE public."DealerInvitations";
+
+CREATE TABLE public."DealerInvitations" (
+	"Id" serial4 NOT NULL,
+	"SponsorId" int4 NOT NULL,
+	"Email" varchar(255) NULL,
+	"Phone" varchar(20) NULL,
+	"DealerName" varchar(255) NOT NULL,
+	"Status" varchar(50) DEFAULT 'Pending'::character varying NOT NULL,
+	"InvitationType" varchar(50) NOT NULL,
+	"InvitationToken" varchar(255) NULL,
+	"PurchaseId" int4 NOT NULL,
+	"CodeCount" int4 NOT NULL,
+	"CreatedDealerId" int4 NULL,
+	"AcceptedDate" timestamp NULL,
+	"AutoCreatedPassword" varchar(255) NULL,
+	"CreatedDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"ExpiryDate" timestamp NOT NULL,
+	"CancelledDate" timestamp NULL,
+	"CancelledByUserId" int4 NULL,
+	"Notes" text NULL,
+	CONSTRAINT "CHK_DealerInvitations_CodeCount" CHECK (("CodeCount" > 0)),
+	CONSTRAINT "CHK_DealerInvitations_Contact" CHECK ((("Email" IS NOT NULL) OR ("Phone" IS NOT NULL))),
+	CONSTRAINT "CHK_DealerInvitations_Status" CHECK ((("Status")::text = ANY ((ARRAY['Pending'::character varying, 'Accepted'::character varying, 'Expired'::character varying, 'Cancelled'::character varying])::text[]))),
+	CONSTRAINT "CHK_DealerInvitations_Type" CHECK ((("InvitationType")::text = ANY ((ARRAY['Invite'::character varying, 'AutoCreate'::character varying])::text[]))),
+	CONSTRAINT "DealerInvitations_InvitationToken_key" UNIQUE ("InvitationToken"),
+	CONSTRAINT "DealerInvitations_pkey" PRIMARY KEY ("Id")
+);
+CREATE INDEX "IX_DealerInvitations_CreatedDealer" ON public."DealerInvitations" USING btree ("CreatedDealerId");
+CREATE INDEX "IX_DealerInvitations_Email" ON public."DealerInvitations" USING btree ("Email");
+CREATE INDEX "IX_DealerInvitations_ExpiryDate" ON public."DealerInvitations" USING btree ("ExpiryDate");
+CREATE INDEX "IX_DealerInvitations_Phone" ON public."DealerInvitations" USING btree ("Phone");
+CREATE INDEX "IX_DealerInvitations_SponsorId" ON public."DealerInvitations" USING btree ("SponsorId");
+CREATE INDEX "IX_DealerInvitations_Status" ON public."DealerInvitations" USING btree ("Status");
+CREATE INDEX "IX_DealerInvitations_Token" ON public."DealerInvitations" USING btree ("InvitationToken");
+
+
+-- public."DealerInvitations" foreign keys
+
+ALTER TABLE public."DealerInvitations" ADD CONSTRAINT "FK_DealerInvitations_CancelledBy" FOREIGN KEY ("CancelledByUserId") REFERENCES public."Users"("UserId") ON DELETE SET NULL;
+ALTER TABLE public."DealerInvitations" ADD CONSTRAINT "FK_DealerInvitations_CreatedDealer" FOREIGN KEY ("CreatedDealerId") REFERENCES public."Users"("UserId") ON DELETE SET NULL;
+ALTER TABLE public."DealerInvitations" ADD CONSTRAINT "FK_DealerInvitations_Purchase" FOREIGN KEY ("PurchaseId") REFERENCES public."SponsorshipPurchases"("Id") ON DELETE CASCADE;
+ALTER TABLE public."DealerInvitations" ADD CONSTRAINT "FK_DealerInvitations_Sponsor" FOREIGN KEY ("SponsorId") REFERENCES public."Users"("UserId") ON DELETE CASCADE;

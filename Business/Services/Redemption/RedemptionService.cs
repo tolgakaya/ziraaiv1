@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using Business.Constants;
+using Business.Services.Analytics;
 using Business.Services.Authentication;
 using Core.Utilities.Results;
 using Core.Utilities.Security.Hashing;
@@ -27,6 +28,7 @@ namespace Business.Services.Redemption
         private readonly IUserGroupRepository _userGroupRepository;
         private readonly ITokenHelper _tokenHelper;
         private readonly IConfiguration _configuration;
+        private readonly ISponsorDealerAnalyticsCacheService _analyticsCache;
         private readonly ILogger<RedemptionService> _logger;
 
         public RedemptionService(
@@ -38,6 +40,7 @@ namespace Business.Services.Redemption
             IUserGroupRepository userGroupRepository,
             ITokenHelper tokenHelper,
             IConfiguration configuration,
+            ISponsorDealerAnalyticsCacheService analyticsCache,
             ILogger<RedemptionService> logger)
         {
             _codeRepository = codeRepository;
@@ -48,6 +51,7 @@ namespace Business.Services.Redemption
             _userGroupRepository = userGroupRepository;
             _tokenHelper = tokenHelper;
             _configuration = configuration;
+            _analyticsCache = analyticsCache;
             _logger = logger;
         }
 
@@ -365,9 +369,15 @@ namespace Business.Services.Redemption
                 sponsorshipCode.UsedByUserId = userId;
                 sponsorshipCode.UsedDate = now;
                 sponsorshipCode.CreatedSubscriptionId = subscription.Id;
-                
+
                 _codeRepository.Update(sponsorshipCode);
                 await _codeRepository.SaveChangesAsync();
+
+                // Update analytics cache - code redeemed by farmer
+                if (sponsorshipCode.SponsorId > 0 && sponsorshipCode.DealerId.HasValue)
+                {
+                    await _analyticsCache.OnCodeRedeemedAsync(sponsorshipCode.SponsorId, sponsorshipCode.DealerId.Value);
+                }
 
                 // Load tier info for response
                 subscription.SubscriptionTier = tier;

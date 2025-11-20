@@ -1,28 +1,37 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Business.Services.Configuration;
 using DataAccess.Abstract;
+using Entities.Constants;
 
 namespace Business.Services.Sponsorship
 {
     /// <summary>
     /// Implementation of message rate limiting service
-    /// Enforces 10 messages per day per farmer for L/XL tier sponsors
+    /// Enforces configurable daily message limit per farmer for L/XL tier sponsors
+    /// Default: 10 messages per day (configurable via database)
     /// </summary>
     public class MessageRateLimitService : IMessageRateLimitService
     {
         private readonly IAnalysisMessageRepository _messageRepository;
-        private const int DAILY_MESSAGE_LIMIT = 10;
+        private readonly IConfigurationService _configurationService;
 
-        public MessageRateLimitService(IAnalysisMessageRepository messageRepository)
+        public MessageRateLimitService(
+            IAnalysisMessageRepository messageRepository,
+            IConfigurationService configurationService)
         {
             _messageRepository = messageRepository;
+            _configurationService = configurationService;
         }
 
         public async Task<bool> CanSendMessageToFarmerAsync(int sponsorId, int farmerId)
         {
+            var dailyLimit = await _configurationService.GetIntValueAsync(
+                ConfigurationKeys.Messaging.DailyMessageLimitPerFarmer, 10);
+            
             var todayCount = await GetTodayMessageCountAsync(sponsorId, farmerId);
-            return todayCount < DAILY_MESSAGE_LIMIT;
+            return todayCount < dailyLimit;
         }
 
         public async Task<int> GetTodayMessageCountAsync(int sponsorId, int farmerId)
@@ -44,8 +53,11 @@ namespace Business.Services.Sponsorship
 
         public async Task<int> GetRemainingMessagesAsync(int sponsorId, int farmerId)
         {
+            var dailyLimit = await _configurationService.GetIntValueAsync(
+                ConfigurationKeys.Messaging.DailyMessageLimitPerFarmer, 10);
+                
             var todayCount = await GetTodayMessageCountAsync(sponsorId, farmerId);
-            var remaining = DAILY_MESSAGE_LIMIT - todayCount;
+            var remaining = dailyLimit - todayCount;
             return remaining > 0 ? remaining : 0;
         }
     }
