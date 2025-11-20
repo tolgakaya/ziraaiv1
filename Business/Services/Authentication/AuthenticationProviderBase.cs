@@ -131,21 +131,22 @@ namespace Business.Services.Authentication
                 _logger?.LogInformation("[PrepareOTP] Reusing existing valid OTP code {Code} for {Phone}", mobileCode, externalUserId);
             }
 
-            // SECURITY: Never return OTP code in production
-            // Only return for development/testing when explicitly enabled via environment variable
-            var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
-            var returnOtpInResponse = Environment.GetEnvironmentVariable("SMS_RETURN_OTP_IN_RESPONSE")?.ToLower() == "true";
+            // SECURITY: CRITICAL - Never return OTP code in production/staging
+            // ONLY return OTP in local development environment
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+            var isLocalDevelopment = environment.Equals("Development", StringComparison.OrdinalIgnoreCase);
             
-            if (isDevelopment || returnOtpInResponse)
+            if (isLocalDevelopment)
             {
                 _logger?.LogWarning("[PrepareOTP] ⚠️ DEVELOPMENT MODE: Returning OTP {Code} in response", mobileCode);
                 return new LoginUserResult
-                    { Message = Messages.SendMobileCode + mobileCode, Status = LoginUserResult.LoginStatus.Ok };
+                    { Message = Messages.SendMobileCode + mobileCode + " (dev mode)", Status = LoginUserResult.LoginStatus.Ok };
             }
             
-            // Production: Generic success message without OTP code
+            // Production/Staging: Generic success message WITHOUT OTP code
+            _logger?.LogInformation("[PrepareOTP] ✅ OTP sent to {Phone} successfully (code hidden for security)", externalUserId);
             return new LoginUserResult
-                { Message = Messages.SendMobileCode.TrimEnd() + " sent successfully.", Status = LoginUserResult.LoginStatus.Ok };
+                { Message = "OTP sent successfully. Please check your phone.", Status = LoginUserResult.LoginStatus.Ok };
         }
     }
 }
