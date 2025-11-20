@@ -267,8 +267,15 @@ namespace Business.DependencyResolvers
 
                 // Read provider from configuration (supports environment variables like SmsService__Provider)
                 var provider = config["SmsService:Provider"] ?? "Mock";
+                var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown";
+                var envVarDirect = Environment.GetEnvironmentVariable("SmsService__Provider");
 
-                Console.WriteLine($"[SMS DI] Selected provider: {provider}");
+                Console.WriteLine($"[SMS DI] ========================================");
+                Console.WriteLine($"[SMS DI] Environment: {environment}");
+                Console.WriteLine($"[SMS DI] Direct env var (SmsService__Provider): {envVarDirect ?? "NOT SET"}");
+                Console.WriteLine($"[SMS DI] Config value (SmsService:Provider): {provider}");
+                Console.WriteLine($"[SMS DI] Selected provider (lowercase): {provider.ToLower()}");
+                Console.WriteLine($"[SMS DI] ========================================");
 
                 return provider.ToLower() switch
                 {

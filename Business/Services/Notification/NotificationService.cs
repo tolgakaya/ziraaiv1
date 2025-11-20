@@ -15,23 +15,25 @@ namespace Business.Services.Notification
     public class NotificationService : INotificationService
     {
         private readonly IWhatsAppService _whatsAppService;
+        private readonly Messaging.ISmsService _smsService;
         private readonly ILogger<NotificationService> _logger;
         private readonly IConfiguration _configuration;
         
         // TODO: Inject these services when they are implemented
-        // private readonly ISmsService _smsService;
         // private readonly IEmailService _emailService;
         // private readonly IPushNotificationService _pushService;
         // private readonly IUserNotificationPreferencesRepository _preferencesRepository;
 
         public NotificationService(
             IWhatsAppService whatsAppService,
+            Messaging.ISmsService smsService,
             ILogger<NotificationService> logger,
             IConfiguration configuration
             // TODO: Add other services when available
             )
         {
             _whatsAppService = whatsAppService;
+            _smsService = smsService;
             _logger = logger;
             _configuration = configuration;
         }
@@ -525,14 +527,15 @@ namespace Business.Services.Notification
                             }, result.Message);
 
                     case NotificationChannel.SMS:
-                        // TODO: Implement SMS test when service is available
+                        var smsResult = await _smsService.SendSmsAsync(phoneNumber, testMessage);
                         return new SuccessDataResult<NotificationResultDto>(
                             new NotificationResultDto
                             {
-                                Success = true,
+                                Success = smsResult.Success,
                                 Channel = channel,
-                                StatusMessage = "SMS test - not implemented yet"
-                            }, "SMS test notification");
+                                StatusMessage = smsResult.Message,
+                                ErrorDetails = smsResult.Success ? null : smsResult.Message
+                            }, smsResult.Message);
 
                     default:
                         return new ErrorDataResult<NotificationResultDto>($"Channel {channel} not supported for testing");
@@ -689,19 +692,49 @@ namespace Business.Services.Notification
             string templateName, 
             Dictionary<string, object> parameters)
         {
-            // TODO: Implement SMS service integration
-            await Task.CompletedTask;
-            
-            _logger.LogInformation("SMS notification placeholder - template {TemplateName} to {PhoneNumber}", 
-                templateName, phoneNumber);
-            
-            return new SuccessDataResult<NotificationResultDto>(
-                new NotificationResultDto
-                {
-                    Success = true,
-                    Channel = NotificationChannel.SMS,
-                    StatusMessage = "SMS service not implemented yet"
-                }, "SMS service placeholder");
+            try
+            {
+                _logger.LogInformation("Sending SMS notification - template {TemplateName} to {PhoneNumber}", 
+                    templateName, phoneNumber);
+                
+                // Build message from template parameters
+                var message = BuildSmsMessageFromTemplate(templateName, parameters);
+                
+                // Send SMS using configured service (NetGSM/Turkcell/Mock)
+                var result = await _smsService.SendSmsAsync(phoneNumber, message);
+                
+                return new SuccessDataResult<NotificationResultDto>(
+                    new NotificationResultDto
+                    {
+                        Success = result.Success,
+                        Channel = NotificationChannel.SMS,
+                        StatusMessage = result.Message,
+                        ErrorDetails = result.Success ? null : result.Message
+                    }, result.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending SMS notification to {PhoneNumber}", phoneNumber);
+                return new ErrorDataResult<NotificationResultDto>(
+                    new NotificationResultDto
+                    {
+                        Success = false,
+                        Channel = NotificationChannel.SMS,
+                        StatusMessage = "SMS sending failed",
+                        ErrorDetails = ex.Message
+                    }, $"SMS notification failed: {ex.Message}");
+            }
+        }
+        
+        private string BuildSmsMessageFromTemplate(string templateName, Dictionary<string, object> parameters)
+        {
+            // Simple template building - can be enhanced with actual template engine
+            var message = $"{templateName}: ";
+            foreach (var param in parameters)
+            {
+                message += $"{param.Key}={param.Value}, ";
+            }
+            return message.TrimEnd(',', ' ');
         }
 
         private async Task<IDataResult<NotificationResultDto>> SendEmailNotificationAsync(

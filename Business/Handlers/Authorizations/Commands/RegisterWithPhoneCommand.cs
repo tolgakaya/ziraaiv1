@@ -27,15 +27,18 @@ namespace Business.Handlers.Authorizations.Commands
         {
             private readonly IUserRepository _userRepository;
             private readonly IMobileLoginRepository _mobileLoginRepository;
+            private readonly Business.Services.Messaging.ISmsService _smsService;
             private readonly ILogger<RegisterWithPhoneCommandHandler> _logger;
 
             public RegisterWithPhoneCommandHandler(
                 IUserRepository userRepository,
                 IMobileLoginRepository mobileLoginRepository,
+                Business.Services.Messaging.ISmsService smsService,
                 ILogger<RegisterWithPhoneCommandHandler> logger)
             {
                 _userRepository = userRepository;
                 _mobileLoginRepository = mobileLoginRepository;
+                _smsService = smsService;
                 _logger = logger;
             }
 
@@ -60,13 +63,31 @@ namespace Business.Handlers.Authorizations.Commands
                 var random = new Random();
                 var code = random.Next(100000, 999999);
 
+                // Send SMS using the configured SMS service (NetGSM/Turkcell/Mock)
+                Core.Utilities.Results.IResult smsResult;
+                try
+                {
+                    _logger.LogInformation("[RegisterWithPhone] Sending OTP {Code} to {Phone} via SMS service", code, normalizedPhone);
+                    smsResult = await _smsService.SendOtpAsync(normalizedPhone, code.ToString());
+                    
+                    if (!smsResult.Success)
+                    {
+                        _logger.LogError("[RegisterWithPhone] SMS sending failed: {Message}", smsResult.Message);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[RegisterWithPhone] Exception while sending SMS to {Phone}", normalizedPhone);
+                    return new ErrorResult("Failed to send SMS. Please try again.");
+                }
+
                 // Save OTP to MobileLogin table
                 var mobileLogin = new MobileLogin
                 {
                     ExternalUserId = normalizedPhone,  // Use normalized format
                     Provider = AuthenticationProviderType.Phone,
                     Code = code,
-                    IsSend = true,
+                    IsSend = smsResult.Success,
                     SendDate = DateTime.Now,
                     IsUsed = false
                 };
@@ -74,12 +95,20 @@ namespace Business.Handlers.Authorizations.Commands
                 _mobileLoginRepository.Add(mobileLogin);
                 await _mobileLoginRepository.SaveChangesAsync();
 
-                _logger.LogInformation("[RegisterWithPhone] OTP generated and saved for phone: {Phone}, Code: {Code}",
-                    normalizedPhone, code);
+                _logger.LogInformation("[RegisterWithPhone] OTP saved to database for phone: {Phone}", normalizedPhone);
 
-                // TODO: Send SMS with OTP code via SMS service
-                // For now, return OTP in response (development only - remove in production!)
-                return new SuccessResult($"OTP sent to {normalizedPhone}. Code: {code} (dev mode)");
+                // SECURITY: Only return OTP code in Development environment
+                var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+                var isLocalDevelopment = environment.Equals("Development", StringComparison.OrdinalIgnoreCase);
+                
+                if (isLocalDevelopment)
+                {
+                    _logger.LogWarning("[RegisterWithPhone] ⚠️ DEVELOPMENT MODE: Returning OTP in response");
+                    return new SuccessResult($"OTP sent to {normalizedPhone}. Code: {code} (dev mode)");
+                }
+                
+                // Production/Staging: Don't expose OTP code
+                return new SuccessResult("OTP sent successfully. Please check your phone.");
             }
 
             /// <summary>

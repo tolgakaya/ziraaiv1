@@ -248,8 +248,29 @@ builder.Services.AddScoped<Business.Services.Notification.IBulkInvitationNotific
 builder.Services.AddScoped<Business.Services.Notification.IBulkCodeDistributionNotificationService, Business.Services.Notification.BulkCodeDistributionNotificationService>();
 
 // 🆕 Add SMS and WhatsApp Services via Factory Pattern (matches WebAPI approach)
-builder.Services.AddScoped<Business.Services.Messaging.ISmsService, Business.Services.Messaging.Fakes.MockSmsService>();
+// Register SMS service based on configuration (same logic as WebAPI)
+builder.Services.AddScoped<Business.Services.Messaging.ISmsService>(serviceProvider =>
+{
+    var config = serviceProvider.GetRequiredService<IConfiguration>();
+    var provider = config["SmsService:Provider"] ?? "Mock";
+    
+    Console.WriteLine($"[Worker SMS DI] Selected provider: {provider}");
+    
+    return provider.ToLower() switch
+    {
+        "netgsm" => serviceProvider.GetRequiredService<Business.Services.Messaging.NetgsmSmsService>(),
+        "turkcell" => serviceProvider.GetRequiredService<Business.Services.Messaging.TurkcellSmsService>(),
+        "mock" => serviceProvider.GetRequiredService<Business.Services.Messaging.Fakes.MockSmsService>(),
+        _ => serviceProvider.GetRequiredService<Business.Services.Messaging.Fakes.MockSmsService>()
+    };
+});
+
+// Register concrete SMS service implementations
+builder.Services.AddScoped<Business.Services.Messaging.NetgsmSmsService>();
 builder.Services.AddScoped<Business.Services.Messaging.TurkcellSmsService>();
+builder.Services.AddScoped<Business.Services.Messaging.Fakes.MockSmsService>();
+
+// Register WhatsApp service
 builder.Services.AddScoped<Business.Services.Messaging.IWhatsAppService, Business.Services.Messaging.Fakes.MockWhatsAppService>();
 
 // 🆕 Add SMS Logging Service (config-controlled debugging feature)
