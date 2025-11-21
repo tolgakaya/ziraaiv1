@@ -83,8 +83,17 @@ namespace Business.Services.Payment
 
                 if (request.FlowType == PaymentFlowType.SponsorBulkPurchase)
                 {
-                    var flowData = JsonSerializer.Deserialize<SponsorBulkPurchaseFlowData>(
-                        JsonSerializer.Serialize(request.FlowData));
+                    // Handle JsonElement from ASP.NET Core model binding
+                    SponsorBulkPurchaseFlowData flowData;
+                    if (request.FlowData is JsonElement jsonElement)
+                    {
+                        flowData = JsonSerializer.Deserialize<SponsorBulkPurchaseFlowData>(jsonElement.GetRawText());
+                    }
+                    else
+                    {
+                        flowData = JsonSerializer.Deserialize<SponsorBulkPurchaseFlowData>(
+                            JsonSerializer.Serialize(request.FlowData));
+                    }
 
                     _logger.LogInformation($"[iyzico] SponsorBulkPurchase - TierId: {flowData?.SubscriptionTierId}, Quantity: {flowData?.Quantity}");
 
@@ -108,8 +117,17 @@ namespace Business.Services.Payment
                 }
                 else // FarmerSubscription
                 {
-                    var flowData = JsonSerializer.Deserialize<FarmerSubscriptionFlowData>(
-                        JsonSerializer.Serialize(request.FlowData));
+                    // Handle JsonElement from ASP.NET Core model binding
+                    FarmerSubscriptionFlowData flowData;
+                    if (request.FlowData is JsonElement jsonElement)
+                    {
+                        flowData = JsonSerializer.Deserialize<FarmerSubscriptionFlowData>(jsonElement.GetRawText());
+                    }
+                    else
+                    {
+                        flowData = JsonSerializer.Deserialize<FarmerSubscriptionFlowData>(
+                            JsonSerializer.Serialize(request.FlowData));
+                    }
 
                     _logger.LogInformation($"[iyzico] FarmerSubscription - TierId: {flowData?.SubscriptionTierId}, Duration: {flowData?.DurationMonths}");
 
