@@ -515,6 +515,27 @@ namespace Business.Services.Payment
                     return new ErrorDataResult<string>($"API call failed: {response.StatusCode}");
                 }
 
+                // Parse iyzico response to check for their own error format
+                try
+                {
+                    var jsonDoc = JsonDocument.Parse(responseContent);
+                    if (jsonDoc.RootElement.TryGetProperty("status", out var status))
+                    {
+                        var statusValue = status.GetString();
+                        if (statusValue == "failure")
+                        {
+                            var errorCode = jsonDoc.RootElement.TryGetProperty("errorCode", out var ec) ? ec.GetString() : "unknown";
+                            var errorMessage = jsonDoc.RootElement.TryGetProperty("errorMessage", out var em) ? em.GetString() : "Unknown error";
+                            _logger.LogError($"[iyzico] API returned error. Code: {errorCode}, Message: {errorMessage}");
+                            return new ErrorDataResult<string>($"iyzico error [{errorCode}]: {errorMessage}");
+                        }
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogWarning($"[iyzico] Could not parse response as JSON: {ex.Message}");
+                }
+
                 return new SuccessDataResult<string>(responseContent);
             }
             catch (Exception ex)
@@ -526,11 +547,13 @@ namespace Business.Services.Payment
 
         /// <summary>
         /// Generate HMACSHA256 authorization header for iyzico API
-        /// Format: IYZWS {ApiKey}:{Base64(HMACSHA256({ApiKey}+{RandomString}+{SecretKey}))}
+        /// Format: IYZWS {ApiKey}:{Base64(HMACSHA256({RandomString}+{ApiKey}+{SecretKey}+{RequestBody}))}
+        /// Reference: https://dev.iyzipay.com/tr/api/istekte-bulunmak
         /// </summary>
         private string GenerateAuthorizationHeader(string randomString, string requestBody)
         {
-            var dataToEncrypt = randomString + requestBody;
+            // iyzico signature format: randomString + apiKey + secretKey + requestBody
+            var dataToEncrypt = randomString + _iyzicoOptions.ApiKey + _iyzicoOptions.SecretKey + requestBody;
 
             using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_iyzicoOptions.SecretKey)))
             {
