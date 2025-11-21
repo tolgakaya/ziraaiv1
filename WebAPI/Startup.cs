@@ -70,6 +70,7 @@ namespace WebAPI
             
             // Configuration Options
             services.Configure<Core.Configuration.RabbitMQOptions>(Configuration.GetSection(Core.Configuration.RabbitMQOptions.SectionName));
+            services.Configure<Core.Configuration.IyzicoOptions>(Configuration.GetSection(Core.Configuration.IyzicoOptions.SectionName));
 
             // Add HttpContextAccessor for URL generation
             services.AddHttpContextAccessor();
