@@ -130,7 +130,11 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<SponsorshipPurchaseRepository>().As<ISponsorshipPurchaseRepository>()
                 .InstancePerLifetimeScope();
-            
+
+            // Payment System
+            builder.RegisterType<PaymentTransactionRepository>().As<IPaymentTransactionRepository>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SponsorAnalysisAccessRepository>().As<ISponsorAnalysisAccessRepository>()
                 .InstancePerLifetimeScope();
             

@@ -354,27 +354,42 @@ IYZICO_SECRET_KEY=sandbox-yyy
 
 ---
 
-### Phase 5: Repository Layer ⏳ PENDING
-**Duration:** ~30 minutes  
-**Status:** 🔴 NOT STARTED
+### Phase 5: Repository Layer ✅ COMPLETED
+**Duration:** ~30 minutes
+**Status:** 🟢 COMPLETED
+**Completed:** 2025-11-21
 
 **Tasks:**
-- [ ] Create IPaymentTransactionRepository interface
-- [ ] Create PaymentTransactionRepository implementation
-- [ ] Register repository in DI
-- [ ] Build and verify
+- [x] Create IPaymentTransactionRepository interface
+- [x] Create PaymentTransactionRepository implementation
+- [x] Register repository in DI
+- [x] Build and verify
 
-**Files to Create:**
-- `DataAccess/Abstract/IPaymentTransactionRepository.cs`
-- `DataAccess/Concrete/EntityFramework/PaymentTransactionRepository.cs`
-
-**Update Files:**
-- `Core/DependencyResolvers/CoreModule.cs` OR `Business/DependencyResolvers/AutofacBusinessModule.cs`
+**Deliverables:**
+- ✅ [IPaymentTransactionRepository.cs](../../DataAccess/Abstract/IPaymentTransactionRepository.cs) - Repository interface with 13 methods
+  - GetByIyzicoTokenAsync - Find transaction by unique iyzico token
+  - GetByConversationIdAsync - Find transaction by conversation ID
+  - GetWithRelationsAsync - Load transaction with User, SponsorshipPurchase, UserSubscription
+  - GetByUserIdAsync - All transactions for a user
+  - GetByStatusAsync - Filter by payment status
+  - GetExpiredTransactionsAsync - Find expired transactions for cleanup
+  - GetByFlowTypeAsync - Filter by flow type (sponsor/farmer)
+  - GetSuccessfulTransactionsByUserAsync - Successful payments for analytics
+  - GetTotalPaidAmountByUserAsync - Total amount paid by user
+  - UpdateStatusAsync - Update transaction status with error message
+  - MarkAsCompletedAsync - Mark transaction as successful with iyzico payment ID
+- ✅ [PaymentTransactionRepository.cs](../../DataAccess/Concrete/EntityFramework/PaymentTransactionRepository.cs) - EF implementation
+  - Complete implementation of all 13 interface methods
+  - Proper include statements for navigation properties
+  - DateTime.Now usage for PostgreSQL compatibility
+  - Status-based filtering and updates
+- ✅ Updated [AutofacBusinessModule.cs](../../Business/DependencyResolvers/AutofacBusinessModule.cs) - DI registration
 
 **Completion Criteria:**
-- [ ] Repository interface and implementation created
-- [ ] Registered in DI correctly
-- [ ] Build successful
+- [x] Repository interface with comprehensive query methods
+- [x] Repository implementation with EF Core
+- [x] Registered in Autofac DI container
+- [x] Build successful (warnings only, no errors)
 
 ---
 
