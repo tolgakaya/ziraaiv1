@@ -393,19 +393,20 @@ IYZICO_SECRET_KEY=sandbox-yyy
 
 ---
 
-### Phase 6: iyzico Payment Service ⏳ PENDING
+### Phase 6: iyzico Payment Service ✅ COMPLETED
 **Duration:** ~3 hours  
-**Status:** 🔴 NOT STARTED
+**Status:** 🟢 COMPLETED
+**Completed:** 2025-11-21
 
 **Tasks:**
-- [ ] Create IIyzicoPaymentService interface
-- [ ] Implement HMACSHA256 authentication
-- [ ] Implement InitializePWI method
-- [ ] Implement VerifyPayment method
-- [ ] Implement webhook signature validation
-- [ ] Add comprehensive logging
-- [ ] Register service in DI
-- [ ] Build and verify
+- [x] Create IIyzicoPaymentService interface
+- [x] Implement HMACSHA256 authentication
+- [x] Implement InitializePWI method
+- [x] Implement VerifyPayment method
+- [x] Implement webhook signature validation
+- [x] Add comprehensive logging
+- [x] Register service in DI
+- [x] Build and verify
 
 **Files to Create:**
 - `Business/Services/Payment/IIyzicoPaymentService.cs`
@@ -433,13 +434,32 @@ public interface IIyzicoPaymentService
 }
 ```
 
+**Deliverables:**
+- ✅ [IIyzicoPaymentService.cs](../../Business/Services/Payment/IIyzicoPaymentService.cs) - Service interface with 5 methods
+  - InitializePaymentAsync - Start PWI payment flow with flow-specific data
+  - VerifyPaymentAsync - Verify payment after user completes on iyzico page
+  - ProcessWebhookAsync - Handle iyzico webhook callbacks
+  - MarkExpiredTransactionsAsync - Background job for cleaning expired transactions
+  - GetPaymentStatusAsync - Query current payment status by token
+- ✅ [IyzicoPaymentService.cs](../../Business/Services/Payment/IyzicoPaymentService.cs) - Complete implementation (~650 lines)
+  - HMACSHA256 authentication with format: `IYZWS {ApiKey}:{Base64(HMACSHA256(RandomString+RequestBody))}`
+  - PWI initialize with deep linking for mobile app callback
+  - Payment verification with iyzico API
+  - Full logging throughout all operations
+  - Error handling with user-friendly messages
+  - Status management (Initialized, Pending, Success, Failed, Expired)
+  - Flow-specific amount calculation (SponsorBulkPurchase, FarmerSubscription)
+  - ProcessSuccessfulPaymentAsync placeholder for Phase 8 implementation
+- ✅ Updated [AutofacBusinessModule.cs](../../Business/DependencyResolvers/AutofacBusinessModule.cs) - DI registration with HttpClient
+
 **Completion Criteria:**
-- [ ] Service interface created
-- [ ] Service implementation complete
-- [ ] HMACSHA256 authentication working
-- [ ] Registered in DI
-- [ ] Build successful
-- [ ] Unit test authentication (optional)
+- [x] Service interface created with comprehensive methods
+- [x] Service implementation complete with HMACSHA256 auth
+- [x] HMACSHA256 authentication working
+- [x] Registered in DI with using statement
+- [x] Build successful (warnings only, no errors)
+- [x] Fixed entity field names (MonthlyPrice, FullName)
+- [x] Fixed repository method call (Add instead of AddAsync)
 
 ---
 
