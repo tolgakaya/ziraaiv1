@@ -16,7 +16,8 @@
       "Bash(Select-String -Pattern \"error|Build succeeded\")",
       "Bash(gh pr create:*)",
       "Bash(S3)",
-      "Bash(FreeImageHost)"
+      "Bash(FreeImageHost)",
+      "Bash(Select-Object -First 50)"
     ],
     "deny": [],
     "ask": [],

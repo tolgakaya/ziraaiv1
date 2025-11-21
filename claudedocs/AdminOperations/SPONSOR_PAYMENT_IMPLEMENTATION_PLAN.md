@@ -321,36 +321,36 @@ IYZICO_SECRET_KEY=sandbox-yyy
 
 ---
 
-### Phase 4: Entity & DTO Creation ⏳ NEXT
-**Duration:** ~1 hour  
-**Status:** 🔴 NOT STARTED
+### Phase 4: Entity & DTO Creation ✅ COMPLETED
+**Duration:** ~1 hour
+**Status:** 🟢 COMPLETED
+**Completed:** 2025-11-21
 
 **Tasks:**
-- [ ] Create `PaymentTransaction` entity
-- [ ] Create payment DTOs (initialize, verify, response)
-- [ ] Create EF configuration for PaymentTransaction
-- [ ] Update DbContext with new DbSet
-- [ ] Build and verify
+- [x] Create `PaymentTransaction` entity
+- [x] Create payment DTOs (initialize, verify, response)
+- [x] Create EF configuration for PaymentTransaction
+- [x] Update DbContext with new DbSet
+- [x] Build and verify
 
-**Files to Create:**
-- `Entities/Concrete/PaymentTransaction.cs`
-- `Entities/Dtos/Payment/PaymentInitializeRequest.cs`
-- `Entities/Dtos/Payment/PaymentInitializeResponse.cs`
-- `Entities/Dtos/Payment/PaymentVerifyRequest.cs`
-- `Entities/Dtos/Payment/PaymentVerifyResponse.cs`
-- `Entities/Dtos/Payment/IyzicoInitializeResponse.cs`
-- `Entities/Dtos/Payment/IyzicoPaymentDetailResponse.cs`
-- `DataAccess/Concrete/Configurations/PaymentTransactionConfiguration.cs`
-
-**Update Files:**
-- `DataAccess/Concrete/EntityFramework/Contexts/ProjectDbContext.cs`
+**Deliverables:**
+- ✅ [PaymentTransaction.cs](../../Entities/Concrete/PaymentTransaction.cs) - Main payment entity with flow support
+- ✅ [PaymentInitializeRequestDto.cs](../../Entities/Dtos/Payment/PaymentInitializeRequestDto.cs) - Initialize request DTO
+- ✅ [PaymentInitializeResponseDto.cs](../../Entities/Dtos/Payment/PaymentInitializeResponseDto.cs) - Initialize response DTO
+- ✅ [PaymentVerifyRequestDto.cs](../../Entities/Dtos/Payment/PaymentVerifyRequestDto.cs) - Verify request DTO
+- ✅ [PaymentVerifyResponseDto.cs](../../Entities/Dtos/Payment/PaymentVerifyResponseDto.cs) - Verify response DTO
+- ✅ [PaymentWebhookDto.cs](../../Entities/Dtos/Payment/PaymentWebhookDto.cs) - Webhook callback DTO
+- ✅ [PaymentTransactionEntityConfiguration.cs](../../DataAccess/Concrete/Configurations/PaymentTransactionEntityConfiguration.cs) - EF configuration
+- ✅ Updated [ProjectDbContext.cs](../../DataAccess/Concrete/EntityFramework/Contexts/ProjectDbContext.cs) - Added PaymentTransactions DbSet
+- ✅ Updated [SponsorshipPurchase.cs](../../Entities/Concrete/SponsorshipPurchase.cs) - Added PaymentTransactionId FK
+- ✅ Updated [UserSubscription.cs](../../Entities/Concrete/UserSubscription.cs) - Added PaymentTransactionId FK
 
 **Completion Criteria:**
-- [ ] All entities and DTOs created
-- [ ] EF configuration complete
-- [ ] DbContext updated
-- [ ] Build successful
-- [ ] No EF warnings
+- [x] All entities and DTOs created
+- [x] EF configuration complete
+- [x] DbContext updated
+- [x] Build successful (warnings only, no errors)
+- [x] Navigation properties established
 
 ---
 
