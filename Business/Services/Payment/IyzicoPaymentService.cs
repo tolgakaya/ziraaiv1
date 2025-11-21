@@ -497,7 +497,7 @@ namespace Business.Services.Payment
                 var randomString = Guid.NewGuid().ToString();
 
                 // Generate authorization header with HMACSHA256
-                var authString = GenerateAuthorizationHeader(randomString, requestJson);
+                var authString = GenerateAuthorizationHeader(randomString, endpoint, requestJson);
 
                 var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
                 request.Headers.Add("Authorization", authString);
@@ -550,26 +550,40 @@ namespace Business.Services.Payment
 
         /// <summary>
         /// Generate HMACSHA256 authorization header for iyzico API
-        /// Format: IYZWS {ApiKey}:{Base64(HMACSHA256({RandomString}+{ApiKey}+{SecretKey}+{RequestBody}))}
-        /// Reference: https://dev.iyzipay.com/tr/api/istekte-bulunmak
+        /// Format: IYZWSv2 base64(apiKey:randomKey:signature)
+        /// Signature: HMACSHA256(randomKey + uri.path + request.body, secretKey)
+        /// Reference: https://docs.iyzico.com/on-hazirliklar/kimlik-dogrulama/hmacsha256-kimlik-dogrulama
         /// </summary>
-        private string GenerateAuthorizationHeader(string randomString, string requestBody)
+        private string GenerateAuthorizationHeader(string randomKey, string uriPath, string requestBody)
         {
-            // iyzico signature format: randomString + apiKey + secretKey + requestBody
-            var dataToEncrypt = randomString + _iyzicoOptions.ApiKey + _iyzicoOptions.SecretKey + requestBody;
+            // Step 1: Create payload to hash: randomKey + uri.path + request.body
+            var dataToHash = randomKey + uriPath + requestBody;
 
-            _logger.LogDebug($"[iyzico] Signature data length: {dataToEncrypt.Length}");
-            _logger.LogDebug($"[iyzico] ApiKey length: {_iyzicoOptions.ApiKey?.Length ?? 0}, SecretKey length: {_iyzicoOptions.SecretKey?.Length ?? 0}");
-            _logger.LogDebug($"[iyzico] Data to encrypt (first 100 chars): {dataToEncrypt.Substring(0, Math.Min(100, dataToEncrypt.Length))}");
+            _logger.LogDebug($"[iyzico] Random Key: {randomKey}");
+            _logger.LogDebug($"[iyzico] URI Path: {uriPath}");
+            _logger.LogDebug($"[iyzico] Data to hash length: {dataToHash.Length}");
+            _logger.LogDebug($"[iyzico] Data to hash (first 150 chars): {dataToHash.Substring(0, Math.Min(150, dataToHash.Length))}");
 
+            // Step 2: Hash with HMAC-SHA256 using secretKey
             using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_iyzicoOptions.SecretKey)))
             {
-                var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToEncrypt));
-                var hashBase64 = Convert.ToBase64String(hashBytes);
+                var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToHash));
+                var signature = Convert.ToBase64String(hashBytes);
 
-                _logger.LogDebug($"[iyzico] Generated hash (base64): {hashBase64}");
+                _logger.LogDebug($"[iyzico] Signature (base64): {signature}");
 
-                return $"IYZWS {_iyzicoOptions.ApiKey}:{hashBase64}";
+                // Step 3: Create authorization string: apiKey:randomKey:signature
+                var authString = $"{_iyzicoOptions.ApiKey}:{randomKey}:{signature}";
+                _logger.LogDebug($"[iyzico] Auth string (before base64): {authString}");
+
+                // Step 4: Base64 encode the authorization string
+                var authBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(authString));
+
+                // Step 5: Return with IYZWSv2 prefix
+                var finalHeader = $"IYZWSv2 {authBase64}";
+                _logger.LogDebug($"[iyzico] Final Authorization Header: {finalHeader}");
+
+                return finalHeader;
             }
         }
 
