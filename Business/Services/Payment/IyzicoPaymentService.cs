@@ -24,6 +24,7 @@ namespace Business.Services.Payment
     {
         private readonly IPaymentTransactionRepository _paymentTransactionRepository;
         private readonly ISponsorshipPurchaseRepository _sponsorshipPurchaseRepository;
+        private readonly ISponsorshipCodeRepository _sponsorshipCodeRepository;
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly ISubscriptionTierRepository _subscriptionTierRepository;
         private readonly IUserRepository _userRepository;
@@ -34,6 +35,7 @@ namespace Business.Services.Payment
         public IyzicoPaymentService(
             IPaymentTransactionRepository paymentTransactionRepository,
             ISponsorshipPurchaseRepository sponsorshipPurchaseRepository,
+            ISponsorshipCodeRepository sponsorshipCodeRepository,
             IUserSubscriptionRepository userSubscriptionRepository,
             ISubscriptionTierRepository subscriptionTierRepository,
             IUserRepository userRepository,
@@ -43,6 +45,7 @@ namespace Business.Services.Payment
         {
             _paymentTransactionRepository = paymentTransactionRepository;
             _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
+            _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _userSubscriptionRepository = userSubscriptionRepository;
             _subscriptionTierRepository = subscriptionTierRepository;
             _userRepository = userRepository;
@@ -491,23 +494,225 @@ namespace Business.Services.Payment
 
         /// <summary>
         /// Process successful payment based on flow type
+        /// Creates SponsorshipPurchase with codes for sponsors, or UserSubscription for farmers
         /// </summary>
         private async Task ProcessSuccessfulPaymentAsync(PaymentTransaction transaction)
         {
-            // This will be implemented in Phase 8 when we update sponsor purchase flow
-            // For now, just log
             _logger.LogInformation($"[iyzico] Processing successful payment. TransactionId: {transaction.Id}, FlowType: {transaction.FlowType}");
 
-            // TODO Phase 8:
-            // - If SponsorBulkPurchase: Create SponsorshipPurchase and generate codes
-            // - If FarmerSubscription: Create/update UserSubscription
+            try
+            {
+                if (transaction.FlowType == PaymentFlowType.SponsorBulkPurchase)
+                {
+                    await ProcessSponsorBulkPurchaseAsync(transaction);
+                }
+                else if (transaction.FlowType == PaymentFlowType.FarmerSubscription)
+                {
+                    await ProcessFarmerSubscriptionAsync(transaction);
+                }
+                else
+                {
+                    _logger.LogWarning($"[iyzico] Unknown flow type: {transaction.FlowType}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[iyzico] Error processing successful payment. TransactionId: {transaction.Id}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Process sponsor bulk purchase: Create SponsorshipPurchase and generate codes
+        /// </summary>
+        private async Task ProcessSponsorBulkPurchaseAsync(PaymentTransaction transaction)
+        {
+            _logger.LogInformation($"[iyzico] Processing sponsor bulk purchase. TransactionId: {transaction.Id}");
+
+            // Deserialize flow data
+            var flowData = JsonSerializer.Deserialize<SponsorBulkPurchaseFlowData>(transaction.FlowDataJson);
+
+            // Get subscription tier
+            var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == flowData.SubscriptionTierId);
+            if (tier == null)
+            {
+                _logger.LogError($"[iyzico] Subscription tier not found: {flowData.SubscriptionTierId}");
+                return;
+            }
+
+            // Create sponsorship purchase record
+            var purchase = new SponsorshipPurchase
+            {
+                SponsorId = transaction.UserId,
+                SubscriptionTierId = flowData.SubscriptionTierId,
+                Quantity = flowData.Quantity,
+                UnitPrice = tier.MonthlyPrice,
+                TotalAmount = transaction.Amount,
+                Currency = transaction.Currency,
+                PurchaseDate = DateTime.Now,
+                PaymentMethod = "CreditCard",
+                PaymentReference = transaction.IyzicoPaymentId,
+                PaymentStatus = "Completed",
+                PaymentCompletedDate = transaction.CompletedAt,
+                PaymentTransactionId = transaction.Id,
+                CodePrefix = "AGRI",
+                ValidityDays = 30,
+                Status = "Active",
+                CreatedDate = DateTime.Now,
+                CodesGenerated = 0,
+                CodesUsed = 0
+            };
+
+            _sponsorshipPurchaseRepository.Add(purchase);
+            await _sponsorshipPurchaseRepository.SaveChangesAsync();
+
+            _logger.LogInformation($"[iyzico] Sponsorship purchase created. PurchaseId: {purchase.Id}");
+
+            // Generate sponsorship codes
+            var codes = await _sponsorshipCodeRepository.GenerateCodesAsync(
+                purchase.Id,
+                transaction.UserId,
+                flowData.SubscriptionTierId,
+                flowData.Quantity,
+                purchase.CodePrefix,
+                purchase.ValidityDays);
+
+            // Update codes generated count
+            purchase.CodesGenerated = codes.Count;
+            _sponsorshipPurchaseRepository.Update(purchase);
+            await _sponsorshipPurchaseRepository.SaveChangesAsync();
+
+            // Link purchase to transaction
+            transaction.SponsorshipPurchaseId = purchase.Id;
+            _paymentTransactionRepository.Update(transaction);
+            await _paymentTransactionRepository.SaveChangesAsync();
+
+            _logger.LogInformation($"[iyzico] Generated {codes.Count} sponsorship codes. PurchaseId: {purchase.Id}");
+        }
+
+        /// <summary>
+        /// Process farmer subscription: Create or update UserSubscription
+        /// </summary>
+        private async Task ProcessFarmerSubscriptionAsync(PaymentTransaction transaction)
+        {
+            _logger.LogInformation($"[iyzico] Processing farmer subscription. TransactionId: {transaction.Id}");
+
+            // Deserialize flow data
+            var flowData = JsonSerializer.Deserialize<FarmerSubscriptionFlowData>(transaction.FlowDataJson);
+
+            // Get subscription tier
+            var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == flowData.SubscriptionTierId);
+            if (tier == null)
+            {
+                _logger.LogError($"[iyzico] Subscription tier not found: {flowData.SubscriptionTierId}");
+                return;
+            }
+
+            // Check if user already has a subscription
+            var existingSubscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(transaction.UserId);
+
+            if (existingSubscription != null)
+            {
+                // Extend existing subscription
+                var extensionDays = flowData.DurationMonths * 30;
+                existingSubscription.EndDate = existingSubscription.EndDate.AddDays(extensionDays);
+                existingSubscription.AutoRenew = false; // Disable auto-renew for manual purchases
+                existingSubscription.UpdatedDate = DateTime.Now;
+                existingSubscription.PaymentTransactionId = transaction.Id;
+
+                _userSubscriptionRepository.Update(existingSubscription);
+                await _userSubscriptionRepository.SaveChangesAsync();
+
+                transaction.UserSubscriptionId = existingSubscription.Id;
+
+                _logger.LogInformation($"[iyzico] Extended existing subscription. SubscriptionId: {existingSubscription.Id}, ExtensionDays: {extensionDays}");
+            }
+            else
+            {
+                // Create new subscription
+                var startDate = DateTime.Now;
+                var endDate = startDate.AddMonths(flowData.DurationMonths);
+
+                var subscription = new UserSubscription
+                {
+                    UserId = transaction.UserId,
+                    SubscriptionTierId = flowData.SubscriptionTierId,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    IsActive = true,
+                    AutoRenew = false,
+                    PaymentMethod = "CreditCard",
+                    PaymentReference = transaction.IyzicoPaymentId,
+                    PaymentTransactionId = transaction.Id,
+                    PaidAmount = transaction.Amount,
+                    Currency = transaction.Currency,
+                    LastPaymentDate = DateTime.Now,
+                    CurrentDailyUsage = 0,
+                    CurrentMonthlyUsage = 0,
+                    LastUsageResetDate = startDate,
+                    MonthlyUsageResetDate = startDate,
+                    Status = "Active",
+                    IsTrialSubscription = false,
+                    IsSponsoredSubscription = false,
+                    QueueStatus = SubscriptionQueueStatus.Active,
+                    ActivatedDate = startDate,
+                    CreatedDate = DateTime.Now,
+                    UpdatedDate = DateTime.Now
+                };
+
+                _userSubscriptionRepository.Add(subscription);
+                await _userSubscriptionRepository.SaveChangesAsync();
+
+                transaction.UserSubscriptionId = subscription.Id;
+
+                _logger.LogInformation($"[iyzico] Created new subscription. SubscriptionId: {subscription.Id}, Duration: {flowData.DurationMonths} months");
+            }
+
+            // Update transaction with subscription ID
+            _paymentTransactionRepository.Update(transaction);
+            await _paymentTransactionRepository.SaveChangesAsync();
         }
 
         /// <summary>
         /// Build PaymentVerifyResponseDto from transaction
+        /// Populates FlowResult based on transaction flow type and linked entities
         /// </summary>
         private async Task<IDataResult<PaymentVerifyResponseDto>> BuildVerifyResponseAsync(PaymentTransaction transaction)
         {
+            object flowResult = null;
+
+            // Populate FlowResult based on flow type
+            if (transaction.Status == PaymentStatus.Success)
+            {
+                if (transaction.FlowType == PaymentFlowType.SponsorBulkPurchase && transaction.SponsorshipPurchaseId.HasValue)
+                {
+                    var purchase = await _sponsorshipPurchaseRepository.GetWithCodesAsync(transaction.SponsorshipPurchaseId.Value);
+                    if (purchase != null)
+                    {
+                        flowResult = new SponsorBulkPurchaseResult
+                        {
+                            PurchaseId = purchase.Id,
+                            CodesGenerated = purchase.CodesGenerated,
+                            SubscriptionTierName = purchase.SubscriptionTier?.DisplayName ?? "Unknown"
+                        };
+                    }
+                }
+                else if (transaction.FlowType == PaymentFlowType.FarmerSubscription && transaction.UserSubscriptionId.HasValue)
+                {
+                    var subscription = await _userSubscriptionRepository.GetSubscriptionWithTierAsync(transaction.UserSubscriptionId.Value);
+                    if (subscription != null)
+                    {
+                        flowResult = new FarmerSubscriptionResult
+                        {
+                            SubscriptionId = subscription.Id,
+                            SubscriptionTierName = subscription.SubscriptionTier?.DisplayName ?? "Unknown",
+                            StartDate = subscription.StartDate.ToString("o"),
+                            EndDate = subscription.EndDate.ToString("o")
+                        };
+                    }
+                }
+            }
+
             var response = new PaymentVerifyResponseDto
             {
                 TransactionId = transaction.Id,
@@ -520,7 +725,7 @@ namespace Business.Services.Payment
                 CompletedAt = transaction.CompletedAt?.ToString("o"),
                 ErrorMessage = transaction.ErrorMessage,
                 FlowType = transaction.FlowType,
-                FlowResult = null // Will be populated in Phase 8
+                FlowResult = flowResult
             };
 
             return new SuccessDataResult<PaymentVerifyResponseDto>(response);
