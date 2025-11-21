@@ -86,11 +86,22 @@ namespace Business.Services.Payment
                     var flowData = JsonSerializer.Deserialize<SponsorBulkPurchaseFlowData>(
                         JsonSerializer.Serialize(request.FlowData));
 
+                    _logger.LogInformation($"[iyzico] SponsorBulkPurchase - TierId: {flowData?.SubscriptionTierId}, Quantity: {flowData?.Quantity}");
+
+                    if (flowData == null)
+                    {
+                        _logger.LogError("[iyzico] FlowData deserialization returned null");
+                        return new ErrorDataResult<PaymentInitializeResponseDto>("Invalid flow data");
+                    }
+
                     var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == flowData.SubscriptionTierId);
                     if (tier == null)
                     {
+                        _logger.LogError($"[iyzico] Subscription tier not found in database. TierId: {flowData.SubscriptionTierId}");
                         return new ErrorDataResult<PaymentInitializeResponseDto>("Subscription tier not found");
                     }
+
+                    _logger.LogInformation($"[iyzico] Found tier: {tier.TierName}, Price: {tier.MonthlyPrice}, IsActive: {tier.IsActive}");
 
                     amount = tier.MonthlyPrice * flowData.Quantity;
                     subscriptionTierId = flowData.SubscriptionTierId;
@@ -100,11 +111,22 @@ namespace Business.Services.Payment
                     var flowData = JsonSerializer.Deserialize<FarmerSubscriptionFlowData>(
                         JsonSerializer.Serialize(request.FlowData));
 
+                    _logger.LogInformation($"[iyzico] FarmerSubscription - TierId: {flowData?.SubscriptionTierId}, Duration: {flowData?.DurationMonths}");
+
+                    if (flowData == null)
+                    {
+                        _logger.LogError("[iyzico] FlowData deserialization returned null");
+                        return new ErrorDataResult<PaymentInitializeResponseDto>("Invalid flow data");
+                    }
+
                     var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == flowData.SubscriptionTierId);
                     if (tier == null)
                     {
+                        _logger.LogError($"[iyzico] Subscription tier not found in database. TierId: {flowData.SubscriptionTierId}");
                         return new ErrorDataResult<PaymentInitializeResponseDto>("Subscription tier not found");
                     }
+
+                    _logger.LogInformation($"[iyzico] Found tier: {tier.TierName}, Price: {tier.MonthlyPrice}, IsActive: {tier.IsActive}");
 
                     amount = tier.MonthlyPrice * flowData.DurationMonths;
                     subscriptionTierId = flowData.SubscriptionTierId;
