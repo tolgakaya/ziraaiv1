@@ -505,6 +505,9 @@ namespace Business.Services.Payment
                 request.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
                 _logger.LogDebug($"[iyzico] Calling {endpoint}");
+                _logger.LogDebug($"[iyzico] Random: {randomString}");
+                _logger.LogDebug($"[iyzico] Auth Header: {authString}");
+                _logger.LogDebug($"[iyzico] Request Body (first 200 chars): {requestJson.Substring(0, Math.Min(200, requestJson.Length))}");
 
                 var response = await client.SendAsync(request);
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -555,10 +558,16 @@ namespace Business.Services.Payment
             // iyzico signature format: randomString + apiKey + secretKey + requestBody
             var dataToEncrypt = randomString + _iyzicoOptions.ApiKey + _iyzicoOptions.SecretKey + requestBody;
 
+            _logger.LogDebug($"[iyzico] Signature data length: {dataToEncrypt.Length}");
+            _logger.LogDebug($"[iyzico] ApiKey length: {_iyzicoOptions.ApiKey?.Length ?? 0}, SecretKey length: {_iyzicoOptions.SecretKey?.Length ?? 0}");
+            _logger.LogDebug($"[iyzico] Data to encrypt (first 100 chars): {dataToEncrypt.Substring(0, Math.Min(100, dataToEncrypt.Length))}");
+
             using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_iyzicoOptions.SecretKey)))
             {
                 var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToEncrypt));
                 var hashBase64 = Convert.ToBase64String(hashBytes);
+
+                _logger.LogDebug($"[iyzico] Generated hash (base64): {hashBase64}");
 
                 return $"IYZWS {_iyzicoOptions.ApiKey}:{hashBase64}";
             }
