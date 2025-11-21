@@ -236,6 +236,13 @@ namespace Business.Services.Payment
                         $"Payment initialization failed: {iyzicoResponse.Message}");
                 }
 
+                if (string.IsNullOrEmpty(iyzicoResponse.Data))
+                {
+                    _logger.LogError($"[iyzico] Response Data is null or empty. Success: {iyzicoResponse.Success}, Message: {iyzicoResponse.Message}");
+                    return new ErrorDataResult<PaymentInitializeResponseDto>("iyzico API returned empty response");
+                }
+
+                _logger.LogDebug($"[iyzico] Raw response: {iyzicoResponse.Data}");
                 var iyzicoData = JsonSerializer.Deserialize<JsonElement>(iyzicoResponse.Data);
 
                 // Check iyzico response status
