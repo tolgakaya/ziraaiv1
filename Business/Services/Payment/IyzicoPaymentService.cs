@@ -87,7 +87,8 @@ namespace Business.Services.Payment
                     SponsorBulkPurchaseFlowData flowData;
                     if (request.FlowData is JsonElement jsonElement)
                     {
-                        flowData = JsonSerializer.Deserialize<SponsorBulkPurchaseFlowData>(jsonElement.GetRawText());
+                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                        flowData = JsonSerializer.Deserialize<SponsorBulkPurchaseFlowData>(jsonElement.GetRawText(), options);
                     }
                     else
                     {
@@ -121,7 +122,8 @@ namespace Business.Services.Payment
                     FarmerSubscriptionFlowData flowData;
                     if (request.FlowData is JsonElement jsonElement)
                     {
-                        flowData = JsonSerializer.Deserialize<FarmerSubscriptionFlowData>(jsonElement.GetRawText());
+                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                        flowData = JsonSerializer.Deserialize<FarmerSubscriptionFlowData>(jsonElement.GetRawText(), options);
                     }
                     else
                     {
