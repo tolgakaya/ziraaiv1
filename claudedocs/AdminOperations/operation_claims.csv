@@ -183,3 +183,7 @@
 182,UpdateAppInfoCommand,appinfo.admin.update,Update app info (About Us page)
 183,TestSmsCommand,sms.admin.test,Test SMS sending to verify provider configuration
 184,GetSmsProviderInfoQuery,sms.admin.provider-info,View SMS provider information and status
+185,InitializePayment,payment.initialize,Initialize payment transaction with iyzico
+186,VerifyPayment,payment.verify,Verify payment status after iyzico completion
+187,GetPaymentStatus,payment.status,Query payment transaction status by token
+188,ProcessPaymentWebhook,payment.webhook,Process iyzico payment webhook callbacks (internal use)

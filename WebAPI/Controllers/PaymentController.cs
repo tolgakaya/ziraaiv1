@@ -1,3 +1,4 @@
+using Business.BusinessAspects;
 using Business.Services.Payment;
 using Core.Extensions;
 using Core.Utilities.Results;
@@ -42,6 +43,7 @@ namespace WebAPI.Controllers
         /// <response code="401">User not authenticated</response>
         /// <response code="500">Internal server error during payment initialization</response>
         [Authorize]
+        [SecuredOperation]
         [HttpPost("initialize")]
         [ProducesResponseType(typeof(IDataResult<PaymentInitializeResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
@@ -92,6 +94,7 @@ namespace WebAPI.Controllers
         /// <response code="404">Payment transaction not found</response>
         /// <response code="500">Internal server error during payment verification</response>
         [Authorize]
+        [SecuredOperation]
         [HttpPost("verify")]
         [ProducesResponseType(typeof(IDataResult<PaymentVerifyResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
@@ -187,6 +190,7 @@ namespace WebAPI.Controllers
         /// <response code="404">Payment transaction not found</response>
         /// <response code="500">Internal server error</response>
         [Authorize]
+        [SecuredOperation]
         [HttpGet("status/{token}")]
         [ProducesResponseType(typeof(IDataResult<PaymentVerifyResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
