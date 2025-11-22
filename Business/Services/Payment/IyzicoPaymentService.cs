@@ -196,7 +196,9 @@ namespace Business.Services.Payment
                             ? string.Join(" ", user.FullName.Split(' ').Skip(1))
                             : user.FullName ?? "User",
                         email = user.Email,
-                        gsmNumber = !string.IsNullOrEmpty(user.MobilePhones) ? user.MobilePhones : "+905350000000",
+                        gsmNumber = !string.IsNullOrEmpty(user.MobilePhones)
+                            ? (user.MobilePhones.StartsWith("+") ? user.MobilePhones : "+90" + user.MobilePhones.TrimStart('0'))
+                            : "+905350000000",
                         identityNumber = "11111111111", // Required by iyzico, test value for sandbox
                         registrationDate = user.RecordDate.ToString("yyyy-MM-dd HH:mm:ss"),
                         lastLoginDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
