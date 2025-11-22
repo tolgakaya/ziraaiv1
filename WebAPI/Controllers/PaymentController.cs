@@ -322,7 +322,7 @@ namespace WebAPI.Controllers
             {
                 "iOS" => $"ziraai://payment-callback?token={token}&status=success",
                 "Android" => $"ziraai://payment-callback?token={token}&status=success",
-                "Web" => $"{_configuration["WebAppUrl"]}/sponsor/payment-callback?token={token}&status=success",
+                "Web" => $"{_configuration["WebAppUrl"]}/payment-callback?token={token}&status=success",
                 _ => $"ziraai://payment-callback?token={token}&status=success" // Default to iOS deep link
             };
         }
@@ -341,7 +341,7 @@ namespace WebAPI.Controllers
             {
                 "iOS" => $"ziraai://payment-callback?token={token}&status=failed&error={encodedError}",
                 "Android" => $"ziraai://payment-callback?token={token}&status=failed&error={encodedError}",
-                "Web" => $"{_configuration["WebAppUrl"]}/sponsor/payment-callback?token={token}&status=failed&error={encodedError}",
+                "Web" => $"{_configuration["WebAppUrl"]}/payment-callback?token={token}&status=failed&error={encodedError}",
                 _ => $"ziraai://payment-callback?token={token}&status=failed&error={encodedError}" // Default to iOS deep link
             };
         }
