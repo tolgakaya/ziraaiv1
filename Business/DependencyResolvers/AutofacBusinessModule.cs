@@ -15,6 +15,7 @@ using Business.Services.Admin;
 using Business.Services.SponsorRequest;
 using Business.Services.MobileIntegration;
 using Business.Services.Analytics;
+using Business.Services.Payment;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
@@ -130,7 +131,14 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<SponsorshipPurchaseRepository>().As<ISponsorshipPurchaseRepository>()
                 .InstancePerLifetimeScope();
-            
+
+            // Payment System
+            builder.RegisterType<PaymentTransactionRepository>().As<IPaymentTransactionRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<IyzicoPaymentService>().As<IIyzicoPaymentService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SponsorAnalysisAccessRepository>().As<ISponsorAnalysisAccessRepository>()
                 .InstancePerLifetimeScope();
             

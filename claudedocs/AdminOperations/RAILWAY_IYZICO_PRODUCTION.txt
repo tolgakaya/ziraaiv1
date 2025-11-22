@@ -1,0 +1,43 @@
+# ============================================================
+# RAILWAY PRODUCTION - IYZICO LIVE CREDENTIALS
+# ============================================================
+# Railway Dashboard → ziraai-api-production → Variables → RAW Editor
+# ============================================================
+
+Iyzico__BaseUrl=https://api.iyzipay.com
+Iyzico__ApiKey=YOUR_PRODUCTION_API_KEY
+Iyzico__SecretKey=YOUR_PRODUCTION_SECRET_KEY
+Iyzico__Currency=TRY
+Iyzico__PaymentChannel=MOBILE
+Iyzico__PaymentGroup=SUBSCRIPTION
+Iyzico__TokenExpirationMinutes=30
+Iyzico__Callback__DeepLinkScheme=ziraai://payment-callback
+Iyzico__Callback__FallbackUrl=https://api.ziraai.com/payment/callback
+Iyzico__Timeout__InitializeTimeoutSeconds=30
+Iyzico__Timeout__VerifyTimeoutSeconds=30
+Iyzico__Timeout__WebhookTimeoutSeconds=15
+Iyzico__Retry__MaxRetryAttempts=3
+Iyzico__Retry__RetryDelayMilliseconds=1000
+Iyzico__Retry__UseExponentialBackoff=true
+
+# ============================================================
+# ⚠️ PRODUCTION - ÖNEMLİ UYARILAR:
+# ============================================================
+# 1. iyzico merchant verification tamamlanmalı
+# 2. iyzico'dan production onayı alınmalı
+# 3. GERÇEK PARA ile işlem yapılacak - dikkatli olun!
+#
+# ADIMLAR:
+# ============================================================
+# 1. iyzico merchant dashboard'dan PRODUCTION credentials alın
+#    https://merchant.iyzipay.com/ → Settings → API Keys → Production
+#
+# 2. YOUR_PRODUCTION_API_KEY → Gerçek production API key ile değiştirin
+# 3. YOUR_PRODUCTION_SECRET_KEY → Gerçek production secret key ile değiştirin
+#
+# 4. Önce staging'de KAPSAMLI TEST yapın!
+# 5. Test kartlarla denedikten sonra production'a geçin
+#
+# 6. Railway production service'inde bu dosyayı RAW Editor'a yapıştırın
+# 7. Save → Otomatik deploy olacak
+# ============================================================
