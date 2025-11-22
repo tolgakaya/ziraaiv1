@@ -179,6 +179,7 @@ namespace Business.Services.Payment
                     price = amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
                     paidPrice = amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
                     currency = currency,
+                    basketId = conversationId, // Use conversationId as basketId
                     paymentChannel = _iyzicoOptions.PaymentChannel,
                     paymentGroup = _iyzicoOptions.PaymentGroup,
                     callbackUrl = _iyzicoOptions.Callback.DeepLinkScheme,
@@ -187,17 +188,22 @@ namespace Business.Services.Payment
                     {
                         id = userId.ToString(),
                         name = "User",
-                    surname = user.FullName ?? "User",
+                        surname = user.FullName ?? "User",
                         email = user.Email,
+                        gsmNumber = "+905350000000", // Dummy GSM number
                         identityNumber = "11111111111", // Required by iyzico, dummy for now
+                        registrationDate = user.RecordDate.ToString("yyyy-MM-dd HH:mm:ss"),
+                        lastLoginDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                         registrationAddress = "N/A",
                         city = "Istanbul",
                         country = "Turkey",
+                        zipCode = "34732",
                         ip = "127.0.0.1"
                     },
                     shippingAddress = new
                     {
                         address = "N/A",
+                        zipCode = "34742",
                         contactName = user.FullName ?? "User",
                         city = "Istanbul",
                         country = "Turkey"
@@ -205,6 +211,7 @@ namespace Business.Services.Payment
                     billingAddress = new
                     {
                         address = "N/A",
+                        zipCode = "34742",
                         contactName = user.FullName ?? "User",
                         city = "Istanbul",
                         country = "Turkey"
@@ -219,6 +226,7 @@ namespace Business.Services.Payment
                                 ? "Sponsorship Package"
                                 : "Subscription",
                             category1 = "Subscription",
+                            category2 = "Service",
                             itemType = "VIRTUAL"
                         }
                     }
@@ -572,8 +580,8 @@ namespace Business.Services.Payment
 
                 _logger.LogDebug($"[iyzico] Signature (base64): {signature}");
 
-                // Step 3: Create authorization string: apiKey:randomKey:signature
-                var authString = $"{_iyzicoOptions.ApiKey}:{randomKey}:{signature}";
+                // Step 3: Create authorization string: apiKey:VALUE&randomKey:VALUE&signature:VALUE
+                var authString = $"apiKey:{_iyzicoOptions.ApiKey}&randomKey:{randomKey}&signature:{signature}";
                 _logger.LogDebug($"[iyzico] Auth string (before base64): {authString}");
 
                 // Step 4: Base64 encode the authorization string
