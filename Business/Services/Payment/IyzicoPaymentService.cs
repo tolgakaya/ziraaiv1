@@ -7,6 +7,7 @@ using Entities.Dtos.Payment;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -355,7 +356,31 @@ namespace Business.Services.Payment
                         $"Payment verification failed: {iyzicoResponse.Message}");
                 }
 
-                var iyzicoData = JsonSerializer.Deserialize<JsonElement>(iyzicoResponse.Data);
+                // IMPORTANT: iyzico puts response in Message field, not Data field
+                var responseJson = iyzicoResponse.Message;
+                if (string.IsNullOrEmpty(responseJson))
+                {
+                    _logger.LogError($"[iyzico] Verify response is null or empty. Success: {iyzicoResponse.Success}");
+                    return new ErrorDataResult<PaymentVerifyResponseDto>("iyzico API returned empty response");
+                }
+
+                _logger.LogDebug($"[iyzico] Verify response: {responseJson}");
+                var iyzicoData = JsonSerializer.Deserialize<JsonElement>(responseJson);
+
+                // Verify response signature
+                var responseSignature = iyzicoData.GetProperty("signature").GetString();
+                if (!VerifyResponseSignature(iyzicoData, responseSignature))
+                {
+                    _logger.LogError("[iyzico] Response signature verification failed");
+                    await _paymentTransactionRepository.UpdateStatusAsync(
+                        transaction.Id,
+                        PaymentStatus.Failed,
+                        "Response signature verification failed");
+
+                    return new ErrorDataResult<PaymentVerifyResponseDto>("Invalid response signature");
+                }
+
+                _logger.LogInformation("[iyzico] Response signature verified successfully");
 
                 // Check payment status
                 var paymentStatus = iyzicoData.GetProperty("paymentStatus").GetString();
@@ -369,7 +394,7 @@ namespace Business.Services.Payment
                     await _paymentTransactionRepository.MarkAsCompletedAsync(
                         transaction.Id,
                         iyzicoPaymentId,
-                        iyzicoResponse.Data);
+                        responseJson);
 
                     // Process based on flow type
                     await ProcessSuccessfulPaymentAsync(transaction);
@@ -836,6 +861,70 @@ namespace Business.Services.Payment
             };
 
             return new SuccessDataResult<PaymentVerifyResponseDto>(response);
+        }
+
+        /// <summary>
+        /// Verify iyzico response signature to ensure response authenticity
+        /// Signature format: HMACSHA256(field1:field2:...:fieldN, secretKey) in HEX
+        /// </summary>
+        private bool VerifyResponseSignature(JsonElement responseData, string expectedSignature)
+        {
+            try
+            {
+                // Extract fields in exact order as per Postman collection (lines 2615-2622)
+                var paymentStatus = responseData.GetProperty("paymentStatus").GetString();
+                var paymentId = responseData.TryGetProperty("paymentId", out var pidProp) ? pidProp.GetString() : "";
+                var currency = responseData.GetProperty("currency").GetString();
+                var basketId = responseData.GetProperty("basketId").GetString();
+                var conversationId = responseData.GetProperty("conversationId").GetString();
+
+                // Format decimal values (remove trailing zeros, as per formatBigDecimal in Postman)
+                var paidPrice = FormatBigDecimal(responseData.GetProperty("paidPrice").GetDecimal());
+                var price = FormatBigDecimal(responseData.GetProperty("price").GetDecimal());
+
+                var token = responseData.GetProperty("token").GetString();
+
+                // Build signature data string
+                var dataToEncrypt = $"{paymentStatus}:{paymentId}:{currency}:{basketId}:{conversationId}:{paidPrice}:{price}:{token}";
+
+                _logger.LogDebug($"[iyzico] Signature verification data: {dataToEncrypt}");
+
+                // Calculate signature using HMACSHA256 with HEX encoding
+                using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_iyzicoOptions.SecretKey)))
+                {
+                    var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToEncrypt));
+                    var calculatedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+
+                    _logger.LogDebug($"[iyzico] Expected signature: {expectedSignature}");
+                    _logger.LogDebug($"[iyzico] Calculated signature: {calculatedSignature}");
+
+                    return calculatedSignature.Equals(expectedSignature, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[iyzico] Error verifying response signature");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Format decimal value by removing trailing zeros (matches Postman's formatBigDecimal)
+        /// Example: 4999.50 -> "4999.5", 100.00 -> "100"
+        /// </summary>
+        private string FormatBigDecimal(decimal value)
+        {
+            var str = value.ToString(CultureInfo.InvariantCulture);
+
+            if (str.Contains('.'))
+            {
+                // Remove trailing zeros after decimal point
+                str = System.Text.RegularExpressions.Regex.Replace(str, @"(\.[0-9]*?)0+$", "$1");
+                // Remove decimal point if no digits remain after it
+                str = System.Text.RegularExpressions.Regex.Replace(str, @"\.$", "");
+            }
+
+            return str;
         }
 
         #endregion
