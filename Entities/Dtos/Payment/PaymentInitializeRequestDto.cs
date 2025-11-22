@@ -39,6 +39,21 @@ namespace Entities.Dtos.Payment
         [Required]
         [Range(1, 10000)]
         public int Quantity { get; set; }
+
+        /// <summary>
+        /// Company name for invoice (optional for personal purchases)
+        /// </summary>
+        public string CompanyName { get; set; }
+
+        /// <summary>
+        /// Tax number for invoice (optional for personal purchases)
+        /// </summary>
+        public string TaxNumber { get; set; }
+
+        /// <summary>
+        /// Invoice address (optional for personal purchases)
+        /// </summary>
+        public string InvoiceAddress { get; set; }
     }
 
     /// <summary>
