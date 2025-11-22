@@ -167,6 +167,14 @@ namespace Business.Services.Payment
                 // Generate unique conversation ID
                 var conversationId = $"{request.FlowType}_{userId}_{DateTime.Now.Ticks}";
 
+                // Validate platform
+                var platform = request.Platform ?? PaymentPlatform.iOS;
+                if (!PaymentPlatform.ValidPlatforms.Contains(platform))
+                {
+                    _logger.LogWarning($"[iyzico] Invalid platform '{platform}', defaulting to iOS");
+                    platform = PaymentPlatform.iOS;
+                }
+
                 // Create payment transaction record
                 var transaction = new PaymentTransaction
                 {
@@ -176,6 +184,7 @@ namespace Business.Services.Payment
                     Amount = amount,
                     Currency = currency,
                     Status = PaymentStatus.Initialized,
+                    Platform = platform, // Store platform for callback redirect
                     InitializedAt = DateTime.Now,
                     ExpiresAt = DateTime.Now.AddMinutes(_iyzicoOptions.TokenExpirationMinutes),
                     ConversationId = conversationId,

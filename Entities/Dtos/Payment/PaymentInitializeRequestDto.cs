@@ -26,6 +26,13 @@ namespace Entities.Dtos.Payment
         /// Currency code (optional, defaults to TRY from configuration)
         /// </summary>
         public string Currency { get; set; }
+
+        /// <summary>
+        /// Platform from which payment is initiated: "iOS", "Android", "Web"
+        /// Used to determine callback redirect URL (deep link for mobile, web URL for web)
+        /// Defaults to "iOS" for backward compatibility
+        /// </summary>
+        public string Platform { get; set; } = "iOS";
     }
 
     /// <summary>
