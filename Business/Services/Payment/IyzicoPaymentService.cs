@@ -174,6 +174,30 @@ namespace Business.Services.Payment
 
                 // Prepare iyzico PWI initialize request
                 // IMPORTANT: price and paidPrice must be numeric (decimal), NOT strings
+
+                // Extract buyer name info - use email if FullName is placeholder
+                bool hasValidFullName = !string.IsNullOrEmpty(user.FullName)
+                    && user.FullName.Contains(' ')
+                    && !IsPlaceholderValue(user.FullName);
+
+                (string buyerFirstName, string buyerLastName) = hasValidFullName
+                    ? (user.FullName.Split(' ')[0], string.Join(" ", user.FullName.Split(' ').Skip(1)))
+                    : ExtractNameFromEmail(user.Email);
+
+                // Validate and format phone number
+                string buyerPhone = "+905350000000"; // Default fallback
+                if (!string.IsNullOrEmpty(user.MobilePhones))
+                {
+                    buyerPhone = user.MobilePhones.StartsWith("+")
+                        ? user.MobilePhones
+                        : "+90" + user.MobilePhones.TrimStart('0');
+                }
+
+                // Validate address - filter out placeholders
+                string buyerAddress = IsPlaceholderValue(user.Address)
+                    ? "Istanbul, Turkey"
+                    : user.Address;
+
                 var iyzicoRequest = new
                 {
                     locale = "tr",
@@ -189,20 +213,14 @@ namespace Business.Services.Payment
                     buyer = new
                     {
                         id = userId.ToString(),
-                        name = !string.IsNullOrEmpty(user.FullName) && user.FullName.Contains(' ')
-                            ? user.FullName.Split(' ')[0]
-                            : "User",
-                        surname = !string.IsNullOrEmpty(user.FullName) && user.FullName.Contains(' ')
-                            ? string.Join(" ", user.FullName.Split(' ').Skip(1))
-                            : user.FullName ?? "User",
+                        name = buyerFirstName,
+                        surname = buyerLastName,
                         email = user.Email,
-                        gsmNumber = !string.IsNullOrEmpty(user.MobilePhones)
-                            ? (user.MobilePhones.StartsWith("+") ? user.MobilePhones : "+90" + user.MobilePhones.TrimStart('0'))
-                            : "+905350000000",
+                        gsmNumber = buyerPhone,
                         identityNumber = "11111111111", // Required by iyzico, test value for sandbox
                         registrationDate = user.RecordDate.ToString("yyyy-MM-dd HH:mm:ss"),
                         lastLoginDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        registrationAddress = !string.IsNullOrEmpty(user.Address) ? user.Address : "Istanbul, Turkey",
+                        registrationAddress = buyerAddress,
                         city = "Istanbul",
                         country = "Turkey",
                         zipCode = "34732",
@@ -933,6 +951,43 @@ namespace Business.Services.Payment
             }
 
             return str;
+        }
+
+        /// <summary>
+        /// Extract name and surname from email address for iyzico buyer info
+        /// Example: hatice@tarim.com → (Hatice, Tarim)
+        /// </summary>
+        private (string firstName, string lastName) ExtractNameFromEmail(string email)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(email) || !email.Contains('@'))
+                    return ("Test", "User");
+
+                var parts = email.Split('@');
+                var localPart = parts[0]; // "hatice"
+                var domain = parts[1].Split('.')[0]; // "tarim"
+
+                var firstName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(localPart.ToLower());
+                var lastName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(domain.ToLower());
+
+                return (firstName, lastName);
+            }
+            catch
+            {
+                return ("Test", "User");
+            }
+        }
+
+        /// <summary>
+        /// Check if a value is a placeholder or invalid for iyzico
+        /// </summary>
+        private bool IsPlaceholderValue(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return true;
+
+            var placeholders = new[] { "N/A", "Not specified", "n/a", "not specified", "NULL", "null", "User" };
+            return placeholders.Any(p => value.Equals(p, StringComparison.OrdinalIgnoreCase) || value.StartsWith("User ", StringComparison.OrdinalIgnoreCase));
         }
 
         #endregion
