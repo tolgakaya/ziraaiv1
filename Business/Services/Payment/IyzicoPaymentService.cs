@@ -189,14 +189,18 @@ namespace Business.Services.Payment
                     buyer = new
                     {
                         id = userId.ToString(),
-                        name = "User",
-                        surname = user.FullName ?? "User",
+                        name = !string.IsNullOrEmpty(user.FullName) && user.FullName.Contains(' ')
+                            ? user.FullName.Split(' ')[0]
+                            : "User",
+                        surname = !string.IsNullOrEmpty(user.FullName) && user.FullName.Contains(' ')
+                            ? string.Join(" ", user.FullName.Split(' ').Skip(1))
+                            : user.FullName ?? "User",
                         email = user.Email,
-                        gsmNumber = "+905350000000", // Dummy GSM number
-                        identityNumber = "11111111111", // Required by iyzico, dummy for now
+                        gsmNumber = !string.IsNullOrEmpty(user.MobilePhones) ? user.MobilePhones : "+905350000000",
+                        identityNumber = "11111111111", // Required by iyzico, test value for sandbox
                         registrationDate = user.RecordDate.ToString("yyyy-MM-dd HH:mm:ss"),
                         lastLoginDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        registrationAddress = "N/A",
+                        registrationAddress = !string.IsNullOrEmpty(user.Address) ? user.Address : "Istanbul, Turkey",
                         city = "Istanbul",
                         country = "Turkey",
                         zipCode = "34732",
@@ -204,7 +208,7 @@ namespace Business.Services.Payment
                     },
                     shippingAddress = new
                     {
-                        address = "N/A",
+                        address = "Istanbul, Turkey",
                         zipCode = "34742",
                         contactName = user.FullName ?? "User",
                         city = "Istanbul",
@@ -212,7 +216,7 @@ namespace Business.Services.Payment
                     },
                     billingAddress = new
                     {
-                        address = "N/A",
+                        address = "Istanbul, Turkey",
                         zipCode = "34742",
                         contactName = user.FullName ?? "User",
                         city = "Istanbul",
