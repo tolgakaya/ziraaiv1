@@ -577,11 +577,12 @@ namespace Business.Services.Payment
             using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_iyzicoOptions.SecretKey)))
             {
                 var hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToHash));
-                var signature = Convert.ToBase64String(hashBytes);
+                // CRITICAL: Postman uses HEX encoding for signature, NOT Base64!
+                var signature = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
 
-                _logger.LogDebug($"[iyzico] Signature (base64): {signature}");
+                _logger.LogDebug($"[iyzico] Signature (hex): {signature}");
 
-                // Step 3: Create authorization string: apiKey:VALUE&randomKey:VALUE&signature:VALUE
+                // Step 3: Create authorization string: apiKey:VALUE&randomKey:VALUE&signature:HEX_VALUE
                 var authString = $"apiKey:{_iyzicoOptions.ApiKey}&randomKey:{randomKey}&signature:{signature}";
                 _logger.LogDebug($"[iyzico] Auth string (before base64): {authString}");
 
