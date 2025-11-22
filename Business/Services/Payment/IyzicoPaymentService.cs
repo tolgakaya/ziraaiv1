@@ -1,5 +1,6 @@
 using Business.Services.Payment;
 using Core.Configuration;
+using Core.CrossCuttingConcerns.Caching;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
@@ -32,6 +33,7 @@ namespace Business.Services.Payment
         private readonly IyzicoOptions _iyzicoOptions;
         private readonly ILogger<IyzicoPaymentService> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ICacheManager _cacheManager;
 
         public IyzicoPaymentService(
             IPaymentTransactionRepository paymentTransactionRepository,
@@ -42,7 +44,8 @@ namespace Business.Services.Payment
             IUserRepository userRepository,
             IOptions<IyzicoOptions> iyzicoOptions,
             ILogger<IyzicoPaymentService> logger,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            ICacheManager cacheManager)
         {
             _paymentTransactionRepository = paymentTransactionRepository;
             _sponsorshipPurchaseRepository = sponsorshipPurchaseRepository;
@@ -53,6 +56,7 @@ namespace Business.Services.Payment
             _iyzicoOptions = iyzicoOptions.Value;
             _logger = logger;
             _httpClientFactory = httpClientFactory;
+            _cacheManager = cacheManager;
         }
 
         public async Task<IDataResult<PaymentInitializeResponseDto>> InitializePaymentAsync(
@@ -753,6 +757,11 @@ namespace Business.Services.Payment
             await _paymentTransactionRepository.SaveChangesAsync();
 
             _logger.LogInformation($"[iyzico] Generated {codes.Count} sponsorship codes. PurchaseId: {purchase.Id}");
+
+            // Invalidate sponsor dashboard cache
+            var cacheKey = $"SponsorDashboard:{transaction.UserId}";
+            _cacheManager.Remove(cacheKey);
+            _logger.LogInformation($"[DashboardCache] 🗑️ Invalidated cache for sponsor {transaction.UserId} after purchase creation");
         }
 
         /// <summary>
