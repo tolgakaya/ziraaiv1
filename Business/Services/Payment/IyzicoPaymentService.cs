@@ -245,14 +245,16 @@ namespace Business.Services.Payment
                         $"Payment initialization failed: {iyzicoResponse.Message}");
                 }
 
-                if (string.IsNullOrEmpty(iyzicoResponse.Data))
+                // IMPORTANT: iyzico puts response in Message field, not Data field
+                var responseJson = iyzicoResponse.Message;
+                if (string.IsNullOrEmpty(responseJson))
                 {
-                    _logger.LogError($"[iyzico] Response Data is null or empty. Success: {iyzicoResponse.Success}, Message: {iyzicoResponse.Message}");
+                    _logger.LogError($"[iyzico] Response is null or empty. Success: {iyzicoResponse.Success}");
                     return new ErrorDataResult<PaymentInitializeResponseDto>("iyzico API returned empty response");
                 }
 
-                _logger.LogDebug($"[iyzico] Raw response: {iyzicoResponse.Data}");
-                var iyzicoData = JsonSerializer.Deserialize<JsonElement>(iyzicoResponse.Data);
+                _logger.LogDebug($"[iyzico] Raw response: {responseJson}");
+                var iyzicoData = JsonSerializer.Deserialize<JsonElement>(responseJson);
 
                 // Check iyzico response status
                 if (iyzicoData.GetProperty("status").GetString() != "success")
