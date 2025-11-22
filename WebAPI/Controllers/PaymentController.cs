@@ -104,12 +104,13 @@ namespace WebAPI.Controllers
         [Authorize]
         [SecuredOperation]
         [HttpPost("verify")]
+        [HttpGet("verify")]  // Support both POST (mobile) and GET (web) requests
         [ProducesResponseType(typeof(IDataResult<PaymentVerifyResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> VerifyPayment([FromBody] PaymentVerifyRequestDto request)
+        public async Task<IActionResult> VerifyPayment([FromBody] PaymentVerifyRequestDto request = null, [FromQuery] string token = null)
         {
             try
             {
@@ -122,9 +123,19 @@ namespace WebAPI.Controllers
 
                 var userIdValue = userId.Value;
 
-                _logger.LogInformation($"[Payment] Verify payment request. UserId: {userIdValue}, Token: {request.PaymentToken}");
+                // Support both POST (request body) and GET (query string) token formats
+                var paymentToken = request?.PaymentToken ?? token;
 
-                var result = await _paymentService.VerifyPaymentAsync(request);
+                if (string.IsNullOrWhiteSpace(paymentToken))
+                {
+                    _logger.LogWarning("[Payment] Verify payment failed: Payment token is required");
+                    return BadRequest(new ErrorResult("Payment token is required"));
+                }
+
+                _logger.LogInformation($"[Payment] Verify payment request. UserId: {userIdValue}, Token: {paymentToken}");
+
+                var verifyRequest = new PaymentVerifyRequestDto { PaymentToken = paymentToken };
+                var result = await _paymentService.VerifyPaymentAsync(verifyRequest);
 
                 if (result.Success)
                 {
