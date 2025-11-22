@@ -543,7 +543,9 @@ namespace Business.Services.Payment
                 _logger.LogDebug($"[iyzico] Calling {endpoint}");
                 _logger.LogDebug($"[iyzico] Random: {randomString}");
                 _logger.LogDebug($"[iyzico] Auth Header: {authString}");
-                _logger.LogDebug($"[iyzico] Request Body (first 200 chars): {requestJson.Substring(0, Math.Min(200, requestJson.Length))}");
+
+                // IMPORTANT: Log FULL request body to diagnose Error 11 on iyzico payment page
+                _logger.LogInformation($"[iyzico] FULL Request Body: {requestJson}");
 
                 var response = await client.SendAsync(request);
                 var responseContent = await response.Content.ReadAsStringAsync();
