@@ -140,6 +140,59 @@ namespace WebAPI.Controllers
             }
         }
 
+
+        /// <summary>
+        /// iyzico payment callback endpoint (3D Secure redirect target)
+        /// This endpoint receives POST from iyzico after 3D Secure completion
+        /// and redirects to mobile deep link
+        /// </summary>
+        /// <param name="token">Payment token from iyzico</param>
+        /// <param name="status">Payment status from iyzico</param>
+        /// <param name="paymentId">Payment ID from iyzico (optional)</param>
+        /// <param name="conversationId">Conversation ID from iyzico (optional)</param>
+        /// <returns>HTTP 302 Redirect to mobile deep link</returns>
+        /// <response code="302">Redirects to mobile app via deep link</response>
+        /// <response code="500">Internal server error during callback processing</response>
+        [AllowAnonymous]  // iyzico calls this, not authenticated mobile app
+        [HttpPost("callback")]
+        [HttpGet("callback")]  // Support both POST and GET from iyzico
+        [ProducesResponseType(StatusCodes.Status302Found)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> PaymentCallback(
+            [FromForm] string token,
+            [FromForm] string status,
+            [FromForm] string paymentId = null,
+            [FromForm] string conversationId = null)
+        {
+            try
+            {
+                _logger.LogInformation("[Payment] Callback received from iyzico. Token: {Token}, Status: {Status}, PaymentId: {PaymentId}",
+                    token, status, paymentId);
+
+                // Verify payment with iyzico and update transaction
+                var verifyRequest = new PaymentVerifyRequestDto { PaymentToken = token };
+                var result = await _paymentService.VerifyPaymentAsync(verifyRequest);
+
+                // Prepare deep link URL for mobile app
+                var deepLinkUrl = result.Success
+                    ? $"ziraai://payment-callback?token={token}&status=success"
+                    : $"ziraai://payment-callback?token={token}&status=failed&error={Uri.EscapeDataString(result.Message)}";
+
+                _logger.LogInformation("[Payment] Redirecting to mobile app: {DeepLink}", deepLinkUrl);
+
+                // Redirect browser to deep link (this opens mobile app)
+                return Redirect(deepLinkUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Payment] Callback processing failed for token: {Token}", token);
+
+                // Redirect to mobile with error
+                var errorDeepLink = $"ziraai://payment-callback?token={token}&status=failed&error={Uri.EscapeDataString(ex.Message)}";
+                return Redirect(errorDeepLink);
+            }
+        }
+
         /// <summary>
         /// Webhook endpoint for iyzico payment callbacks
         /// Public endpoint called by iyzico when payment status changes
