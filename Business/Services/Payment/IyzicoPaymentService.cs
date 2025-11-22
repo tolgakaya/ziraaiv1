@@ -81,6 +81,7 @@ namespace Business.Services.Payment
                 decimal amount;
                 string currency = request.Currency ?? _iyzicoOptions.Currency;
                 int? subscriptionTierId = null;
+                string flowDataJson = null; // Store properly serialized flow data
 
                 if (request.FlowType == PaymentFlowType.SponsorBulkPurchase)
                 {
@@ -116,6 +117,9 @@ namespace Business.Services.Payment
 
                     amount = tier.MonthlyPrice * flowData.Quantity;
                     subscriptionTierId = flowData.SubscriptionTierId;
+
+                    // Serialize the properly deserialized flowData (not request.FlowData)
+                    flowDataJson = JsonSerializer.Serialize(flowData);
                 }
                 else // FarmerSubscription
                 {
@@ -151,6 +155,9 @@ namespace Business.Services.Payment
 
                     amount = tier.MonthlyPrice * flowData.DurationMonths;
                     subscriptionTierId = flowData.SubscriptionTierId;
+
+                    // Serialize the properly deserialized flowData (not request.FlowData)
+                    flowDataJson = JsonSerializer.Serialize(flowData);
                 }
 
                 // Generate unique conversation ID
@@ -161,7 +168,7 @@ namespace Business.Services.Payment
                 {
                     UserId = userId,
                     FlowType = request.FlowType,
-                    FlowDataJson = JsonSerializer.Serialize(request.FlowData),
+                    FlowDataJson = flowDataJson, // Use properly serialized flow data
                     Amount = amount,
                     Currency = currency,
                     Status = PaymentStatus.Initialized,
