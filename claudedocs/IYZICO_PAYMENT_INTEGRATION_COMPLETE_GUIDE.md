@@ -1,8 +1,17 @@
 # iyzico Payment Integration - Complete Implementation Guide
 
 **Date:** 2025-11-22
-**Status:** ⚠️ CRITICAL - Previous implementation had incorrect HMAC signature format
+**Status:** ⚠️ CRITICAL - Multiple critical bugs discovered and fixed
 **Source:** Official iyzico Postman Collection Analysis
+
+## 🚨 Critical Issues Found and Fixed
+
+1. **HMAC Signature Format** - Wrong format causing Error 1000
+2. **Price Field Types** - Sending strings instead of numeric decimals causing Error 11
+3. **Missing Required Fields** - 8+ required fields were missing
+4. **FlowData Deserialization** - Case sensitivity issues
+
+**All fixes have been deployed to Railway.**
 
 ---
 
@@ -192,8 +201,8 @@ Content-Type: application/json
 |-------|------|----------|---------|-------|
 | `locale` | string | ✅ | "tr" | Language code |
 | `conversationId` | string | ✅ | "SponsorBulkPurchase_134_638993824694005095" | Unique transaction ID |
-| `price` | string | ✅ | "4999.50" | Total basket amount (F2 format) |
-| `paidPrice` | string | ✅ | "4999.50" | Amount to be paid (F2 format) |
+| `price` | **decimal** | ✅ | 4999.50 | Total basket amount (**MUST be numeric, NOT string**) |
+| `paidPrice` | **decimal** | ✅ | 4999.50 | Amount to be paid (**MUST be numeric, NOT string**) |
 | `currency` | string | ✅ | "TRY" | Currency code |
 | `basketId` | string | ✅ | Same as conversationId | Basket identifier |
 | `paymentChannel` | string | ✅ | "MOBILE" | Payment channel |
@@ -240,7 +249,7 @@ Content-Type: application/json
 [
   {
     "id": "1",
-    "price": "4999.50",
+    "price": 4999.50,  // CRITICAL: Must be numeric decimal, NOT string
     "name": "Sponsorship Package",
     "category1": "Subscription",
     "category2": "Service",

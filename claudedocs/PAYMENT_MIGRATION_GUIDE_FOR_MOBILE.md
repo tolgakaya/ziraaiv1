@@ -40,7 +40,8 @@ Backend was not sending these required fields:
 
 1. ✅ **HMAC signature format fixed** - Now uses correct `apiKey:VALUE&randomKey:VALUE&signature:VALUE` format
 2. ✅ **All required fields added** - basketId, gsmNumber, zipCode, dates, etc.
-3. ✅ **Better error handling** - Detailed error logging for debugging
+3. ✅ **Price field types corrected** - Changed from string to numeric decimal (CRITICAL FIX)
+4. ✅ **Better error handling** - Detailed error logging for debugging
 
 ### Status of Changes
 

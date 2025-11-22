@@ -75,11 +75,13 @@ Still getting **Error 11 (Geçersiz istek)** from iyzico despite fixes. Needs in
 | Missing zipCode fields | Not included | Added to all addresses | ✅ Fixed |
 | Missing date fields | Not included | Added registrationDate, lastLoginDate | ✅ Fixed |
 | Missing category2 | Not included in basket items | Added "Service" | ✅ Fixed |
+| Error 11: Price field type | Prices sent as strings | Changed to numeric decimal values | ✅ Fixed |
 
 **Commits:**
 - `9bd3a86` - Fixed FlowData deserialization
 - `99fc4ba` - Fixed HMAC signature and added required fields
 - `732f7d3` - Added comprehensive documentation
+- `8ffbaea` - Fixed price field types (string → decimal)
 
 #### 2.2 Current Issue 🔄 INVESTIGATING
 
