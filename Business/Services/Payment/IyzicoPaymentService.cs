@@ -790,23 +790,81 @@ namespace Business.Services.Payment
 
             if (existingSubscription != null)
             {
-                // Extend existing subscription
-                var extensionDays = flowData.DurationMonths * 30;
-                existingSubscription.EndDate = existingSubscription.EndDate.AddDays(extensionDays);
-                existingSubscription.AutoRenew = false; // Disable auto-renew for manual purchases
-                existingSubscription.UpdatedDate = DateTime.Now;
-                existingSubscription.PaymentTransactionId = transaction.Id;
+                // If upgrading from trial to paid, cancel trial and create new subscription
+                if (existingSubscription.IsTrialSubscription)
+                {
+                    _logger.LogInformation($"[iyzico] Upgrading from trial subscription. TrialSubId: {existingSubscription.Id}, UserId: {transaction.UserId}");
 
-                _userSubscriptionRepository.Update(existingSubscription);
-                await _userSubscriptionRepository.SaveChangesAsync();
+                    // Cancel trial subscription
+                    existingSubscription.IsActive = false;
+                    existingSubscription.Status = "Upgraded";
+                    existingSubscription.CancellationDate = DateTime.Now;
+                    existingSubscription.CancellationReason = $"Upgraded to paid subscription via payment transaction {transaction.Id}";
+                    existingSubscription.UpdatedDate = DateTime.Now;
 
-                transaction.UserSubscriptionId = existingSubscription.Id;
+                    _userSubscriptionRepository.Update(existingSubscription);
+                    await _userSubscriptionRepository.SaveChangesAsync();
 
-                _logger.LogInformation($"[iyzico] Extended existing subscription. SubscriptionId: {existingSubscription.Id}, ExtensionDays: {extensionDays}");
+                    _logger.LogInformation($"[iyzico] Cancelled trial subscription {existingSubscription.Id} for user {transaction.UserId}");
+
+                    // Create new paid subscription
+                    var startDate = DateTime.Now;
+                    var endDate = startDate.AddMonths(flowData.DurationMonths);
+
+                    var subscription = new UserSubscription
+                    {
+                        UserId = transaction.UserId,
+                        SubscriptionTierId = flowData.SubscriptionTierId,
+                        StartDate = startDate,
+                        EndDate = endDate,
+                        IsActive = true,
+                        AutoRenew = false,
+                        PaymentMethod = "CreditCard",
+                        PaymentReference = transaction.IyzicoPaymentId,
+                        PaymentTransactionId = transaction.Id,
+                        PaidAmount = transaction.Amount,
+                        Currency = transaction.Currency,
+                        LastPaymentDate = DateTime.Now,
+                        CurrentDailyUsage = 0,
+                        CurrentMonthlyUsage = 0,
+                        LastUsageResetDate = startDate,
+                        MonthlyUsageResetDate = startDate,
+                        Status = "Active",
+                        IsTrialSubscription = false,
+                        IsSponsoredSubscription = false,
+                        QueueStatus = SubscriptionQueueStatus.Active,
+                        ActivatedDate = startDate,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now
+                    };
+
+                    _userSubscriptionRepository.Add(subscription);
+                    await _userSubscriptionRepository.SaveChangesAsync();
+
+                    transaction.UserSubscriptionId = subscription.Id;
+
+                    _logger.LogInformation($"[iyzico] Created paid subscription after trial upgrade. SubscriptionId: {subscription.Id}, UserId: {transaction.UserId}, TierId: {flowData.SubscriptionTierId}, EndDate: {endDate}");
+                }
+                else
+                {
+                    // Extend existing paid subscription
+                    var extensionDays = flowData.DurationMonths * 30;
+                    existingSubscription.EndDate = existingSubscription.EndDate.AddDays(extensionDays);
+                    existingSubscription.AutoRenew = false; // Disable auto-renew for manual purchases
+                    existingSubscription.UpdatedDate = DateTime.Now;
+                    existingSubscription.PaymentTransactionId = transaction.Id;
+
+                    _userSubscriptionRepository.Update(existingSubscription);
+                    await _userSubscriptionRepository.SaveChangesAsync();
+
+                    transaction.UserSubscriptionId = existingSubscription.Id;
+
+                    _logger.LogInformation($"[iyzico] Extended existing subscription. SubscriptionId: {existingSubscription.Id}, ExtensionDays: {extensionDays}");
+                }
             }
             else
             {
-                // Create new subscription
+                // Create new subscription (no existing subscription)
                 var startDate = DateTime.Now;
                 var endDate = startDate.AddMonths(flowData.DurationMonths);
 
@@ -848,6 +906,11 @@ namespace Business.Services.Payment
             // Update transaction with subscription ID
             _paymentTransactionRepository.Update(transaction);
             await _paymentTransactionRepository.SaveChangesAsync();
+
+            // Invalidate user subscription cache
+            var cacheKey = $"UserSubscription:{transaction.UserId}";
+            _cacheManager.Remove(cacheKey);
+            _logger.LogInformation($"[SubscriptionCache] 🗑️ Invalidated cache for user {transaction.UserId} after subscription creation");
         }
 
         /// <summary>
