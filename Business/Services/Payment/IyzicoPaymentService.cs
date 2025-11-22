@@ -208,7 +208,7 @@ namespace Business.Services.Payment
                     basketId = conversationId, // Use conversationId as basketId
                     paymentChannel = _iyzicoOptions.PaymentChannel,
                     paymentGroup = _iyzicoOptions.PaymentGroup,
-                    callbackUrl = _iyzicoOptions.Callback.DeepLinkScheme,
+                    callbackUrl = _iyzicoOptions.Callback.FallbackUrl, // HTTPS URL for iyzico callback
                     enabledInstallments = new[] { 1 },
                     buyer = new
                     {
