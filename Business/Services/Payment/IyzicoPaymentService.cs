@@ -172,12 +172,13 @@ namespace Business.Services.Payment
                 };
 
                 // Prepare iyzico PWI initialize request
+                // IMPORTANT: price and paidPrice must be numeric (decimal), NOT strings
                 var iyzicoRequest = new
                 {
                     locale = "tr",
                     conversationId = conversationId,
-                    price = amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
-                    paidPrice = amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+                    price = amount, // Numeric decimal value
+                    paidPrice = amount, // Numeric decimal value
                     currency = currency,
                     basketId = conversationId, // Use conversationId as basketId
                     paymentChannel = _iyzicoOptions.PaymentChannel,
@@ -221,7 +222,7 @@ namespace Business.Services.Payment
                         new
                         {
                             id = subscriptionTierId?.ToString() ?? "1",
-                            price = amount.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+                            price = amount, // Numeric decimal value
                             name = request.FlowType == PaymentFlowType.SponsorBulkPurchase
                                 ? "Sponsorship Package"
                                 : "Subscription",
