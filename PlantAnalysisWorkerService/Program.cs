@@ -284,6 +284,9 @@ builder.Services.AddScoped<Business.Services.Analytics.ISponsorDealerAnalyticsCa
 // 🆕 Add DealerInvitation Configuration Service (required by InviteDealerViaSmsCommand)
 builder.Services.AddScoped<Business.Services.DealerInvitation.IDealerInvitationConfigurationService, Business.Services.DealerInvitation.DealerInvitationConfigurationService>();
 
+// 🆕 Add DealerInvitation Notification Service (required by InviteDealerViaSmsCommand for SignalR notifications)
+builder.Services.AddScoped<Business.Services.Notification.IDealerInvitationNotificationService, Business.Services.Notification.DealerInvitationNotificationService>();
+
 // 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
 
