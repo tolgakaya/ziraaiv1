@@ -697,16 +697,49 @@ grep "SMS sending failed" application.log
 [WRN] Unusual phone number format: +90 555 123 45 67, using as-is: 905551234567
 ```
 
-### 4. Turkish Character Issues
+### 4. Emoji and Turkish Character Issues ⚠️
 
-**OTP SMS**: Turkish characters **NOT SUPPORTED**
+#### Emoji Support
+**Problem**: Emoji characters appear as "??" on mobile devices
+
+**Example**:
+- ❌ Sent: `🎁 Ziraai size sponsorluk paketi hediye etti!`
+- ❌ Received: `?? Ziraai size sponsorluk paketi hediye etti!`
+
+**Root Cause**: NetGSM SMS encoding doesn't support emoji characters (even with `encoding: "TR"`)
+
+**Solution**: Remove all emoji from templates
+- ❌ `🎁`, `📱`, `✅`, `🔥` etc.
+- ✅ Use plain text only
+
+#### Turkish Character Support
+
+**OTP SMS** (XML endpoint): Turkish characters **NOT SUPPORTED**
 - ❌ `Merhaba, şifreniz: 123456`
 - ✅ `Dogrulama kodunuz: 123456`
 
-**Standard SMS**: Turkish characters **SUPPORTED**
-- ✅ `Hoş geldiniz! Kodunuz: ABC123`
+**Standard SMS** (REST v2): Turkish characters **SUPPORTED with encoding**
+- ✅ `Hoş geldiniz! Kodunuz: ABC123` (with `encoding: "TR"`)
+- ⚠️ Uses more characters (Turkish encoding uses 2 bytes per char)
 
-**Auto-detection**: `ContainsTurkishChars()` method sets `encoding: "TR"`
+**Best Practice**: Normalize Turkish chars for consistency
+```csharp
+// Normalization mapping
+ç → c
+ğ → g
+ı → i
+ö → o
+ş → s
+ü → u
+Ç → C
+Ğ → G
+İ → I
+Ö → O
+Ş → S
+Ü → U
+```
+
+**Auto-detection**: `ContainsTurkishChars()` method automatically sets `encoding: "TR"` when needed
 
 ---
 
@@ -757,23 +790,56 @@ public async Task<IResult> SendSmsWithRetry(string phone, string message)
 }
 ```
 
-### 3. Message Templates
+### 3. Message Templates (Configuration-Based) ✅
 
-```csharp
-public static class SmsTemplates
+**Best Practice**: Store templates in `appsettings.json` instead of hardcoding:
+
+**appsettings.json**:
+```json
 {
-    public static string OtpMessage(string code) =>
-        $"Dogrulama kodunuz: {code}. Bu kodu kimseyle paylasmayin.";
-
-    public static string SponsorshipCode(string code, string validityDays) =>
-        $"Hoş geldiniz! Sponsorluk kodunuz: {code}. {validityDays} gün geçerlidir.";
-
-    public static string DealerInvitation(string sponsorName, string token, string deepLink) =>
-        $"🎁 {sponsorName} Bayilik Daveti!\n\n" +
-        $"Davet Kodunuz: DEALER-{token}\n\n" +
-        $"Hemen katılmak için tıklayın:\n{deepLink}";
+  "Sponsorship": {
+    "SmsTemplate": "{sponsorName} size sponsorluk paketi hediye etti!\n\nSponsorluk Kodunuz: {sponsorCode}\n\nHemen kullanmak icin tiklayin:\n{deepLink}\n\nVeya uygulamayi indirin:\n{playStoreLink}"
+  },
+  "DealerInvitation": {
+    "SmsTemplate": "{sponsorName} Bayilik Daveti!\n\nDavet Kodunuz: DEALER-{token}\n\nHemen katilmak icin tiklayin:\n{deepLink}\n\nVeya uygulamayi indirin:\n{playStoreLink}"
+  }
 }
 ```
+
+**Code Implementation**:
+```csharp
+private string BuildSmsMessage(string sponsorName, string code, string deepLink, string playStoreLink)
+{
+    // Read template from configuration
+    var template = _configuration["Sponsorship:SmsTemplate"];
+
+    if (!string.IsNullOrEmpty(template))
+    {
+        return template
+            .Replace("{sponsorName}", sponsorName)
+            .Replace("{sponsorCode}", code)
+            .Replace("{deepLink}", deepLink)
+            .Replace("{playStoreLink}", playStoreLink)
+            .Replace("\\n", "\n");
+    }
+
+    // Fallback template (without emoji, Turkish chars normalized)
+    return $@"{sponsorName} size sponsorluk paketi hediye etti!
+
+Sponsorluk Kodunuz: {code}
+
+Hemen kullanmak icin tiklayin:
+{deepLink}
+
+Veya uygulamayi indirin:
+{playStoreLink}";
+}
+```
+
+**⚠️ Important**:
+- ❌ **Don't use emoji** in SMS templates (appears as "??" on mobile)
+- ✅ **Normalize Turkish characters** for SMS compatibility: `ç→c`, `ğ→g`, `ı→i`, `ö→o`, `ş→s`, `ü→u`
+- ✅ **Use configuration** for easy template changes without code deployment
 
 ### 4. Configuration Management
 
