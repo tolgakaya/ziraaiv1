@@ -73,6 +73,12 @@ namespace Entities.Concrete
         public string Status { get; set; }
 
         /// <summary>
+        /// Platform from which payment was initiated: "iOS", "Android", "Web"
+        /// Used to determine callback redirect URL (deep link for mobile, web URL for web)
+        /// </summary>
+        public string Platform { get; set; }
+
+        /// <summary>
         /// When payment was initialized (PWI request sent)
         /// </summary>
         public DateTime InitializedAt { get; set; }
@@ -174,5 +180,31 @@ namespace Entities.Concrete
         /// Payment token expired (user did not complete payment within timeout)
         /// </summary>
         public const string Expired = "Expired";
+    }
+
+    /// <summary>
+    /// Platform types for payment initialization
+    /// </summary>
+    public static class PaymentPlatform
+    {
+        /// <summary>
+        /// iOS mobile app
+        /// </summary>
+        public const string iOS = "iOS";
+
+        /// <summary>
+        /// Android mobile app
+        /// </summary>
+        public const string Android = "Android";
+
+        /// <summary>
+        /// Web application (Angular)
+        /// </summary>
+        public const string Web = "Web";
+
+        /// <summary>
+        /// Get all valid platforms
+        /// </summary>
+        public static string[] ValidPlatforms => new[] { iOS, Android, Web };
     }
 }

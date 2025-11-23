@@ -44,14 +44,16 @@ namespace Business.Services.Messaging.Factories
 
             _logger.LogDebug("Creating SMS service with provider: {Provider}", provider);
 
-            return provider.ToLower() switch
+            // ISmsService is already configured in Autofac to resolve the correct provider
+            // based on SmsService:Provider configuration, so we just need to resolve the interface
+            var smsService = (ISmsService)_serviceProvider.GetService(typeof(ISmsService));
+
+            if (smsService == null)
             {
-                "mock" => (ISmsService)_serviceProvider.GetService(typeof(ISmsService)),
-                "twilio" => throw new NotImplementedException("Twilio SMS provider not yet implemented. Use Mock for development."),
-                "netgsm" => (ISmsService)_serviceProvider.GetService(typeof(NetgsmSmsService)),
-                "turkcell" => (ISmsService)_serviceProvider.GetService(typeof(TurkcellSmsService)),
-                _ => throw new InvalidOperationException($"Unknown SMS provider: {provider}. Supported: Mock, Twilio, Netgsm, Turkcell")
-            };
+                throw new InvalidOperationException($"Failed to resolve ISmsService for provider: {provider}. Check Autofac registration.");
+            }
+
+            return smsService;
         }
 
         /// <summary>

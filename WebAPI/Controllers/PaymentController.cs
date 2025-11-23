@@ -2,10 +2,12 @@ using Business.BusinessAspects;
 using Business.Services.Payment;
 using Core.Extensions;
 using Core.Utilities.Results;
+using DataAccess.Abstract;
 using Entities.Dtos.Payment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Security.Claims;
@@ -23,13 +25,19 @@ namespace WebAPI.Controllers
     {
         private readonly IIyzicoPaymentService _paymentService;
         private readonly ILogger<PaymentController> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly IPaymentTransactionRepository _paymentTransactionRepository;
 
         public PaymentController(
             IIyzicoPaymentService paymentService,
-            ILogger<PaymentController> logger)
+            ILogger<PaymentController> logger,
+            IConfiguration configuration,
+            IPaymentTransactionRepository paymentTransactionRepository)
         {
             _paymentService = paymentService;
             _logger = logger;
+            _configuration = configuration;
+            _paymentTransactionRepository = paymentTransactionRepository;
         }
 
         /// <summary>
@@ -96,12 +104,13 @@ namespace WebAPI.Controllers
         [Authorize]
         [SecuredOperation]
         [HttpPost("verify")]
+        [HttpGet("verify")]  // Support both POST (mobile) and GET (web) requests
         [ProducesResponseType(typeof(IDataResult<PaymentVerifyResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Core.Utilities.Results.IResult))]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> VerifyPayment([FromBody] PaymentVerifyRequestDto request)
+        public async Task<IActionResult> VerifyPayment([FromBody] PaymentVerifyRequestDto request = null, [FromQuery] string token = null)
         {
             try
             {
@@ -114,9 +123,19 @@ namespace WebAPI.Controllers
 
                 var userIdValue = userId.Value;
 
-                _logger.LogInformation($"[Payment] Verify payment request. UserId: {userIdValue}, Token: {request.PaymentToken}");
+                // Support both POST (request body) and GET (query string) token formats
+                var paymentToken = request?.PaymentToken ?? token;
 
-                var result = await _paymentService.VerifyPaymentAsync(request);
+                if (string.IsNullOrWhiteSpace(paymentToken))
+                {
+                    _logger.LogWarning("[Payment] Verify payment failed: Payment token is required");
+                    return BadRequest(new ErrorResult("Payment token is required"));
+                }
+
+                _logger.LogInformation($"[Payment] Verify payment request. UserId: {userIdValue}, Token: {paymentToken}");
+
+                var verifyRequest = new PaymentVerifyRequestDto { PaymentToken = paymentToken };
+                var result = await _paymentService.VerifyPaymentAsync(verifyRequest);
 
                 if (result.Success)
                 {
@@ -169,27 +188,40 @@ namespace WebAPI.Controllers
                 _logger.LogInformation("[Payment] Callback received from iyzico. Token: {Token}, Status: {Status}, PaymentId: {PaymentId}",
                     token, status, paymentId);
 
+                // Get transaction to determine platform
+                var transaction = await _paymentTransactionRepository.GetAsync(t => t.IyzicoToken == token);
+
+                if (transaction == null)
+                {
+                    _logger.LogError("[Payment] Transaction not found for token: {Token}", token);
+                    return BadRequest(new ErrorResult("Transaction not found"));
+                }
+
                 // Verify payment with iyzico and update transaction
                 var verifyRequest = new PaymentVerifyRequestDto { PaymentToken = token };
                 var result = await _paymentService.VerifyPaymentAsync(verifyRequest);
 
-                // Prepare deep link URL for mobile app
-                var deepLinkUrl = result.Success
-                    ? $"ziraai://payment-callback?token={token}&status=success"
-                    : $"ziraai://payment-callback?token={token}&status=failed&error={Uri.EscapeDataString(result.Message)}";
+                // Platform-based redirect URL
+                var redirectUrl = result.Success
+                    ? GetSuccessRedirectUrl(transaction.Platform, token)
+                    : GetErrorRedirectUrl(transaction.Platform, token, result.Message);
 
-                _logger.LogInformation("[Payment] Redirecting to mobile app: {DeepLink}", deepLinkUrl);
+                _logger.LogInformation("[Payment] Platform: {Platform}, Redirecting to: {RedirectUrl}",
+                    transaction.Platform, redirectUrl);
 
-                // Redirect browser to deep link (this opens mobile app)
-                return Redirect(deepLinkUrl);
+                // Redirect browser to platform-specific URL (deep link for mobile, web URL for web)
+                return Redirect(redirectUrl);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[Payment] Callback processing failed for token: {Token}", token);
 
-                // Redirect to mobile with error
-                var errorDeepLink = $"ziraai://payment-callback?token={token}&status=failed&error={Uri.EscapeDataString(ex.Message)}";
-                return Redirect(errorDeepLink);
+                // Try to get platform from transaction for error redirect
+                var transaction = await _paymentTransactionRepository.GetAsync(t => t.IyzicoToken == token);
+                var platform = transaction?.Platform ?? "iOS"; // Default to iOS for backward compatibility
+
+                var errorRedirectUrl = GetErrorRedirectUrl(platform, token, ex.Message);
+                return Redirect(errorRedirectUrl);
             }
         }
 
@@ -287,6 +319,42 @@ namespace WebAPI.Controllers
                 _logger.LogError(ex, "[Payment] Error getting payment status");
                 return StatusCode(500, new ErrorResult("An error occurred while getting payment status"));
             }
+        }
+
+        /// <summary>
+        /// Get platform-specific success redirect URL
+        /// </summary>
+        /// <param name="platform">Platform: iOS, Android, or Web</param>
+        /// <param name="token">Payment token</param>
+        /// <returns>Redirect URL for the platform</returns>
+        private string GetSuccessRedirectUrl(string platform, string token)
+        {
+            return platform switch
+            {
+                "iOS" => $"ziraai://payment-callback?token={token}&status=success",
+                "Android" => $"ziraai://payment-callback?token={token}&status=success",
+                "Web" => $"{_configuration["WebAppUrl"]}/payment-callback?token={token}&status=success",
+                _ => $"ziraai://payment-callback?token={token}&status=success" // Default to iOS deep link
+            };
+        }
+
+        /// <summary>
+        /// Get platform-specific error redirect URL
+        /// </summary>
+        /// <param name="platform">Platform: iOS, Android, or Web</param>
+        /// <param name="token">Payment token</param>
+        /// <param name="errorMessage">Error message to include in URL</param>
+        /// <returns>Redirect URL for the platform with error message</returns>
+        private string GetErrorRedirectUrl(string platform, string token, string errorMessage)
+        {
+            var encodedError = Uri.EscapeDataString(errorMessage);
+            return platform switch
+            {
+                "iOS" => $"ziraai://payment-callback?token={token}&status=failed&error={encodedError}",
+                "Android" => $"ziraai://payment-callback?token={token}&status=failed&error={encodedError}",
+                "Web" => $"{_configuration["WebAppUrl"]}/payment-callback?token={token}&status=failed&error={encodedError}",
+                _ => $"ziraai://payment-callback?token={token}&status=failed&error={encodedError}" // Default to iOS deep link
+            };
         }
 
         /// <summary>
