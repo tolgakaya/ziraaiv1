@@ -278,6 +278,9 @@ builder.Services.AddScoped<Business.Services.Logging.ISmsLoggingService, Busines
 builder.Services.AddScoped<Business.Services.Messaging.WhatsAppBusinessService>();
 builder.Services.AddScoped<Business.Services.Messaging.Factories.IMessagingServiceFactory, Business.Services.Messaging.Factories.MessagingServiceFactory>();
 
+// 🆕 Add Analytics Cache Service (required by dealer invitation commands)
+builder.Services.AddScoped<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService, Business.Services.Analytics.SponsorDealerAnalyticsCacheService>();
+
 // 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
 
