@@ -281,6 +281,9 @@ builder.Services.AddScoped<Business.Services.Messaging.Factories.IMessagingServi
 // 🆕 Add Analytics Cache Service (required by dealer invitation commands)
 builder.Services.AddScoped<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService, Business.Services.Analytics.SponsorDealerAnalyticsCacheService>();
 
+// 🆕 Add DealerInvitation Configuration Service (required by InviteDealerViaSmsCommand)
+builder.Services.AddScoped<Business.Services.DealerInvitation.IDealerInvitationConfigurationService, Business.Services.DealerInvitation.DealerInvitationConfigurationService>();
+
 // 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
 
