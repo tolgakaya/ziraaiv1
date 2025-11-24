@@ -53,6 +53,36 @@ namespace DataAccess.Concrete.EntityFramework
                 .ToListAsync();
         }
 
+        public async Task<UserSubscription> GetActiveNonTrialSubscriptionAsync(int userId)
+        {
+            return await Context.UserSubscriptions
+                .Include(x => x.SubscriptionTier)
+                .Where(x => x.UserId == userId 
+                    && x.IsActive 
+                    && x.Status == "Active" 
+                    && x.EndDate > DateTime.Now
+                    && !x.IsTrialSubscription)  // KEY: Exclude trials
+                .OrderBy(x => 
+                    // Priority: CreditCard (0) > BankTransfer (1) > Sponsorship (2) > Others (3)
+                    x.PaymentMethod == "CreditCard" ? 0 :
+                    x.PaymentMethod == "BankTransfer" ? 1 :
+                    x.IsSponsoredSubscription ? 2 : 3)
+                .ThenByDescending(x => x.CreatedDate)  // If same priority, newest first
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<UserSubscription>> GetAllActiveSubscriptionsAsync(int userId)
+        {
+            return await Context.UserSubscriptions
+                .Include(x => x.SubscriptionTier)
+                .Where(x => x.UserId == userId 
+                    && x.IsActive 
+                    && x.Status == "Active" 
+                    && x.EndDate > DateTime.Now)
+                .OrderByDescending(x => x.CreatedDate)
+                .ToListAsync();
+        }
+
         public async Task<bool> HasActiveSubscriptionAsync(int userId)
         {
             return await Context.UserSubscriptions

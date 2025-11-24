@@ -520,37 +520,46 @@ namespace Business.Services.Subscription
         {
             foreach (var expired in expiredSubscriptions)
             {
-                // Only process sponsored subscriptions
-                if (!expired.IsSponsoredSubscription) continue;
+                // ✅ FIXED: Check for queued subscriptions waiting for ANY expired subscription
+                // Not just sponsorships - CreditCard, BankTransfer, etc. can also have queued subscriptions
+                
+                _logger.LogInformation("🔍 [QueueActivation] Checking for queued subscriptions waiting for ID: {ExpiredId} ({PaymentMethod})",
+                    expired.Id, expired.PaymentMethod);
 
-                // Find queued sponsorship waiting for this one
+                // Find queued sponsorship waiting for this subscription
                 var queued = await _userSubscriptionRepository.GetAsync(s =>
                     s.QueueStatus == SubscriptionQueueStatus.Pending &&
-                    s.PreviousSponsorshipId == expired.Id);
+                    s.PreviousSponsorshipId == expired.Id);  // ✅ Now references ANY subscription type
 
                 if (queued != null)
                 {
-                    _logger.LogInformation("🔄 [SponsorshipQueue] Activating queued sponsorship {QueuedId} for user {UserId} (previous: {ExpiredId})",
-                        queued.Id, queued.UserId, expired.Id);
+                    _logger.LogInformation("🔄 [QueueActivation] Found queued subscription ID: {QueuedId}", queued.Id);
+                    _logger.LogInformation("🔄 [QueueActivation] Activating queued subscription for UserId: {UserId}", queued.UserId);
 
                     // Activate the queued subscription
                     queued.QueueStatus = SubscriptionQueueStatus.Active;
                     queued.ActivatedDate = DateTime.Now;
                     queued.StartDate = DateTime.Now;
-                    queued.EndDate = DateTime.Now.AddDays(30); // Default 30 days
+                    queued.EndDate = DateTime.Now.AddDays(30);  // 30 days for sponsorships
                     queued.IsActive = true;
                     queued.Status = "Active";
-                    queued.PreviousSponsorshipId = null; // Clear queue reference
+                    queued.PreviousSponsorshipId = null;  // Clear reference
                     queued.UpdatedDate = DateTime.Now;
+                    queued.SponsorshipNotes = $"{queued.SponsorshipNotes} | Activated on {DateTime.Now:yyyy-MM-dd HH:mm:ss} after {expired.PaymentMethod} subscription expired";
 
                     _userSubscriptionRepository.Update(queued);
                     
-                    _logger.LogInformation("✅ [SponsorshipQueue] Activated sponsorship {Id} for user {UserId}",
+                    _logger.LogInformation("✅ [QueueActivation] Activated subscription ID: {Id} for UserId: {UserId}", 
                         queued.Id, queued.UserId);
+                }
+                else
+                {
+                    _logger.LogInformation("ℹ️ [QueueActivation] No queued subscriptions found for expired ID: {ExpiredId}", expired.Id);
                 }
             }
 
             await _userSubscriptionRepository.SaveChangesAsync();
+            _logger.LogInformation("✅ [QueueActivation] Queue activation complete");
         }
 
         public async Task<Core.Utilities.Results.IDataResult<string>> GetSubscriptionSponsorAsync(int userId)
