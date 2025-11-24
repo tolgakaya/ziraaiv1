@@ -1159,6 +1159,61 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get farmer's sponsorship inbox - codes sent to their phone
+        /// No authentication required - uses phone number for identification
+        /// Allows farmers to view codes before downloading the app
+        /// </summary>
+        /// <param name="phone">Farmer's phone number (any format accepted)</param>
+        /// <param name="includeUsed">Include already redeemed codes (default: false)</param>
+        /// <param name="includeExpired">Include expired codes (default: false)</param>
+        /// <returns>List of sponsorship codes sent to this phone number</returns>
+        [AllowAnonymous] // Public endpoint - no authentication required
+        [HttpGet("farmer-inbox")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SuccessDataResult<List<FarmerSponsorshipInboxDto>>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResult))]
+        public async Task<IActionResult> GetFarmerSponsorshipInbox(
+            [FromQuery] string phone,
+            [FromQuery] bool includeUsed = false,
+            [FromQuery] bool includeExpired = false)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(phone))
+                {
+                    return BadRequest(new ErrorResult("Telefon numarası gereklidir"));
+                }
+
+                _logger.LogInformation("📥 [INBOX API] Fetching sponsorship inbox for phone: {Phone}", phone);
+
+                var query = new GetFarmerSponsorshipInboxQuery
+                {
+                    Phone = phone,
+                    IncludeUsed = includeUsed,
+                    IncludeExpired = includeExpired
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("✅ [INBOX API] Successfully retrieved {Count} codes for phone {Phone}", 
+                        result.Data?.Count ?? 0, phone);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("⚠️ [INBOX API] Failed to retrieve inbox for phone {Phone}: {Message}", 
+                    phone, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [INBOX API] Error fetching sponsorship inbox for phone: {Phone}", phone);
+                return StatusCode(500, new ErrorResult("Sponsorluk kutusu yüklenirken hata oluştu"));
+            }
+        }
+
+        /// <summary>
         /// Validate a sponsorship code without redeeming it
         /// </summary>
         /// <param name="code">Sponsorship code to validate</param>
