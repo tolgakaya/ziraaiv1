@@ -1,12 +1,14 @@
 # Sponsorship Code Inbox API Documentation
 
 ## Overview
-This API allows farmers to view sponsorship codes that have been sent to their phone number via SMS or WhatsApp **before downloading the mobile app**. This enables farmers to:
+This API allows **authenticated farmers** to view sponsorship codes that have been sent to their phone number via SMS or WhatsApp. This enables farmers to:
 - View all codes sent to their phone
 - See sponsor information
 - Check code expiry status
 - Access redemption links
-- Verify codes before app installation
+- Track code usage and expiry
+
+**SECURITY:** Farmer can only see codes sent to their own registered phone number. Authentication via JWT token is required.
 
 ## Endpoint
 
@@ -14,9 +16,11 @@ This API allows farmers to view sponsorship codes that have been sent to their p
 
 **URL:** `GET /api/v1/sponsorship/farmer-inbox`
 
-**Authentication:** None (Public endpoint)
+**Authentication:** Required - JWT Bearer token with `Farmer` role
 
-**Description:** Retrieves all sponsorship codes sent to a specific phone number
+**Description:** Retrieves all sponsorship codes sent to authenticated farmer's phone number
+
+**Security:** Uses JWT UserId to lookup farmer's phone number and fetch only their codes
 
 ## Request Parameters
 
@@ -24,19 +28,10 @@ This API allows farmers to view sponsorship codes that have been sent to their p
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `phone` | string | Yes | - | Farmer's phone number (any format accepted) |
 | `includeUsed` | boolean | No | false | Include already redeemed codes |
 | `includeExpired` | boolean | No | false | Include expired codes |
 
-### Phone Number Format
-
-The API accepts phone numbers in any of these formats:
-- `05551234567` (Turkish format without +90)
-- `+905551234567` (International format with country code)
-- `555 123 45 67` (With spaces)
-- `(555) 123-45-67` (With parentheses and dashes)
-
-All formats are automatically normalized to `+905551234567` for matching.
+**Note:** Phone number is automatically retrieved from authenticated user's profile. No phone parameter accepted.
 
 ## Response Format
 
@@ -111,11 +106,19 @@ All formats are automatically normalized to `+905551234567` for matching.
 
 ### Error Responses
 
-#### 400 Bad Request - Missing Phone Number
+#### 401 Unauthorized - Missing or Invalid Token
 ```json
 {
   "success": false,
-  "message": "Telefon numarası gereklidir"
+  "message": "Kullanıcı kimliği doğrulanamadı"
+}
+```
+
+#### 400 Bad Request - User Has No Phone Number
+```json
+{
+  "success": false,
+  "message": "Kullanıcı telefon numarası bulunamadı"
 }
 ```
 
@@ -132,13 +135,20 @@ All formats are automatically normalized to `+905551234567` for matching.
 ### Basic Request - Active Codes Only (Default)
 
 ```bash
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=05551234567"
+# With JWT token
+curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript
 // JavaScript/TypeScript
 const response = await fetch(
-  'https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=05551234567'
+  'https://api.ziraai.com/api/v1/sponsorship/farmer-inbox',
+  {
+    headers: {
+      'Authorization': `Bearer ${jwtToken}`
+    }
+  }
 );
 const data = await response.json();
 ```
@@ -146,7 +156,10 @@ const data = await response.json();
 ```dart
 // Flutter/Dart
 final response = await http.get(
-  Uri.parse('https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=05551234567'),
+  Uri.parse('https://api.ziraai.com/api/v1/sponsorship/farmer-inbox'),
+  headers: {
+    'Authorization': 'Bearer $jwtToken',
+  },
 );
 final data = jsonDecode(response.body);
 ```
@@ -154,38 +167,42 @@ final data = jsonDecode(response.body);
 ### Include Used and Expired Codes
 
 ```bash
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=%2B905551234567&includeUsed=true&includeExpired=true"
+curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?includeUsed=true&includeExpired=true" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ```javascript
 const response = await fetch(
-  'https://api.ziraai.com/api/v1/sponsorship/farmer-inbox' +
-  '?phone=+905551234567&includeUsed=true&includeExpired=true'
+  'https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?includeUsed=true&includeExpired=true',
+  {
+    headers: {
+      'Authorization': `Bearer ${jwtToken}`
+    }
+  }
 );
-```
-
-### With International Format
-
-```bash
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=%2B905551234567"
 ```
 
 ## Use Cases
 
-### 1. Pre-Registration Code Viewing
-**Scenario:** Farmer receives SMS with sponsorship code before installing app
+### 1. Mobile App Initial Sync
+**Scenario:** Authenticated user opens app and wants to see pending sponsorship codes
 
 **Flow:**
-1. Farmer receives SMS: "You received a ZiraAI sponsorship code! View at: https://web.ziraai.com/inbox?phone=05551234567"
-2. Farmer clicks link, web app calls API
-3. Displays all codes sent to their phone
-4. Farmer can see sponsor details and redemption links
+1. User logs into app (receives JWT token)
+2. App calls inbox API with token in Authorization header
+3. Shows pending codes in notification badge
+4. User can redeem directly from app
 
 ```javascript
-// Web app code
-async function showInbox(phoneFromUrl) {
+// Web/Mobile app code
+async function showInbox(jwtToken) {
   const response = await fetch(
-    `/api/v1/sponsorship/farmer-inbox?phone=${phoneFromUrl}`
+    '/api/v1/sponsorship/farmer-inbox',
+    {
+      headers: {
+        'Authorization': `Bearer ${jwtToken}`
+      }
+    }
   );
   const { data: codes } = await response.json();
 
@@ -200,8 +217,8 @@ async function showInbox(phoneFromUrl) {
 }
 ```
 
-### 2. Mobile App Initial Sync
-**Scenario:** User installs app and wants to see pending codes
+### 2. Code Dashboard View
+**Scenario:** Authenticated farmer wants to track all sponsorship codes
 
 **Flow:**
 1. User registers with phone number
@@ -366,15 +383,18 @@ class InboxCache {
 
 ## Security Considerations
 
-### No Authentication Required
-This endpoint is **intentionally public** because:
-1. Farmers may not have app installed yet
-2. Phone number acts as identifier
-3. Codes are already sent to farmer's phone (possession implies authorization)
-4. Redemption link is non-sensitive (requires separate redemption flow)
+### Authentication Required
+This endpoint is **secured with JWT authentication** to protect farmer privacy:
+1. Farmer must be authenticated (logged in) to view codes
+2. UserId from JWT token is used to lookup farmer's phone number
+3. Farmer can ONLY see codes sent to their own registered phone number
+4. No way for one farmer to view another farmer's codes (IDOR prevention)
 
-### Privacy Protection
-- Phone number is required to view codes
+### Security Benefits
+- **Access Control:** Only authenticated farmers can access the endpoint
+- **Data Isolation:** Each farmer can only see their own codes
+- **Token-Based Security:** Uses industry-standard JWT authentication
+- **Role-Based Authorization:** Requires `Farmer` role in JWT claims
 - Only codes sent to that specific phone are returned
 - No sensitive sponsor data is exposed (only company name)
 
@@ -398,27 +418,28 @@ location /api/v1/sponsorship/farmer-inbox {
 
 ### Test Cases
 
-#### 1. Valid Phone Number
+#### 1. Valid Authenticated Request
 ```bash
-# Test: Returns codes for valid phone
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=05551234567"
+# Test: Returns codes for authenticated farmer
+curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox" \
+  -H "Authorization: Bearer VALID_JWT_TOKEN"
 
-# Expected: 200 OK with array of codes
+# Expected: 200 OK with array of codes sent to farmer's phone
 ```
 
-#### 2. Phone Number Format Variations
+#### 2. Missing Authentication Token
 ```bash
-# Test: Accepts different formats
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=%2B905551234567"
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=555%20123%2045%2067"
+# Test: Unauthorized access attempt
+curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox"
 
-# Expected: All return same codes (normalized)
+# Expected: 401 Unauthorized
 ```
 
-#### 3. No Codes Sent
+#### 3. No Codes Sent to Farmer
 ```bash
-# Test: Phone with no codes
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=05559999999"
+# Test: Farmer with no codes
+curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox" \
+  -H "Authorization: Bearer VALID_JWT_TOKEN"
 
 # Expected: 200 OK with empty array and message "Henüz sponsorluk kodu gönderilmemiş"
 ```
@@ -426,17 +447,19 @@ curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=055599
 #### 4. Include Used Codes
 ```bash
 # Test: Show used codes
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?phone=05551234567&includeUsed=true"
+curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox?includeUsed=true" \
+  -H "Authorization: Bearer VALID_JWT_TOKEN"
 
 # Expected: Includes codes with isUsed=true
 ```
 
-#### 5. Missing Phone Number
+#### 5. Invalid or Expired Token
 ```bash
-# Test: Missing required parameter
-curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox"
+# Test: Invalid authentication
+curl -X GET "https://api.ziraai.com/api/v1/sponsorship/farmer-inbox" \
+  -H "Authorization: Bearer INVALID_TOKEN"
 
-# Expected: 400 Bad Request
+# Expected: 401 Unauthorized
 ```
 
 ### Postman Collection

@@ -1160,35 +1160,35 @@ namespace WebAPI.Controllers
 
         /// <summary>
         /// Get farmer's sponsorship inbox - codes sent to their phone
-        /// No authentication required - uses phone number for identification
-        /// Allows farmers to view codes before downloading the app
+        /// SECURITY: Authenticated endpoint - farmer can only see their own codes
+        /// Uses JWT token to identify farmer and fetch their sponsorship codes
         /// </summary>
-        /// <param name="phone">Farmer's phone number (any format accepted)</param>
         /// <param name="includeUsed">Include already redeemed codes (default: false)</param>
         /// <param name="includeExpired">Include expired codes (default: false)</param>
-        /// <returns>List of sponsorship codes sent to this phone number</returns>
-        [AllowAnonymous] // Public endpoint - no authentication required
+        /// <returns>List of sponsorship codes sent to authenticated farmer</returns>
+        [Authorize(Roles = "Farmer")]
         [HttpGet("farmer-inbox")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SuccessDataResult<List<FarmerSponsorshipInboxDto>>))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorResult))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResult))]
         public async Task<IActionResult> GetFarmerSponsorshipInbox(
-            [FromQuery] string phone,
             [FromQuery] bool includeUsed = false,
             [FromQuery] bool includeExpired = false)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(phone))
+                var userId = GetUserId();
+                if (!userId.HasValue)
                 {
-                    return BadRequest(new ErrorResult("Telefon numarası gereklidir"));
+                    _logger.LogWarning("⚠️ [INBOX API] Unauthorized access attempt - no valid user ID in token");
+                    return Unauthorized(new ErrorResult("Kullanıcı kimliği doğrulanamadı"));
                 }
 
-                _logger.LogInformation("📥 [INBOX API] Fetching sponsorship inbox for phone: {Phone}", phone);
+                _logger.LogInformation("📥 [INBOX API] Fetching sponsorship inbox for UserId: {UserId}", userId.Value);
 
                 var query = new GetFarmerSponsorshipInboxQuery
                 {
-                    Phone = phone,
+                    UserId = userId.Value,
                     IncludeUsed = includeUsed,
                     IncludeExpired = includeExpired
                 };
@@ -1197,18 +1197,18 @@ namespace WebAPI.Controllers
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("✅ [INBOX API] Successfully retrieved {Count} codes for phone {Phone}", 
-                        result.Data?.Count ?? 0, phone);
+                    _logger.LogInformation("✅ [INBOX API] Successfully retrieved {Count} codes for UserId {UserId}",
+                        result.Data?.Count ?? 0, userId.Value);
                     return Ok(result);
                 }
 
-                _logger.LogWarning("⚠️ [INBOX API] Failed to retrieve inbox for phone {Phone}: {Message}", 
-                    phone, result.Message);
+                _logger.LogWarning("⚠️ [INBOX API] Failed to retrieve inbox for UserId {UserId}: {Message}",
+                    userId.Value, result.Message);
                 return BadRequest(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ [INBOX API] Error fetching sponsorship inbox for phone: {Phone}", phone);
+                _logger.LogError(ex, "❌ [INBOX API] Error fetching sponsorship inbox for UserId: {UserId}", GetUserId());
                 return StatusCode(500, new ErrorResult("Sponsorluk kutusu yüklenirken hata oluştu"));
             }
         }

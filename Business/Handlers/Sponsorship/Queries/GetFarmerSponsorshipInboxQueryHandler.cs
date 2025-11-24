@@ -14,8 +14,8 @@ namespace Business.Handlers.Sponsorship.Queries
 {
     /// <summary>
     /// Handler for getting farmer's sponsorship inbox
-    /// Pattern: Similar to GetDealerInvitationsQueryHandler
-    /// No SecuredOperation - public endpoint using phone as identifier
+    /// SECURITY: Authenticated endpoint - farmer can only see their own codes
+    /// Uses JWT UserId to lookup user's phone and fetch codes
     /// </summary>
     public class GetFarmerSponsorshipInboxQueryHandler
         : IRequestHandler<GetFarmerSponsorshipInboxQuery, IDataResult<List<FarmerSponsorshipInboxDto>>>
@@ -23,17 +23,20 @@ namespace Business.Handlers.Sponsorship.Queries
         private readonly ISponsorshipCodeRepository _codeRepository;
         private readonly ISponsorProfileRepository _sponsorProfileRepository;
         private readonly ISubscriptionTierRepository _tierRepository;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<GetFarmerSponsorshipInboxQueryHandler> _logger;
 
         public GetFarmerSponsorshipInboxQueryHandler(
             ISponsorshipCodeRepository codeRepository,
             ISponsorProfileRepository sponsorProfileRepository,
             ISubscriptionTierRepository tierRepository,
+            IUserRepository userRepository,
             ILogger<GetFarmerSponsorshipInboxQueryHandler> logger)
         {
             _codeRepository = codeRepository;
             _sponsorProfileRepository = sponsorProfileRepository;
             _tierRepository = tierRepository;
+            _userRepository = userRepository;
             _logger = logger;
         }
 
@@ -43,13 +46,28 @@ namespace Business.Handlers.Sponsorship.Queries
         {
             try
             {
-                _logger.LogInformation("📥 [INBOX] Fetching sponsorship inbox for phone: {Phone}", request.Phone);
+                _logger.LogInformation("📥 [INBOX] Fetching sponsorship inbox for UserId: {UserId}", request.UserId);
 
-                // Step 1: Normalize phone number (same logic as SendSponsorshipLinkCommand)
-                var normalizedPhone = FormatPhoneNumber(request.Phone);
-                _logger.LogInformation("📞 [INBOX] Normalized phone: {NormalizedPhone}", normalizedPhone);
+                // Step 1: Get user's phone number from UserId
+                var user = await _userRepository.GetAsync(u => u.UserId == request.UserId);
+                if (user == null)
+                {
+                    _logger.LogWarning("⚠️ [INBOX] User not found for UserId: {UserId}", request.UserId);
+                    return new ErrorDataResult<List<FarmerSponsorshipInboxDto>>("Kullanıcı bulunamadı");
+                }
 
-                // Step 2: Query codes sent to this phone with filters
+                if (string.IsNullOrWhiteSpace(user.MobilePhones))
+                {
+                    _logger.LogWarning("⚠️ [INBOX] User has no phone number. UserId: {UserId}", request.UserId);
+                    return new ErrorDataResult<List<FarmerSponsorshipInboxDto>>("Kullanıcı telefon numarası bulunamadı");
+                }
+
+                // Step 2: Normalize phone number (same logic as SendSponsorshipLinkCommand)
+                var normalizedPhone = FormatPhoneNumber(user.MobilePhones);
+                _logger.LogInformation("📞 [INBOX] User {UserId} phone normalized: {NormalizedPhone}",
+                    request.UserId, normalizedPhone);
+
+                // Step 3: Query codes sent to this phone with filters
                 var codesEnumerable = await _codeRepository.GetListAsync(c =>
                     c.RecipientPhone == normalizedPhone &&
                     c.LinkDelivered == true &&
@@ -115,8 +133,8 @@ namespace Business.Handlers.Sponsorship.Queries
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ [INBOX] Error fetching sponsorship inbox for phone: {Phone}",
-                    request.Phone);
+                _logger.LogError(ex, "❌ [INBOX] Error fetching sponsorship inbox for UserId: {UserId}",
+                    request.UserId);
                 return new ErrorDataResult<List<FarmerSponsorshipInboxDto>>(
                     "Sponsorluk kutusu yüklenirken hata oluştu");
             }

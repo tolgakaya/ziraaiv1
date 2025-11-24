@@ -6,17 +6,17 @@ using System.Collections.Generic;
 namespace Business.Handlers.Sponsorship.Queries
 {
     /// <summary>
-    /// Query to get all sponsorship codes sent to a farmer's phone number
-    /// Pattern: Similar to GetDealerInvitationsQuery
-    /// No authentication required - public endpoint using phone as identifier
+    /// Query for authenticated farmer's own sponsorship inbox
+    /// Uses UserId from JWT token to fetch user's codes
+    /// SECURITY: Farmer can only see their own codes
     /// </summary>
     public class GetFarmerSponsorshipInboxQuery : IRequest<IDataResult<List<FarmerSponsorshipInboxDto>>>
     {
         /// <summary>
-        /// Farmer's phone number (will be normalized to +905551234567 format)
-        /// Supports formats: 05551234567, +905551234567, 555 123 45 67
+        /// User ID from JWT token (farmer's ID)
+        /// Handler will lookup user's phone number and fetch codes
         /// </summary>
-        public string Phone { get; set; }
+        public int UserId { get; set; }
 
         /// <summary>
         /// Include already redeemed codes in results
