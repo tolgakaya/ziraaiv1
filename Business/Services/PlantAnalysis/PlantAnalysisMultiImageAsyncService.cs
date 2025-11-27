@@ -126,8 +126,8 @@ namespace Business.Services.PlantAnalysis
                 _plantAnalysisRepository.Add(plantAnalysis);
                 await _plantAnalysisRepository.SaveChangesAsync();
 
-                // Get queue name from appsettings
-                var queueName = _rabbitMQOptions.Queues.PlantAnalysisRequest;
+                // Get multi-image queue name from appsettings
+                var queueName = _rabbitMQOptions.Queues.PlantAnalysisMultiImageRequest;
 
                 // Create async request payload for RabbitMQ
                 var asyncRequest = new PlantAnalysisMultiImageAsyncRequestDto
@@ -168,8 +168,8 @@ namespace Business.Services.PlantAnalysis
                     ContactInfo = request.ContactInfo,
                     AdditionalInfo = request.AdditionalInfo,
 
-                    // Queue management
-                    ResponseQueue = "plant-analysis-results",
+                    // Queue management (multi-image specific)
+                    ResponseQueue = _rabbitMQOptions.Queues.PlantAnalysisMultiImageResult,
                     CorrelationId = correlationId,
                     AnalysisId = analysisId
                 };
