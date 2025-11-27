@@ -91,6 +91,12 @@ namespace PlantAnalysisWorkerService.Jobs
                         
                         // Image URL from image_metadata (critical fix!)
                         ImagePath = result.ImageMetadata?.URL ?? result.ImageUrl ?? result.ImagePath,
+
+                        // Multi-Image URLs (for comprehensive analysis)
+                        LeafTopUrl = result.LeafTopUrl,
+                        LeafBottomUrl = result.LeafBottomUrl,
+                        PlantOverviewUrl = result.PlantOverviewUrl,
+                        RootUrl = result.RootUrl,
                         
                         // GPS and Environment
                         Latitude = result.GpsCoordinates?.Lat,
@@ -223,6 +229,12 @@ namespace PlantAnalysisWorkerService.Jobs
                     
                     // Update ImagePath from image_metadata (critical fix!)
                     existingAnalysis.ImagePath = result.ImageMetadata?.URL ?? ConvertToFullUrlIfNeeded(existingAnalysis.ImagePath);
+
+                    // Update Multi-Image URLs (for comprehensive analysis)
+                    existingAnalysis.LeafTopUrl = result.LeafTopUrl;
+                    existingAnalysis.LeafBottomUrl = result.LeafBottomUrl;
+                    existingAnalysis.PlantOverviewUrl = result.PlantOverviewUrl;
+                    existingAnalysis.RootUrl = result.RootUrl;
                     
                     // Update AI processing results (complete metadata mapping)
                     existingAnalysis.AiModel = result.ProcessingMetadata?.AiModel ?? "";
