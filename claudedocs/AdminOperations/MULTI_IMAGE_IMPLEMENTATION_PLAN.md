@@ -4,7 +4,7 @@
 **Branch**: `feature/multi-image-analysis`
 **Base**: `staging`
 **Date Started**: 2025-01-27
-**Status**: 🟡 Planning Phase
+**Status**: 🟢 Phase 5 Complete - Worker Service Implemented
 
 ---
 
@@ -74,13 +74,12 @@ Add multi-image support for async plant analysis. Users can submit up to 5 image
 - [x] Create implementation plan
 - [x] Write development rules to memory
 
-### 🔄 Phase 1: DTOs & Request/Response Models (IN PROGRESS)
-**Status**: Planning
+### ✅ Phase 1: DTOs & Request/Response Models (COMPLETED)
+**Status**: ✅ Complete - Committed d7f0826
 
-**Files to Create/Modify**:
-1. `Entities/Dtos/PlantAnalysisMultiImageRequestDto.cs` - NEW
-2. `Entities/Dtos/PlantAnalysisMultiImageAsyncRequestDto.cs` - NEW (for queue)
-3. `Entities/Dtos/PlantAnalysisMultiImageResponseDto.cs` - NEW (if needed)
+**Files Created**:
+1. ✅ `Entities/Dtos/PlantAnalysisMultiImageRequestDto.cs` - NEW
+2. ✅ `Entities/Dtos/PlantAnalysisMultiImageAsyncRequestDto.cs` - NEW (for queue)
 
 **Structure**:
 ```csharp
@@ -119,17 +118,17 @@ public class PlantAnalysisMultiImageAsyncRequestDto
 ```
 
 **Tasks**:
-- [ ] Create `PlantAnalysisMultiImageRequestDto.cs`
-- [ ] Create `PlantAnalysisMultiImageAsyncRequestDto.cs`
-- [ ] Add validation attributes
-- [ ] Build & verify no errors
+- [x] Create `PlantAnalysisMultiImageRequestDto.cs`
+- [x] Create `PlantAnalysisMultiImageAsyncRequestDto.cs`
+- [x] Add validation attributes
+- [x] Build & verify no errors
 
 ---
 
-### ⏳ Phase 2: Database Schema Changes
-**Status**: Not Started
+### ✅ Phase 2: Database Schema Changes (COMPLETED)
+**Status**: ✅ Complete - Committed 4aa7408
 
-**SQL Script Required**: `12_add_multi_image_fields.sql`
+**SQL Script Created**: `MIGRATION_ADD_MULTI_IMAGE_URLS.sql`
 
 **PlantAnalyses Table Modifications**:
 ```sql
@@ -150,15 +149,15 @@ COMMENT ON COLUMN "PlantAnalyses"."RootUrl" IS 'URL to root system image';
 - Add 4 new string properties
 
 **Tasks**:
-- [ ] Create SQL migration script
-- [ ] Update PlantAnalysis entity
-- [ ] Build & verify no errors
-- [ ] User executes SQL script in staging
+- [x] Create SQL migration script
+- [x] Update PlantAnalysis entity
+- [x] Build & verify no errors
+- [ ] User executes SQL script in staging (⚠️ PENDING USER ACTION)
 
 ---
 
-### ⏳ Phase 3: Service Layer - Multi-Image Processing
-**Status**: Not Started
+### ✅ Phase 3: Service Layer - Multi-Image Processing (COMPLETED)
+**Status**: ✅ Complete - Committed 1974944
 
 **File to Create**: `Business/Services/PlantAnalysis/PlantAnalysisMultiImageAsyncService.cs`
 
@@ -252,15 +251,15 @@ private async Task<string> ProcessAndUploadImageAsync(string base64Image, string
 ```
 
 **Tasks**:
-- [ ] Create interface
-- [ ] Create service implementation
-- [ ] Register in DI container
-- [ ] Build & verify no errors
+- [x] Create interface
+- [x] Create service implementation
+- [x] Register in DI container
+- [x] Build & verify no errors
 
 ---
 
-### ⏳ Phase 4: Controller Endpoint
-**Status**: Not Started
+### ✅ Phase 4: Controller Endpoint (COMPLETED)
+**Status**: ✅ Complete - Committed 4addc07
 
 **File**: `WebAPI/Controllers/PlantAnalysesController.cs`
 
@@ -321,59 +320,34 @@ public async Task<IActionResult> AnalyzeMultiImageAsync(
 ```
 
 **Tasks**:
-- [ ] Add endpoint method
-- [ ] Inject `IPlantAnalysisMultiImageAsyncService`
-- [ ] Build & verify no errors
+- [x] Add endpoint method
+- [x] Inject `IPlantAnalysisMultiImageAsyncService`
+- [x] Build & verify no errors
 
 ---
 
-### ⏳ Phase 5: Worker Service Processing
-**Status**: Not Started
+### ✅ Phase 5: Worker Service Processing (COMPLETED)
+**Status**: ✅ Complete - Committed d057d30
 
-**File to Create**: `PlantAnalysisWorkerService/Jobs/PlantAnalysisMultiImageJobService.cs`
+**Changes Made**:
+- ✅ Extended `PlantAnalysisAsyncResponseDto` with 4 URL fields:
+  - `LeafTopUrl` (leaf_top_url JSON property)
+  - `LeafBottomUrl` (leaf_bottom_url JSON property)
+  - `PlantOverviewUrl` (plant_overview_url JSON property)
+  - `RootUrl` (root_url JSON property)
+- ✅ Updated `PlantAnalysisJobService.cs` worker:
+  - New record creation: Store all 4 additional image URLs
+  - Existing record update: Update all 4 additional image URLs
+  - Full backward compatibility with single-image messages
 
-**Interface**: `IPlantAnalysisMultiImageJobService`
-
-**Key Method**:
-```csharp
-[AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
-public async Task ProcessMultiImageAnalysisResultAsync(
-    PlantAnalysisAsyncResponseDto result,
-    string correlationId)
-{
-    // 1. Find existing analysis
-    var analysis = await _plantAnalysisRepository
-        .GetAsync(x => x.AnalysisId == result.AnalysisId);
-
-    // 2. Update with AI results (same as single image)
-    analysis.AnalysisStatus = "Completed";
-    // ... all AI fields
-
-    // 3. Capture sponsor attribution
-    await CaptureActiveSponsorAsync(analysis, analysis.UserId);
-
-    // 4. Save
-    _plantAnalysisRepository.Update(analysis);
-    await _plantAnalysisRepository.SaveChangesAsync();
-
-    // 5. Referral validation & reward
-    // ... (same as single image)
-
-    // 6. Send notification
-    BackgroundJob.Enqueue(() => SendNotificationAsync(result));
-}
-```
-
-**Queue Consumer Setup**:
-- Update worker service to consume from `plant-analysis-multi-image-request` queue
-- Route multi-image requests to new job service
+**Note**: Used existing `PlantAnalysisJobService` instead of creating separate service.
+Multi-image and single-image both use same queue and worker. Worker now handles both cases.
 
 **Tasks**:
-- [ ] Create interface
-- [ ] Create job service
-- [ ] Add queue consumer
-- [ ] Register in DI
-- [ ] Build & verify no errors
+- [x] Add URL fields to response DTO
+- [x] Update worker new record logic
+- [x] Update worker existing record logic
+- [x] Build & verify no errors
 
 ---
 
@@ -520,12 +494,12 @@ If admin version is required later:
 | Phase | Status | Completion | Notes |
 |-------|--------|------------|-------|
 | Phase 0: Analysis & Planning | ✅ Complete | 100% | Development rules memorized |
-| Phase 1: DTOs & Models | 🔄 In Progress | 0% | Starting now |
-| Phase 2: Database Schema | ⏳ Not Started | 0% | - |
-| Phase 3: Service Layer | ⏳ Not Started | 0% | - |
-| Phase 4: Controller | ⏳ Not Started | 0% | - |
-| Phase 5: Worker Service | ⏳ Not Started | 0% | - |
-| Phase 6: RabbitMQ Config | ⏳ Not Started | 0% | - |
+| Phase 1: DTOs & Models | ✅ Complete | 100% | d7f0826 |
+| Phase 2: Database Schema | ✅ Complete | 100% | 4aa7408 (SQL pending user) |
+| Phase 3: Service Layer | ✅ Complete | 100% | 1974944 |
+| Phase 4: Controller | ✅ Complete | 100% | 4addc07 |
+| Phase 5: Worker Service | ✅ Complete | 100% | d057d30 |
+| Phase 6: RabbitMQ Config | ⏳ Not Needed | N/A | Using same queue |
 | Phase 7: SecuredOperation | ⏳ Skipped | N/A | Farmer endpoint |
 | Phase 8: Testing | ⏳ Not Started | 0% | - |
 | Phase 9: API Documentation | ⏳ Not Started | 0% | - |
