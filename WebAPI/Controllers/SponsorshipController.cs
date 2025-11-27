@@ -1159,6 +1159,61 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Get farmer's sponsorship inbox - codes sent to their phone
+        /// SECURITY: Authenticated endpoint - farmer can only see their own codes
+        /// Uses JWT token to identify farmer and fetch their sponsorship codes
+        /// </summary>
+        /// <param name="includeUsed">Include already redeemed codes (default: false)</param>
+        /// <param name="includeExpired">Include expired codes (default: false)</param>
+        /// <returns>List of sponsorship codes sent to authenticated farmer</returns>
+        [Authorize(Roles = "Farmer")]
+        [HttpGet("farmer-inbox")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SuccessDataResult<List<FarmerSponsorshipInboxDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResult))]
+        public async Task<IActionResult> GetFarmerSponsorshipInbox(
+            [FromQuery] bool includeUsed = false,
+            [FromQuery] bool includeExpired = false)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("⚠️ [INBOX API] Unauthorized access attempt - no valid user ID in token");
+                    return Unauthorized(new ErrorResult("Kullanıcı kimliği doğrulanamadı"));
+                }
+
+                _logger.LogInformation("📥 [INBOX API] Fetching sponsorship inbox for UserId: {UserId}", userId.Value);
+
+                var query = new GetFarmerSponsorshipInboxQuery
+                {
+                    UserId = userId.Value,
+                    IncludeUsed = includeUsed,
+                    IncludeExpired = includeExpired
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("✅ [INBOX API] Successfully retrieved {Count} codes for UserId {UserId}",
+                        result.Data?.Count ?? 0, userId.Value);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("⚠️ [INBOX API] Failed to retrieve inbox for UserId {UserId}: {Message}",
+                    userId.Value, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ [INBOX API] Error fetching sponsorship inbox for UserId: {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult("Sponsorluk kutusu yüklenirken hata oluştu"));
+            }
+        }
+
+        /// <summary>
         /// Validate a sponsorship code without redeeming it
         /// </summary>
         /// <param name="code">Sponsorship code to validate</param>
