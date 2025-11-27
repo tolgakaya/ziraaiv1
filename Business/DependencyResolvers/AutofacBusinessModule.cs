@@ -213,7 +213,10 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<PlantAnalysisAsyncService>().As<IPlantAnalysisAsyncService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<PlantAnalysisMultiImageAsyncService>().As<IPlantAnalysisMultiImageAsyncService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SimpleRabbitMQService>().As<IMessageQueueService>()
                 .InstancePerLifetimeScope();
             
