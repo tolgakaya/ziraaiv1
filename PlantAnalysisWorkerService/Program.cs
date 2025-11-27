@@ -292,6 +292,7 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Busin
 
 // Add worker services
 builder.Services.AddHostedService<RabbitMQConsumerWorker>();
+builder.Services.AddHostedService<RabbitMQMultiImageConsumerWorker>();
 builder.Services.AddScoped<IPlantAnalysisJobService, PlantAnalysisJobService>();
 
 // 🆕 Add Dealer Invitation Worker and Job Service
