@@ -231,10 +231,16 @@ namespace PlantAnalysisWorkerService.Jobs
                     existingAnalysis.ImagePath = result.ImageMetadata?.URL ?? ConvertToFullUrlIfNeeded(existingAnalysis.ImagePath);
 
                     // Update Multi-Image URLs (for comprehensive analysis)
-                    existingAnalysis.LeafTopUrl = result.LeafTopUrl;
-                    existingAnalysis.LeafBottomUrl = result.LeafBottomUrl;
-                    existingAnalysis.PlantOverviewUrl = result.PlantOverviewUrl;
-                    existingAnalysis.RootUrl = result.RootUrl;
+                    // ⚠️ CRITICAL: Only update if result contains URLs, otherwise preserve existing URLs
+                    // URLs are set during initial analysis creation, N8N webhook doesn't return them
+                    if (!string.IsNullOrEmpty(result.LeafTopUrl))
+                        existingAnalysis.LeafTopUrl = result.LeafTopUrl;
+                    if (!string.IsNullOrEmpty(result.LeafBottomUrl))
+                        existingAnalysis.LeafBottomUrl = result.LeafBottomUrl;
+                    if (!string.IsNullOrEmpty(result.PlantOverviewUrl))
+                        existingAnalysis.PlantOverviewUrl = result.PlantOverviewUrl;
+                    if (!string.IsNullOrEmpty(result.RootUrl))
+                        existingAnalysis.RootUrl = result.RootUrl;
                     
                     // Update AI processing results (complete metadata mapping)
                     existingAnalysis.AiModel = result.ProcessingMetadata?.AiModel ?? "";
