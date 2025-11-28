@@ -8,10 +8,12 @@ Staging ortamında CloudflareR2 storage service'i test etmek ve production'a ge�
 ## ✅ Staging Hazırlık (Yapıldı)
 
 - [x] CloudflareR2StorageService implementation
-- [x] appsettings.Staging.json CloudflareR2 default olarak ayarlandı
+- [x] WebAPI appsettings.Staging.json CloudflareR2 default olarak ayarlandı
+- [x] Worker Service appsettings.Staging.json CloudflareR2 default olarak ayarlandı
 - [x] Bucket oluşturuldu: `ziraai-messages-prod`
 - [x] Build başarılı
 - [x] **CRITICAL FIX:** DisablePayloadSigning added to resolve STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER error
+- [x] **CONFIG SYNC:** Worker Service FileStorage config synchronized with WebAPI
 
 ---
 
@@ -54,8 +56,9 @@ Bu URL'i `CLOUDFLARE_R2_PUBLIC_DOMAIN` olarak kullanabilirsiniz.
 
 ### 3. Current Staging Config Check
 
-Şu anki staging konfigürasyonu:
+Şu anki staging konfigürasyonu (WebAPI ve Worker Service synchronized):
 
+**WebAPI/appsettings.Staging.json:**
 ```json
 {
   "FileStorage": {
@@ -71,7 +74,24 @@ Bu URL'i `CLOUDFLARE_R2_PUBLIC_DOMAIN` olarak kullanabilirsiniz.
 }
 ```
 
-Her şey hazır! Sadece environment variables eklenmesi gerekiyor.
+**PlantAnalysisWorkerService/appsettings.Staging.json:**
+```json
+{
+  "FileStorage": {
+    "Provider": "CloudflareR2",  // ✅ R2 default (synchronized)
+    "CloudflareR2": {
+      "AccountId": "${CLOUDFLARE_R2_ACCOUNT_ID}",
+      "AccessKeyId": "${CLOUDFLARE_R2_ACCESS_KEY_ID}",
+      "SecretAccessKey": "${CLOUDFLARE_R2_SECRET_ACCESS_KEY}",
+      "BucketName": "ziraai-messages-prod",  // ✅ Same bucket
+      "PublicDomain": "${CLOUDFLARE_R2_PUBLIC_DOMAIN}"  // ✅ Same env var
+    }
+  }
+}
+```
+
+✅ Both services use identical CloudflareR2 configuration!
+Sadece environment variables eklenmesi gerekiyor.
 
 ---
 
@@ -91,9 +111,15 @@ Railway Dashboard → Deployments → "Deploy Latest"
 
 Deploy tamamlandıktan sonra Railway logs'unda şunları kontrol edin:
 
-#### ✅ Başarılı DI Registration
+#### ✅ Başarılı DI Registration - WebAPI
 ```
 [FileStorage DI] Selected provider: CloudflareR2
+[CloudflareR2] Initialized - Bucket: ziraai-messages-prod, Domain: https://pub-xxx.r2.dev/ziraai-messages-prod
+```
+
+#### ✅ Başarılı DI Registration - Worker Service
+```
+[Worker FileStorage DI] Selected provider: CloudflareR2
 [CloudflareR2] Initialized - Bucket: ziraai-messages-prod, Domain: https://pub-xxx.r2.dev/ziraai-messages-prod
 ```
 
@@ -102,6 +128,11 @@ Deploy tamamlandıktan sonra Railway logs'unda şunları kontrol edin:
 Cloudflare R2 Account ID is not configured
 ```
 → Environment variables Railway'de doğru eklenmemiş.
+
+```
+Cloudflare R2 Bucket Name is not configured
+```
+→ Worker Service appsettings.json güncel değil (fixed in commit 1563651).
 
 ---
 
