@@ -11,6 +11,7 @@ Staging ortamında CloudflareR2 storage service'i test etmek ve production'a ge�
 - [x] appsettings.Staging.json CloudflareR2 default olarak ayarlandı
 - [x] Bucket oluşturuldu: `ziraai-messages-prod`
 - [x] Build başarılı
+- [x] **CRITICAL FIX:** DisablePayloadSigning added to resolve STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER error
 
 ---
 
@@ -190,6 +191,22 @@ DELETE https://ziraai-api-sit.up.railway.app/api/PlantAnalyses/{analysisId}
 
 #### B. Network Timeout Test
 Railway logs'unda timeout olup olmadığını kontrol edin (normal durumda olmamalı).
+
+#### C. STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER Error (RESOLVED ✅)
+**Error:**
+```
+Amazon.S3.AmazonS3Exception: STREAMING-AWS4-HMAC-SHA256-PAYLOAD-TRAILER not implemented
+ErrorCode: NotImplemented
+```
+
+**Root Cause:** Cloudflare R2 doesn't support AWS SDK's streaming SigV4 implementation with chunked transfer encoding.
+
+**Solution:** Already fixed in CloudflareR2StorageService.cs with `DisablePayloadSigning = true` property.
+
+**If you still see this error:**
+1. Verify you're using the latest code (commit 4538ca2 or later)
+2. Check that Railway deployed the updated code
+3. Restart the Railway service to ensure new code is loaded
 
 ---
 
