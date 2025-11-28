@@ -91,6 +91,7 @@ namespace Business.Services.FileStorage
     {
         public const string Local = "Local";
         public const string S3 = "S3";
+        public const string CloudflareR2 = "CloudflareR2";
         public const string ImgBB = "ImgBB";
         public const string FreeImageHost = "FreeImageHost";
         public const string Azure = "Azure";

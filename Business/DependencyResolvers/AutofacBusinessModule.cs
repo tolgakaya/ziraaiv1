@@ -402,8 +402,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<LocalFileStorageService>().InstancePerLifetimeScope();
             builder.RegisterType<ImgBBStorageService>().InstancePerLifetimeScope();
             builder.RegisterType<FreeImageHostStorageService>().InstancePerLifetimeScope();
+            builder.RegisterType<CloudflareR2StorageService>().InstancePerLifetimeScope();
             // builder.RegisterType<S3FileStorageService>().InstancePerLifetimeScope(); // Requires AWS SDK
-            
+
             // File Storage Services - Configuration-driven registration
             // Read FileStorage:Provider from configuration (supports environment variables)
             builder.Register<IFileStorageService>(c =>
@@ -418,6 +419,7 @@ namespace Business.DependencyResolvers
 
                 return provider switch
                 {
+                    "CloudflareR2" => context.Resolve<CloudflareR2StorageService>(),
                     "FreeImageHost" => context.Resolve<FreeImageHostStorageService>(),
                     "ImgBB" => context.Resolve<ImgBBStorageService>(),
                     "Local" => context.Resolve<LocalFileStorageService>(),
