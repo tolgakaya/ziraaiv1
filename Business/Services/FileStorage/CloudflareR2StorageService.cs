@@ -90,6 +90,7 @@ namespace Business.Services.FileStorage
                     InputStream = new MemoryStream(fileBytes),
                     ContentType = contentType ?? "application/octet-stream",
                     CannedACL = S3CannedACL.PublicRead,
+                    DisablePayloadSigning = true, // Required for Cloudflare R2 compatibility (R2 doesn't support STREAMING-AWS4-HMAC-SHA256-PAYLOAD)
                     Metadata =
                     {
                         ["x-amz-meta-original-filename"] = fileName,

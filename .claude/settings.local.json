@@ -17,7 +17,12 @@
       "Bash(gh pr create:*)",
       "Bash(S3)",
       "Bash(FreeImageHost)",
-      "Bash(Select-Object -First 50)"
+      "Bash(Select-Object -First 50)",
+      "Bash(base64,...\",  // REQUIRED\n  \"leafTopImage\": \"data:image/jpeg)",
+      "Bash(base64,...\",  // OPTIONAL\n  \"leafBottomImage\": \"data:image/jpeg)",
+      "Bash(base64,...\",  // OPTIONAL\n  \"plantOverviewImage\": \"data:image/jpeg)",
+      "Bash(base64,...\",  // OPTIONAL\n  \"rootImage\": \"data:image/jpeg)",
+      "Bash(dotnet add:*)"
     ],
     "deny": [],
     "ask": [],
