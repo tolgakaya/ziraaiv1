@@ -1,0 +1,225 @@
+{
+  "info": {
+    "name": "ZiraAI Multi-Image Plant Analysis API",
+    "description": "Multi-Image Plant Analysis endpoints supporting up to 5 images for comprehensive AI analysis",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "multi-image-plant-analysis-v1",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url_dev",
+      "value": "https://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "base_url_staging",
+      "value": "https://ziraai-api-sit.up.railway.app",
+      "type": "string"
+    },
+    {
+      "key": "base_url",
+      "value": "{{base_url_dev}}",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "analysis_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data) {",
+                  "        pm.collectionVariables.set('access_token', response.data.token);",
+                  "        console.log('Token saved:', response.data.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mobilePhone\": \"+905551234567\",\n  \"password\": \"Test123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Login to get access token for authenticated endpoints"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Multi-Image Analysis",
+      "item": [
+        {
+          "name": "Queue Multi-Image Analysis (Async)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.success && response.data && response.data.analysisId) {",
+                  "        pm.collectionVariables.set('analysis_id', response.data.analysisId);",
+                  "        console.log('Analysis ID saved:', response.data.analysisId);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Helper function to convert image to base64 data URI",
+                  "// In real testing, you'll need actual image files converted to base64",
+                  "// This is a minimal 1x1 pixel JPEG for testing purposes",
+                  "const mockImageDataUri = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k=';",
+                  "pm.variables.set('mock_image_data_uri', mockImageDataUri);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n  \"leafTopImage\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n  \"leafBottomImage\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n  \"plantOverviewImage\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n  \"rootImage\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n  \"cropType\": \"Tomato\",\n  \"location\": \"Greenhouse A1\",\n  \"gpsCoordinates\": {\n    \"lat\": 39.9334,\n    \"lng\": 32.8597\n  },\n  \"urgencyLevel\": \"Medium\",\n  \"notes\": \"Multi-image analysis test - comprehensive view of plant health\",\n  \"fieldId\": \"FIELD-001\",\n  \"altitude\": 850,\n  \"temperature\": 22.5,\n  \"humidity\": 65.0,\n  \"weatherConditions\": \"Partly cloudy\",\n  \"soilType\": \"Loamy\",\n  \"plantingDate\": \"2025-01-15T00:00:00Z\",\n  \"expectedHarvestDate\": \"2025-04-15T00:00:00Z\",\n  \"lastFertilization\": \"2025-02-01T00:00:00Z\",\n  \"lastIrrigation\": \"2025-02-25T00:00:00Z\",\n  \"previousTreatments\": [\n    \"Organic fertilizer applied 3 weeks ago\",\n    \"Pest control spray 1 week ago\"\n  ],\n  \"contactInfo\": {\n    \"phone\": \"+905551234567\",\n    \"email\": \"farmer@example.com\"\n  },\n  \"additionalInfo\": {\n    \"irrigationMethod\": \"Drip\",\n    \"greenhouse\": true,\n    \"organicCertified\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/plantanalysis/async/multi-image",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plantanalysis", "async", "multi-image"]
+            },
+            "description": "Queue multi-image plant analysis for asynchronous AI processing.\n\n**How It Works:**\n1. Client sends 1-5 images as **base64 data URI** strings\n2. API optimizes each image to ~100KB\n3. API uploads images to storage service (FreeImageHost/S3/etc)\n4. API saves analysis record in database with image URLs\n5. API publishes message to RabbitMQ with image URLs (NOT base64)\n6. Returns analysisId immediately\n\n**Image Format (Base64 Data URI):**\n```\ndata:image/jpeg;base64,/9j/4AAQSkZJRgABAQEA...\n```\n\n**Image Types:**\n- `image` (required): Main plant image\n- `leafTopImage` (optional): Top view of leaf\n- `leafBottomImage` (optional): Bottom view of leaf\n- `plantOverviewImage` (optional): Full plant overview\n- `rootImage` (optional): Root system view\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"message\": \"Multi-image analysis queued successfully\",\n  \"data\": {\n    \"analysisId\": \"async_multi_analysis_20250227_143022_a1b2c3d4\"\n  }\n}\n```\n\n**IMPORTANT:** \n- All images must be base64 data URI format\n- API handles upload and optimization automatically\n- Client does NOT need to upload images separately"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Analysis Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/plantanalysis/{{analysis_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plantanalysis", "{{analysis_id}}"]
+            },
+            "description": "Check analysis status and get results when complete.\n\n**Status Values:**\n- `Processing`: Analysis is in queue or being processed by N8N\n- `Completed`: Analysis finished, full results available\n- `Failed`: Analysis failed (check error message)\n- `QueueFailed`: Failed to publish to RabbitMQ queue\n\n**Multi-Image Fields in Response:**\nWhen completed, response includes:\n- `imageUrl`: Main image URL\n- `leafTopUrl`: Leaf top image URL (if provided)\n- `leafBottomUrl`: Leaf bottom image URL (if provided)\n- `plantOverviewUrl`: Plant overview image URL (if provided)\n- `rootUrl`: Root image URL (if provided)\n\nAll other analysis fields (health assessment, pest detection, recommendations) are identical to single-image format."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Queue Health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/plantanalysis/async/multi-image/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plantanalysis", "async", "multi-image", "health"]
+            },
+            "description": "Check if multi-image RabbitMQ queue is healthy and accepting messages.\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"isHealthy\": true,\n    \"queueName\": \"plant-analysis-multi-image-requests\"\n  }\n}\n```\n\n**Use Case:**\nCall before submitting analysis to ensure queue is available. If unhealthy, display error to user."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Single-Image Analysis (Comparison)",
+      "item": [
+        {
+          "name": "Queue Single-Image Analysis (Async)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"image\": \"data:image/jpeg;base64,/9j/4AAQSkZJRg...\",\n  \"cropType\": \"Tomato\",\n  \"location\": \"Greenhouse A1\",\n  \"gpsCoordinates\": {\n    \"lat\": 39.9334,\n    \"lng\": 32.8597\n  },\n  \"urgencyLevel\": \"Medium\",\n  \"notes\": \"Single-image analysis for comparison\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/plantanalysis/async",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "plantanalysis", "async"]
+            },
+            "description": "**Single-Image (Original) Endpoint**\n\nFor comparison with multi-image endpoint:\n- Only 1 image accepted (base64 data URI)\n- Uses `plant-analysis-requests` queue\n- API handles optimization and upload\n- Same response format but no multi-image URL fields"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

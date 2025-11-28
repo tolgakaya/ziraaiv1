@@ -116,9 +116,22 @@ namespace Entities.Dtos
         // Image URL and Path
         [JsonProperty("image_url")]
         public string ImageUrl { get; set; }
-        
+
         [JsonProperty("image_path")]
         public string ImagePath { get; set; }
+
+        // Multi-Image URLs (for comprehensive analysis with up to 5 images)
+        [JsonProperty("leaf_top_url")]
+        public string LeafTopUrl { get; set; }
+
+        [JsonProperty("leaf_bottom_url")]
+        public string LeafBottomUrl { get; set; }
+
+        [JsonProperty("plant_overview_url")]
+        public string PlantOverviewUrl { get; set; }
+
+        [JsonProperty("root_url")]
+        public string RootUrl { get; set; }
         
         // Image and Processing Metadata
         [JsonProperty("image_metadata")]

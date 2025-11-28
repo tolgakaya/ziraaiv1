@@ -21,6 +21,8 @@ namespace Core.Configuration
     {
         public string PlantAnalysisRequest { get; set; } = "plant-analysis-requests";
         public string PlantAnalysisResult { get; set; } = "plant-analysis-results";
+        public string PlantAnalysisMultiImageRequest { get; set; } = "plant-analysis-multi-image-requests";
+        public string PlantAnalysisMultiImageResult { get; set; } = "plant-analysis-multi-image-results";
         public string DealerInvitationRequest { get; set; } = "dealer-invitation-requests";
         public string FarmerCodeDistributionRequest { get; set; } = "farmer-code-distribution-requests";
         public string FarmerSubscriptionAssignmentRequest { get; set; } = "farmer-subscription-assignment-requests";

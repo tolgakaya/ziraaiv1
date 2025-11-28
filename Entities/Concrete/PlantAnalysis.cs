@@ -135,6 +135,12 @@ namespace Entities.Concrete
         public string ImageMetadata { get; set; } // JSONB
         public string ImageUrl { get; set; } = "";
 
+        // Multi-Image URLs (for comprehensive analysis)
+        public string LeafTopUrl { get; set; }
+        public string LeafBottomUrl { get; set; }
+        public string PlantOverviewUrl { get; set; }
+        public string RootUrl { get; set; }
+
         // Request Metadata
         public string RequestMetadata { get; set; } // JSONB
 

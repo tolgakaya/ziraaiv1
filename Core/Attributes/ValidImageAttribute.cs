@@ -30,8 +30,10 @@ namespace Core.Attributes
 
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            if (value == null)
-                return new ValidationResult("Image is required");
+            // Allow null/empty values - use [Required] attribute to enforce non-null
+            // This makes ValidImage work correctly for optional image fields
+            if (value == null || string.IsNullOrWhiteSpace(value.ToString()))
+                return ValidationResult.Success;
 
             var dataUri = value.ToString();
             

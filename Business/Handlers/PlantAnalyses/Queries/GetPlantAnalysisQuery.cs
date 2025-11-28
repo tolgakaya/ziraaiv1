@@ -158,6 +158,39 @@ namespace Business.Handlers.PlantAnalyses.Queries
                     // Detailed analysis data (full JSON for reference)
                     DetailedAnalysis = TryDeserializeObject<DetailedPlantAnalysisDto>(plantAnalysis.DetailedAnalysisData) ?? new DetailedPlantAnalysisDto(),
 
+                    // Image Metadata with multi-image support
+                    ImageMetadata = new ImageMetadataDto
+                    {
+                        // Single-image fields (always populated for backward compatibility)
+                        Source = !string.IsNullOrEmpty(plantAnalysis.ImageUrl) && plantAnalysis.ImageUrl.StartsWith("http") ? "url" : "base64",
+                        ImageUrl = imageUrl, // Main image URL
+                        HasImageExtension = !string.IsNullOrEmpty(plantAnalysis.ImagePath) && (plantAnalysis.ImagePath.Contains(".jpg") || plantAnalysis.ImagePath.Contains(".png") || plantAnalysis.ImagePath.Contains(".jpeg")),
+                        UploadTimestamp = plantAnalysis.CreatedDate,
+                        
+                        // Multi-image fields (null for single-image analyses - backward compatible)
+                        TotalImages = !string.IsNullOrEmpty(plantAnalysis.LeafTopUrl) || !string.IsNullOrEmpty(plantAnalysis.LeafBottomUrl) || !string.IsNullOrEmpty(plantAnalysis.PlantOverviewUrl) || !string.IsNullOrEmpty(plantAnalysis.RootUrl) 
+                            ? 1 + (!string.IsNullOrEmpty(plantAnalysis.LeafTopUrl) ? 1 : 0) + (!string.IsNullOrEmpty(plantAnalysis.LeafBottomUrl) ? 1 : 0) + (!string.IsNullOrEmpty(plantAnalysis.PlantOverviewUrl) ? 1 : 0) + (!string.IsNullOrEmpty(plantAnalysis.RootUrl) ? 1 : 0)
+                            : null,
+                        ImagesProvided = (!string.IsNullOrEmpty(plantAnalysis.LeafTopUrl) || !string.IsNullOrEmpty(plantAnalysis.LeafBottomUrl) || !string.IsNullOrEmpty(plantAnalysis.PlantOverviewUrl) || !string.IsNullOrEmpty(plantAnalysis.RootUrl))
+                            ? new List<string> { "main" }
+                                .Concat(!string.IsNullOrEmpty(plantAnalysis.LeafTopUrl) ? new[] { "leaf_top" } : Array.Empty<string>())
+                                .Concat(!string.IsNullOrEmpty(plantAnalysis.LeafBottomUrl) ? new[] { "leaf_bottom" } : Array.Empty<string>())
+                                .Concat(!string.IsNullOrEmpty(plantAnalysis.PlantOverviewUrl) ? new[] { "plant_overview" } : Array.Empty<string>())
+                                .Concat(!string.IsNullOrEmpty(plantAnalysis.RootUrl) ? new[] { "root" } : Array.Empty<string>())
+                                .ToList()
+                            : null,
+                        HasLeafTop = !string.IsNullOrEmpty(plantAnalysis.LeafTopUrl) ? true : null,
+                        HasLeafBottom = !string.IsNullOrEmpty(plantAnalysis.LeafBottomUrl) ? true : null,
+                        HasPlantOverview = !string.IsNullOrEmpty(plantAnalysis.PlantOverviewUrl) ? true : null,
+                        HasRoot = !string.IsNullOrEmpty(plantAnalysis.RootUrl) ? true : null,
+                        
+                        // Additional image URLs (null for single-image analyses - backward compatible)
+                        LeafTopImageUrl = plantAnalysis.LeafTopUrl,
+                        LeafBottomImageUrl = plantAnalysis.LeafBottomUrl,
+                        PlantOverviewImageUrl = plantAnalysis.PlantOverviewUrl,
+                        RootImageUrl = plantAnalysis.RootUrl
+                    },
+
                     // Legacy fields for backward compatibility
                     PlantType = plantAnalysis.PlantType,
                     GrowthStage = plantAnalysis.GrowthStage,

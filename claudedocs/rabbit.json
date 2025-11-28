@@ -1,0 +1,332 @@
+  {
+    "plant_identification": {
+      "species": "Domates (Solanum lycopersicum)",
+      "variety": "bilinmiyor",
+      "growth_stage": "vejetatif",
+      "confidence": 90,
+      "identifying_features": [
+        "parçalı (loblu) yaprak yapısı",
+        "ince sap ve domates tipi yaprak damar yapısı"
+      ],
+      "visible_parts": [
+        "yapraklar",
+        "gövde"
+      ]
+    },
+    "health_assessment": {
+      "vigor_score": 4,
+      "leaf_color": "yapraklarda interveinal sararma ve bazı alanlarda koyu nekrotik lekeler; genel olarak solgun sarımsı ton",
+      "leaf_texture": "bir kısmı ince, kıvrılmış ve kısmen kuruymuş görünüyor; yaprak yüzeyi parlaklık kaybı",
+      "growth_pattern": "anormal - yapraklarda düzensiz sararma ve nekrozla birlikte normalin altında bitki canlılığı",
+      "structural_integrity": "orta - gövde sağlam görünse de yaprak dokusunda bozulma var",
+      "stress_indicators": [
+        "interveinal sararma (yaprak damarları daha yeşil kalmış)",
+        "noktasal nekrozlu lekeler",
+        "yaprak kıvrılması/mahmuzlanma"
+      ],
+      "disease_symptoms": [
+        "yaprak lekeleri (küçük nekrotik noktalar/lekeler)",
+        "genel yaprak sararması (kloroz)"
+      ],
+      "severity": "orta"
+    },
+    "nutrient_status": {
+      "nitrogen": "eksik",
+      "phosphorus": "normal",
+      "potassium": "eksik",
+      "calcium": "normal",
+      "magnesium": "eksik",
+      "sulfur": "normal",
+      "iron": "normal",
+      "zinc": "normal",
+      "manganese": "normal",
+      "boron": "normal",
+      "copper": "normal",
+      "molybdenum": "normal",
+      "chlorine": "normal",
+      "nickel": "normal",
+      "primary_deficiency": "magnezyum eksikliği",
+      "secondary_deficiencies": [
+        "azot eksikliği",
+        "potasyum eksikliği"
+      ],
+      "severity": "orta"
+    },
+    "pest_disease": {
+      "pests_detected": [
+        {
+          "type": "örümcek akarı (olasılık)",
+          "group": "akar",
+          "severity": "düşük",
+          "confidence": 40,
+          "location": "yaprak altı (olağan yerleşim)"
+        }
+      ],
+      "diseases_detected": [
+        {
+          "type": "yaprak lekesi/erken yaprak hastalığı (Alternaria/Septoria veya benzeri fungal lezyonlar olasılığı)",
+          "category": "fungal",
+          "severity": "orta",
+          "affected_parts": [
+            "yapraklar"
+          ],
+          "confidence": 55
+        }
+      ],
+      "damage_pattern": "interveinal kloroz + dağınık nekrotik lekeler; yaprak yaşına göre önce alt yapraklarda başlama eğilimi gözleniyor",
+      "affected_area_percentage": 15,
+      "spread_risk": "orta",
+      "primary_issue": "besin eksikliği (özellikle Mg) ile birlikte yüzeysel fungal yaprak lezyonları olasılığı"
+    },
+    "environmental_stress": {
+      "water_status": "hafif kurak",
+      "temperature_stress": "yok",
+      "light_stress": "yok",
+      "physical_damage": "yok",
+      "chemical_damage": "şüpheli - yakın zamanda yapılan püskürtme sonrası hafif fitotoksik reaksiyon ihtimali (kesin değil)",
+      "physiological_disorders": [
+        {
+          "type": "besin toksisitesi|herbisit zararı",
+          "severity": "düşük",
+          "notes": "mevcut semptomlar besin eksikliğine daha yakın; ancak geçmişte yapılan ilaçlama/uygulama detayları bilinirse herbisit/fitotoksik etki dışlanabilir"
+        }
+      ],
+      "soil_health_indicators": {
+        "salinity": "yok",
+        "pH_issue": "optimal",
+        "organic_matter": "orta"
+      },
+      "primary_stressor": "besin eksikliği (magnezyum öncelikli)"
+    },
+    "cross_factor_insights": [
+      {
+        "insight": "Magnezyum eksikliği interveinal sararmaya neden olarak yaprak dokusunu zayıflatır; zayıf dokular daha kolay fungal patojen saldırısına açık hale gelir. Ayrıca azot ve potasyum eksiklikleri bitki genel direncini azaltıp semptomları şiddetlendirebilir.",
+        "confidence": 0.75,
+        "affected_aspects": [
+          "nutrient_status",
+          "pest_disease"
+        ],
+        "impact_level": "yüksek"
+      }
+    ],
+    "risk_assessment": {
+      "yield_loss_probability": "orta",
+      "timeline_to_worsen": "hafta",
+      "spread_potential": "lokal"
+    },
+    "recommendations": {
+      "immediate": [
+        {
+          "action": "etkilenmiş yaprakları temizleyin",
+          "details": "Şiddetli lezyonlu ve kurumuş yaprakları makas ile kesin ve sera dışına atın (komposta koymayın).",
+          "timeline": "24 saat içinde",
+          "priority": "kritik"
+        },
+        {
+          "action": "yaprak altı kontrolleri yapın",
+          "details": "Yaprak altlarında örümcek ağı, küçük hareketli noktalar veya beyaz larva/ergin arayın; varsa hedefli mücadele uygulayın.",
+          "timeline": "24-48 saat içinde",
+          "priority": "yüksek"
+        },
+        {
+          "action": "hızlı Mg takviyesi (foliar)",
+          "details": "Epsom tuzu (magnezyum sülfat) ile 2-3 g/L konsantrasyonunda hafif bir yaprak spreyi uygulayabilirsiniz; sabah erken veya akşamüzeri, 7-10 gün ara ile 2 uygulama.",
+          "timeline": "48 saat içinde",
+          "priority": "yüksek"
+        }
+      ],
+      "short_term": [
+        {
+          "action": "toprak ve çözeltide analiz yaptırın",
+          "details": "pH, EC, makro ve mikro element analizi için toprak/stiok örnekleri alın; sonuçlara göre gübreleme planı düzenleyin.",
+          "timeline": "7-14 gün",
+          "priority": "yüksek"
+        },
+        {
+          "action": "dengeli gübreleme / damla ile Mg ve N takviyesi",
+          "details": "Analiz sonuçlarına göre magnezyum içeren fertirigasyon (ör. Mg sülfat) ve düşük dozda azot içeren sıvı gübre uygulaması planlayın.",
+          "timeline": "7-14 gün",
+          "priority": "orta"
+        },
+        {
+          "action": "fungal lezyon kontrolü (gerektiğinde)",
+          "details": "Lezyonlar yayılırsa organik bakır veya perakendisülfür gibi onaylı mantar ilaçlarıyla (sera kullanımına uygun ürün) müdahale edin. Kimyasal kullanımı gerekiyorsa rotasyona dikkat edin.",
+          "timeline": "7-21 gün",
+          "priority": "orta"
+        }
+      ],
+      "preventive": [
+        {
+          "action": "düzenli izleme ve hijyen",
+          "details": "Sera içi taşıyıcı organik materyali azaltın, hasta yaprakları hemen uzaklaştırın, işçi/alet hijyenine dikkat edin.",
+          "timeline": "sürekli",
+          "priority": "orta"
+        },
+        {
+          "action": "optimum sulama yönetimi",
+          "details": "Damlama sulama ile düzenli, yüzeysel stres yaratmayacak su uygulamaları; sulama ve gübreleme zamanlamasını uyumlu planlayın.",
+          "timeline": "sürekli",
+          "priority": "orta"
+        }
+      ],
+      "monitoring": [
+        {
+          "parameter": "yaprak semptomları ve lezyon yayılımı",
+          "frequency": "haftada 1-2 kez",
+          "threshold": "%10 yaprak etkilenmesi -> müdahale"
+        },
+        {
+          "parameter": "yaprak altı zararlı varlığı (örümcek akarı, beyaz sinek)",
+          "frequency": "haftada 2 kez",
+          "threshold": "gözle görülen canlı popülasyon veya yaprak başına ort. >5 zararlı"
+        },
+        {
+          "parameter": "toprak pH ve EC",
+          "frequency": "ayda 1-2 kez (analiz ile)",
+          "threshold": "pH <5.5 veya >6.8; EC artışı varsa önlem"
+        }
+      ],
+      "resource_estimation": {
+        "water_required_liters": "5",
+        "fertilizer_cost_estimate_usd": "15",
+        "labor_hours_estimate": "2"
+      },
+      "localized_recommendations": {
+        "region": "Ankara (39.9334,32.8597)",
+        "preferred_practices": [
+          "damla sulama ile kontrollü gübreleme (fertirigasyon)",
+          "sera içi hijyen ve düzenli yaprak kontrolleri"
+        ],
+        "restricted_methods": [
+          "izin ve etiket talimatı olmadan sistemik fungisitlerin rastgele kullanımı",
+          "yüksek doz sentetik gübrelerin tek seferde uygulanması"
+        ]
+      }
+    },
+    "summary": {
+      "overall_health_score": 4,
+      "primary_concern": "magnezyum eksikliği ile ilişkili yaprak klorozu ve buna bağlı zayıflamış doku",
+      "secondary_concerns": [
+        "azot/potasyum eksikliği olasılığı",
+        "yüzeysel fungal yaprak lezyonları",
+        "örümcek akarı başlangıcı (olasılık)"
+      ],
+      "critical_issues_count": 0,
+      "confidence_level": 65,
+      "prognosis": "orta",
+      "estimated_yield_impact": "orta"
+    },
+    "confidence_notes": [
+      {
+        "aspect": "nutrient_status",
+        "confidence": 0.65,
+        "reason": "Görsel semptomlar (interveinal sararma, yaşlı yaprak etkilenmesi) magnezyum eksikliğine işaret ediyor, ancak toprak/bitki analizleri yapılmadan kesin teşhis konamaz."
+      }
+    ],
+    "farmer_friendly_summary": "Yapraklarda damarlar daha yeşil kalarak arada sararma ve bazı kahverengi lezyonlar var. Bu büyük olasılıkla magnezyum eksikliği (ve bir miktar azot/potasyum eksikliği) ile ilişkili; zayıflayan yapraklar mantar hastalıklarına daha açık olur. Hemen yapmanız gerekenler: hastalıklı yaprakları kesip seradan uzaklaştırın, yaprak altlarını kontrol ederek örümcek akarı belirtilerine bakın, 48 saat içinde foliar magnezyum takviyesi (Epsom tuzu) uygulayın ve 7–14 gün içinde toprak ve bitki analizleri yaptırarak fertirigasyon programınızı magnezyum ve dengeli besin sağlayacak şekilde düzenleyin. Eğer lezyonlar yayılırsa sera için onaylı mantar ilaçları ile müdahale edilebilir. Daha kesin öneri için toprak ve yaprak analizi sonuçları ile son ilaçlama ve gübreleme detaylarını paylaşın.",
+    "analysis_id": "async_multi_analysis_20251127_114429_a502d603",
+    "timestamp": "2025-11-27T11:44:30.665Z",
+    "farmer_id": "F190",
+    "sponsor_id": "S159",
+    "location": "Greenhouse A1",
+    "gps_coordinates": "39.9334,32.8597",
+    "altitude": 850,
+    "field_id": "FIELD-001",
+    "crop_type": "Tomato",
+    "planting_date": "2025-01-15T00:00:00Z",
+    "expected_harvest_date": "2025-04-15T00:00:00Z",
+    "last_fertilization": "2025-02-01T00:00:00Z",
+    "last_irrigation": "2025-02-25T00:00:00Z",
+    "previous_treatments": [
+      "Organic fertilizer applied 3 weeks ago",
+      "Pest control spray 1 week ago"
+    ],
+    "weather_conditions": "Partly cloudy",
+    "temperature": 22.5,
+    "humidity": 65,
+    "soil_type": "Loamy",
+    "urgency_level": "Medium",
+    "notes": "Multi-image analysis test - comprehensive view of plant health",
+    "contact_info": {
+      "phone": "+905551234567",
+      "email": "farmer@example.com"
+    },
+    "additional_info": {
+      "irrigation_method": "Drip",
+      "greenhouse": true,
+      "organic_certified": false
+    },
+    "image_metadata": {
+      "format": "url",
+      "url": "https://iili.io/fBOoFDv.jpg",
+      "size_bytes": null,
+      "size_kb": null,
+      "size_mb": null,
+      "base64_length": null,
+      "upload_timestamp": "2025-11-27T11:44:30.664Z",
+      "total_images": 5,
+      "images_provided": [
+        "main",
+        "leaf_top",
+        "leaf_bottom",
+        "plant_overview",
+        "root"
+      ],
+      "has_leaf_top": true,
+      "has_leaf_bottom": true,
+      "has_plant_overview": true,
+      "has_root": true
+    },
+    "rabbitmq_metadata": {
+      "correlation_id": "a502d603c79a486d8190ffc10d01cfda",
+      "response_queue": "plant-analysis-multi-image-results",
+      "callback_url": null,
+      "priority": "normal",
+      "retry_count": 0,
+      "received_at": "2025-11-27T11:44:30.665Z",
+      "message_id": null,
+      "routing_key": null
+    },
+    "token_usage": {
+      "summary": {
+        "model": "gpt-5-mini",
+        "analysis_id": "async_multi_analysis_20251127_114429_a502d603",
+        "timestamp": "2025-11-27T11:45:42.172Z",
+        "total_tokens": 5992,
+        "total_cost_usd": 0.004723,
+        "total_cost_try": 0.2362,
+        "image_source": "url"
+      },
+      "token_breakdown": {
+        "input": {
+          "system_prompt": 250,
+          "context_data": 74,
+          "image": 3825,
+          "image_url_text": 0,
+          "cached_input_tokens": 0,
+          "regular_input_tokens": 4149,
+          "total": 4149
+        },
+        "output": {
+          "response": 1843,
+          "total": 1843
+        },
+        "grand_total": 5992
+      },
+      "cost_breakdown": {
+        "input_cost_usd": 0.001037,
+        "cached_input_cost_usd": 0,
+        "output_cost_usd": 0.003686,
+        "total_cost_usd": 0.004723,
+        "total_cost_try": 0.2362,
+        "exchange_rate": 50
+      }
+    },
+    "processing_metadata": {
+      "parse_success": true,
+      "processing_timestamp": "2025-11-27T11:45:42.180Z",
+      "ai_model": "gpt-4o-mini",
+      "workflow_version": "2.0-url-based",
+      "image_source": "url"
+    }
+  }
