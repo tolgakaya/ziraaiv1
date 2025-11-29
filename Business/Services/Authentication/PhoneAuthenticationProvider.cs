@@ -129,6 +129,12 @@ namespace Business.Services.Authentication
             var accessToken = _tokenHelper.CreateToken<DArchToken>(user, userGroups);
             accessToken.Provider = ProviderType;
 
+            // IMPORTANT: Save refresh token and expiration to user entity
+            user.RefreshToken = accessToken.RefreshToken;
+            user.RefreshTokenExpires = accessToken.RefreshTokenExpiration;
+            _users.Update(user);
+            await _users.SaveChangesAsync();
+
             // Add user claims to cache for authorization checks
             var claimNames = claims.Select(x => x.Name).ToList();
             _cacheManager.Add($"{CacheKeys.UserIdForClaim}={user.UserId}", claimNames);

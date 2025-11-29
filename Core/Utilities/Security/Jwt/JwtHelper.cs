@@ -41,6 +41,7 @@ namespace Core.Utilities.Security.Jwt
             where TAccessToken : IAccessToken, new()
         {
             _accessTokenExpiration = DateTime.Now.AddMinutes(_tokenOptions.AccessTokenExpiration);
+            var refreshTokenExpiration = DateTime.Now.AddMinutes(_tokenOptions.RefreshTokenExpiration);
             var securityKey = SecurityKeyHelper.CreateSecurityKey(_tokenOptions.SecurityKey);
             var signingCredentials = SigningCredentialsHelper.CreateSigningCredentials(securityKey);
             var jwt = CreateJwtSecurityToken(_tokenOptions, user, signingCredentials, null, userGroups);
@@ -51,7 +52,8 @@ namespace Core.Utilities.Security.Jwt
             {
                 Token = token,
                 Expiration = _accessTokenExpiration,
-                RefreshToken = GenerateRefreshToken()
+                RefreshToken = GenerateRefreshToken(),
+                RefreshTokenExpiration = refreshTokenExpiration
             };
         }
 

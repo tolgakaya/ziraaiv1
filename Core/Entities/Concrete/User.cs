@@ -43,6 +43,8 @@ namespace Core.Entities.Concrete
         public string Email { get; set; }
         [JsonIgnore]
         public string RefreshToken { get; set; }
+        [JsonIgnore]
+        public DateTime? RefreshTokenExpires { get; set; }
         public string MobilePhones { get; set; }
         public bool Status { get; set; }
         public DateTime? BirthDate { get; set; }  // Made nullable
