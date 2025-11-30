@@ -1,251 +1,308 @@
 {
-    "data": {
-        "analysis": {
-            "id": 60,
-            "analysisId": "async_analysis_20251017_090247_4932e855",
-            "analysisDate": "2025-10-17T09:02:48.888",
-            "analysisStatus": "Completed",
-            "userId": 165,
-            "farmerId": "F165",
-            "sponsor_id": "S159",
-            "sponsorUserId": 159,
-            "sponsorshipCodeId": 975,
-            "previousTreatments": [],
-            "plantIdentification": {
-                "species": "bilinmiyor (görüntüye erişim veya netlik yok)",
-                "variety": "bilinmiyor",
-                "growthStage": "vejetatif",
-                "confidence": 15,
-                "identifyingFeatures": [
-                    "görüntü eksikliği/uyarı: fotoğraf net değil veya analiz için erişilemiyor",
-                    "tür/çeşit belirlenemedi - ek bilgi gerekli"
-                ],
-                "visibleParts": [
-                    "yapraklar",
-                    "gövde"
-                ]
-            },
-            "healthAssessment": {
-                "vigorScore": 5,
-                "leafColor": "bilinmiyor - fotoğraf net değil; renk tayini yapılamıyor",
-                "leafTexture": "bilinmiyor - doku ayrıntısı yok",
-                "growthPattern": "anormal - detay: görsel veri yetersiz, anormallik tespiti belirsiz",
-                "structuralIntegrity": "orta - belirsiz: gövde/yaprak yapısı net değil",
-                "severity": "yok",
-                "stressIndicators": [
-                    "görüntü yetersizliği",
-                    "kesin teşhis için klinik belirtiler eksik"
-                ],
-                "diseaseSymptoms": [
-                    "tespit edilemiyor - fotoğraf yeterli bilgi vermiyor"
-                ]
-            },
-            "nutrientStatus": {
-                "nitrogen": "normal",
-                "phosphorus": "normal",
-                "potassium": "normal",
-                "calcium": "normal",
-                "magnesium": "normal",
-                "sulfur": "normal",
-                "iron": "normal",
-                "zinc": "normal",
-                "manganese": "normal",
-                "boron": "normal",
-                "copper": "normal",
-                "molybdenum": "normal",
-                "chlorine": "normal",
-                "nickel": "normal",
-                "primaryDeficiency": "yok",
-                "secondaryDeficiencies": [],
-                "severity": "yok"
-            },
-            "pestDisease": {
-                "pestsDetected": [],
-                "diseasesDetected": [],
-                "damagePattern": "tespit edilemiyor - fotoğraf net değil veya erişilemiyor",
-                "affectedAreaPercentage": 0,
-                "spreadRisk": "yok",
-                "primaryIssue": "görüntü eksikliği / tanı belirsizliği"
-            },
-            "environmentalStress": {
-                "waterStatus": "optimal",
-                "temperatureStress": "yok",
-                "lightStress": "yok",
-                "physicalDamage": "yok",
-                "chemicalDamage": "şüpheli - daha fazla bilgi gerek",
-                "primaryStressor": "bilinmiyor"
-            },
-            "summary": {
-                "overallHealthScore": 5,
-                "primaryConcern": "görüntü ve alan bilgisi eksikliği - tanı yapılamıyor",
-                "secondaryConcerns": [
-                    "yanlış müdahale riski",
-                    "gecikmiş teşhis nedeniyle potansiyel zarar"
-                ],
-                "criticalIssuesCount": 0,
-                "confidenceLevel": 15,
-                "prognosis": "orta",
-                "estimatedYieldImpact": "minimal"
-            },
-            "crossFactorInsights": [
-                {
-                    "insight": "Görsel veri eksikliği nedeniyle besin, hastalık ve çevresel faktörler arasındaki ilişkiler belirsiz. Net fotoğraf ya da alan bilgisi sağlanmazsa yanlış müdahale riski yüksek.",
-                    "confidence": 0.2,
-                    "affectedAspects": [
-                        "nutrient_status",
-                        "pest_disease"
-                    ],
-                    "impactLevel": "yüksek"
-                }
+  "data": {
+    "analysis": {
+      "id": 95,
+      "analysisId": "async_multi_analysis_20251128_101913_e1a3bccc",
+      "analysisDate": "2025-11-28T10:19:16.229",
+      "analysisStatus": "Completed",
+      "userId": 190,
+      "farmerId": "F190",
+      "sponsor_id": "S159",
+      "sponsorUserId": 159,
+      "sponsorshipCodeId": 1827,
+      "location": "kepez",
+      "previousTreatments": [],
+      "notes": "Bitki Türü: Havuç",
+      "plantIdentification": {
+        "species": "Havuç (Daucus carota)",
+        "variety": "bilinmiyor",
+        "growthStage": "vejetatif",
+        "confidence": 85,
+        "identifyingFeatures": [
+          "tüylü, ince yaprak ayrımları",
+          "çok dallı, ferne benzeri yaprak formu"
+        ],
+        "visibleParts": [
+          "yapraklar",
+          "gövde"
+        ]
+      },
+      "healthAssessment": {
+        "vigorScore": 6,
+        "leafColor": "kısmi sararma ve bazı kahverengi nekroz odakları (yaprak uçlarında ve kanatlar arasında)",
+        "leafTexture": "genel olarak ince, bazı bölgelerde kurumaya başlamış dokular",
+        "growthPattern": "anormal - bazı yapraklarda noktalanmış lezyonlar, hafif düzensiz büyüme",
+        "structuralIntegrity": "orta - gövde sağlam görünmekle birlikte yapraklarda lokal zayıflama var",
+        "severity": "orta",
+        "stressIndicators": [
+          "yapraklarda küçük kahverengi lekeler/nekroz",
+          "kısmi sararma (kloroz) ve yaprak uçlarında kuruma"
+        ],
+        "diseaseSymptoms": [
+          "yaprak lekeleri/nekroz",
+          "olası böcek beslenme izleri (küçük noktalar)"
+        ]
+      },
+      "nutrientStatus": {
+        "nitrogen": "hafif eksik",
+        "phosphorus": "normal",
+        "potassium": "hafif eksik",
+        "calcium": "normal",
+        "magnesium": "normal",
+        "sulfur": "normal",
+        "iron": "normal",
+        "zinc": "normal",
+        "manganese": "normal",
+        "boron": "normal",
+        "copper": "normal",
+        "molybdenum": "normal",
+        "chlorine": "normal",
+        "nickel": "normal",
+        "primaryDeficiency": "az miktarda azot eksikliği",
+        "secondaryDeficiencies": [
+          "potasyum - hafif belirtiler olası"
+        ],
+        "severity": "düşük"
+      },
+      "pestDisease": {
+        "pestsDetected": [
+          {
+            "name": "yaprak bitleri / küçük sap-sap emiciler (olası)",
+            "severity": "düşük",
+            "confidence": 45
+          },
+          {
+            "name": "örümcek akarları (olası)",
+            "severity": "orta",
+            "confidence": 40
+          }
+        ],
+        "diseasesDetected": [
+          {
+            "type": "Alternaria yaprak lekesi (olası)",
+            "category": "fungal",
+            "severity": "orta",
+            "affectedParts": [
+              "yapraklar"
             ],
-            "recommendations": {
-                "immediate": [
-                    {
-                        "action": "daha net fotoğraf gönder",
-                        "details": "yakın plan (etkilenen yaprakların hem ön hem arka yüzü), tüm bitkinin ve toprağın genel görünümü, gerektiğinde zararlı yakın çekimi gönderin",
-                        "timeline": "24 saat içinde",
-                        "priority": "kritik"
-                    },
-                    {
-                        "action": "etkilenen bitkileri izole edin",
-                        "details": "diğer bitkilere temas eden aletleri temizleyin; potansiyel bulaşma varsa yeni bitkileri izole edin",
-                        "timeline": "hemen",
-                        "priority": "yüksek"
-                    }
-                ],
-                "shortTerm": [
-                    {
-                        "action": "alan bilgisi ve yönetim geçmişini paylaşın",
-                        "details": "bitki türü, ekim tarihi, sulama sıklığı, gübreleme detayları, son 14 gün içindeki hava koşulları ve ilaç uygulamaları gönderin",
-                        "timeline": "1-3 gün",
-                        "priority": "yüksek"
-                    },
-                    {
-                        "action": "toprak ve yaprak analizi yaptırın",
-                        "details": "temel besin ve pH analizi; gerektiğinde yaprak analizini de ekleyin",
-                        "timeline": "7-14 gün",
-                        "priority": "orta"
-                    }
-                ],
-                "preventive": [
-                    {
-                        "action": "düzenli gözlem ve fotoğraf kaydı",
-                        "details": "aynı noktadan haftalık fotoğraf ve not alarak değişimleri takip edin",
-                        "timeline": "sürekli",
-                        "priority": "orta"
-                    },
-                    {
-                        "action": "iyi tarım uygulamaları",
-                        "details": "açık alanda hijyen, uygun sulama, dengeli gübreleme ve rotasyon uygulayın",
-                        "timeline": "sürekli",
-                        "priority": "düşük"
-                    }
-                ],
-                "monitoring": [
-                    {
-                        "parameter": "yaprak leke/solgunluk gelişimi",
-                        "frequency": "haftada 1",
-                        "threshold": "%5 yaprak alanı etkilenmesi"
-                    },
-                    {
-                        "parameter": "yeni semptomların ortaya çıkışı",
-                        "frequency": "günlük",
-                        "threshold": "gözle görülebilir yayılma"
-                    }
-                ],
-                "resourceEstimation": {
-                    "waterRequiredLiters": "bilinmiyor",
-                    "fertilizerCostEstimateUsd": "bilinmiyor",
-                    "laborHoursEstimate": "bilinmiyor"
-                },
-                "localizedRecommendations": {
-                    "region": "verilmedi",
-                    "preferredPractices": [
-                        "net teşhis için fotoğraf ve alan verisi sağlanması",
-                        "toprak ve yaprak analizi yapılması"
-                    ],
-                    "restrictedMethods": [
-                        "görüntü temelli doğrudan kimyasal uygulama (teşhis olmadan)"
-                    ]
-                }
-            },
-            "imageInfo": {
-                "imageUrl": "https://iili.io/Kvn7z9p.jpg",
-                "format": "url"
-            },
-            "processingInfo": {
-                "processingTimestamp": "0001-01-01T00:00:00",
-                "processingTimeMs": 0,
-                "parseSuccess": false,
-                "retryCount": 0
-            },
-            "riskAssessment": {
-                "yieldLossProbability": "düşük",
-                "timelineToWorsen": "hafta",
-                "spreadPotential": "lokal"
-            },
-            "confidenceNotes": [
-                {
-                    "aspect": "nutrient_status",
-                    "confidence": 0.25,
-                    "reason": "Görsel veri yetersiz olduğu için yaprak renk/patternlerine dayanarak besin durumu değerlendirilemedi; kesinlik için toprak ve yaprak analizi gerekir."
-                }
+            "confidence": 50
+          },
+          {
+            "type": "bakteriyel yaprak lekesi/nekroz (ayrıca olası)",
+            "category": "bakteriyel",
+            "severity": "düşük",
+            "affectedParts": [
+              "yapraklar"
             ],
-            "farmerFriendlySummary": "Gönderdiğiniz fotoğraf analiz için yeterli değil. Hangi bitki olduğu, yapraklardaki leke veya bozulmanın yakın çekimi, tüm bitkinin görünümü, toprağın fotoğrafı ve son sulama/gübre bilgilerini gönderirseniz kesin teşhis ve uygulanacak tedaviyi öneririm. Bu aşamada en acil öneri: etkilenen bitkileri izole edin, aletleri dezenfekte edin ve teşhis için net fotoğraflar ile yönetim geçmişi paylaşın.",
-            "tokenUsage": {},
-            "requestMetadata": {},
-            "sponsorshipMetadata": {
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canReply": true,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "accessibleFields": {
-                    "canViewBasicInfo": false,
-                    "canViewHealthScore": false,
-                    "canViewImages": false,
-                    "canViewDetailedHealth": false,
-                    "canViewDiseases": false,
-                    "canViewNutrients": false,
-                    "canViewRecommendations": false,
-                    "canViewLocation": false,
-                    "canViewFarmerContact": false,
-                    "canViewFieldData": false,
-                    "canViewProcessingData": false
-                }
-            },
-            "success": true,
-            "message": "Success",
-            "error": false
-        },
-        "tierMetadata": {
-            "tierName": "L",
-            "accessPercentage": 100,
-            "canMessage": true,
-            "canReply": true,
-            "canViewLogo": true,
-            "sponsorInfo": {
-                "sponsorId": 159,
-                "companyName": "dort tarim"
-            },
-            "accessibleFields": {
-                "canViewBasicInfo": true,
-                "canViewHealthScore": true,
-                "canViewImages": true,
-                "canViewDetailedHealth": true,
-                "canViewDiseases": true,
-                "canViewNutrients": true,
-                "canViewRecommendations": true,
-                "canViewLocation": true,
-                "canViewFarmerContact": false,
-                "canViewFieldData": true,
-                "canViewProcessingData": true
-            }
+            "confidence": 30
+          }
+        ],
+        "damagePattern": "noktasal başlangıçlı kahverengi/bronze lezyonlar, etraflarında sararma, bazı yaprakta genel solgunluk",
+        "affectedAreaPercentage": 10,
+        "spreadRisk": "orta",
+        "primaryIssue": "yaprak lekesi (muhtemel fungal) ve eşlik eden emici böcek baskısı"
+      },
+      "environmentalStress": {
+        "waterStatus": "hafif kurak",
+        "temperatureStress": "yok",
+        "lightStress": "yok",
+        "physicalDamage": "yok",
+        "chemicalDamage": "şüpheli - herbisit veya tuz yanığı ihtimali düşük ama dışlanmıyor",
+        "primaryStressor": "yaprak patojeni (+ hafif su stresi ve/veya düşük azot)"
+      },
+      "summary": {
+        "overallHealthScore": 6,
+        "primaryConcern": "yaprak lekesi (muhtemel fungal) ve buna eşlik eden emici böcek baskısı",
+        "secondaryConcerns": [
+          "hafif azot eksikliği",
+          "yetersiz sulama yönetimi"
+        ],
+        "criticalIssuesCount": 0,
+        "confidenceLevel": 50,
+        "prognosis": "iyi",
+        "estimatedYieldImpact": "orta"
+      },
+      "crossFactorInsights": [
+        {
+          "insight": "Hafif azot yetersizliği bitki dayanıklılığını azaltarak yaprak lekesi etmenlerinin (fungal) gelişimini kolaylaştırmış olabilir; aynı zamanda yaprak bitleri/akarlardan kaynaklanan hasar lezyon bölgelerinin patojen girişini artırır.",
+          "confidence": 0.65,
+          "affectedAspects": [
+            "nutrient_status",
+            "pest_disease"
+          ],
+          "impactLevel": "orta"
         }
+      ],
+      "recommendations": {
+        "immediate": [
+          {
+            "action": "etkilenen yaprakları temizle",
+            "details": "Gözle görülen ağır lezyonlu yaprakları bitkiden uzaklaştırın ve tarladan çıkarın; sulama sırasında suyun yaprak yüzeyine direkt temasını azaltın",
+            "timeline": "24 saat içinde",
+            "priority": "kritik"
+          },
+          {
+            "action": "alt yaprak ve yaprak altlarını kontrol et",
+            "details": "Yaprak altlarında bit, yumurta veya ağ (örümcek akar) var mı kontrol edin; fotoğraf veya yakından numune alın",
+            "timeline": "24-72 saat",
+            "priority": "yüksek"
+          },
+          {
+            "action": "hafif insektisit/temizleyici uygulama (organik seçenek)",
+            "details": "Eğer yaprak bitleri veya akarı doğrularsanız, sabunlu su veya neem yağı spreyi ile hedef uygulama yapın (önce küçük alanda test edin)",
+            "timeline": "48 saat içinde",
+            "priority": "yüksek"
+          }
+        ],
+        "shortTerm": [
+          {
+            "action": "fungus kontrolü",
+            "details": "Eğer fungal lezyonlar ilerliyorsa, onaylı bir fungisit (ör. bakır bazlı veya spesifik Alternaria karşısı ürünler) kullanın; organik tercih ediliyorsa bakır veya kükürt bazlı ürünler uygulanabilir",
+            "timeline": "3-7 gün",
+            "priority": "yüksek"
+          },
+          {
+            "action": "toprak ve yaprak analizi",
+            "details": "Toprak pH, tuzluluk ve temel besin analizleri yaptırın; eksikse dengeli azot-potasyum takviyesi verin",
+            "timeline": "7-14 gün",
+            "priority": "yüksek"
+          },
+          {
+            "action": "sulama yönetimi",
+            "details": "Düzenli, derin fakat yüzey sulamadan kaçınan sulama ile toprak nemini koruyun; sabah erken sulama yapın",
+            "timeline": "hafta içinde uygulama",
+            "priority": "orta"
+          }
+        ],
+        "preventive": [
+          {
+            "action": "dönüşümlü ekim ve temizlik",
+            "details": "Aynı alanda sürekli havuç ekiminden kaçının; bitki kalıntılarını imha edin",
+            "timeline": "sürekli",
+            "priority": "orta"
+          },
+          {
+            "action": "sağlıklı fideler kullan",
+            "details": "Enfekte alanlardan fide almayın; sertifikalı tohum/ fide kullanımı",
+            "timeline": "sürekli",
+            "priority": "düşük"
+          },
+          {
+            "action": "doğal düşmanları teşvik et",
+            "details": "Yaprak bitlerini baskılayacak yırtıcı böcek habitatını destekleyin (çiçek şeritleri, polinatör bitkiler)",
+            "timeline": "sürekli",
+            "priority": "düşük"
+          }
+        ],
+        "monitoring": [
+          {
+            "parameter": "enfekte yaprak yüzdesi",
+            "frequency": "haftada 1",
+            "threshold": "toplam yaprakların %10'undan fazlası etkilendiyse müdahale"
+          },
+          {
+            "parameter": "yaprak altı ve üstündeki canlı böcek yoğunluğu",
+            "frequency": "haftada 1",
+            "threshold": "yaprak başına ort. 5+ yaprak biti veya ağ gözlemi -> kimyasal/sert kontrol düşün"
+          },
+          {
+            "parameter": "toprak nemi",
+            "frequency": "haftada 2",
+            "threshold": "yüzey 0-5 cm kuru ise sulama"
+          }
+        ],
+        "resourceEstimation": {
+          "waterRequiredLiters": "5-10 litre/m²/hafta",
+          "fertilizerCostEstimateUsd": "20-80",
+          "laborHoursEstimate": "2-8 saat (hasat alanı ve enfeksiyon yayılımına bağlı)"
+        },
+        "localizedRecommendations": {
+          "region": "kepez",
+          "preferredPractices": [
+            "erken sabah sulama (yaprak kuruyacak şekilde)",
+            "dönüşümlü ekim ve bitki artıklarını uzaklaştırma",
+            "organik pest yönetimi (neem, sabunlar, faydalı böcek teşviki)"
+          ],
+          "restrictedMethods": [
+            "izin verilmeyen veya uygunsuz pestisitlerin rastgele kullanımı",
+            "toprak ve bitki testleri yapılmadan yüksek doz gübre uygulamaları"
+          ]
+        }
+      },
+      "imageInfo": {
+        "imageUrl": "https://iili.io/fCEUOnn.jpg",
+        "format": "url",
+        "totalImages": 3,
+        "imagesProvided": [
+          "main",
+          "leaf_top",
+          "leaf_bottom"
+        ],
+        "hasLeafTop": true,
+        "hasLeafBottom": true,
+        "leafTopImageUrl": "https://iili.io/fCEUeGs.jpg",
+        "leafBottomImageUrl": "https://iili.io/fCEUSa4.jpg"
+      },
+      "processingInfo": {
+        "processingTimestamp": "0001-01-01T00:00:00",
+        "processingTimeMs": 0,
+        "parseSuccess": false,
+        "retryCount": 0
+      },
+      "riskAssessment": {
+        "yieldLossProbability": "orta",
+        "timelineToWorsen": "hafta",
+        "spreadPotential": "lokal"
+      },
+      "confidenceNotes": [
+        {
+          "aspect": "nutrient_status",
+          "confidence": 0.3,
+          "reason": "Besin değerlendirmesi yalnızca yaprak görünüme dayalıdır; toprak ve yaprak analizi yapılmadı."
+        },
+        {
+          "aspect": "pest_disease",
+          "confidence": 0.5,
+          "reason": "Gözlemler fotoğraflara dayalı olmasına karşın laboratuvar onayı veya yakın çekim örneklemesi yok."
+        },
+        {
+          "aspect": "environmental_stress",
+          "confidence": 0.4,
+          "reason": "Sulama, sıcaklık ve nem verileri sağlanmadı; bu nedenle su stresi tahmini sınırlı."
+        }
+      ],
+      "farmerFriendlySummary": "Bitkiniz havuçtır. Yapraklarda küçük kahverengi lekeler, biraz sararma ve yaprak uçlarında kuruma var. Bu genellikle mantar kaynaklı yaprak lekesi ile (Alternaria gibi) uyumludur ve bazen yaprak bitleri/örümcek akarları gibi emici böcekler eşlik eder. Önce hastalıklı yaprakları temizleyin, yaprak altlarını kontrol edin; eğer böcek görürseniz sabunlu su veya neem ile müdahale edin. Eğer lezyonlar yayılıyorsa onaylı bir fungisit (veya organik seçenek olarak bakır/kükürt) uygulanabilir. Toprak ve yaprak analizi yaptırın, sulamayı düzenleyin ve enfeksiyon eşiği aşıldıysa profesyonel destek alın. Daha kesin teşhis için yapraktan yakın çekim fotoğraf, kök/gövde fotoğrafı, son sulama ve gübreleme bilgileri ile mümkünse bir yaprak örneği gönderin.",
+      "tokenUsage": {},
+      "requestMetadata": {},
+      "success": true,
+      "message": "Success",
+      "error": false
     },
-    "success": true
+    "tierMetadata": {
+      "tierName": "XL",
+      "accessPercentage": 100,
+      "canMessage": true,
+      "canReply": true,
+      "canViewLogo": true,
+      "sponsorInfo": {
+        "sponsorId": 159,
+        "companyName": "dort tarim",
+        "logoUrl": "https://iili.io/fdkLaZF.jpg"
+      },
+      "accessibleFields": {
+        "canViewBasicInfo": true,
+        "canViewHealthScore": true,
+        "canViewImages": true,
+        "canViewDetailedHealth": true,
+        "canViewDiseases": true,
+        "canViewNutrients": true,
+        "canViewRecommendations": true,
+        "canViewLocation": true,
+        "canViewFarmerContact": true,
+        "canViewFieldData": true,
+        "canViewProcessingData": true
+      }
+    }
+  },
+  "success": true
 }

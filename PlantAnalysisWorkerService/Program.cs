@@ -226,7 +226,29 @@ builder.Services.AddScoped<DataAccess.Abstract.ISponsorProfileRepository, DataAc
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
 // Use RedisCacheManager to match API's cache provider for cross-service cache invalidation
 builder.Services.AddSingleton<Core.CrossCuttingConcerns.Caching.ICacheManager, Core.CrossCuttingConcerns.Caching.Redis.RedisCacheManager>();
-builder.Services.AddScoped<Business.Services.FileStorage.IFileStorageService, Business.Services.FileStorage.FreeImageHostStorageService>();
+// File Storage Service - Configuration-driven registration (matches WebAPI pattern)
+builder.Services.AddScoped<Business.Services.FileStorage.LocalFileStorageService>();
+builder.Services.AddScoped<Business.Services.FileStorage.FreeImageHostStorageService>();
+builder.Services.AddScoped<Business.Services.FileStorage.ImgBBStorageService>();
+builder.Services.AddScoped<Business.Services.FileStorage.CloudflareR2StorageService>();
+
+builder.Services.AddScoped<Business.Services.FileStorage.IFileStorageService>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var logger = sp.GetRequiredService<ILogger<Business.Services.FileStorage.CloudflareR2StorageService>>();
+    var provider = config["FileStorage:Provider"] ?? "FreeImageHost";
+
+    Console.WriteLine($"[Worker FileStorage DI] Selected provider: {provider}");
+
+    return provider switch
+    {
+        "CloudflareR2" => sp.GetRequiredService<Business.Services.FileStorage.CloudflareR2StorageService>(),
+        "FreeImageHost" => sp.GetRequiredService<Business.Services.FileStorage.FreeImageHostStorageService>(),
+        "ImgBB" => sp.GetRequiredService<Business.Services.FileStorage.ImgBBStorageService>(),
+        "Local" => sp.GetRequiredService<Business.Services.FileStorage.LocalFileStorageService>(),
+        _ => sp.GetRequiredService<Business.Services.FileStorage.FreeImageHostStorageService>() // Default fallback
+    };
+});
 builder.Services.AddScoped<Business.Services.ImageProcessing.IImageProcessingService, Business.Services.ImageProcessing.ImageProcessingService>();
 builder.Services.AddScoped<Business.Services.PlantAnalysis.IPlantAnalysisService, Business.Services.PlantAnalysis.PlantAnalysisService>();
 builder.Services.AddScoped<Business.Services.Referral.IReferralTrackingService, Business.Services.Referral.ReferralTrackingService>();
