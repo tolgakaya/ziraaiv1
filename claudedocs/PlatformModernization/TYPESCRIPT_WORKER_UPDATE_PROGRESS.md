@@ -307,11 +307,18 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 **Mitigation**: Using ISO 8601 format (`new Date().toISOString()`) for all datetime fields
 
 ### Risk 4: OpenAI API Parameter Changes (RESOLVED)
-**Impact**: OpenAI API returns 400 error - "Unsupported parameter: 'max_tokens'"
-**Root Cause**: OpenAI deprecated `max_tokens` in favor of `max_completion_tokens` for newer models
-**Solution**: Updated `openai.provider.ts` to use `max_completion_tokens: 2000`
+**Impact**: OpenAI API returns 400 errors for incompatible parameters
+**Root Causes**:
+1. OpenAI deprecated `max_tokens` in favor of `max_completion_tokens` for newer models
+2. gpt-5-mini model does NOT support `temperature` parameter (only default value 1 allowed)
+**Solutions**:
+1. Updated `openai.provider.ts` to use `max_completion_tokens: 2000` (commit a2d8b72)
+2. Removed `temperature: 0.7` parameter entirely to match N8N workflow (commit d4e9ef1)
 **Date Fixed**: 2025-12-01
-**Evidence**: Production logs showed: `"400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."`
+**Evidence**:
+- First error: `"400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."`
+- Second error: `"400 Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."`
+- N8N workflow configuration confirmed no temperature parameter for gpt-5-mini
 
 ## Success Criteria
 
@@ -334,6 +341,8 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 5. **Documentation during development** - Real-time documentation prevented information loss across conversation limits
 6. **Monitor production logs immediately** - Worker logs revealed OpenAI API parameter incompatibility within first request
 7. **OpenAI API breaking changes** - Check release notes: `max_tokens` → `max_completion_tokens` for newer models (gpt-4o-mini, etc.)
+8. **Model-specific parameter constraints** - gpt-5-mini has stricter requirements than other OpenAI models (no temperature customization)
+9. **Replicate N8N workflows exactly** - Production workflows serve as authoritative reference for API parameters and configuration
 
 ## References
 
