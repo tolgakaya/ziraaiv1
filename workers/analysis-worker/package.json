@@ -1,0 +1,40 @@
+{
+  "name": "ziraai-analysis-worker",
+  "version": "1.0.0",
+  "description": "TypeScript worker for AI-powered plant analysis",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "ziraai",
+    "ai",
+    "plant-analysis",
+    "worker"
+  ],
+  "author": "ZiraAI Team",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "@google/generative-ai": "^0.24.1",
+    "amqplib": "^0.10.3",
+    "dotenv": "^16.3.1",
+    "ioredis": "^5.3.2",
+    "openai": "^4.20.1",
+    "pino": "^8.16.2",
+    "pino-pretty": "^10.2.3"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.4",
+    "@types/node": "^20.10.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
