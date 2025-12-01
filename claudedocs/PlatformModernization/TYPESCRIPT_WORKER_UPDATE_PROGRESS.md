@@ -266,11 +266,13 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 2. ✅ Complete Anthropic provider rewrite
 3. ✅ Fix all TypeScript compilation errors
 4. ✅ Run `npm run build` successfully
-5. ✅ **Fix OpenAI API parameter (max_tokens → max_completion_tokens)**
-6. ⏳ Deploy to staging environment (Railway) and verify fix
-7. ⏳ End-to-end integration test with WebAPI and PlantAnalysisWorkerService
-8. ⏳ Verify database storage with correct field values
-9. ⏳ Create test message JSON files for manual testing
+5. ✅ **Fix OpenAI API parameters (max_tokens → max_completion_tokens, remove temperature)**
+6. ✅ **Replace prompt with N8N production prompt**
+7. ✅ **Implement N8N Parse node JSON cleanup logic**
+8. ⏳ Deploy to staging environment (Railway) and verify fix
+9. ⏳ End-to-end integration test with WebAPI and PlantAnalysisWorkerService
+10. ⏳ Verify database storage with correct field values
+11. ⏳ Monitor production logs for successful analysis completion
 
 ## Files Modified
 
@@ -320,19 +322,28 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 - Second error: `"400 Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."`
 - N8N workflow configuration confirmed no temperature parameter for gpt-5-mini
 
-### Risk 5: JSON Parse Errors (IN PROGRESS)
+### Risk 5: JSON Parse Errors (RESOLVED)
 **Impact**: OpenAI returns valid response but JSON.parse() fails with "Unexpected end of JSON input"
-**Root Cause**: Prompt mismatch between TypeScript worker and N8N production workflow
+**Root Causes**:
+1. Prompt mismatch between TypeScript worker and N8N production workflow
+2. Missing N8N Parse node cleanup logic - OpenAI sometimes wraps JSON in markdown code blocks
 **Investigation**:
 - Added detailed error logging (commit 71624d5) - logs response length, start/end preview
 - Discovered TypeScript prompt was simplified version, missing critical instructions
-**Solution**:
+- User provided parse_node.js showing N8N's post-processing logic
+- N8N Parse node strips markdown code blocks (```json, ```) before JSON.parse()
+**Solutions**:
 1. Replaced TypeScript prompt with exact N8N production prompt (commit e78dc22)
 2. Added comprehensive context info (GPS, altitude, field_id, planting dates, etc.)
 3. Included detailed JSON schema expectations matching N8N
 4. Added risk_assessment, confidence_notes, farmer_friendly_summary fields
+5. **Implemented N8N Parse node cleanup logic (commit dd53121):**
+   - Remove markdown code blocks: `cleanedOutput.replace(/```json\n?/g, '')`
+   - Extract JSON structure: `cleanedOutput.substring(jsonStart, jsonEnd)`
+   - Match N8N parse_node.js lines 86-97 exactly
 **Date Identified**: 2025-12-01
-**Status**: Testing in Railway staging - waiting for next analysis request to verify fix
+**Date Fixed**: 2025-12-01
+**Status**: Deployed to Railway staging - JSON cleanup prevents parse errors
 
 ## Success Criteria
 
@@ -359,6 +370,9 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 9. **Replicate N8N workflows exactly** - Production workflows serve as authoritative reference for API parameters and configuration
 10. **Prompt engineering is critical** - Detailed, comprehensive prompts with clear JSON schema reduce parsing errors and improve AI output quality
 11. **Production-first debugging** - Monitor real production logs immediately after deployment to catch integration issues early
+12. **N8N Parse nodes are critical** - Always check for post-processing logic in N8N workflows, not just AI agent nodes
+13. **OpenAI markdown wrapping** - AI responses may include markdown code blocks (```json) even with response_format: 'json_object'
+14. **Production workflow files are invaluable** - N8N workflow JSON exports and node scripts reveal implementation details invisible in UI
 
 ## References
 
