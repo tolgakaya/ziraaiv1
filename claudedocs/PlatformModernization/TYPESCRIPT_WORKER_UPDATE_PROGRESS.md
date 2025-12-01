@@ -266,11 +266,11 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 2. ✅ Complete Anthropic provider rewrite
 3. ✅ Fix all TypeScript compilation errors
 4. ✅ Run `npm run build` successfully
-5. ⏳ Create test message JSON files for manual testing
-6. ⏳ Update Docker configuration for worker deployment
-7. ⏳ Deploy to staging environment (Railway)
-8. ⏳ End-to-end integration test with WebAPI and PlantAnalysisWorkerService
-9. ⏳ Verify database storage with correct field values
+5. ✅ **Fix OpenAI API parameter (max_tokens → max_completion_tokens)**
+6. ⏳ Deploy to staging environment (Railway) and verify fix
+7. ⏳ End-to-end integration test with WebAPI and PlantAnalysisWorkerService
+8. ⏳ Verify database storage with correct field values
+9. ⏳ Create test message JSON files for manual testing
 
 ## Files Modified
 
@@ -306,6 +306,13 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 **Impact**: C# DateTime deserialization fails
 **Mitigation**: Using ISO 8601 format (`new Date().toISOString()`) for all datetime fields
 
+### Risk 4: OpenAI API Parameter Changes (RESOLVED)
+**Impact**: OpenAI API returns 400 error - "Unsupported parameter: 'max_tokens'"
+**Root Cause**: OpenAI deprecated `max_tokens` in favor of `max_completion_tokens` for newer models
+**Solution**: Updated `openai.provider.ts` to use `max_completion_tokens: 2000`
+**Date Fixed**: 2025-12-01
+**Evidence**: Production logs showed: `"400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."`
+
 ## Success Criteria
 
 - ✅ All TypeScript compilation errors resolved
@@ -325,6 +332,8 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 3. **Database mappings reveal field importance** - PlantAnalysisJobService code shows which fields are actually used
 4. **TypeScript strict null checks** - Helped catch missing required fields early
 5. **Documentation during development** - Real-time documentation prevented information loss across conversation limits
+6. **Monitor production logs immediately** - Worker logs revealed OpenAI API parameter incompatibility within first request
+7. **OpenAI API breaking changes** - Check release notes: `max_tokens` → `max_completion_tokens` for newer models (gpt-4o-mini, etc.)
 
 ## References
 
