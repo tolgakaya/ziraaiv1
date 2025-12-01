@@ -308,19 +308,22 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 **Impact**: C# DateTime deserialization fails
 **Mitigation**: Using ISO 8601 format (`new Date().toISOString()`) for all datetime fields
 
-### Risk 4: OpenAI API Parameter Changes (RESOLVED)
+### Risk 4: OpenAI API Parameter Changes (PARTIALLY RESOLVED - LATER FOUND INCORRECT)
 **Impact**: OpenAI API returns 400 errors for incompatible parameters
-**Root Causes**:
+**Initial Analysis (INCORRECT)**:
 1. OpenAI deprecated `max_tokens` in favor of `max_completion_tokens` for newer models
 2. gpt-5-mini model does NOT support `temperature` parameter (only default value 1 allowed)
-**Solutions**:
-1. Updated `openai.provider.ts` to use `max_completion_tokens: 2000` (commit a2d8b72)
-2. Removed `temperature: 0.7` parameter entirely to match N8N workflow (commit d4e9ef1)
-**Date Fixed**: 2025-12-01
-**Evidence**:
+**Initial Solutions (commit a2d8b72, commit d4e9ef1)**:
+1. Updated `openai.provider.ts` to use `max_completion_tokens: 2000`
+2. Removed `temperature: 0.7` parameter entirely
+**Evidence That Seemed Correct**:
 - First error: `"400 Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."`
 - Second error: `"400 Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."`
-- N8N workflow configuration confirmed no temperature parameter for gpt-5-mini
+**LATER DISCOVERY (Risk 6 analysis)**:
+- N8N production code DOES use `max_tokens: 5000` (not max_completion_tokens)
+- N8N production code DOES use `temperature: 0.3` (not 0.7, not removed)
+- The 400 errors were likely due to using wrong values, not wrong parameters
+**Correct Solution**: See Risk 6 for final working configuration matching N8N exactly
 
 ### Risk 5: JSON Parse Errors (RESOLVED)
 **Impact**: OpenAI returns valid response but JSON.parse() fails with "Unexpected end of JSON input"
@@ -345,6 +348,59 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 **Date Fixed**: 2025-12-01
 **Status**: Deployed to Railway staging - JSON cleanup prevents parse errors
 
+### Risk 6: Empty OpenAI Response - "OpenAI returned empty response" (RESOLVED)
+**Impact**: OpenAI API returns completely empty response (empty string in message.content), causing "OpenAI returned empty response" error
+**Root Causes** (discovered through N8N reference implementation analysis):
+1. Using `max_completion_tokens` instead of `max_tokens` → N8N uses `max_tokens: 5000`
+2. Missing `temperature: 0.3` parameter → N8N DOES use temperature for consistent results
+3. Missing `response_format: { type: 'json_object' }` → N8N DOES use JSON object format
+4. Incorrect message structure → N8N uses single 'user' role with text + images array
+**Investigation Timeline**:
+- Commit 58b705e: Fixed model from gpt-4o-mini → gpt-5-mini (still failed)
+- Commit d4e70b7: Removed response_format based on wrong assumption (still failed)
+- User requested examination of N8N reference files: `openai-analysis-provider.ts` and `analysis-worker.ts`
+- Analyzed N8N production implementation (lines 341-355 in openai-analysis-provider.ts)
+- Found critical differences in ALL OpenAI API parameters
+**Solution (Commit 334dac6)**:
+```typescript
+// BEFORE (WRONG):
+const response = await this.client.chat.completions.create({
+  model: 'gpt-5-mini',
+  messages: [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: imageContent }
+  ],
+  max_completion_tokens: 2000,  // ❌ WRONG parameter
+  // ❌ MISSING: temperature
+  // ❌ MISSING: response_format
+});
+
+// AFTER (CORRECT - matches N8N):
+const response = await this.client.chat.completions.create({
+  model: 'gpt-5-mini',
+  messages: [
+    {
+      role: 'user',  // ✅ Single user role
+      content: [
+        { type: 'text', text: systemPrompt },
+        ...imageContent  // ✅ Images in same message
+      ]
+    }
+  ],
+  max_tokens: 5000,  // ✅ N8N uses max_tokens (not max_completion_tokens)
+  temperature: 0.3,  // ✅ N8N uses 0.3 for consistent results
+  response_format: { type: 'json_object' }  // ✅ N8N uses JSON object format
+});
+```
+**Previous Misconceptions (ALL WRONG)**:
+- ❌ Thought gpt-5-mini didn't support temperature → N8N uses 0.3
+- ❌ Thought N8N LangChain node didn't use response_format → N8N uses json_object
+- ❌ Thought max_completion_tokens was correct for newer models → N8N uses max_tokens
+- ❌ Thought separate system/user roles was correct → N8N uses single user role
+**Date Identified**: 2025-12-01
+**Date Fixed**: 2025-12-01 (commit 334dac6)
+**Status**: ✅ Deployed to Railway staging - awaiting production verification
+
 ## Success Criteria
 
 - ✅ All TypeScript compilation errors resolved
@@ -365,14 +421,18 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 4. **TypeScript strict null checks** - Helped catch missing required fields early
 5. **Documentation during development** - Real-time documentation prevented information loss across conversation limits
 6. **Monitor production logs immediately** - Worker logs revealed OpenAI API parameter incompatibility within first request
-7. **OpenAI API breaking changes** - Check release notes: `max_tokens` → `max_completion_tokens` for newer models (gpt-4o-mini, etc.)
-8. **Model-specific parameter constraints** - gpt-5-mini has stricter requirements than other OpenAI models (no temperature customization)
-9. **Replicate N8N workflows exactly** - Production workflows serve as authoritative reference for API parameters and configuration
-10. **Prompt engineering is critical** - Detailed, comprehensive prompts with clear JSON schema reduce parsing errors and improve AI output quality
-11. **Production-first debugging** - Monitor real production logs immediately after deployment to catch integration issues early
-12. **N8N Parse nodes are critical** - Always check for post-processing logic in N8N workflows, not just AI agent nodes
-13. **OpenAI markdown wrapping** - AI responses may include markdown code blocks (```json) even with response_format: 'json_object'
-14. **Production workflow files are invaluable** - N8N workflow JSON exports and node scripts reveal implementation details invisible in UI
+7. **⚠️ OpenAI API documentation can be misleading** - Web search results suggested `max_completion_tokens` was correct for newer models, but N8N production code uses `max_tokens: 5000` successfully
+8. **⚠️ Model-specific parameter assumptions are dangerous** - Initial analysis suggested gpt-5-mini didn't support temperature, but N8N production uses `temperature: 0.3` successfully
+9. **✅ ALWAYS examine reference implementations FIRST** - Instead of relying on web search or API docs, look at actual working production code (N8N openai-analysis-provider.ts)
+10. **Replicate production workflows EXACTLY** - Every parameter matters: max_tokens vs max_completion_tokens, temperature value, response_format, message structure
+11. **Prompt engineering is critical** - Detailed, comprehensive prompts with clear JSON schema reduce parsing errors and improve AI output quality
+12. **Production-first debugging** - Monitor real production logs immediately after deployment to catch integration issues early
+13. **N8N Parse nodes are critical** - Always check for post-processing logic in N8N workflows, not just AI agent nodes
+14. **OpenAI markdown wrapping** - AI responses may include markdown code blocks (```json) even with response_format: 'json_object'
+15. **Production workflow files are invaluable** - N8N workflow JSON exports and node scripts reveal implementation details invisible in UI
+16. **⚠️ Don't trust error messages blindly** - OpenAI 400 error about max_tokens being unsupported was likely due to OTHER issues, not the parameter itself
+17. **Reference implementations > Documentation** - When integrating with existing systems, working production code is the source of truth, not API documentation
+18. **Message structure matters** - OpenAI accepts both (system + user) and (single user with array), but N8N uses single user role with text + images array
 
 ## References
 
