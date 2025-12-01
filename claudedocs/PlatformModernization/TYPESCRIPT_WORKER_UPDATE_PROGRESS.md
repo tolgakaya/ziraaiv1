@@ -320,6 +320,20 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 - Second error: `"400 Unsupported value: 'temperature' does not support 0.7 with this model. Only the default (1) value is supported."`
 - N8N workflow configuration confirmed no temperature parameter for gpt-5-mini
 
+### Risk 5: JSON Parse Errors (IN PROGRESS)
+**Impact**: OpenAI returns valid response but JSON.parse() fails with "Unexpected end of JSON input"
+**Root Cause**: Prompt mismatch between TypeScript worker and N8N production workflow
+**Investigation**:
+- Added detailed error logging (commit 71624d5) - logs response length, start/end preview
+- Discovered TypeScript prompt was simplified version, missing critical instructions
+**Solution**:
+1. Replaced TypeScript prompt with exact N8N production prompt (commit e78dc22)
+2. Added comprehensive context info (GPS, altitude, field_id, planting dates, etc.)
+3. Included detailed JSON schema expectations matching N8N
+4. Added risk_assessment, confidence_notes, farmer_friendly_summary fields
+**Date Identified**: 2025-12-01
+**Status**: Testing in Railway staging - waiting for next analysis request to verify fix
+
 ## Success Criteria
 
 - ✅ All TypeScript compilation errors resolved
@@ -343,6 +357,8 @@ Since TypeScript worker is NEW (replacing N8N), we don't need to maintain backwa
 7. **OpenAI API breaking changes** - Check release notes: `max_tokens` → `max_completion_tokens` for newer models (gpt-4o-mini, etc.)
 8. **Model-specific parameter constraints** - gpt-5-mini has stricter requirements than other OpenAI models (no temperature customization)
 9. **Replicate N8N workflows exactly** - Production workflows serve as authoritative reference for API parameters and configuration
+10. **Prompt engineering is critical** - Detailed, comprehensive prompts with clear JSON schema reduce parsing errors and improve AI output quality
+11. **Production-first debugging** - Monitor real production logs immediately after deployment to catch integration issues early
 
 ## References
 
