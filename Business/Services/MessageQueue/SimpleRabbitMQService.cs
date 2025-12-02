@@ -57,8 +57,17 @@ namespace Business.Services.MessageQueue
                 await EnsureConnectionAsync();
                 Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Connection established");
 
-                // Declare queue if not exists
-                await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+                // Declare queue if not exists with TTL to match existing queue configuration
+                var queueArguments = new Dictionary<string, object>
+                {
+                    { "x-message-ttl", 86400000 } // 24 hours TTL (matches Dispatcher configuration)
+                };
+                await _channel.QueueDeclareAsync(
+                    queue: queueName,
+                    durable: true,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: queueArguments);
                 Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue declared: {queueName}");
 
                 var json = JsonConvert.SerializeObject(message, Formatting.None);
