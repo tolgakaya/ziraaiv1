@@ -214,6 +214,8 @@ namespace Business.Services.PlantAnalysis
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[QueuePlantAnalysisAsync] EXCEPTION: {ex.Message}");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Stack Trace: {ex.StackTrace}");
                 throw new InvalidOperationException($"Failed to queue plant analysis: {ex.Message}", ex);
             }
         }

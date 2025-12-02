@@ -221,6 +221,8 @@ namespace Business.Services.PlantAnalysis
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] EXCEPTION: {ex.Message}");
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Stack Trace: {ex.StackTrace}");
                 throw new InvalidOperationException($"Failed to queue multi-image plant analysis: {ex.Message}", ex);
             }
         }
