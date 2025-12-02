@@ -366,6 +366,9 @@ namespace WebAPI.Controllers
         [Authorize(Roles = "Farmer,Admin")]
         public async Task<IActionResult> AnalyzeMultiAsync([FromBody] PlantAnalysisMultiImageRequestDto request)
         {
+            // CRITICAL DEBUG: Controller entry
+            Console.WriteLine($"[AnalyzeMultiAsync] === CONTROLLER ENTRY ===");
+
             try
             {
                 // Validate model
@@ -384,15 +387,21 @@ namespace WebAPI.Controllers
                 }
 
                 // Check if queue is healthy
+                Console.WriteLine($"[AnalyzeMultiAsync] Checking queue health...");
                 var isQueueHealthy = await _multiImageAsyncService.IsQueueHealthyAsync();
+                Console.WriteLine($"[AnalyzeMultiAsync] Queue healthy = {isQueueHealthy}");
+
                 if (!isQueueHealthy)
                 {
+                    Console.WriteLine($"[AnalyzeMultiAsync] QUEUE UNHEALTHY - Returning 503");
                     return StatusCode(StatusCodes.Status503ServiceUnavailable, new
                     {
                         success = false,
                         message = "Message queue service is currently unavailable. Please try again later."
                     });
                 }
+
+                Console.WriteLine($"[AnalyzeMultiAsync] Queue healthy, proceeding...");
 
                 // Get authenticated user ID
                 var userId = GetUserId();
@@ -456,7 +465,9 @@ namespace WebAPI.Controllers
                 request.SponsorshipCodeId = sponsorshipCodeId;
 
                 // Queue the multi-image analysis
+                Console.WriteLine($"[AnalyzeMultiAsync] Calling QueuePlantAnalysisAsync...");
                 var analysisId = await _multiImageAsyncService.QueuePlantAnalysisAsync(request);
+                Console.WriteLine($"[AnalyzeMultiAsync] QueuePlantAnalysisAsync returned: {analysisId}");
 
                 // Increment usage counter after successful queueing
                 await _subscriptionValidationService.IncrementUsageAsync(userId.Value);
