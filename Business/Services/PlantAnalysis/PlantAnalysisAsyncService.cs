@@ -64,14 +64,22 @@ namespace Business.Services.PlantAnalysis
 
         public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisRequestDto request)
         {
+            // CRITICAL DEBUG: Method entry
+            Console.WriteLine($"[QueuePlantAnalysisAsync] === METHOD ENTRY ===");
+            Console.WriteLine($"[QueuePlantAnalysisAsync] _useRawAnalysisQueue = {_useRawAnalysisQueue}");
+
             try
             {
                 // Generate unique IDs for tracking
                 var correlationId = Guid.NewGuid().ToString("N");
                 var analysisId = $"async_analysis_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{correlationId[..8]}";
 
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Generated AnalysisId = {analysisId}");
+
                 // Process image for AI (aggressive optimization for token reduction)
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Starting image processing...");
                 var processedImageDataUri = await ProcessImageForAIAsync(request.Image);
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Image processing complete");
 
                 // Use same approach as sync endpoint - direct upload without extra processing
                 var imageUrl = await _fileStorageService.UploadImageFromDataUriAsync(
@@ -136,8 +144,10 @@ namespace Business.Services.PlantAnalysis
                 };
 
                 // Save to database first
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Saving to database...");
                 _plantAnalysisRepository.Add(plantAnalysis);
                 await _plantAnalysisRepository.SaveChangesAsync();
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Database save complete");
 
                 // Get queue name based on feature flag
                 // NEW system: raw-analysis-queue → Dispatcher → Provider queues

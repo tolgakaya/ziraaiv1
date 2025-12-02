@@ -65,14 +65,22 @@ namespace Business.Services.PlantAnalysis
 
         public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisMultiImageRequestDto request)
         {
+            // CRITICAL DEBUG: Method entry
+            Console.WriteLine($"[QueueMultiImageAnalysisAsync] === METHOD ENTRY ===");
+            Console.WriteLine($"[QueueMultiImageAnalysisAsync] _useRawAnalysisQueue = {_useRawAnalysisQueue}");
+
             try
             {
                 // Generate unique IDs for tracking
                 var correlationId = Guid.NewGuid().ToString("N");
                 var analysisId = $"async_multi_analysis_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{correlationId[..8]}";
 
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Generated AnalysisId = {analysisId}");
+
                 // Process and upload all images
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Starting image processing...");
                 var imageUrls = await ProcessAndUploadAllImagesAsync(request, analysisId);
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Image processing complete");
 
                 // Create initial PlantAnalysis entity with all request data
                 var plantAnalysis = new Entities.Concrete.PlantAnalysis
@@ -134,8 +142,10 @@ namespace Business.Services.PlantAnalysis
                 };
 
                 // Save to database first
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Saving to database...");
                 _plantAnalysisRepository.Add(plantAnalysis);
                 await _plantAnalysisRepository.SaveChangesAsync();
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Database save complete");
 
                 // Get queue name based on feature flag
                 // NEW system: raw-analysis-queue → Dispatcher → Provider queues (unified queue for all requests)
