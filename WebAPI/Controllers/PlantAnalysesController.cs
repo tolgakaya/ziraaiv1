@@ -43,6 +43,14 @@ namespace WebAPI.Controllers
             _subscriptionValidationService = subscriptionValidationService;
             _referralTrackingService = referralTrackingService;
             _logger = logger;
+
+            // DEBUG: Log actual service types to verify DI registration
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("[CONTROLLER_CONSTRUCTOR] PlantAnalysesController initialized");
+            Console.WriteLine($"[CONTROLLER_CONSTRUCTOR] Single-image service type: {asyncAnalysisService.GetType().FullName}");
+            Console.WriteLine($"[CONTROLLER_CONSTRUCTOR] Multi-image service type: {multiImageAsyncService.GetType().FullName}");
+            Console.WriteLine("================================================================================");
+
             _logger.LogInformation("[CONTROLLER_CONSTRUCTOR] PlantAnalysesController initialized");
         }
 
