@@ -36,7 +36,8 @@
       "Bash(mkdir:*)",
       "Bash(cp:*)",
       "Bash(git remote add:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(in vhost '/': received none but current is the value '86400000' of type 'signedint'\"\n\nSolution:\nAdd x-message-ttl argument to all queue assertions in dispatcher.ts to match the \nexisting queue configuration:\n- raw-analysis-queue: TTL 24 hours\n- openai-analysis-queue: TTL 24 hours\n- gemini-analysis-queue: TTL 24 hours\n- anthropic-analysis-queue: TTL 24 hours\n- analysis-dlq: TTL 24 hours\n\nThis ensures compatibility with queues created by WebAPI and prevents \nPRECONDITION_FAILED errors during dispatcher startup.\n\nImpact:\n- Dispatcher can now connect to RabbitMQ successfully\n- No queue recreation or deletion required\n- Compatible with existing infrastructure\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": [],
