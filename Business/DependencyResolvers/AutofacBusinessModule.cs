@@ -464,7 +464,9 @@ namespace Business.DependencyResolvers
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
                 .Where(t => !t.IsAssignableTo<IFileStorageService>() // Exclude file storage services to prevent override
-                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>()) // Exclude SMS services to use configuration-driven registration
+                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>() // Exclude SMS services to use configuration-driven registration
+                         && !t.IsAssignableTo<IPlantAnalysisAsyncService>() // Exclude plant analysis async service to preserve explicit registration with feature flags
+                         && !t.IsAssignableTo<IPlantAnalysisMultiImageAsyncService>()) // Exclude multi-image async service to preserve explicit registration
                 .EnableInterfaceInterceptors(new ProxyGenerationOptions()
                 {
                     Selector = new AspectInterceptorSelector()
