@@ -50,12 +50,16 @@ namespace Business.Services.MessageQueue
 
         public async Task<bool> PublishAsync<T>(string queueName, T message, string correlationId = null, string routingKey = null) where T : class
         {
+            Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue={queueName}, CorrelationId={correlationId}");
+
             try
             {
                 await EnsureConnectionAsync();
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Connection established");
 
                 // Declare queue if not exists
                 await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue declared: {queueName}");
 
                 var json = JsonConvert.SerializeObject(message, Formatting.None);
                 var body = Encoding.UTF8.GetBytes(json);
@@ -77,10 +81,13 @@ namespace Business.Services.MessageQueue
                     basicProperties: properties,
                     body: body);
 
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Message published successfully to {queueName}");
                 return true;
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] EXCEPTION: {ex.Message}");
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Stack Trace: {ex.StackTrace}");
                 throw new InvalidOperationException($"Failed to publish message to queue '{queueName}': {ex.Message}", ex);
             }
         }
