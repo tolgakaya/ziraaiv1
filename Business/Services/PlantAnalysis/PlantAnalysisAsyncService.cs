@@ -55,6 +55,11 @@ namespace Business.Services.PlantAnalysis
 
             // Read feature flag from configuration (defaults to false for backward compatibility)
             _useRawAnalysisQueue = configuration.GetValue<bool>("PlantAnalysis:UseRawAnalysisQueue", false);
+
+            // CRITICAL DEBUG LOG: Verify feature flag is read correctly
+            Console.WriteLine($"[PlantAnalysisAsyncService] UseRawAnalysisQueue = {_useRawAnalysisQueue}");
+            Console.WriteLine($"[PlantAnalysisAsyncService] RawAnalysisRequest Queue = {_rabbitMQOptions.Queues.RawAnalysisRequest}");
+            Console.WriteLine($"[PlantAnalysisAsyncService] PlantAnalysisRequest Queue = {_rabbitMQOptions.Queues.PlantAnalysisRequest}");
         }
 
         public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisRequestDto request)
@@ -140,6 +145,11 @@ namespace Business.Services.PlantAnalysis
                 var queueName = _useRawAnalysisQueue
                     ? _rabbitMQOptions.Queues.RawAnalysisRequest  // NEW system
                     : _rabbitMQOptions.Queues.PlantAnalysisRequest; // OLD system (legacy)
+
+                // CRITICAL DEBUG LOG: Verify which queue is being used
+                Console.WriteLine($"[QueuePlantAnalysisAsync] _useRawAnalysisQueue = {_useRawAnalysisQueue}");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Selected Queue = {queueName}");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] AnalysisId = {analysisId}");
 
                 // Create async request payload for RabbitMQ
                 var asyncRequest = new PlantAnalysisAsyncRequestDto

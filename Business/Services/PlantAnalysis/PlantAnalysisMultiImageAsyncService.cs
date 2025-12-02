@@ -56,6 +56,11 @@ namespace Business.Services.PlantAnalysis
 
             // Read feature flag from configuration (defaults to false for backward compatibility)
             _useRawAnalysisQueue = configuration.GetValue<bool>("PlantAnalysis:UseRawAnalysisQueue", false);
+
+            // CRITICAL DEBUG LOG: Verify feature flag is read correctly
+            Console.WriteLine($"[PlantAnalysisMultiImageAsyncService] UseRawAnalysisQueue = {_useRawAnalysisQueue}");
+            Console.WriteLine($"[PlantAnalysisMultiImageAsyncService] RawAnalysisRequest Queue = {_rabbitMQOptions.Queues.RawAnalysisRequest}");
+            Console.WriteLine($"[PlantAnalysisMultiImageAsyncService] PlantAnalysisMultiImageRequest Queue = {_rabbitMQOptions.Queues.PlantAnalysisMultiImageRequest}");
         }
 
         public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisMultiImageRequestDto request)
@@ -138,6 +143,11 @@ namespace Business.Services.PlantAnalysis
                 var queueName = _useRawAnalysisQueue
                     ? _rabbitMQOptions.Queues.RawAnalysisRequest  // NEW system (unified)
                     : _rabbitMQOptions.Queues.PlantAnalysisMultiImageRequest; // OLD system (legacy)
+
+                // CRITICAL DEBUG LOG: Verify which queue is being used
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] _useRawAnalysisQueue = {_useRawAnalysisQueue}");
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Selected Queue = {queueName}");
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] AnalysisId = {analysisId}");
 
                 // Create async request payload for RabbitMQ
                 var asyncRequest = new PlantAnalysisMultiImageAsyncRequestDto
