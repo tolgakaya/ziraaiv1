@@ -57,9 +57,12 @@ namespace Business.Services.PlantAnalysis
             _useRawAnalysisQueue = configuration.GetValue<bool>("PlantAnalysis:UseRawAnalysisQueue", false);
 
             // CRITICAL DEBUG LOG: Verify feature flag is read correctly
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("[PlantAnalysisAsyncService CONSTRUCTOR] === SINGLE IMAGE SERVICE INITIALIZED ===");
             Console.WriteLine($"[PlantAnalysisAsyncService] UseRawAnalysisQueue = {_useRawAnalysisQueue}");
             Console.WriteLine($"[PlantAnalysisAsyncService] RawAnalysisRequest Queue = {_rabbitMQOptions.Queues.RawAnalysisRequest}");
             Console.WriteLine($"[PlantAnalysisAsyncService] PlantAnalysisRequest Queue = {_rabbitMQOptions.Queues.PlantAnalysisRequest}");
+            Console.WriteLine("================================================================================");
         }
 
         public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisRequestDto request)
@@ -157,9 +160,12 @@ namespace Business.Services.PlantAnalysis
                     : _rabbitMQOptions.Queues.PlantAnalysisRequest; // OLD system (legacy)
 
                 // CRITICAL DEBUG LOG: Verify which queue is being used
-                Console.WriteLine($"[QueuePlantAnalysisAsync] _useRawAnalysisQueue = {_useRawAnalysisQueue}");
-                Console.WriteLine($"[QueuePlantAnalysisAsync] Selected Queue = {queueName}");
+                Console.WriteLine("================================================================================ ");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] === QUEUE SELECTION ===");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Feature Flag (_useRawAnalysisQueue) = {_useRawAnalysisQueue}");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Selected Queue Name = {queueName}");
                 Console.WriteLine($"[QueuePlantAnalysisAsync] AnalysisId = {analysisId}");
+                Console.WriteLine("================================================================================");
 
                 // Create async request payload for RabbitMQ
                 var asyncRequest = new PlantAnalysisAsyncRequestDto
