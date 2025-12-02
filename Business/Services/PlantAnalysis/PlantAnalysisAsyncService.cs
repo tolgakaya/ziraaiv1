@@ -29,6 +29,9 @@ namespace Business.Services.PlantAnalysis
         private readonly IConfiguration _configuration;
         private readonly RabbitMQOptions _rabbitMQOptions;
 
+        // Feature flag: Switch between OLD system (direct to worker) and NEW system (via Dispatcher)
+        private readonly bool _useRawAnalysisQueue;
+
         public PlantAnalysisAsyncService(
             IMessageQueueService messageQueueService,
             IImageProcessingService imageProcessingService,
@@ -49,6 +52,9 @@ namespace Business.Services.PlantAnalysis
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _rabbitMQOptions = rabbitMQOptions.Value;
+
+            // Read feature flag from configuration (defaults to false for backward compatibility)
+            _useRawAnalysisQueue = configuration.GetValue<bool>("PlantAnalysis:UseRawAnalysisQueue", false);
         }
 
         public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisRequestDto request)
@@ -128,8 +134,12 @@ namespace Business.Services.PlantAnalysis
                 _plantAnalysisRepository.Add(plantAnalysis);
                 await _plantAnalysisRepository.SaveChangesAsync();
 
-                // Get queue name from appsettings
-                var queueName = _rabbitMQOptions.Queues.PlantAnalysisRequest;
+                // Get queue name based on feature flag
+                // NEW system: raw-analysis-queue → Dispatcher → Provider queues
+                // OLD system: plant-analysis-requests → Worker Pool (direct)
+                var queueName = _useRawAnalysisQueue
+                    ? _rabbitMQOptions.Queues.RawAnalysisRequest  // NEW system
+                    : _rabbitMQOptions.Queues.PlantAnalysisRequest; // OLD system (legacy)
 
                 // Create async request payload for RabbitMQ
                 var asyncRequest = new PlantAnalysisAsyncRequestDto
