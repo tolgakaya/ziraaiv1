@@ -202,10 +202,18 @@ ANTHROPIC_RATE_LIMIT=400
 ```
 
 ### Worker (.env)
-Worker already has Redis configuration, just needs to ensure:
+Worker already has Redis configuration. Key settings:
 ```bash
+# Redis Configuration
+REDIS_URL=redis://localhost:6379
 REDIS_KEY_PREFIX=ziraai:worker:ratelimit:
+REDIS_TTL=120
+
+# Rate Limiting (Single provider per worker)
+RATE_LIMIT=350  # Requests per minute for THIS worker's provider
 ```
+
+**Note**: Worker uses single `RATE_LIMIT` because each worker instance handles ONE provider (FIXED strategy). Dispatcher uses provider-specific limits (`GEMINI_RATE_LIMIT`, etc.) because it routes to multiple providers.
 
 ## Technical Benefits
 
@@ -361,5 +369,7 @@ cd workers/analysis-worker && npm run dev
 
 ## Status Log
 
-- **2025-12-03**: Implementation complete, builds verified
-- **Next Steps**: Manual testing with local RabbitMQ + Redis setup
+- **2025-12-03 10:00**: Implementation complete, builds verified
+- **2025-12-03 12:00**: Dispatcher rate limiting verified working in Railway staging
+- **2025-12-03 13:00**: Fixed worker rate limiter check-then-write bug, deployed to Railway
+- **Status**: ✅ Both tiers deployed and operational
