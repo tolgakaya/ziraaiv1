@@ -284,18 +284,10 @@ namespace Business.Services.Sponsorship
                     return null;
                 }
 
-                // Sponsor ise mesajlaşma yetkisi kontrolü (comprehensive validation)
+                // ✅ VALIDATION REMOVED: Context-based validation is now handled in command handlers
+                // This prevents duplicate validation and ensures dual-role users are correctly routed
+                // based on their relationship to the specific analysis (farmer vs sponsor context)
                 var sponsorProfile = await _sponsorProfileRepository.GetBySponsorIdAsync(fromUserId);
-
-                if (sponsorProfile != null)
-                {
-                    // Use comprehensive validation for sponsors
-                    var (canSend, errorMessage) = await CanSendMessageForAnalysisAsync(fromUserId, toUserId, plantAnalysisId);
-                    if (!canSend)
-                    {
-                        return null; // Validation failed
-                    }
-                }
 
                 // Check if this is the first message (requires admin approval)
                 var isFirstMessage = await IsFirstMessageAsync(fromUserId, toUserId, plantAnalysisId);
