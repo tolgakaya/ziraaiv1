@@ -42,17 +42,20 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly IUserGroupRepository _userGroupRepository;
             private readonly IGroupRepository _groupRepository;
             private readonly DataAccess.Abstract.IUserRepository _userRepository;
+            private readonly DataAccess.Abstract.IPlantAnalysisRepository _plantAnalysisRepository;
 
             public SendMessageCommandHandler(
                 IAnalysisMessagingService messagingService,
                 IUserGroupRepository userGroupRepository,
                 IGroupRepository groupRepository,
-                DataAccess.Abstract.IUserRepository userRepository)
+                DataAccess.Abstract.IUserRepository userRepository,
+                DataAccess.Abstract.IPlantAnalysisRepository plantAnalysisRepository)
             {
                 _messagingService = messagingService;
                 _userGroupRepository = userGroupRepository;
                 _groupRepository = groupRepository;
                 _userRepository = userRepository;
+                _plantAnalysisRepository = plantAnalysisRepository;
             }
 
             [ValidationAspect(typeof(SendMessageValidator), Priority = 1)]
@@ -66,16 +69,44 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     var toUserId = request.ToUserId ?? request.FarmerId ?? 0;
                     var messageContent = !string.IsNullOrEmpty(request.Message) ? request.Message : request.MessageContent;
 
-                    // Determine user role
+                    // Get analysis to determine context-based role
+                    var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == request.PlantAnalysisId);
+                    if (analysis == null)
+                    {
+                        return new ErrorDataResult<AnalysisMessageDto>("Analysis not found");
+                    }
+
+                    // Determine user's roles
                     var userGroups = await _userGroupRepository.GetListAsync(ug => ug.UserId == request.FromUserId);
                     var groupIds = userGroups.Select(ug => ug.GroupId).ToList();
                     var groups = await _groupRepository.GetListAsync(g => groupIds.Contains(g.Id));
-                    var isSponsor = groups.Any(g => g.GroupName == "Sponsor");
-                    var isFarmer = groups.Any(g => g.GroupName == "Farmer");
+                    var hasSponsorRole = groups.Any(g => g.GroupName == "Sponsor");
+                    var hasFarmerRole = groups.Any(g => g.GroupName == "Farmer");
 
-                    // Role-based validation
-                    if (isSponsor)
+                    // Context-based role detection:
+                    // - If user owns the analysis (analysis.UserId == currentUserId) → Acting as FARMER
+                    // - If user is the sponsor/dealer (SponsorUserId or DealerId == currentUserId) → Acting as SPONSOR
+                    // This prevents dual-role users from being misrouted
+
+                    bool isActingAsFarmer = (analysis.UserId == request.FromUserId);
+                    bool isActingAsSponsor = (analysis.SponsorUserId == request.FromUserId) ||
+                                            (analysis.DealerId == request.FromUserId);
+
+                    // Validate user has the appropriate role for their context
+                    if (isActingAsFarmer && !hasFarmerRole)
                     {
+                        return new ErrorDataResult<AnalysisMessageDto>("You must have Farmer role to send messages as the analysis owner");
+                    }
+
+                    if (isActingAsSponsor && !hasSponsorRole)
+                    {
+                        return new ErrorDataResult<AnalysisMessageDto>("You must have Sponsor role to send messages as a sponsor");
+                    }
+
+                    // Role-based validation based on CONTEXT (not just role membership)
+                    if (isActingAsSponsor)
+                    {
+                        // User is acting as SPONSOR for this analysis
                         // Comprehensive validation for sponsors (tier, ownership, rate limit, block check)
                         var (canSend, errorMessage) = await _messagingService.CanSendMessageForAnalysisAsync(
                             request.FromUserId,
@@ -87,8 +118,9 @@ namespace Business.Handlers.AnalysisMessages.Commands
                             return new ErrorDataResult<AnalysisMessageDto>(errorMessage);
                         }
                     }
-                    else if (isFarmer)
+                    else if (isActingAsFarmer)
                     {
+                        // User is acting as FARMER for this analysis
                         // Farmers can only reply to existing sponsor messages
                         var (canReply, errorMessage) = await _messagingService.CanFarmerReplyAsync(
                             request.FromUserId,
@@ -102,7 +134,8 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     }
                     else
                     {
-                        return new ErrorDataResult<AnalysisMessageDto>("Only sponsors and farmers can send messages");
+                        // User is neither farmer nor sponsor for this analysis
+                        return new ErrorDataResult<AnalysisMessageDto>("You are not authorized to send messages for this analysis");
                     }
 
                     var message = await _messagingService.SendMessageAsync(
