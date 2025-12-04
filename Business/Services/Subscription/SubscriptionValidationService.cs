@@ -280,50 +280,55 @@ namespace Business.Services.Subscription
             }
         }
 
-        public async Task<IResult> ValidateAndLogUsageAsync(int userId, string endpoint, string method)
+        public async Task<IResult> ValidateAndLogUsageAsync(int userId, string endpoint, string method, int creditCount = 1)
         {
             var stopwatch = Stopwatch.StartNew();
             var correlationId = Guid.NewGuid().ToString("N")[..8];
 
-            _logger.LogInformation("[USAGE_VALIDATION_START] Starting usage validation - UserId: {UserId}, CorrelationId: {CorrelationId}, Endpoint: {Endpoint}, Method: {Method}", 
-                userId, correlationId, endpoint, method);
+            _logger.LogInformation("[USAGE_VALIDATION_START] Starting usage validation - UserId: {UserId}, CorrelationId: {CorrelationId}, Endpoint: {Endpoint}, Method: {Method}, CreditCount: {CreditCount}",
+                userId, correlationId, endpoint, method, creditCount);
 
             try
             {
                 // ✨ EVENT-DRIVEN QUEUE ACTIVATION: Process expired subscriptions and activate queued ones
                 await ProcessExpiredSubscriptionsAsync();
-                
+
                 var statusResult = await CheckSubscriptionStatusAsync(userId);
-                
-                _logger.LogInformation("[USAGE_VALIDATION_STATUS_CHECK] Subscription status checked - UserId: {UserId}, CorrelationId: {CorrelationId}, Success: {Success}, CanMakeRequest: {CanMakeRequest}", 
-                    userId, correlationId, statusResult.Success, statusResult.Data?.CanMakeRequest ?? false);
-                
-                if (!statusResult.Success || !statusResult.Data.CanMakeRequest)
+
+                _logger.LogInformation("[USAGE_VALIDATION_STATUS_CHECK] Subscription status checked - UserId: {UserId}, CorrelationId: {CorrelationId}, Success: {Success}, CanMakeRequest: {CanMakeRequest}, DailyRemaining: {DailyRemaining}",
+                    userId, correlationId, statusResult.Success, statusResult.Data?.CanMakeRequest ?? false, statusResult.Data?.DailyRemaining ?? 0);
+
+                // Check if user has enough credits for this request
+                if (!statusResult.Success || !statusResult.Data.CanMakeRequest || statusResult.Data.DailyRemaining < creditCount)
                 {
-                    _logger.LogWarning("[USAGE_VALIDATION_FAILED] Usage validation failed - UserId: {UserId}, CorrelationId: {CorrelationId}, Reason: {Reason}", 
-                        userId, correlationId, statusResult.Message);
-                    
+                    var reason = statusResult.Data?.DailyRemaining < creditCount
+                        ? $"Insufficient credits. Required: {creditCount}, Available: {statusResult.Data?.DailyRemaining ?? 0}"
+                        : statusResult.Message;
+
+                    _logger.LogWarning("[USAGE_VALIDATION_FAILED] Usage validation failed - UserId: {UserId}, CorrelationId: {CorrelationId}, Reason: {Reason}",
+                        userId, correlationId, reason);
+
                     // Log failed attempt
-                    await LogUsageAsync(userId, endpoint, method, false, statusResult.Message);
-                    
+                    await LogUsageAsync(userId, endpoint, method, false, reason);
+
                     stopwatch.Stop();
-                    _logger.LogInformation("[USAGE_VALIDATION_FAILED_LOGGED] Failed usage logged - UserId: {UserId}, CorrelationId: {CorrelationId}, ValidationTime: {ValidationTime}ms", 
+                    _logger.LogInformation("[USAGE_VALIDATION_FAILED_LOGGED] Failed usage logged - UserId: {UserId}, CorrelationId: {CorrelationId}, ValidationTime: {ValidationTime}ms",
                         userId, correlationId, stopwatch.ElapsedMilliseconds);
-                    
-                    return new ErrorResult(statusResult.Data?.LimitExceededMessage ?? statusResult.Message);
+
+                    return new ErrorResult(statusResult.Data?.LimitExceededMessage ?? reason);
                 }
 
                 stopwatch.Stop();
-                _logger.LogInformation("[USAGE_VALIDATION_SUCCESS] Usage validation successful - UserId: {UserId}, CorrelationId: {CorrelationId}, ValidationTime: {ValidationTime}ms", 
-                    userId, correlationId, stopwatch.ElapsedMilliseconds);
-                
+                _logger.LogInformation("[USAGE_VALIDATION_SUCCESS] Usage validation successful - UserId: {UserId}, CorrelationId: {CorrelationId}, CreditCount: {CreditCount}, ValidationTime: {ValidationTime}ms",
+                    userId, correlationId, creditCount, stopwatch.ElapsedMilliseconds);
+
                 return new SuccessResult();
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _logger.LogError(ex, "[USAGE_VALIDATION_EXCEPTION] Exception during usage validation - UserId: {UserId}, CorrelationId: {CorrelationId}, ElapsedTime: {ElapsedTime}ms, ExceptionType: {ExceptionType}, Message: {ErrorMessage}", 
-                    userId, correlationId, stopwatch.ElapsedMilliseconds, ex.GetType().Name, ex.Message);
+                _logger.LogError(ex, "[USAGE_VALIDATION_EXCEPTION] Exception during usage validation - UserId: {UserId}, CorrelationId: {CorrelationId}, CreditCount: {CreditCount}, ElapsedTime: {ElapsedTime}ms, ExceptionType: {ExceptionType}, Message: {ErrorMessage}",
+                    userId, correlationId, creditCount, stopwatch.ElapsedMilliseconds, ex.GetType().Name, ex.Message);
                 throw;
             }
         }
@@ -334,10 +339,10 @@ namespace Business.Services.Subscription
             return statusResult.Success && statusResult.Data.CanMakeRequest;
         }
 
-        public async Task<IResult> IncrementUsageAsync(int userId, int? plantAnalysisId = null)
+        public async Task<IResult> IncrementUsageAsync(int userId, int? plantAnalysisId = null, int creditCount = 1)
         {
-            _logger.LogInformation("[INCREMENT_USAGE_START] Starting usage increment - UserId: {UserId}, PlantAnalysisId: {PlantAnalysisId}",
-                userId, plantAnalysisId);
+            _logger.LogInformation("[INCREMENT_USAGE_START] Starting usage increment - UserId: {UserId}, PlantAnalysisId: {PlantAnalysisId}, CreditCount: {CreditCount}",
+                userId, plantAnalysisId, creditCount);
 
             var subscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
 
@@ -353,27 +358,40 @@ namespace Business.Services.Subscription
 
             // ✅ PRIORITY: Use referral credits first, then subscription quota
             var referralCredits = subscription.ReferralCredits;
-            
-            if (referralCredits > 0)
+
+            if (referralCredits >= creditCount)
             {
-                // Decrement referral credits
-                subscription.ReferralCredits -= 1;
+                // Decrement referral credits by creditCount
+                subscription.ReferralCredits -= creditCount;
                 _userSubscriptionRepository.Update(subscription);
                 await _userSubscriptionRepository.SaveChangesAsync();
-                
-                _logger.LogInformation("[INCREMENT_USAGE_REFERRAL_CREDIT_USED] Referral credit used - UserId: {UserId}, SubscriptionId: {SubscriptionId}, RemainingCredits: {RemainingCredits}",
-                    userId, subscription.Id, subscription.ReferralCredits);
+
+                _logger.LogInformation("[INCREMENT_USAGE_REFERRAL_CREDIT_USED] Referral credits used - UserId: {UserId}, SubscriptionId: {SubscriptionId}, CreditsUsed: {CreditsUsed}, RemainingCredits: {RemainingCredits}",
+                    userId, subscription.Id, creditCount, subscription.ReferralCredits);
+            }
+            else if (referralCredits > 0 && referralCredits < creditCount)
+            {
+                // Use remaining referral credits + subscription quota
+                var remainingToDeduct = creditCount - referralCredits;
+                subscription.ReferralCredits = 0;
+                _userSubscriptionRepository.Update(subscription);
+                await _userSubscriptionRepository.SaveChangesAsync();
+
+                _logger.LogInformation("[INCREMENT_USAGE_MIXED_CREDITS] Using mixed credits - UserId: {UserId}, SubscriptionId: {SubscriptionId}, ReferralCreditsUsed: {ReferralUsed}, QuotaUsed: {QuotaUsed}",
+                    userId, subscription.Id, referralCredits, remainingToDeduct);
+
+                await _userSubscriptionRepository.UpdateUsageCountersAsync(subscription.Id, remainingToDeduct, remainingToDeduct);
             }
             else
             {
-                // Use subscription quota
-                _logger.LogInformation("[INCREMENT_USAGE_COUNTERS] Updating subscription quota counters - UserId: {UserId}, SubscriptionId: {SubscriptionId}",
-                    userId, subscription.Id);
+                // Use subscription quota only
+                _logger.LogInformation("[INCREMENT_USAGE_COUNTERS] Updating subscription quota counters - UserId: {UserId}, SubscriptionId: {SubscriptionId}, CreditCount: {CreditCount}",
+                    userId, subscription.Id, creditCount);
 
-                await _userSubscriptionRepository.UpdateUsageCountersAsync(subscription.Id, 1, 1);
+                await _userSubscriptionRepository.UpdateUsageCountersAsync(subscription.Id, creditCount, creditCount);
 
-            _logger.LogInformation("[INCREMENT_USAGE_COUNTERS_UPDATED] Subscription quota counters updated - UserId: {UserId}, SubscriptionId: {SubscriptionId}",
-                    userId, subscription.Id);
+                _logger.LogInformation("[INCREMENT_USAGE_COUNTERS_UPDATED] Subscription quota counters updated - UserId: {UserId}, SubscriptionId: {SubscriptionId}, CreditsDeducted: {CreditsDeducted}",
+                    userId, subscription.Id, creditCount);
             }
 
             // Log the usage
@@ -383,12 +401,12 @@ namespace Business.Services.Subscription
                 httpContext?.Request.Path.Value ?? "Unknown",
                 httpContext?.Request.Method ?? "Unknown",
                 true,
-                "Request processed successfully",
+                $"Request processed successfully ({creditCount} credits used)",
                 subscription.Id,
                 plantAnalysisId
             );
 
-            return new SuccessResult("Usage incremented successfully");
+            return new SuccessResult($"Usage incremented successfully ({creditCount} credits deducted)");
         }
 
         private async Task LogUsageAsync(int userId, string endpoint, string method, bool isSuccessful,

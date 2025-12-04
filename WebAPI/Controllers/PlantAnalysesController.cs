@@ -416,11 +416,12 @@ namespace WebAPI.Controllers
                 if (!userId.HasValue)
                     return Unauthorized();
 
-                // Check subscription and quota limits
+                // Check subscription and quota limits (4 credits for multi-image analysis)
                 var quotaValidation = await _subscriptionValidationService.ValidateAndLogUsageAsync(
                     userId.Value,
                     HttpContext.Request.Path.Value ?? "/api/v1/plantanalyses/analyze-multi-async",
-                    HttpContext.Request.Method);
+                    HttpContext.Request.Method,
+                    creditCount: 4);
 
                 if (!quotaValidation.Success)
                 {
@@ -433,8 +434,8 @@ namespace WebAPI.Controllers
                         message = quotaValidation.Message,
                         subscriptionStatus = statusResult.Data,
                         upgradeMessage = statusResult.Data?.TierName == "Trial"
-                            ? "Upgrade to Small plan for 5 daily analyses at ₺99.99/month!"
-                            : "Please upgrade your subscription plan."
+                            ? "Multi-image analysis requires 4 credits. Upgrade to Small plan for 5 daily analyses at ₺99.99/month!"
+                            : "Insufficient credits for multi-image analysis (4 credits required). Please upgrade your subscription plan."
                     });
                 }
 
@@ -477,8 +478,8 @@ namespace WebAPI.Controllers
                 var analysisId = await _multiImageAsyncService.QueuePlantAnalysisAsync(request);
                 Console.WriteLine($"[AnalyzeMultiAsync] QueuePlantAnalysisAsync returned: {analysisId}");
 
-                // Increment usage counter after successful queueing
-                await _subscriptionValidationService.IncrementUsageAsync(userId.Value);
+                // Increment usage counter after successful queueing (4 credits for multi-image analysis)
+                await _subscriptionValidationService.IncrementUsageAsync(userId.Value, creditCount: 4);
 
                 // Process referral validation if this is user's first analysis
                 try
