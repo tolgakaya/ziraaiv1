@@ -50,14 +50,16 @@ namespace DataAccess.Concrete.EntityFramework
             {
                 // Show all messages for this analysis
                 // Authorization already checked in controller (farmer, sponsor, or dealer)
-                return await query.OrderBy(x => x.SentDate).ToListAsync();
+                // ⚠️ REVERSE ORDER: Latest messages first (DESC) for mobile chat UI
+                return await query.OrderByDescending(x => x.SentDate).ToListAsync();
             }
-            
+
             // Keep existing 1-to-1 behavior when no dealer (backward compatibility)
+            // ⚠️ REVERSE ORDER: Latest messages first (DESC) for mobile chat UI
             return await query
                 .Where(x => (x.FromUserId == fromUserId && x.ToUserId == toUserId) ||
                             (x.FromUserId == toUserId && x.ToUserId == fromUserId))
-                .OrderBy(x => x.SentDate)
+                .OrderByDescending(x => x.SentDate)
                 .ToListAsync();
         }
 
