@@ -30,6 +30,12 @@ namespace Entities.Constants
         {
             public const string DailyMessageLimitPerFarmer = "MESSAGING_DAILY_LIMIT_PER_FARMER";
             public const string EnableRateLimit = "MESSAGING_ENABLE_RATE_LIMIT";
+
+            // Message Attachment Image Processing
+            public const string EnableAttachmentImageResize = "MESSAGING_ATTACHMENT_IMAGE_ENABLE_RESIZE";
+            public const string AttachmentImageMaxSizeMB = "MESSAGING_ATTACHMENT_IMAGE_MAX_SIZE_MB";
+            public const string AttachmentImageMaxWidth = "MESSAGING_ATTACHMENT_IMAGE_MAX_WIDTH";
+            public const string AttachmentImageMaxHeight = "MESSAGING_ATTACHMENT_IMAGE_MAX_HEIGHT";
         }
         
         // RabbitMQ Configuration Keys

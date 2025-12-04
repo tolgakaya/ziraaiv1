@@ -1,14 +1,18 @@
+using Business.Services.Configuration;
 using Business.Services.FileStorage;
+using Business.Services.ImageProcessing;
 using Business.Services.Messaging;
 using Business.Services.Sponsorship;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Entities.Constants;
 using Entities.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -36,6 +40,8 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly IGroupRepository _groupRepository;
             private readonly DataAccess.Abstract.IUserRepository _userRepository;
             private readonly DataAccess.Abstract.IPlantAnalysisRepository _plantAnalysisRepository;
+            private readonly IImageProcessingService _imageProcessingService;
+            private readonly IConfigurationService _configurationService;
 
             public SendMessageWithAttachmentCommandHandler(
                 IAnalysisMessageRepository messageRepository,
@@ -46,7 +52,9 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 IUserGroupRepository userGroupRepository,
                 IGroupRepository groupRepository,
                 DataAccess.Abstract.IUserRepository userRepository,
-                DataAccess.Abstract.IPlantAnalysisRepository plantAnalysisRepository)
+                DataAccess.Abstract.IPlantAnalysisRepository plantAnalysisRepository,
+                IImageProcessingService imageProcessingService,
+                IConfigurationService configurationService)
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
@@ -57,6 +65,8 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 _groupRepository = groupRepository;
                 _userRepository = userRepository;
                 _plantAnalysisRepository = plantAnalysisRepository;
+                _imageProcessingService = imageProcessingService;
+                _configurationService = configurationService;
             }
 
             public async Task<IDataResult<AnalysisMessageDto>> Handle(SendMessageWithAttachmentCommand request, CancellationToken cancellationToken)
@@ -140,19 +150,61 @@ namespace Business.Handlers.AnalysisMessages.Commands
 
                 try
                 {
+                    // Get resize configuration
+                    var enableResize = await _configurationService.GetBoolValueAsync(
+                        ConfigurationKeys.Messaging.EnableAttachmentImageResize, true);
+
+                    var maxSizeMB = await _configurationService.GetDecimalValueAsync(
+                        ConfigurationKeys.Messaging.AttachmentImageMaxSizeMB, 1.0m);
+
+                    var maxWidth = await _configurationService.GetIntValueAsync(
+                        ConfigurationKeys.Messaging.AttachmentImageMaxWidth, 1920);
+
+                    var maxHeight = await _configurationService.GetIntValueAsync(
+                        ConfigurationKeys.Messaging.AttachmentImageMaxHeight, 1080);
+
                     foreach (var file in request.Attachments)
                     {
                         var fileName = $"msg_attachment_{request.FromUserId}_{DateTime.Now.Ticks}_{file.FileName}";
-                        
+
                         // Select appropriate storage based on MIME type
                         var isImage = file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
                         var folder = isImage ? null : "attachments"; // Organize non-images in subfolder
-                        
+
                         string url;
                         if (isImage)
                         {
+                            // Resize image if enabled
+                            Stream uploadStream;
+                            string contentType = file.ContentType;
+
+                            if (enableResize)
+                            {
+                                // Read file to byte array
+                                using var memoryStream = new MemoryStream();
+                                await file.CopyToAsync(memoryStream);
+                                var imageBytes = memoryStream.ToArray();
+
+                                // Resize to target size (1 MB default)
+                                var resizedBytes = await _imageProcessingService.ResizeToTargetSizeAsync(
+                                    imageBytes,
+                                    (double)maxSizeMB,
+                                    maxWidth,
+                                    maxHeight);
+
+                                uploadStream = new MemoryStream(resizedBytes);
+                                contentType = "image/jpeg"; // ResizeToTargetSizeAsync may convert to JPEG
+                            }
+                            else
+                            {
+                                uploadStream = file.OpenReadStream();
+                            }
+
                             // Use FreeImageHost for images
-                            url = await _imageStorage.UploadFileAsync(file.OpenReadStream(), fileName, file.ContentType);
+                            url = await _imageStorage.UploadFileAsync(uploadStream, fileName, contentType);
+
+                            if (enableResize)
+                                uploadStream.Dispose();
                         }
                         else
                         {
