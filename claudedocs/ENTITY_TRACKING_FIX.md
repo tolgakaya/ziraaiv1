@@ -181,7 +181,7 @@ await _userRepository.SaveChangesAsync();
 
 ### Commits:
 1. `28941224` - fix: Entity tracking conflict in OTP verification login
-2. `[CURRENT]` - fix: Add GetTrackedAsync for Update/Delete operations
+2. `11c04f2a` - fix: Add GetTrackedAsync for Update/Delete operations
 
 ### Deployment Checklist:
 - [x] Build successful
