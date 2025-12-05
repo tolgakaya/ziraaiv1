@@ -463,6 +463,10 @@ namespace Business.DependencyResolvers
                 .As<ICacheInvalidationService>()
                 .SingleInstance(); // Singleton for cache invalidation coordination
 
+            builder.RegisterType<Business.Services.Sponsorship.DealerDashboardCacheService>()
+                .As<Business.Services.Sponsorship.IDealerDashboardCacheService>()
+                .InstancePerLifetimeScope(); // Scoped for dealer dashboard caching
+
             // Analytics Services
             builder.RegisterType<Business.Services.Analytics.SponsorDealerAnalyticsCacheService>()
                 .As<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService>()
