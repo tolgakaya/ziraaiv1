@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(git push)",
-      "Bash(python fix_tracking.py:*)"
+      "Bash(python fix_tracking.py:*)",
+      "Bash(git commit:*)",
+      "Bash(dotnet build:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],

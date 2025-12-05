@@ -84,7 +84,7 @@ namespace WebAPI.Controllers
                 return NotFound(new ErrorResult("Voice file not found"));
             }
 
-            // Check if URL is external (e.g., FreeImageHost, ImgBB, etc.) - though voice messages are typically local
+            // Check if URL is external (e.g., FreeImageHost, ImgBB, Cloudflare R2, etc.)
             // This handles edge cases where voice files might be hosted externally
             if (message.VoiceMessageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 message.VoiceMessageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
@@ -92,6 +92,11 @@ namespace WebAPI.Controllers
                 _logger.LogInformation(
                     "Voice message redirect to external storage. User: {UserId}, Message: {MessageId}, Url: {Url}",
                     userId.Value, messageId, message.VoiceMessageUrl);
+
+                // Add CORS headers before redirect to support web application access
+                Response.Headers.Add("Access-Control-Allow-Origin", Request.Headers["Origin"].ToString());
+                Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+                Response.Headers.Add("Access-Control-Expose-Headers", "Content-Length, Content-Range, Content-Type");
 
                 return Redirect(message.VoiceMessageUrl);
             }
@@ -184,13 +189,18 @@ namespace WebAPI.Controllers
 
             var attachmentUrl = attachmentUrls[attachmentIndex];
 
-            // Check if URL is external (FreeImageHost, ImgBB, etc.) - redirect to external URL
+            // Check if URL is external (FreeImageHost, ImgBB, Cloudflare R2, etc.) - redirect to external URL
             if (attachmentUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 attachmentUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation(
                     "Attachment redirect to external storage. User: {UserId}, Message: {MessageId}, Index: {Index}, Url: {Url}",
                     userId.Value, messageId, attachmentIndex, attachmentUrl);
+
+                // Add CORS headers before redirect to support web application access
+                Response.Headers.Add("Access-Control-Allow-Origin", Request.Headers["Origin"].ToString());
+                Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+                Response.Headers.Add("Access-Control-Expose-Headers", "Content-Length, Content-Range, Content-Type");
 
                 return Redirect(attachmentUrl);
             }
