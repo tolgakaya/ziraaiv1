@@ -11,8 +11,8 @@
 
 SELECT
     schemaname,
-    tablename,
-    indexname,
+    relname as tablename,
+    indexrelname as indexname,
     idx_scan as times_used,
     idx_tup_read as tuples_read,
     idx_tup_fetch as tuples_fetched,
@@ -21,7 +21,7 @@ SELECT
 FROM pg_stat_user_indexes
 WHERE schemaname = 'public'
 AND idx_scan = 0  -- Never used since last stats reset
-AND indexname LIKE '%_GIN'  -- Focus on JSONB GIN indexes
+AND indexrelname LIKE '%_GIN'  -- Focus on JSONB GIN indexes
 ORDER BY pg_relation_size(indexrelid) DESC;
 
 -- ============================================================================
@@ -30,8 +30,8 @@ ORDER BY pg_relation_size(indexrelid) DESC;
 
 SELECT
     schemaname,
-    tablename,
-    indexname,
+    relname as tablename,
+    indexrelname as indexname,
     idx_scan as times_used,
     idx_tup_read as tuples_read,
     pg_size_pretty(pg_relation_size(indexrelid)) as index_size,
@@ -43,7 +43,7 @@ SELECT
     END as usage_status
 FROM pg_stat_user_indexes
 WHERE schemaname = 'public'
-AND indexname LIKE '%_GIN'
+AND indexrelname LIKE '%_GIN'
 ORDER BY idx_scan ASC, pg_relation_size(indexrelid) DESC;
 
 -- ============================================================================
