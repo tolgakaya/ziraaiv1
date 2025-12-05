@@ -1,6 +1,6 @@
 # Conversation Endpoint Usage Guide
 
-**Endpoint**: `GET /api/v1/sponsorship/conversations`
+**Endpoint**: `GET /api/v1/sponsorship/messages/conversation`
 **Authentication**: Required (JWT Bearer Token)
 **Purpose**: Load chat messages with proper pagination for messaging UI
 
@@ -10,12 +10,12 @@
 
 ### Initial Load (Most Recent Messages)
 ```http
-GET /api/v1/sponsorship/conversations?fromUserId={userId}&toUserId={otherUserId}&plantAnalysisId={analysisId}&page=1&pageSize=20
+GET /api/v1/sponsorship/messages/conversation?otherUserId={otherUserId}&plantAnalysisId={analysisId}&page=1&pageSize=20
 ```
 
 ### Load Older Messages (Scroll Up)
 ```http
-GET /api/v1/sponsorship/conversations?fromUserId={userId}&toUserId={otherUserId}&plantAnalysisId={analysisId}&page=2&pageSize=20
+GET /api/v1/sponsorship/messages/conversation?otherUserId={otherUserId}&plantAnalysisId={analysisId}&page=2&pageSize=20
 ```
 
 ---
@@ -24,13 +24,14 @@ GET /api/v1/sponsorship/conversations?fromUserId={userId}&toUserId={otherUserId}
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `fromUserId` | int | ✅ Yes | - | Current user's ID |
-| `toUserId` | int | ✅ Yes | - | Other participant's ID |
+| `otherUserId` | int | ✅ Yes | - | Other participant's user ID |
 | `plantAnalysisId` | int | ✅ Yes | - | Plant analysis context ID |
 | `page` | int | ⚠️ Optional | 1 | Page number (1 = most recent) |
-| `pageSize` | int | ⚠️ Optional | 20 | Messages per page |
+| `pageSize` | int | ⚠️ Optional | 20 | Messages per page (max: 100) |
 
-**Note**: For three-way conversations (farmer-sponsor-dealer), all messages in the analysis are visible to all participants.
+**Note**:
+- Current user's ID is automatically extracted from JWT token
+- For three-way conversations (farmer-sponsor-dealer), all messages in the analysis are visible to all participants
 
 ---
 
@@ -144,11 +145,9 @@ interface ConversationResponse {
 }
 
 function ChatComponent({
-  currentUserId,
   otherUserId,
   plantAnalysisId
 }: {
-  currentUserId: number;
   otherUserId: number;
   plantAnalysisId: number;
 }) {
@@ -169,11 +168,10 @@ function ChatComponent({
     setLoading(true);
     try {
       const response = await axios.get<ConversationResponse>(
-        '/api/v1/sponsorship/conversations',
+        '/api/v1/sponsorship/messages/conversation',
         {
           params: {
-            fromUserId: currentUserId,
-            toUserId: otherUserId,
+            otherUserId: otherUserId,
             plantAnalysisId: plantAnalysisId,
             page: pageNum,
             pageSize: 20
@@ -241,12 +239,14 @@ function ChatComponent({
         <div className="loading-indicator">Loading older messages...</div>
       )}
 
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          className={msg.fromUserId === currentUserId ? 'message-sent' : 'message-received'}
-        >
-          <div className="message-bubble">
+      {messages.map((msg) => {
+        const currentUserId = getCurrentUserId(); // Get from auth context/JWT
+        return (
+          <div
+            key={msg.id}
+            className={msg.fromUserId === currentUserId ? 'message-sent' : 'message-received'}
+          >
+            <div className="message-bubble">
             <p>{msg.message}</p>
 
             {/* Attachments */}
@@ -264,7 +264,8 @@ function ChatComponent({
             </span>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -320,12 +321,10 @@ class ConversationResponse {
 }
 
 class ChatScreen extends StatefulWidget {
-  final int currentUserId;
   final int otherUserId;
   final int plantAnalysisId;
 
   const ChatScreen({
-    required this.currentUserId,
     required this.otherUserId,
     required this.plantAnalysisId,
   });
@@ -364,10 +363,9 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final token = await _getAuthToken(); // Your auth method
       final response = await http.get(
-        Uri.parse('https://api.ziraai.com/api/v1/sponsorship/conversations').replace(
+        Uri.parse('https://api.ziraai.com/api/v1/sponsorship/messages/conversation').replace(
           queryParameters: {
-            'fromUserId': widget.currentUserId.toString(),
-            'toUserId': widget.otherUserId.toString(),
+            'otherUserId': widget.otherUserId.toString(),
             'plantAnalysisId': widget.plantAnalysisId.toString(),
             'page': page.toString(),
             'pageSize': '20',
@@ -434,7 +432,8 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                final isSentByMe = message.fromUserId == widget.currentUserId;
+                final currentUserId = _getCurrentUserId(); // Get from auth context
+                final isSentByMe = message.fromUserId == currentUserId;
 
                 return Align(
                   alignment: isSentByMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -488,6 +487,11 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<String> _getAuthToken() async {
     // Your token retrieval logic
     return 'your-jwt-token';
+  }
+
+  int _getCurrentUserId() {
+    // Your user ID retrieval logic from auth context/JWT
+    return 0; // Replace with actual user ID
   }
 
   @override
@@ -598,17 +602,20 @@ Frontend Display: Oldest → Newest (ASC) per page
 
 ### Load Most Recent Messages
 ```http
-GET /api/v1/sponsorship/conversations?fromUserId=10&toUserId=20&plantAnalysisId=456&page=1&pageSize=20
+GET /api/v1/sponsorship/messages/conversation?otherUserId=20&plantAnalysisId=456&page=1&pageSize=20
+Authorization: Bearer {your-jwt-token}
 ```
 
 ### Load Next Page (Older Messages)
 ```http
-GET /api/v1/sponsorship/conversations?fromUserId=10&toUserId=20&plantAnalysisId=456&page=2&pageSize=20
+GET /api/v1/sponsorship/messages/conversation?otherUserId=20&plantAnalysisId=456&page=2&pageSize=20
+Authorization: Bearer {your-jwt-token}
 ```
 
 ### Larger Page Size
 ```http
-GET /api/v1/sponsorship/conversations?fromUserId=10&toUserId=20&plantAnalysisId=456&page=1&pageSize=50
+GET /api/v1/sponsorship/messages/conversation?otherUserId=20&plantAnalysisId=456&page=1&pageSize=50
+Authorization: Bearer {your-jwt-token}
 ```
 
 ### Check for New Messages (Polling)
