@@ -51,13 +51,13 @@ ORDER BY idx_scan ASC, pg_relation_size(indexrelid) DESC;
 -- ============================================================================
 
 SELECT
-    indexname,
+    indexrelname as indexname,
     idx_scan as times_used,
     pg_size_pretty(pg_relation_size(indexrelid)) as index_size
 FROM pg_stat_user_indexes
 WHERE schemaname = 'public'
-AND tablename = 'PlantAnalyses'
-AND indexname LIKE '%_GIN'
+AND relname = 'PlantAnalyses'
+AND indexrelname LIKE '%_GIN'
 ORDER BY idx_scan ASC;
 
 -- ============================================================================
@@ -71,7 +71,7 @@ SELECT
 FROM pg_stat_user_indexes
 WHERE schemaname = 'public'
 AND idx_scan = 0
-AND indexname LIKE '%_GIN';
+AND indexrelname LIKE '%_GIN';
 
 -- ============================================================================
 -- PART 5: SINGLE-COLUMN INDEXES THAT MIGHT BE REDUNDANT
@@ -79,14 +79,14 @@ AND indexname LIKE '%_GIN';
 
 SELECT
     schemaname,
-    tablename,
-    indexname,
+    relname as tablename,
+    indexrelname as indexname,
     idx_scan as times_used,
     pg_size_pretty(pg_relation_size(indexrelid)) as index_size
 FROM pg_stat_user_indexes
 WHERE schemaname = 'public'
-AND tablename = 'PlantAnalyses'
-AND indexname IN (
+AND relname = 'PlantAnalyses'
+AND indexrelname IN (
     'IDX_PlantAnalyses_CropType',
     'IDX_PlantAnalyses_Location',
     'IDX_PlantAnalyses_FarmerId'
