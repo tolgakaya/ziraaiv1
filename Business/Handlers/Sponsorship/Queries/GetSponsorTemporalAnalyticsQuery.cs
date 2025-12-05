@@ -94,22 +94,21 @@ namespace Business.Handlers.Sponsorship.Queries
                     var endDate = request.EndDate ?? DateTime.Now;
                     var startDate = request.StartDate ?? endDate.AddDays(-30);
 
-                    // Get all sponsor data
-                    var allCodes = await _codeRepository.GetListAsync(c => c.SponsorId == request.SponsorId);
-                    var codesList = allCodes.ToList();
-
-                    var allAnalyses = await _analysisRepository.GetListAsync(
-                        a => a.SponsorCompanyId.HasValue && a.SponsorCompanyId.Value == request.SponsorId);
-                    var analysesList = allAnalyses.ToList();
-
-                    // Filter by date range
-                    var codesInRange = codesList.Where(c => 
-                        (c.DistributionDate.HasValue && c.DistributionDate.Value >= startDate && c.DistributionDate.Value <= endDate) ||
-                        (c.UsedDate.HasValue && c.UsedDate.Value >= startDate && c.UsedDate.Value <= endDate))
+                    // ⚡ OPTIMIZED: Filter in DATABASE, not in-memory
+                    // Get codes filtered by sponsor AND date range (SQL filtering)
+                    var codesInRange = (await _codeRepository.GetListAsync(c =>
+                        c.SponsorId == request.SponsorId &&
+                        ((c.DistributionDate.HasValue && c.DistributionDate.Value >= startDate && c.DistributionDate.Value <= endDate) ||
+                         (c.UsedDate.HasValue && c.UsedDate.Value >= startDate && c.UsedDate.Value <= endDate))))
                         .ToList();
 
-                    var analysesInRange = analysesList.Where(a => 
-                        a.AnalysisDate >= startDate && a.AnalysisDate <= endDate)
+                    // ⚡ OPTIMIZED: Filter in DATABASE, not in-memory
+                    // Get analyses filtered by sponsor AND date range (SQL filtering)
+                    var analysesInRange = (await _analysisRepository.GetListAsync(
+                        a => a.SponsorCompanyId.HasValue &&
+                             a.SponsorCompanyId.Value == request.SponsorId &&
+                             a.AnalysisDate >= startDate &&
+                             a.AnalysisDate <= endDate))
                         .ToList();
 
                     // Get messages
@@ -181,7 +180,7 @@ namespace Business.Handlers.Sponsorship.Queries
                             m.SentDate <= periodEnd).ToList();
 
                         // Calculate new farmers for this period
-                        var allFarmerIds = analysesList
+                        var allFarmerIds = analysesInRange
                             .Where(a => a.UserId.HasValue)
                             .Select(a => a.UserId.Value)
                             .Distinct()
@@ -193,11 +192,11 @@ namespace Business.Handlers.Sponsorship.Queries
                             .Distinct()
                             .Where(farmerId =>
                             {
-                                var firstAnalysis = analysesList
+                                var firstAnalysis = analysesInRange
                                     .Where(a => a.UserId == farmerId)
                                     .MinBy(a => a.AnalysisDate);
-                                return firstAnalysis != null && 
-                                       firstAnalysis.AnalysisDate >= periodStart && 
+                                return firstAnalysis != null &&
+                                       firstAnalysis.AnalysisDate >= periodStart &&
                                        firstAnalysis.AnalysisDate <= periodEnd;
                             })
                             .Count();
