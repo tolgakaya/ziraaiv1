@@ -475,11 +475,11 @@ namespace WebAPI.Controllers
 
                 // Queue the multi-image analysis
                 Console.WriteLine($"[AnalyzeMultiAsync] Calling QueuePlantAnalysisAsync...");
-                var analysisId = await _multiImageAsyncService.QueuePlantAnalysisAsync(request);
-                Console.WriteLine($"[AnalyzeMultiAsync] QueuePlantAnalysisAsync returned: {analysisId}");
+                var (analysisId, plantAnalysisId) = await _multiImageAsyncService.QueuePlantAnalysisAsync(request);
+                Console.WriteLine($"[AnalyzeMultiAsync] QueuePlantAnalysisAsync returned - AnalysisId: {analysisId}, PlantAnalysisId: {plantAnalysisId}");
 
                 // Increment usage counter after successful queueing (4 credits for multi-image analysis)
-                await _subscriptionValidationService.IncrementUsageAsync(userId.Value, creditCount: 4);
+                await _subscriptionValidationService.IncrementUsageAsync(userId.Value, plantAnalysisId, creditCount: 4);
 
                 // Process referral validation if this is user's first analysis
                 try

@@ -63,7 +63,7 @@ namespace Business.Services.PlantAnalysis
             Console.WriteLine($"[PlantAnalysisMultiImageAsyncService] PlantAnalysisMultiImageRequest Queue = {_rabbitMQOptions.Queues.PlantAnalysisMultiImageRequest}");
         }
 
-        public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisMultiImageRequestDto request)
+        public async Task<(string analysisId, int plantAnalysisId)> QueuePlantAnalysisAsync(PlantAnalysisMultiImageRequestDto request)
         {
             // CRITICAL DEBUG: Method entry
             Console.WriteLine($"[QueueMultiImageAnalysisAsync] === METHOD ENTRY ===");
@@ -145,7 +145,7 @@ namespace Business.Services.PlantAnalysis
                 Console.WriteLine($"[QueueMultiImageAnalysisAsync] Saving to database...");
                 _plantAnalysisRepository.Add(plantAnalysis);
                 await _plantAnalysisRepository.SaveChangesAsync();
-                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Database save complete");
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Database save complete - PlantAnalysisId: {plantAnalysis.Id}");
 
                 // Get queue name based on feature flag
                 // NEW system: raw-analysis-queue → Dispatcher → Provider queues (unified queue for all requests)
@@ -217,7 +217,7 @@ namespace Business.Services.PlantAnalysis
                     throw new InvalidOperationException("Failed to publish message to queue");
                 }
 
-                return analysisId;
+                return (analysisId, plantAnalysis.Id);
             }
             catch (Exception ex)
             {

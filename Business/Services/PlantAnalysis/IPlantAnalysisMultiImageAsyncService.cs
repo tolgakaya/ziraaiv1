@@ -14,8 +14,8 @@ namespace Business.Services.PlantAnalysis
         /// Processes, uploads, and queues all provided images.
         /// </summary>
         /// <param name="request">Multi-image analysis request with up to 5 images</param>
-        /// <returns>Analysis ID for tracking</returns>
-        Task<string> QueuePlantAnalysisAsync(PlantAnalysisMultiImageRequestDto request);
+        /// <returns>Tuple of (analysisId, plantAnalysisId) for tracking and usage logging</returns>
+        Task<(string analysisId, int plantAnalysisId)> QueuePlantAnalysisAsync(PlantAnalysisMultiImageRequestDto request);
 
         /// <summary>
         /// Check if RabbitMQ queue is healthy and accepting messages.
