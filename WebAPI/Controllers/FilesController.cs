@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -26,16 +27,19 @@ namespace WebAPI.Controllers
         private readonly IAnalysisMessageRepository _messageRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<FilesController> _logger;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly string _basePath;
 
         public FilesController(
             IAnalysisMessageRepository messageRepository,
             IConfiguration configuration,
-            ILogger<FilesController> logger)
+            ILogger<FilesController> logger,
+            IHttpClientFactory httpClientFactory)
         {
             _messageRepository = messageRepository;
             _configuration = configuration;
             _logger = logger;
+            _httpClientFactory = httpClientFactory;
             _basePath = _configuration["FileStorage:Local:BasePath"] ?? "WebAPI/wwwroot/uploads";
         }
 
@@ -87,16 +91,16 @@ namespace WebAPI.Controllers
             }
 
             // Check if URL is external (e.g., FreeImageHost, ImgBB, Cloudflare R2, etc.)
-            // This handles edge cases where voice files might be hosted externally
+            // Proxy the file through API to avoid CORS issues with redirect
             if (message.VoiceMessageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 message.VoiceMessageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation(
-                    "Voice message redirect to external storage. User: {UserId}, Message: {MessageId}, Url: {Url}",
+                    "Voice message proxy from external storage. User: {UserId}, Message: {MessageId}, Url: {Url}",
                     userId.Value, messageId, message.VoiceMessageUrl);
 
-                // CORS headers automatically added by AllowFiles policy
-                return Redirect(message.VoiceMessageUrl);
+                // Proxy file through API with proper CORS headers
+                return await ProxyExternalFile(message.VoiceMessageUrl, "audio/m4a");
             }
 
             // Local file - serve from disk
@@ -187,16 +191,20 @@ namespace WebAPI.Controllers
 
             var attachmentUrl = attachmentUrls[attachmentIndex];
 
-            // Check if URL is external (FreeImageHost, ImgBB, Cloudflare R2, etc.) - redirect to external URL
+            // Check if URL is external (FreeImageHost, ImgBB, Cloudflare R2, etc.)
+            // Proxy the file through API to avoid CORS issues with redirect
             if (attachmentUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 attachmentUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogInformation(
-                    "Attachment redirect to external storage. User: {UserId}, Message: {MessageId}, Index: {Index}, Url: {Url}",
+                    "Attachment proxy from external storage. User: {UserId}, Message: {MessageId}, Index: {Index}, Url: {Url}",
                     userId.Value, messageId, attachmentIndex, attachmentUrl);
 
-                // CORS headers automatically added by AllowFiles policy
-                return Redirect(attachmentUrl);
+                // Determine content type from URL extension
+                var attachmentContentType = GetContentType(attachmentUrl);
+
+                // Proxy file through API with proper CORS headers
+                return await ProxyExternalFile(attachmentUrl, attachmentContentType);
             }
 
             // Local file - serve from disk
@@ -223,6 +231,57 @@ namespace WebAPI.Controllers
         }
 
         #region Helper Methods
+
+        /// <summary>
+        /// Proxy external file through API to avoid CORS issues
+        /// Downloads file from external URL and streams it with proper CORS headers
+        /// </summary>
+        private async Task<IActionResult> ProxyExternalFile(string externalUrl, string contentType)
+        {
+            try
+            {
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(30);
+
+                // Fetch file from external storage
+                var response = await httpClient.GetAsync(externalUrl, HttpCompletionOption.ResponseHeadersRead);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Failed to fetch external file. Url: {Url}, Status: {StatusCode}",
+                        externalUrl, response.StatusCode);
+                    return NotFound(new ErrorResult("File not found in external storage"));
+                }
+
+                // Get content stream
+                var stream = await response.Content.ReadAsStreamAsync();
+
+                // Determine content type (use from response or fallback to parameter)
+                var responseContentType = response.Content.Headers.ContentType?.MediaType ?? contentType;
+
+                _logger.LogInformation("Proxying external file. Url: {Url}, ContentType: {ContentType}, Size: {Size} bytes",
+                    externalUrl, responseContentType, response.Content.Headers.ContentLength ?? 0);
+
+                // Stream file with proper content type and range support
+                // CORS headers automatically added by AllowFiles policy
+                return File(stream, responseContentType, enableRangeProcessing: true);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP error while fetching external file. Url: {Url}", externalUrl);
+                return StatusCode(502, new ErrorResult("Failed to retrieve file from external storage"));
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Timeout while fetching external file. Url: {Url}", externalUrl);
+                return StatusCode(504, new ErrorResult("Timeout while retrieving file from external storage"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while proxying external file. Url: {Url}", externalUrl);
+                return StatusCode(500, new ErrorResult("Internal error while retrieving file"));
+            }
+        }
 
         /// <summary>
         /// Extract file path from URL (supports both old physical URLs and new API URLs)
