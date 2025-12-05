@@ -10,183 +10,183 @@
 -- Run on staging first, validate performance, then production
 -- Monitor: pg_stat_statements for query performance
 
-BEGIN;
+-- ⚠️ IMPORTANT: Cannot use BEGIN/COMMIT with CONCURRENTLY
+-- CONCURRENTLY creates indexes without blocking writes
+-- Each CREATE INDEX CONCURRENTLY is its own transaction
 
 -- ============================================================================
 -- PART 1: ADD CRITICAL COMPOSITE INDEXES (High Priority)
 -- ============================================================================
 
-RAISE NOTICE '>>> Adding critical composite indexes for PlantAnalyses...';
+\echo '>>> Adding critical composite indexes for PlantAnalyses...'
 
 -- Index 1: User analysis history (most common query pattern)
 -- Used by: User dashboard, analysis history, mobile app
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_PlantAnalyses_UserId_AnalysisDate"
 ON "PlantAnalyses"("UserId", "AnalysisDate" DESC)
 WHERE "UserId" IS NOT NULL;
-RAISE NOTICE '  ✓ Created IX_PlantAnalyses_UserId_AnalysisDate';
+\echo '  ✓ Created IX_PlantAnalyses_UserId_AnalysisDate';
 
 -- Index 2: Sponsor dashboard analytics
 -- Used by: Sponsor analytics, temporal analytics, ROI calculations
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_PlantAnalyses_SponsorCompanyId_AnalysisDate"
 ON "PlantAnalyses"("SponsorCompanyId", "AnalysisDate" DESC)
 WHERE "SponsorCompanyId" IS NOT NULL;
-RAISE NOTICE '  ✓ Created IX_PlantAnalyses_SponsorCompanyId_AnalysisDate';
+\echo '  ✓ Created IX_PlantAnalyses_SponsorCompanyId_AnalysisDate';
 
 -- Index 3: Admin queue management (pending/processing analyses)
 -- Used by: Admin panel, queue monitoring, support
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_PlantAnalyses_AnalysisStatus_AnalysisDate"
 ON "PlantAnalyses"("AnalysisStatus", "AnalysisDate" DESC)
 WHERE "AnalysisStatus" IN ('pending', 'processing', 'failed');
-RAISE NOTICE '  ✓ Created IX_PlantAnalyses_AnalysisStatus_AnalysisDate';
+\echo '  ✓ Created IX_PlantAnalyses_AnalysisStatus_AnalysisDate';
 
 -- ============================================================================
-RAISE NOTICE '>>> Adding critical composite indexes for UserSubscriptions...';
+\echo '>>> Adding critical composite indexes for UserSubscriptions...';
 
 -- Index 4: User's active subscription lookup (MOST CRITICAL)
 -- Used by: Every API call that checks subscription quota
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_UserSubscriptions_UserId_Active_EndDate"
 ON "UserSubscriptions"("UserId", "IsActive", "EndDate" DESC)
 WHERE "IsActive" = true;
-RAISE NOTICE '  ✓ Created IX_UserSubscriptions_UserId_Active_EndDate';
+\echo '  ✓ Created IX_UserSubscriptions_UserId_Active_EndDate';
 
 -- Index 5: User ID foreign key (essential for joins)
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_UserSubscriptions_UserId"
 ON "UserSubscriptions"("UserId");
-RAISE NOTICE '  ✓ Created IX_UserSubscriptions_UserId';
+\echo '  ✓ Created IX_UserSubscriptions_UserId';
 
 -- Index 6: Subscription tier lookups (for tier-based features)
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_UserSubscriptions_SubscriptionTierId"
 ON "UserSubscriptions"("SubscriptionTierId");
-RAISE NOTICE '  ✓ Created IX_UserSubscriptions_SubscriptionTierId';
+\echo '  ✓ Created IX_UserSubscriptions_SubscriptionTierId';
 
 -- ============================================================================
 -- PART 2: ADD MISSING FOREIGN KEY INDEXES
 -- ============================================================================
 
-RAISE NOTICE '>>> Adding missing foreign key indexes...';
+\echo '>>> Adding missing foreign key indexes...';
 
 -- Foreign Key: PlantAnalyses.SponsorCompanyId
 -- Critical for sponsor-related queries and JOINs
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_PlantAnalyses_SponsorCompanyId"
 ON "PlantAnalyses"("SponsorCompanyId")
 WHERE "SponsorCompanyId" IS NOT NULL;
-RAISE NOTICE '  ✓ Created IX_PlantAnalyses_SponsorCompanyId';
+\echo '  ✓ Created IX_PlantAnalyses_SponsorCompanyId';
 
 -- Foreign Key: PlantAnalyses.DealerId
--- Used in dealer analytics and dealer dashboard
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_PlantAnalyses_DealerId"
-ON "PlantAnalyses"("DealerId")
-WHERE "DealerId" IS NOT NULL;
-RAISE NOTICE '  ✓ Created IX_PlantAnalyses_DealerId';
+-- SKIPPED: Index already exists in database (line 2323 in DDL.md)
+-- CREATE INDEX "IX_PlantAnalyses_DealerId" already exists
+\echo '  ⚠ Skipped IX_PlantAnalyses_DealerId (already exists)';
 
 -- Foreign Key: UserSubscriptions.SponsorId
 -- Used in sponsored subscription lookups
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_UserSubscriptions_SponsorId"
 ON "UserSubscriptions"("SponsorId")
 WHERE "SponsorId" IS NOT NULL;
-RAISE NOTICE '  ✓ Created IX_UserSubscriptions_SponsorId';
+\echo '  ✓ Created IX_UserSubscriptions_SponsorId';
 
 -- ============================================================================
 -- PART 3: ADD INDEXES FOR MESSAGING QUERIES
 -- ============================================================================
 
-RAISE NOTICE '>>> Adding messaging query indexes...';
+\echo '>>> Adding messaging query indexes...';
 
 -- Index: User's sent messages
 -- Used by: Message history, sent items
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_AnalysisMessages_FromUserId_SentDate"
 ON "AnalysisMessages"("FromUserId", "SentDate" DESC)
 WHERE "IsDeleted" = false;
-RAISE NOTICE '  ✓ Created IX_AnalysisMessages_FromUserId_SentDate';
+\echo '  ✓ Created IX_AnalysisMessages_FromUserId_SentDate';
 
 -- Index: User's unread messages (inbox)
 -- Used by: Message notifications, unread count, inbox
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_AnalysisMessages_ToUserId_IsRead_SentDate"
 ON "AnalysisMessages"("ToUserId", "IsRead", "SentDate" DESC)
 WHERE "IsDeleted" = false;
-RAISE NOTICE '  ✓ Created IX_AnalysisMessages_ToUserId_IsRead_SentDate';
+\echo '  ✓ Created IX_AnalysisMessages_ToUserId_IsRead_SentDate';
 
 -- ============================================================================
 -- PART 4: ADD SPONSORSHIP CODE INDEXES
 -- ============================================================================
 
-RAISE NOTICE '>>> Adding sponsorship code indexes...';
+\echo '>>> Adding sponsorship code indexes...';
 
 -- Index: Available codes lookup (sponsor dashboard)
--- Used by: Code distribution, available code count
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_SponsorshipCodes_SponsorId_Status"
-ON "SponsorshipCodes"("SponsorId", "Status")
-WHERE "Status" IN ('Available', 'Distributed', 'Used');
-RAISE NOTICE '  ✓ Created IX_SponsorshipCodes_SponsorId_Status';
+-- Used by: Code distribution, available code count, dealer invitations
+-- Query pattern: SponsorId + IsUsed + ExpiryDate > NOW
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_SponsorshipCodes_SponsorId_IsUsed_ExpiryDate"
+ON "SponsorshipCodes"("SponsorId", "IsUsed", "ExpiryDate" DESC)
+WHERE "IsUsed" = false;
+\echo '  ✓ Created IX_SponsorshipCodes_SponsorId_IsUsed_ExpiryDate';
 
--- Index: Code redemption lookup
--- Used by: Code redemption endpoint (high traffic)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_SponsorshipCodes_Code_Status"
-ON "SponsorshipCodes"("Code", "Status")
-WHERE "Status" != 'Expired';
-RAISE NOTICE '  ✓ Created IX_SponsorshipCodes_Code_Status';
+-- Index: Code redemption lookup (high traffic)
+-- Used by: Code redemption endpoint, validation
+-- Query pattern: Code = ? AND IsActive = true AND ExpiryDate > NOW
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_SponsorshipCodes_Code_Active_Expiry"
+ON "SponsorshipCodes"("Code", "IsActive", "ExpiryDate")
+WHERE "IsActive" = true;
+\echo '  ✓ Created IX_SponsorshipCodes_Code_Active_Expiry';
 
 -- ============================================================================
 -- PART 5: ADD REFERRAL CODE INDEX
 -- ============================================================================
 
-RAISE NOTICE '>>> Adding referral code index...';
+\echo '>>> Adding referral code index...';
 
 -- Index: Active referral code lookup
 -- Used by: Referral code validation during registration
 CREATE INDEX CONCURRENTLY IF NOT EXISTS "IX_ReferralCodes_Code_IsActive"
 ON "ReferralCodes"("Code", "IsActive")
 WHERE "IsActive" = true;
-RAISE NOTICE '  ✓ Created IX_ReferralCodes_Code_IsActive';
+\echo '  ✓ Created IX_ReferralCodes_Code_IsActive';
 
 -- ============================================================================
 -- PART 6: ANALYZE TABLES TO UPDATE STATISTICS
 -- ============================================================================
 
-RAISE NOTICE '>>> Analyzing tables to update query planner statistics...';
+\echo '>>> Analyzing tables to update query planner statistics...';
 
 ANALYZE "PlantAnalyses";
-RAISE NOTICE '  ✓ Analyzed PlantAnalyses';
+\echo '  ✓ Analyzed PlantAnalyses';
 
 ANALYZE "UserSubscriptions";
-RAISE NOTICE '  ✓ Analyzed UserSubscriptions';
+\echo '  ✓ Analyzed UserSubscriptions';
 
 ANALYZE "AnalysisMessages";
-RAISE NOTICE '  ✓ Analyzed AnalysisMessages';
+\echo '  ✓ Analyzed AnalysisMessages';
 
 ANALYZE "SponsorshipCodes";
-RAISE NOTICE '  ✓ Analyzed SponsorshipCodes';
+\echo '  ✓ Analyzed SponsorshipCodes';
 
 ANALYZE "ReferralCodes";
-RAISE NOTICE '  ✓ Analyzed ReferralCodes';
+\echo '  ✓ Analyzed ReferralCodes';
 
 -- ============================================================================
 -- VERIFICATION
 -- ============================================================================
 
-RAISE NOTICE '';
-RAISE NOTICE '============================================================================';
-RAISE NOTICE 'Phase 1 optimization completed successfully!';
-RAISE NOTICE '============================================================================';
-RAISE NOTICE '';
-RAISE NOTICE 'Indexes created: 15';
-RAISE NOTICE 'Tables analyzed: 5';
-RAISE NOTICE '';
-RAISE NOTICE 'Expected performance improvements:';
-RAISE NOTICE '  - User dashboard: 70-90% faster';
-RAISE NOTICE '  - Sponsor analytics: 80-95% faster';
-RAISE NOTICE '  - Subscription validation: 95-98% faster';
-RAISE NOTICE '  - Message inbox: 60-80% faster';
-RAISE NOTICE '  - Code redemption: 85-95% faster';
-RAISE NOTICE '';
-RAISE NOTICE 'Next steps:';
-RAISE NOTICE '  1. Monitor query performance with pg_stat_statements';
-RAISE NOTICE '  2. Validate improvements in application logs';
-RAISE NOTICE '  3. Proceed to Phase 2 (index cleanup) after validation';
-RAISE NOTICE '';
-RAISE NOTICE '============================================================================';
-
-COMMIT;
+\echo '';
+\echo '============================================================================';
+\echo 'Phase 1 optimization completed successfully!';
+\echo '============================================================================';
+\echo '';
+\echo 'Indexes created: 14 (1 already existed)';
+\echo 'Tables analyzed: 5';
+\echo '';
+\echo 'Expected performance improvements:';
+\echo '  - User dashboard: 70-90% faster';
+\echo '  - Sponsor analytics: 80-95% faster';
+\echo '  - Subscription validation: 95-98% faster';
+\echo '  - Message inbox: 60-80% faster';
+\echo '  - Code redemption: 85-95% faster';
+\echo '';
+\echo 'Next steps:';
+\echo '  1. Monitor query performance with pg_stat_statements';
+\echo '  2. Validate improvements in application logs';
+\echo '  3. Proceed to Phase 2 (index cleanup) after validation';
+\echo '';
+\echo '============================================================================';
 
 -- ============================================================================
 -- ROLLBACK SCRIPT (if needed)
@@ -196,9 +196,7 @@ COMMIT;
 -- ============================================================================
 
 /*
-BEGIN;
-
-RAISE NOTICE '>>> Rolling back Phase 1 optimization...';
+\echo '>>> Rolling back Phase 1 optimization...';
 
 -- Drop composite indexes
 DROP INDEX CONCURRENTLY IF EXISTS "IX_PlantAnalyses_UserId_AnalysisDate";
@@ -210,7 +208,7 @@ DROP INDEX CONCURRENTLY IF EXISTS "IX_UserSubscriptions_SubscriptionTierId";
 
 -- Drop foreign key indexes
 DROP INDEX CONCURRENTLY IF EXISTS "IX_PlantAnalyses_SponsorCompanyId";
-DROP INDEX CONCURRENTLY IF EXISTS "IX_PlantAnalyses_DealerId";
+-- SKIP: IX_PlantAnalyses_DealerId (was already in database before migration)
 DROP INDEX CONCURRENTLY IF EXISTS "IX_UserSubscriptions_SponsorId";
 
 -- Drop messaging indexes
@@ -218,15 +216,13 @@ DROP INDEX CONCURRENTLY IF EXISTS "IX_AnalysisMessages_FromUserId_SentDate";
 DROP INDEX CONCURRENTLY IF EXISTS "IX_AnalysisMessages_ToUserId_IsRead_SentDate";
 
 -- Drop sponsorship code indexes
-DROP INDEX CONCURRENTLY IF EXISTS "IX_SponsorshipCodes_SponsorId_Status";
-DROP INDEX CONCURRENTLY IF EXISTS "IX_SponsorshipCodes_Code_Status";
+DROP INDEX CONCURRENTLY IF EXISTS "IX_SponsorshipCodes_SponsorId_IsUsed_ExpiryDate";
+DROP INDEX CONCURRENTLY IF EXISTS "IX_SponsorshipCodes_Code_Active_Expiry";
 
 -- Drop referral code index
 DROP INDEX CONCURRENTLY IF EXISTS "IX_ReferralCodes_Code_IsActive";
 
-RAISE NOTICE '>>> Rollback completed';
-
-COMMIT;
+\echo '>>> Rollback completed';
 */
 
 -- ============================================================================
