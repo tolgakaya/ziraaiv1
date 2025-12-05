@@ -189,7 +189,7 @@ namespace Business.Services.Referral
         {
             try
             {
-                var tracking = await _trackingRepository.GetAsync(t => t.Id == trackingId);
+                var tracking = await _trackingRepository.GetTrackedAsync(t => t.Id == trackingId);
 
                 if (tracking == null)
                     return new ErrorResult("Tracking record not found");

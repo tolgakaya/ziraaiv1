@@ -56,6 +56,24 @@ namespace Core.DataAccess.EntityFramework
             return await Context.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(expression);
         }
 
+        /// <summary>
+        /// Gets entity with change tracking enabled (for Update/Delete operations)
+        /// Use this method when you need to modify the entity after retrieval
+        /// </summary>
+        public TEntity GetTracked(Expression<Func<TEntity, bool>> expression)
+        {
+            return Context.Set<TEntity>().FirstOrDefault(expression);
+        }
+
+        /// <summary>
+        /// Gets entity with change tracking enabled (for Update/Delete operations)
+        /// Use this method when you need to modify the entity after retrieval
+        /// </summary>
+        public async Task<TEntity> GetTrackedAsync(Expression<Func<TEntity, bool>> expression)
+        {
+            return await Context.Set<TEntity>().FirstOrDefaultAsync(expression);
+        }
+
         public IEnumerable<TEntity> GetList(Expression<Func<TEntity, bool>> expression = null)
         {
             return expression == null

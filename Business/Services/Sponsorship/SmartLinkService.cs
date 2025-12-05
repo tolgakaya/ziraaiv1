@@ -194,7 +194,7 @@ namespace Business.Services.Sponsorship
 
         public async Task<bool> DeleteSmartLinkAsync(int linkId, int sponsorId)
         {
-            var link = await _smartLinkRepository.GetAsync(l => l.Id == linkId && l.SponsorId == sponsorId);
+            var link = await _smartLinkRepository.GetTrackedAsync(l => l.Id == linkId && l.SponsorId == sponsorId);
             if (link == null)
                 return false;
 

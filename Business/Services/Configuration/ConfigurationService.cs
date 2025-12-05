@@ -126,7 +126,7 @@ namespace Business.Services.Configuration
         {
             try
             {
-                var configuration = await _configurationRepository.GetAsync(x => x.Id == updateDto.Id);
+                var configuration = await _configurationRepository.GetTrackedAsync(x => x.Id == updateDto.Id);
                 if (configuration == null)
                     return new ErrorResult("Configuration not found");
 
@@ -154,7 +154,7 @@ namespace Business.Services.Configuration
         {
             try
             {
-                var configuration = await _configurationRepository.GetAsync(x => x.Id == id);
+                var configuration = await _configurationRepository.GetTrackedAsync(x => x.Id == id);
                 if (configuration == null)
                     return new ErrorResult("Configuration not found");
 

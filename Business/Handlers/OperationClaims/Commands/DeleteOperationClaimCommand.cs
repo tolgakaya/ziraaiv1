@@ -30,7 +30,7 @@ namespace Business.Handlers.OperationClaims.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(DeleteOperationClaimCommand request, CancellationToken cancellationToken)
             {
-                var claimToDelete = await _operationClaimRepository.GetAsync(x => x.Id == request.Id);
+                var claimToDelete = await _operationClaimRepository.GetTrackedAsync(x => x.Id == request.Id);
                 _operationClaimRepository.Delete(claimToDelete);
                 await _operationClaimRepository.SaveChangesAsync();
 

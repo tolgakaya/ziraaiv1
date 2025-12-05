@@ -59,7 +59,7 @@ namespace Business.Services.Redemption
         {
             try
             {
-                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                var sponsorshipCode = await _codeRepository.GetTrackedAsync(c => c.Code == code);
                 if (sponsorshipCode != null)
                 {
                     // Update click tracking information
@@ -88,7 +88,7 @@ namespace Business.Services.Redemption
             try
             {
                 // Get the sponsorship code with related data
-                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                var sponsorshipCode = await _codeRepository.GetTrackedAsync(c => c.Code == code);
                 
                 if (sponsorshipCode == null)
                 {
@@ -142,7 +142,7 @@ namespace Business.Services.Redemption
                 }
 
                 // Get the sponsorship code with related data
-                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                var sponsorshipCode = await _codeRepository.GetTrackedAsync(c => c.Code == code);
                 if (sponsorshipCode == null)
                 {
                     return new ErrorResult("Geçersiz aktivasyon kodu.");
@@ -186,7 +186,7 @@ namespace Business.Services.Redemption
         {
             try
             {
-                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                var sponsorshipCode = await _codeRepository.GetTrackedAsync(c => c.Code == code);
                 if (sponsorshipCode == null || string.IsNullOrEmpty(sponsorshipCode.RecipientPhone))
                 {
                     return null;
@@ -210,7 +210,7 @@ namespace Business.Services.Redemption
             try
             {
                 // Get code details including recipient info
-                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                var sponsorshipCode = await _codeRepository.GetTrackedAsync(c => c.Code == code);
                 if (sponsorshipCode == null)
                 {
                     return new ErrorDataResult<UserEntity>("Geçersiz kod");
@@ -307,7 +307,7 @@ namespace Business.Services.Redemption
             try
             {
                 // Get the sponsorship code with related data
-                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                var sponsorshipCode = await _codeRepository.GetTrackedAsync(c => c.Code == code);
                 
                 if (sponsorshipCode == null)
                 {
@@ -439,7 +439,7 @@ namespace Business.Services.Redemption
                 var redemptionLink = $"{baseUrl}/redeem/{code}";
 
                 // Update the code with the generated link
-                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                var sponsorshipCode = await _codeRepository.GetTrackedAsync(c => c.Code == code);
                 if (sponsorshipCode != null && string.IsNullOrEmpty(sponsorshipCode.RedemptionLink))
                 {
                     sponsorshipCode.RedemptionLink = redemptionLink;
@@ -465,7 +465,7 @@ namespace Business.Services.Redemption
             try
             {
                 // Get sponsorship code details
-                var sponsorshipCode = await _codeRepository.GetAsync(c => c.Code == code);
+                var sponsorshipCode = await _codeRepository.GetTrackedAsync(c => c.Code == code);
                 
                 if (sponsorshipCode == null)
                 {

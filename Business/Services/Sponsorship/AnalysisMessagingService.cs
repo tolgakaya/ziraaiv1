@@ -429,7 +429,7 @@ namespace Business.Services.Sponsorship
 
         public async Task<bool> CanReplyToMessageAsync(int userId, int messageId)
         {
-            var message = await _messageRepository.GetAsync(m => m.Id == messageId);
+            var message = await _messageRepository.GetTrackedAsync(m => m.Id == messageId);
             if (message == null)
                 return false;
 
@@ -495,7 +495,7 @@ namespace Business.Services.Sponsorship
 
         public async Task DeleteMessageAsync(int messageId, int userId)
         {
-            var message = await _messageRepository.GetAsync(m => m.Id == messageId);
+            var message = await _messageRepository.GetTrackedAsync(m => m.Id == messageId);
             if (message != null && (message.FromUserId == userId || message.ToUserId == userId))
             {
                 message.IsDeleted = true;
@@ -509,7 +509,7 @@ namespace Business.Services.Sponsorship
 
         public async Task FlagMessageAsync(int messageId, int flaggedByUserId, string reason)
         {
-            var message = await _messageRepository.GetAsync(m => m.Id == messageId);
+            var message = await _messageRepository.GetTrackedAsync(m => m.Id == messageId);
             if (message != null)
             {
                 message.IsFlagged = true;

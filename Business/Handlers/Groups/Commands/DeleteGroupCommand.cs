@@ -30,7 +30,7 @@ namespace Business.Handlers.Groups.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(DeleteGroupCommand request, CancellationToken cancellationToken)
             {
-                var groupToDelete = await _groupRepository.GetAsync(x => x.Id == request.Id);
+                var groupToDelete = await _groupRepository.GetTrackedAsync(x => x.Id == request.Id);
 
                 _groupRepository.Delete(groupToDelete);
                 await _groupRepository.SaveChangesAsync();
