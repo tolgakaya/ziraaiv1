@@ -16,6 +16,7 @@ using Business.Services.SponsorRequest;
 using Business.Services.MobileIntegration;
 using Business.Services.Analytics;
 using Business.Services.Payment;
+using Business.Services.Cache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
@@ -456,6 +457,11 @@ namespace Business.DependencyResolvers
             }
 
             // Subscription System Services
+
+            // Cache Services
+            builder.RegisterType<CacheInvalidationService>()
+                .As<ICacheInvalidationService>()
+                .SingleInstance(); // Singleton for cache invalidation coordination
 
             // Analytics Services
             builder.RegisterType<Business.Services.Analytics.SponsorDealerAnalyticsCacheService>()
