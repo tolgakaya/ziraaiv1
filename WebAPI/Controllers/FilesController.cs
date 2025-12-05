@@ -1,6 +1,7 @@
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ namespace WebAPI.Controllers
     [Authorize]
     [Route("api/v1/files")]
     [ApiController]
+    [EnableCors("AllowFiles")]
     public class FilesController : BaseApiController
     {
         private readonly IAnalysisMessageRepository _messageRepository;
@@ -93,11 +95,7 @@ namespace WebAPI.Controllers
                     "Voice message redirect to external storage. User: {UserId}, Message: {MessageId}, Url: {Url}",
                     userId.Value, messageId, message.VoiceMessageUrl);
 
-                // Add CORS headers before redirect to support web application access
-                Response.Headers.Add("Access-Control-Allow-Origin", Request.Headers["Origin"].ToString());
-                Response.Headers.Add("Access-Control-Allow-Credentials", "true");
-                Response.Headers.Add("Access-Control-Expose-Headers", "Content-Length, Content-Range, Content-Type");
-
+                // CORS headers automatically added by AllowFiles policy
                 return Redirect(message.VoiceMessageUrl);
             }
 
@@ -197,11 +195,7 @@ namespace WebAPI.Controllers
                     "Attachment redirect to external storage. User: {UserId}, Message: {MessageId}, Index: {Index}, Url: {Url}",
                     userId.Value, messageId, attachmentIndex, attachmentUrl);
 
-                // Add CORS headers before redirect to support web application access
-                Response.Headers.Add("Access-Control-Allow-Origin", Request.Headers["Origin"].ToString());
-                Response.Headers.Add("Access-Control-Allow-Credentials", "true");
-                Response.Headers.Add("Access-Control-Expose-Headers", "Content-Length, Content-Range, Content-Type");
-
+                // CORS headers automatically added by AllowFiles policy
                 return Redirect(attachmentUrl);
             }
 

@@ -110,13 +110,43 @@ namespace WebAPI
                             // Staging
                             "https://staging-app.ziraai.com",
                             "https://staging.ziraai.com",
+                            "https://ziraaiadmin-staging.up.railway.app",  // Admin staging
                             // Production
                             "https://app.ziraai.com",
-                            "https://ziraai.com"
+                            "https://ziraai.com",
+                            "https://admin.ziraai.com"  // Admin production
                         )
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials());
+
+                // Policy for file serving with credentials (FilesController)
+                // Includes all admin and app domains that need to display attachments
+                options.AddPolicy(
+                    "AllowFiles",
+                    builder => builder
+                        .WithOrigins(
+                            // Development
+                            "http://localhost:3000",
+                            "http://localhost:4200",
+                            "http://localhost:5173",
+                            "http://localhost:8080",
+                            "https://1lik.net",  // Cloudflare R2 domain
+                            // Staging
+                            "https://staging-app.ziraai.com",
+                            "https://staging.ziraai.com",
+                            "https://ziraaiadmin-staging.up.railway.app",
+                            "https://ziraai-api-sit.up.railway.app",  // Staging API
+                            // Production
+                            "https://app.ziraai.com",
+                            "https://ziraai.com",
+                            "https://admin.ziraai.com",
+                            "https://api.ziraai.com"  // Production API
+                        )
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials()
+                        .WithExposedHeaders("Content-Length", "Content-Range", "Content-Type"));
             });
 
             var tokenOptions = Configuration.GetSection("TokenOptions").Get<TokenOptions>();
