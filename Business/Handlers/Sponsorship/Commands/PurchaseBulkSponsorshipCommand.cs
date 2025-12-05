@@ -28,13 +28,16 @@ namespace Business.Handlers.Sponsorship.Commands
         {
             private readonly ISponsorshipService _sponsorshipService;
             private readonly ICacheManager _cacheManager;
+            private readonly Business.Services.AdminAnalytics.IAdminStatisticsCacheService _adminCacheService;
 
             public PurchaseBulkSponsorshipCommandHandler(
                 ISponsorshipService sponsorshipService,
-                ICacheManager cacheManager)
+                ICacheManager cacheManager,
+                Business.Services.AdminAnalytics.IAdminStatisticsCacheService adminCacheService)
             {
                 _sponsorshipService = sponsorshipService;
                 _cacheManager = cacheManager;
+                _adminCacheService = adminCacheService;
             }
 
             public async Task<IDataResult<Entities.Dtos.SponsorshipPurchaseResponseDto>> Handle(PurchaseBulkSponsorshipCommand request, CancellationToken cancellationToken)
@@ -56,12 +59,16 @@ namespace Business.Handlers.Sponsorship.Commands
                         request.TaxNumber
                     );
 
-                    // Invalidate sponsor dashboard cache after successful purchase
+                    // Invalidate sponsor dashboard cache and admin statistics cache after successful purchase
                     if (result.Success)
                     {
                         var cacheKey = $"SponsorDashboard:{request.SponsorId}";
                         _cacheManager.Remove(cacheKey);
                         Console.WriteLine($"[DashboardCache] 🗑️ Invalidated cache for sponsor {request.SponsorId} after purchase");
+
+                        // Invalidate admin statistics cache (sponsorship data changed)
+                        await _adminCacheService.InvalidateAllStatisticsAsync();
+                        Console.WriteLine($"[AdminStatsCache] 🗑️ Invalidated admin statistics cache after sponsorship purchase");
                     }
 
                     Console.WriteLine($"[PurchaseBulkSponsorship] Service result: Success={result.Success}, Message={result.Message}");

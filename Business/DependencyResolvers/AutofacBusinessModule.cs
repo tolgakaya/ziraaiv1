@@ -467,6 +467,10 @@ namespace Business.DependencyResolvers
                 .As<Business.Services.Sponsorship.IDealerDashboardCacheService>()
                 .InstancePerLifetimeScope(); // Scoped for dealer dashboard caching
 
+            builder.RegisterType<Business.Services.AdminAnalytics.AdminStatisticsCacheService>()
+                .As<Business.Services.AdminAnalytics.IAdminStatisticsCacheService>()
+                .InstancePerLifetimeScope();
+
             // Analytics Services
             builder.RegisterType<Business.Services.Analytics.SponsorDealerAnalyticsCacheService>()
                 .As<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService>()
