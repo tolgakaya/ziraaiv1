@@ -2,6 +2,7 @@ using Business.Constants;
 using Business.Services.Sponsorship;
 using System.Text.Json;
 using Business.Handlers.AnalysisMessages.ValidationRules;
+using Core.CrossCuttingConcerns.Caching;
 using DataAccess.Abstract;
 using System.Linq;
 using Core.Aspects.Autofac.Caching;
@@ -43,19 +44,22 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly IGroupRepository _groupRepository;
             private readonly DataAccess.Abstract.IUserRepository _userRepository;
             private readonly DataAccess.Abstract.IPlantAnalysisRepository _plantAnalysisRepository;
+            private readonly ICacheManager _cacheManager;
 
             public SendMessageCommandHandler(
                 IAnalysisMessagingService messagingService,
                 IUserGroupRepository userGroupRepository,
                 IGroupRepository groupRepository,
                 DataAccess.Abstract.IUserRepository userRepository,
-                DataAccess.Abstract.IPlantAnalysisRepository plantAnalysisRepository)
+                DataAccess.Abstract.IPlantAnalysisRepository plantAnalysisRepository,
+                ICacheManager cacheManager)
             {
                 _messagingService = messagingService;
                 _userGroupRepository = userGroupRepository;
                 _groupRepository = groupRepository;
                 _userRepository = userRepository;
                 _plantAnalysisRepository = plantAnalysisRepository;
+                _cacheManager = cacheManager;
             }
 
             [ValidationAspect(typeof(SendMessageValidator), Priority = 1)]
@@ -149,6 +153,14 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     if (message == null)
                     {
                         return new ErrorDataResult<AnalysisMessageDto>(Messages.MessageSendFailed);
+                    }
+
+                    // Invalidate sponsor messaging analytics cache if message involves sponsor
+                    if (analysis.SponsorCompanyId.HasValue)
+                    {
+                        var sponsorId = analysis.SponsorCompanyId.Value;
+                        _cacheManager.RemoveByPattern($"SponsorMessagingAnalytics:{sponsorId}*");
+                        System.Console.WriteLine($"[SponsorAnalyticsCache] 🗑️ Invalidated messaging analytics cache for sponsor {sponsorId}");
                     }
 
                     // Get sender's avatar URLs

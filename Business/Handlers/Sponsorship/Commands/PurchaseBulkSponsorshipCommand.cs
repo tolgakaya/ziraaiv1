@@ -69,6 +69,11 @@ namespace Business.Handlers.Sponsorship.Commands
                         // Invalidate admin statistics cache (sponsorship data changed)
                         await _adminCacheService.InvalidateAllStatisticsAsync();
                         Console.WriteLine($"[AdminStatsCache] 🗑️ Invalidated admin statistics cache after sponsorship purchase");
+
+                        // Invalidate sponsor analytics caches (purchase affects ROI and temporal analytics)
+                        _cacheManager.RemoveByPattern($"SponsorROIAnalytics:{request.SponsorId}");
+                        _cacheManager.RemoveByPattern($"SponsorTemporalAnalytics:{request.SponsorId}*");
+                        Console.WriteLine($"[SponsorAnalyticsCache] 🗑️ Invalidated ROI and temporal analytics cache for sponsor {request.SponsorId}");
                     }
 
                     Console.WriteLine($"[PurchaseBulkSponsorship] Service result: Success={result.Success}, Message={result.Message}");

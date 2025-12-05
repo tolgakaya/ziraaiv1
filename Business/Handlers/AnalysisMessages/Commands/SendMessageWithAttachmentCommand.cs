@@ -3,6 +3,7 @@ using Business.Services.FileStorage;
 using Business.Services.ImageProcessing;
 using Business.Services.Messaging;
 using Business.Services.Sponsorship;
+using Core.CrossCuttingConcerns.Caching;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
@@ -42,6 +43,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly DataAccess.Abstract.IPlantAnalysisRepository _plantAnalysisRepository;
             private readonly IImageProcessingService _imageProcessingService;
             private readonly IConfigurationService _configurationService;
+            private readonly ICacheManager _cacheManager;
 
             public SendMessageWithAttachmentCommandHandler(
                 IAnalysisMessageRepository messageRepository,
@@ -54,7 +56,8 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 DataAccess.Abstract.IUserRepository userRepository,
                 DataAccess.Abstract.IPlantAnalysisRepository plantAnalysisRepository,
                 IImageProcessingService imageProcessingService,
-                IConfigurationService configurationService)
+                IConfigurationService configurationService,
+                ICacheManager cacheManager)
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
@@ -67,6 +70,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 _plantAnalysisRepository = plantAnalysisRepository;
                 _imageProcessingService = imageProcessingService;
                 _configurationService = configurationService;
+                _cacheManager = cacheManager;
             }
 
             public async Task<IDataResult<AnalysisMessageDto>> Handle(SendMessageWithAttachmentCommand request, CancellationToken cancellationToken)
@@ -346,6 +350,14 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         ForwardedFromMessageId = message.ForwardedFromMessageId,
                         IsActive = true
                     };
+
+                    // Invalidate sponsor messaging analytics cache if message involves sponsor
+                    if (analysis.SponsorCompanyId.HasValue)
+                    {
+                        var sponsorId = analysis.SponsorCompanyId.Value;
+                        _cacheManager.RemoveByPattern($"SponsorMessagingAnalytics:{sponsorId}*");
+                        System.Console.WriteLine($"[SponsorAnalyticsCache] 🗑️ Invalidated messaging analytics cache for sponsor {sponsorId}");
+                    }
 
                     return new SuccessDataResult<AnalysisMessageDto>(
                         messageDto,
