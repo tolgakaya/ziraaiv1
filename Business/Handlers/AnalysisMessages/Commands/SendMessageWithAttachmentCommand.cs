@@ -1,14 +1,19 @@
+using Business.Services.Configuration;
 using Business.Services.FileStorage;
+using Business.Services.ImageProcessing;
 using Business.Services.Messaging;
 using Business.Services.Sponsorship;
+using Core.CrossCuttingConcerns.Caching;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
+using Entities.Constants;
 using Entities.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -35,6 +40,10 @@ namespace Business.Handlers.AnalysisMessages.Commands
             private readonly IUserGroupRepository _userGroupRepository;
             private readonly IGroupRepository _groupRepository;
             private readonly DataAccess.Abstract.IUserRepository _userRepository;
+            private readonly DataAccess.Abstract.IPlantAnalysisRepository _plantAnalysisRepository;
+            private readonly IImageProcessingService _imageProcessingService;
+            private readonly IConfigurationService _configurationService;
+            private readonly ICacheManager _cacheManager;
 
             public SendMessageWithAttachmentCommandHandler(
                 IAnalysisMessageRepository messageRepository,
@@ -44,7 +53,11 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 LocalFileStorageService localStorage, // Local for non-images
                 IUserGroupRepository userGroupRepository,
                 IGroupRepository groupRepository,
-                DataAccess.Abstract.IUserRepository userRepository)
+                DataAccess.Abstract.IUserRepository userRepository,
+                DataAccess.Abstract.IPlantAnalysisRepository plantAnalysisRepository,
+                IImageProcessingService imageProcessingService,
+                IConfigurationService configurationService,
+                ICacheManager cacheManager)
             {
                 _messageRepository = messageRepository;
                 _messagingService = messagingService;
@@ -54,21 +67,48 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 _userGroupRepository = userGroupRepository;
                 _groupRepository = groupRepository;
                 _userRepository = userRepository;
+                _plantAnalysisRepository = plantAnalysisRepository;
+                _imageProcessingService = imageProcessingService;
+                _configurationService = configurationService;
+                _cacheManager = cacheManager;
             }
 
             public async Task<IDataResult<AnalysisMessageDto>> Handle(SendMessageWithAttachmentCommand request, CancellationToken cancellationToken)
             {
-                // Determine user role
+                // Get analysis to determine context-based role
+                var analysis = await _plantAnalysisRepository.GetAsync(a => a.Id == request.PlantAnalysisId);
+                if (analysis == null)
+                {
+                    return new ErrorDataResult<AnalysisMessageDto>("Analysis not found");
+                }
+
+                // Determine user's roles
                 var userGroups = await _userGroupRepository.GetListAsync(ug => ug.UserId == request.FromUserId);
                 var groupIds = userGroups.Select(ug => ug.GroupId).ToList();
                 var groups = await _groupRepository.GetListAsync(g => groupIds.Contains(g.Id));
-                var isSponsor = groups.Any(g => g.GroupName == "Sponsor");
-                var isFarmer = groups.Any(g => g.GroupName == "Farmer");
+                var hasSponsorRole = groups.Any(g => g.GroupName == "Sponsor");
+                var hasFarmerRole = groups.Any(g => g.GroupName == "Farmer");
 
-                // Role-based validation
-                if (isSponsor)
+                // Context-based role detection (same logic as SendMessageCommand)
+                bool isActingAsFarmer = (analysis.UserId == request.FromUserId);
+                bool isActingAsSponsor = (analysis.SponsorUserId == request.FromUserId) ||
+                                        (analysis.DealerId == request.FromUserId);
+
+                // Validate user has the appropriate role for their context
+                if (isActingAsFarmer && !hasFarmerRole)
                 {
-                    // Sponsor sending to farmer
+                    return new ErrorDataResult<AnalysisMessageDto>("You must have Farmer role to send messages as the analysis owner");
+                }
+
+                if (isActingAsSponsor && !hasSponsorRole)
+                {
+                    return new ErrorDataResult<AnalysisMessageDto>("You must have Sponsor role to send messages as a sponsor");
+                }
+
+                // Role-based validation based on CONTEXT
+                if (isActingAsSponsor)
+                {
+                    // User is acting as SPONSOR for this analysis
                     var canSend = await _messagingService.CanSendMessageForAnalysisAsync(
                         request.FromUserId,
                         request.ToUserId,
@@ -77,9 +117,9 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     if (!canSend.canSend)
                         return new ErrorDataResult<AnalysisMessageDto>(canSend.errorMessage);
                 }
-                else if (isFarmer)
+                else if (isActingAsFarmer)
                 {
-                    // Farmer replying to sponsor
+                    // User is acting as FARMER for this analysis
                     var canReply = await _messagingService.CanFarmerReplyAsync(
                         request.FromUserId,
                         request.ToUserId,
@@ -90,7 +130,8 @@ namespace Business.Handlers.AnalysisMessages.Commands
                 }
                 else
                 {
-                    return new ErrorDataResult<AnalysisMessageDto>("Only sponsors and farmers can send messages");
+                    // User is neither farmer nor sponsor for this analysis
+                    return new ErrorDataResult<AnalysisMessageDto>("You are not authorized to send messages for this analysis");
                 }
 
                 // Validate attachments based on ANALYSIS tier
@@ -113,19 +154,61 @@ namespace Business.Handlers.AnalysisMessages.Commands
 
                 try
                 {
+                    // Get resize configuration
+                    var enableResize = await _configurationService.GetBoolValueAsync(
+                        ConfigurationKeys.Messaging.EnableAttachmentImageResize, true);
+
+                    var maxSizeMB = await _configurationService.GetDecimalValueAsync(
+                        ConfigurationKeys.Messaging.AttachmentImageMaxSizeMB, 1.0m);
+
+                    var maxWidth = await _configurationService.GetIntValueAsync(
+                        ConfigurationKeys.Messaging.AttachmentImageMaxWidth, 1920);
+
+                    var maxHeight = await _configurationService.GetIntValueAsync(
+                        ConfigurationKeys.Messaging.AttachmentImageMaxHeight, 1080);
+
                     foreach (var file in request.Attachments)
                     {
                         var fileName = $"msg_attachment_{request.FromUserId}_{DateTime.Now.Ticks}_{file.FileName}";
-                        
+
                         // Select appropriate storage based on MIME type
                         var isImage = file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
                         var folder = isImage ? null : "attachments"; // Organize non-images in subfolder
-                        
+
                         string url;
                         if (isImage)
                         {
+                            // Resize image if enabled
+                            Stream uploadStream;
+                            string contentType = file.ContentType;
+
+                            if (enableResize)
+                            {
+                                // Read file to byte array
+                                using var memoryStream = new MemoryStream();
+                                await file.CopyToAsync(memoryStream);
+                                var imageBytes = memoryStream.ToArray();
+
+                                // Resize to target size (1 MB default)
+                                var resizedBytes = await _imageProcessingService.ResizeToTargetSizeAsync(
+                                    imageBytes,
+                                    (double)maxSizeMB,
+                                    maxWidth,
+                                    maxHeight);
+
+                                uploadStream = new MemoryStream(resizedBytes);
+                                contentType = "image/jpeg"; // ResizeToTargetSizeAsync may convert to JPEG
+                            }
+                            else
+                            {
+                                uploadStream = file.OpenReadStream();
+                            }
+
                             // Use FreeImageHost for images
-                            url = await _imageStorage.UploadFileAsync(file.OpenReadStream(), fileName, file.ContentType);
+                            url = await _imageStorage.UploadFileAsync(uploadStream, fileName, contentType);
+
+                            if (enableResize)
+                                uploadStream.Dispose();
                         }
                         else
                         {
@@ -202,7 +285,7 @@ namespace Business.Handlers.AnalysisMessages.Commands
                     var sender = await _userRepository.GetAsync(u => u.UserId == message.FromUserId);
 
                     // 🔔 Send real-time SignalR notification to recipient
-                    var senderRole = isSponsor ? "Sponsor" : "Farmer";
+                    var senderRole = isActingAsSponsor ? "Sponsor" : "Farmer";
                     await _messagingService.SendMessageNotificationAsync(
                         message, 
                         senderRole,
@@ -267,6 +350,14 @@ namespace Business.Handlers.AnalysisMessages.Commands
                         ForwardedFromMessageId = message.ForwardedFromMessageId,
                         IsActive = true
                     };
+
+                    // Invalidate sponsor messaging analytics cache if message involves sponsor
+                    if (analysis.SponsorCompanyId.HasValue)
+                    {
+                        var sponsorId = analysis.SponsorCompanyId.Value;
+                        _cacheManager.RemoveByPattern($"SponsorMessagingAnalytics:{sponsorId}*");
+                        System.Console.WriteLine($"[SponsorAnalyticsCache] 🗑️ Invalidated messaging analytics cache for sponsor {sponsorId}");
+                    }
 
                     return new SuccessDataResult<AnalysisMessageDto>(
                         messageDto,

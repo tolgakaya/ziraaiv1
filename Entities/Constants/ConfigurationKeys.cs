@@ -30,6 +30,12 @@ namespace Entities.Constants
         {
             public const string DailyMessageLimitPerFarmer = "MESSAGING_DAILY_LIMIT_PER_FARMER";
             public const string EnableRateLimit = "MESSAGING_ENABLE_RATE_LIMIT";
+
+            // Message Attachment Image Processing
+            public const string EnableAttachmentImageResize = "MESSAGING_ATTACHMENT_IMAGE_ENABLE_RESIZE";
+            public const string AttachmentImageMaxSizeMB = "MESSAGING_ATTACHMENT_IMAGE_MAX_SIZE_MB";
+            public const string AttachmentImageMaxWidth = "MESSAGING_ATTACHMENT_IMAGE_MAX_WIDTH";
+            public const string AttachmentImageMaxHeight = "MESSAGING_ATTACHMENT_IMAGE_MAX_HEIGHT";
         }
         
         // RabbitMQ Configuration Keys
@@ -43,6 +49,34 @@ namespace Entities.Constants
             public const string Password = "RABBITMQ_PASSWORD";
             public const string VirtualHost = "RABBITMQ_VIRTUAL_HOST";
             public const string Port = "RABBITMQ_PORT";
+        }
+
+        // Cache Configuration Keys
+        public static class Cache
+        {
+            /// <summary>
+            /// Dashboard cache TTL in minutes (dealer/sponsor dashboards)
+            /// Default: 15 minutes
+            /// </summary>
+            public const string DashboardCacheDuration = "CACHE_DASHBOARD_DURATION_MINUTES";
+
+            /// <summary>
+            /// Statistics cache TTL in minutes (admin analytics)
+            /// Default: 60 minutes
+            /// </summary>
+            public const string StatisticsCacheDuration = "CACHE_STATISTICS_DURATION_MINUTES";
+
+            /// <summary>
+            /// Reference data cache TTL in minutes (tiers, configs)
+            /// Default: 1440 minutes (24 hours)
+            /// </summary>
+            public const string ReferenceDataCacheDuration = "CACHE_REFERENCE_DATA_DURATION_MINUTES";
+
+            /// <summary>
+            /// Analytics cache TTL in minutes (sponsor analytics)
+            /// Default: 15 minutes
+            /// </summary>
+            public const string AnalyticsCacheDuration = "CACHE_ANALYTICS_DURATION_MINUTES";
         }
     }
 }

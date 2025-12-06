@@ -32,6 +32,9 @@ namespace Business.Services.PlantAnalysis
         private readonly IConfiguration _configuration;
         private readonly RabbitMQOptions _rabbitMQOptions;
 
+        // Feature flag: Switch between OLD system (direct to worker) and NEW system (via Dispatcher)
+        private readonly bool _useRawAnalysisQueue;
+
         public PlantAnalysisMultiImageAsyncService(
             IMessageQueueService messageQueueService,
             IImageProcessingService imageProcessingService,
@@ -50,18 +53,34 @@ namespace Business.Services.PlantAnalysis
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _rabbitMQOptions = rabbitMQOptions.Value;
+
+            // Read feature flag from configuration (defaults to false for backward compatibility)
+            _useRawAnalysisQueue = configuration.GetValue<bool>("PlantAnalysis:UseRawAnalysisQueue", false);
+
+            // CRITICAL DEBUG LOG: Verify feature flag is read correctly
+            Console.WriteLine($"[PlantAnalysisMultiImageAsyncService] UseRawAnalysisQueue = {_useRawAnalysisQueue}");
+            Console.WriteLine($"[PlantAnalysisMultiImageAsyncService] RawAnalysisRequest Queue = {_rabbitMQOptions.Queues.RawAnalysisRequest}");
+            Console.WriteLine($"[PlantAnalysisMultiImageAsyncService] PlantAnalysisMultiImageRequest Queue = {_rabbitMQOptions.Queues.PlantAnalysisMultiImageRequest}");
         }
 
-        public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisMultiImageRequestDto request)
+        public async Task<(string analysisId, int plantAnalysisId)> QueuePlantAnalysisAsync(PlantAnalysisMultiImageRequestDto request)
         {
+            // CRITICAL DEBUG: Method entry
+            Console.WriteLine($"[QueueMultiImageAnalysisAsync] === METHOD ENTRY ===");
+            Console.WriteLine($"[QueueMultiImageAnalysisAsync] _useRawAnalysisQueue = {_useRawAnalysisQueue}");
+
             try
             {
                 // Generate unique IDs for tracking
                 var correlationId = Guid.NewGuid().ToString("N");
                 var analysisId = $"async_multi_analysis_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{correlationId[..8]}";
 
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Generated AnalysisId = {analysisId}");
+
                 // Process and upload all images
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Starting image processing...");
                 var imageUrls = await ProcessAndUploadAllImagesAsync(request, analysisId);
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Image processing complete");
 
                 // Create initial PlantAnalysis entity with all request data
                 var plantAnalysis = new Entities.Concrete.PlantAnalysis
@@ -123,11 +142,22 @@ namespace Business.Services.PlantAnalysis
                 };
 
                 // Save to database first
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Saving to database...");
                 _plantAnalysisRepository.Add(plantAnalysis);
                 await _plantAnalysisRepository.SaveChangesAsync();
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Database save complete - PlantAnalysisId: {plantAnalysis.Id}");
 
-                // Get multi-image queue name from appsettings
-                var queueName = _rabbitMQOptions.Queues.PlantAnalysisMultiImageRequest;
+                // Get queue name based on feature flag
+                // NEW system: raw-analysis-queue → Dispatcher → Provider queues (unified queue for all requests)
+                // OLD system: plant-analysis-multi-image-requests → Worker Pool (direct)
+                var queueName = _useRawAnalysisQueue
+                    ? _rabbitMQOptions.Queues.RawAnalysisRequest  // NEW system (unified)
+                    : _rabbitMQOptions.Queues.PlantAnalysisMultiImageRequest; // OLD system (legacy)
+
+                // CRITICAL DEBUG LOG: Verify which queue is being used
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] _useRawAnalysisQueue = {_useRawAnalysisQueue}");
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Selected Queue = {queueName}");
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] AnalysisId = {analysisId}");
 
                 // Create async request payload for RabbitMQ
                 var asyncRequest = new PlantAnalysisMultiImageAsyncRequestDto
@@ -187,10 +217,12 @@ namespace Business.Services.PlantAnalysis
                     throw new InvalidOperationException("Failed to publish message to queue");
                 }
 
-                return analysisId;
+                return (analysisId, plantAnalysis.Id);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] EXCEPTION: {ex.Message}");
+                Console.WriteLine($"[QueueMultiImageAnalysisAsync] Stack Trace: {ex.StackTrace}");
                 throw new InvalidOperationException($"Failed to queue multi-image plant analysis: {ex.Message}", ex);
             }
         }

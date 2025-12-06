@@ -53,10 +53,8 @@ namespace Business.Handlers.Sponsorship.Queries
             var codesUsed = dealerCodes.Count(c => c.IsUsed);
             var codesAvailable = dealerCodes.Count(c => !c.IsUsed && c.IsActive && c.ExpiryDate > DateTime.Now && !c.DistributionDate.HasValue);
 
-            // 5. Get plant analyses from dealer's codes
-            var dealerCodeIds = dealerCodes.Select(c => c.Id).ToList();
-            var allAnalyses = await _plantAnalysisRepository.GetListAsync();
-            var dealerAnalyses = allAnalyses.Where(a => a.DealerId == request.DealerId).ToList();
+            // 5. Get plant analyses from dealer's codes (⚡ OPTIMIZED: Filter in SQL)
+            var dealerAnalyses = (await _plantAnalysisRepository.GetListAsync(a => a.DealerId == request.DealerId)).ToList();
 
             var uniqueFarmers = dealerAnalyses.Select(a => a.UserId).Distinct().Count();
             var totalAnalyses = dealerAnalyses.Count;

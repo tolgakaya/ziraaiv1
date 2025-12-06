@@ -48,12 +48,30 @@ namespace Core.DataAccess.EntityFramework
 
         public TEntity Get(Expression<Func<TEntity, bool>> expression)
         {
-            return Context.Set<TEntity>().FirstOrDefault(expression);
+            return Context.Set<TEntity>().AsNoTracking().FirstOrDefault(expression);
         }
 
         public async Task<TEntity> GetAsync(Expression<Func<TEntity, bool>> expression)
         {
-            return await Context.Set<TEntity>().AsQueryable().FirstOrDefaultAsync(expression);
+            return await Context.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(expression);
+        }
+
+        /// <summary>
+        /// Gets entity with change tracking enabled (for Update/Delete operations)
+        /// Use this method when you need to modify the entity after retrieval
+        /// </summary>
+        public TEntity GetTracked(Expression<Func<TEntity, bool>> expression)
+        {
+            return Context.Set<TEntity>().FirstOrDefault(expression);
+        }
+
+        /// <summary>
+        /// Gets entity with change tracking enabled (for Update/Delete operations)
+        /// Use this method when you need to modify the entity after retrieval
+        /// </summary>
+        public async Task<TEntity> GetTrackedAsync(Expression<Func<TEntity, bool>> expression)
+        {
+            return await Context.Set<TEntity>().FirstOrDefaultAsync(expression);
         }
 
         public IEnumerable<TEntity> GetList(Expression<Func<TEntity, bool>> expression = null)
@@ -66,8 +84,8 @@ namespace Core.DataAccess.EntityFramework
         public async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>> expression = null)
         {
             return expression == null
-                ? await Context.Set<TEntity>().ToListAsync()
-                : await Context.Set<TEntity>().Where(expression).ToListAsync();
+                ? await Context.Set<TEntity>().AsNoTracking().ToListAsync()
+                : await Context.Set<TEntity>().Where(expression).AsNoTracking().ToListAsync();
         }
 
         //sources: https://www.nuget.org/packages/Apsiyon  |||  https://github.com/vmutlu/ApsiyonFramework

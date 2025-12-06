@@ -16,6 +16,7 @@ using Business.Services.SponsorRequest;
 using Business.Services.MobileIntegration;
 using Business.Services.Analytics;
 using Business.Services.Payment;
+using Business.Services.Cache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
@@ -457,6 +458,19 @@ namespace Business.DependencyResolvers
 
             // Subscription System Services
 
+            // Cache Services
+            builder.RegisterType<CacheInvalidationService>()
+                .As<ICacheInvalidationService>()
+                .SingleInstance(); // Singleton for cache invalidation coordination
+
+            builder.RegisterType<Business.Services.Sponsorship.DealerDashboardCacheService>()
+                .As<Business.Services.Sponsorship.IDealerDashboardCacheService>()
+                .InstancePerLifetimeScope(); // Scoped for dealer dashboard caching
+
+            builder.RegisterType<Business.Services.AdminAnalytics.AdminStatisticsCacheService>()
+                .As<Business.Services.AdminAnalytics.IAdminStatisticsCacheService>()
+                .InstancePerLifetimeScope();
+
             // Analytics Services
             builder.RegisterType<Business.Services.Analytics.SponsorDealerAnalyticsCacheService>()
                 .As<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService>()
@@ -464,7 +478,9 @@ namespace Business.DependencyResolvers
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
                 .Where(t => !t.IsAssignableTo<IFileStorageService>() // Exclude file storage services to prevent override
-                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>()) // Exclude SMS services to use configuration-driven registration
+                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>() // Exclude SMS services to use configuration-driven registration
+                         && !t.IsAssignableTo<IPlantAnalysisAsyncService>() // Exclude plant analysis async service to preserve explicit registration with feature flags
+                         && !t.IsAssignableTo<IPlantAnalysisMultiImageAsyncService>()) // Exclude multi-image async service to preserve explicit registration
                 .EnableInterfaceInterceptors(new ProxyGenerationOptions()
                 {
                     Selector = new AspectInterceptorSelector()

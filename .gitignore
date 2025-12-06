@@ -493,3 +493,7 @@ nul
 # Admin user creation scripts (security sensitive - keep local only)
 claudedocs/AdminOperations/CREATE_ADMIN_*.sql
 claudedocs/AdminOperations/CREATE_ADMIN_*.md
+
+# Workers directory (separate git repository)
+# Repository: https://github.com/tolgakaya/ziraai-workers
+workers/

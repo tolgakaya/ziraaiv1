@@ -47,8 +47,9 @@ namespace Business.Handlers.Sponsorship.Queries
                 .Select(d => d.Value)
                 .ToList();
 
-            // 3. Get all analyses
-            var allAnalyses = await _plantAnalysisRepository.GetListAsync();
+            // 3. Get analyses filtered by sponsor (⚡ OPTIMIZED: Filter in SQL)
+            var sponsorAnalyses = await _plantAnalysisRepository.GetListAsync(a =>
+                a.SponsorCompanyId.HasValue && a.SponsorCompanyId.Value == request.SponsorId);
 
             // 4. Build dealer performance list
             var dealerPerformances = new List<DealerPerformanceDto>();
@@ -67,7 +68,7 @@ namespace Business.Handlers.Sponsorship.Queries
                 var used = dealerCodes.Count(c => c.IsUsed);
                 var available = dealerCodes.Count(c => !c.IsUsed && c.IsActive && c.ExpiryDate > DateTime.Now && !c.DistributionDate.HasValue);
 
-                var dealerAnalyses = allAnalyses.Where(a => a.DealerId == dealerId).ToList();
+                var dealerAnalyses = sponsorAnalyses.Where(a => a.DealerId == dealerId).ToList();
                 var uniqueFarmers = dealerAnalyses.Select(a => a.UserId).Distinct().Count();
                 var totalAnalyses = dealerAnalyses.Count;
 

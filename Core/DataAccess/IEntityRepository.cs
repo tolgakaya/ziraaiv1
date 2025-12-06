@@ -21,6 +21,17 @@ namespace Core.DataAccess
         Task<PagingResult<T>> GetListForTableSearch(TableGlobalFilter globalFilter);
         T Get(Expression<Func<T, bool>> expression);
         Task<T> GetAsync(Expression<Func<T, bool>> expression);
+
+        /// <summary>
+        /// Gets entity with change tracking enabled (for Update/Delete operations)
+        /// </summary>
+        T GetTracked(Expression<Func<T, bool>> expression);
+
+        /// <summary>
+        /// Gets entity with change tracking enabled (for Update/Delete operations)
+        /// </summary>
+        Task<T> GetTrackedAsync(Expression<Func<T, bool>> expression);
+
         int SaveChanges();
         Task<int> SaveChangesAsync();
         IQueryable<T> Query();

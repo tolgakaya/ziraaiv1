@@ -43,6 +43,14 @@ namespace WebAPI.Controllers
             _subscriptionValidationService = subscriptionValidationService;
             _referralTrackingService = referralTrackingService;
             _logger = logger;
+
+            // DEBUG: Log actual service types to verify DI registration
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("[CONTROLLER_CONSTRUCTOR] PlantAnalysesController initialized");
+            Console.WriteLine($"[CONTROLLER_CONSTRUCTOR] Single-image service type: {asyncAnalysisService.GetType().FullName}");
+            Console.WriteLine($"[CONTROLLER_CONSTRUCTOR] Multi-image service type: {multiImageAsyncService.GetType().FullName}");
+            Console.WriteLine("================================================================================");
+
             _logger.LogInformation("[CONTROLLER_CONSTRUCTOR] PlantAnalysesController initialized");
         }
 
@@ -366,6 +374,9 @@ namespace WebAPI.Controllers
         [Authorize(Roles = "Farmer,Admin")]
         public async Task<IActionResult> AnalyzeMultiAsync([FromBody] PlantAnalysisMultiImageRequestDto request)
         {
+            // CRITICAL DEBUG: Controller entry
+            Console.WriteLine($"[AnalyzeMultiAsync] === CONTROLLER ENTRY ===");
+
             try
             {
                 // Validate model
@@ -384,9 +395,13 @@ namespace WebAPI.Controllers
                 }
 
                 // Check if queue is healthy
+                Console.WriteLine($"[AnalyzeMultiAsync] Checking queue health...");
                 var isQueueHealthy = await _multiImageAsyncService.IsQueueHealthyAsync();
+                Console.WriteLine($"[AnalyzeMultiAsync] Queue healthy = {isQueueHealthy}");
+
                 if (!isQueueHealthy)
                 {
+                    Console.WriteLine($"[AnalyzeMultiAsync] QUEUE UNHEALTHY - Returning 503");
                     return StatusCode(StatusCodes.Status503ServiceUnavailable, new
                     {
                         success = false,
@@ -394,16 +409,19 @@ namespace WebAPI.Controllers
                     });
                 }
 
+                Console.WriteLine($"[AnalyzeMultiAsync] Queue healthy, proceeding...");
+
                 // Get authenticated user ID
                 var userId = GetUserId();
                 if (!userId.HasValue)
                     return Unauthorized();
 
-                // Check subscription and quota limits
+                // Check subscription and quota limits (4 credits for multi-image analysis)
                 var quotaValidation = await _subscriptionValidationService.ValidateAndLogUsageAsync(
                     userId.Value,
                     HttpContext.Request.Path.Value ?? "/api/v1/plantanalyses/analyze-multi-async",
-                    HttpContext.Request.Method);
+                    HttpContext.Request.Method,
+                    creditCount: 4);
 
                 if (!quotaValidation.Success)
                 {
@@ -416,8 +434,8 @@ namespace WebAPI.Controllers
                         message = quotaValidation.Message,
                         subscriptionStatus = statusResult.Data,
                         upgradeMessage = statusResult.Data?.TierName == "Trial"
-                            ? "Upgrade to Small plan for 5 daily analyses at ₺99.99/month!"
-                            : "Please upgrade your subscription plan."
+                            ? "Multi-image analysis requires 4 credits. Upgrade to Small plan for 5 daily analyses at ₺99.99/month!"
+                            : "Insufficient credits for multi-image analysis (4 credits required). Please upgrade your subscription plan."
                     });
                 }
 
@@ -456,10 +474,12 @@ namespace WebAPI.Controllers
                 request.SponsorshipCodeId = sponsorshipCodeId;
 
                 // Queue the multi-image analysis
-                var analysisId = await _multiImageAsyncService.QueuePlantAnalysisAsync(request);
+                Console.WriteLine($"[AnalyzeMultiAsync] Calling QueuePlantAnalysisAsync...");
+                var (analysisId, plantAnalysisId) = await _multiImageAsyncService.QueuePlantAnalysisAsync(request);
+                Console.WriteLine($"[AnalyzeMultiAsync] QueuePlantAnalysisAsync returned - AnalysisId: {analysisId}, PlantAnalysisId: {plantAnalysisId}");
 
-                // Increment usage counter after successful queueing
-                await _subscriptionValidationService.IncrementUsageAsync(userId.Value);
+                // Increment usage counter after successful queueing (4 credits for multi-image analysis)
+                await _subscriptionValidationService.IncrementUsageAsync(userId.Value, plantAnalysisId, creditCount: 4);
 
                 // Process referral validation if this is user's first analysis
                 try

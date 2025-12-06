@@ -494,7 +494,7 @@ namespace PlantAnalysisWorkerService.Jobs
                     ImageUrl = result.ImageMetadata?.URL ?? analysis.ImagePath,
                     DeepLink = $"app://analysis/{analysis.Id}", // Use database ID
                     SponsorId = result.SponsorId,
-                    Message = $"Your {result.CropType} analysis is ready! Health Score: {result.Summary?.OverallHealthScore}/100"
+                    Message = $"{result.CropType} analiziniz hazır! Sağlık Skoru: {result.Summary?.OverallHealthScore}/100"
                 };
 
                 // 🆕 Send notification via HTTP to WebAPI (cross-process communication)

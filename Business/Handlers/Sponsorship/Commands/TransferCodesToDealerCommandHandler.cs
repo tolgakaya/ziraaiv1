@@ -1,5 +1,6 @@
 using Business.BusinessAspects;
 using Business.Services.Analytics;
+using Business.Services.Sponsorship;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
@@ -24,6 +25,7 @@ namespace Business.Handlers.Sponsorship.Commands
         private readonly IUserRepository _userRepository;
         private readonly ISubscriptionTierRepository _tierRepository;
         private readonly ISponsorDealerAnalyticsCacheService _analyticsCache;
+        private readonly IDealerDashboardCacheService _dealerDashboardCache;
         private readonly ILogger<TransferCodesToDealerCommandHandler> _logger;
 
         public TransferCodesToDealerCommandHandler(
@@ -31,12 +33,14 @@ namespace Business.Handlers.Sponsorship.Commands
             IUserRepository userRepository,
             ISubscriptionTierRepository tierRepository,
             ISponsorDealerAnalyticsCacheService analyticsCache,
+            IDealerDashboardCacheService dealerDashboardCache,
             ILogger<TransferCodesToDealerCommandHandler> logger)
         {
             _sponsorshipCodeRepository = sponsorshipCodeRepository;
             _userRepository = userRepository;
             _tierRepository = tierRepository;
             _analyticsCache = analyticsCache;
+            _dealerDashboardCache = dealerDashboardCache;
             _logger = logger;
         }
 
@@ -114,8 +118,9 @@ namespace Business.Handlers.Sponsorship.Commands
                 _logger.LogInformation("✅ Transferred {Count} codes to dealer {DealerId}",
                     transferredCodeIds.Count, request.DealerId);
 
-                // 4.5. Update analytics cache
+                // 4.5. Update analytics cache and invalidate dealer dashboard cache
                 await _analyticsCache.OnCodeTransferredAsync(request.UserId, request.DealerId, transferredCodeIds.Count);
+                await _dealerDashboardCache.InvalidateDashboardAsync(request.DealerId);
 
                 // 5. Return response
                 var response = new DealerCodeTransferResponseDto
