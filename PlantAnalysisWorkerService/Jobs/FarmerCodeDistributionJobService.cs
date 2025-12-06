@@ -373,20 +373,37 @@ namespace PlantAnalysisWorkerService.Jobs
         }
 
         /// <summary>
-        /// Build SMS message with sponsor info, code, and deep link (SAME AS SendSponsorshipLinkCommand)
+        /// Build SMS message with sponsor info, code, and deep link
+        /// Uses configuration-based template (SAME AS WebAPI SendSponsorshipLinkCommand)
         /// </summary>
         private string BuildSmsMessage(string farmerName, string sponsorCompany, string sponsorCode, string playStoreLink, string deepLink)
         {
             // SMS-based deferred deep linking: Mobile app will read SMS and auto-extract AGRI-XXXXX code
             // Deep link allows users to tap and open app directly with code pre-filled
-            return $@"🎁 {sponsorCompany} size sponsorluk paketi hediye etti!
+
+            // Try to get template from configuration (without emoji, Turkish chars normalized)
+            var template = _configuration["Sponsorship:SmsTemplate"];
+
+            if (!string.IsNullOrEmpty(template))
+            {
+                return template
+                    .Replace("{sponsorName}", sponsorCompany)
+                    .Replace("{farmerName}", farmerName)
+                    .Replace("{sponsorCode}", sponsorCode)
+                    .Replace("{deepLink}", deepLink)
+                    .Replace("{playStoreLink}", playStoreLink)
+                    .Replace("\\n", "\n");
+            }
+
+            // Fallback to default template (without emoji, Turkish chars normalized for SMS compatibility)
+            return $@"{sponsorCompany} size sponsorluk paketi hediye etti!
 
 Sponsorluk Kodunuz: {sponsorCode}
 
-Hemen kullanmak için tıklayın:
+Hemen kullanmak icin tiklayin:
 {deepLink}
 
-Veya uygulamayı indirin:
+Veya uygulamayi indirin:
 {playStoreLink}";
         }
 

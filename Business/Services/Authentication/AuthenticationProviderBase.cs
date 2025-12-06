@@ -34,8 +34,9 @@ namespace Business.Services.Authentication
             _logger?.LogInformation("[AuthProviderBase:Verify] Searching OTP - ExternalUserId: {ExternalUserId}, Code: {Code}, Provider: {Provider}, CurrentTime: {Time}",
                 externalUserId, command.Code, command.Provider, date);
 
-            // Debug: Check all records for this phone
+            // Debug: Check all records for this phone (AsNoTracking to avoid tracking conflicts)
             var allRecords = await _logins.Query()
+                .AsNoTracking()
                 .Where(m => m.ExternalUserId == externalUserId && m.Provider == command.Provider)
                 .ToListAsync();
 

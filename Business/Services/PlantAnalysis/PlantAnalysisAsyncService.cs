@@ -29,6 +29,9 @@ namespace Business.Services.PlantAnalysis
         private readonly IConfiguration _configuration;
         private readonly RabbitMQOptions _rabbitMQOptions;
 
+        // Feature flag: Switch between OLD system (direct to worker) and NEW system (via Dispatcher)
+        private readonly bool _useRawAnalysisQueue;
+
         public PlantAnalysisAsyncService(
             IMessageQueueService messageQueueService,
             IImageProcessingService imageProcessingService,
@@ -49,18 +52,37 @@ namespace Business.Services.PlantAnalysis
             _httpContextAccessor = httpContextAccessor;
             _configuration = configuration;
             _rabbitMQOptions = rabbitMQOptions.Value;
+
+            // Read feature flag from configuration (defaults to false for backward compatibility)
+            _useRawAnalysisQueue = configuration.GetValue<bool>("PlantAnalysis:UseRawAnalysisQueue", false);
+
+            // CRITICAL DEBUG LOG: Verify feature flag is read correctly
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("[PlantAnalysisAsyncService CONSTRUCTOR] === SINGLE IMAGE SERVICE INITIALIZED ===");
+            Console.WriteLine($"[PlantAnalysisAsyncService] UseRawAnalysisQueue = {_useRawAnalysisQueue}");
+            Console.WriteLine($"[PlantAnalysisAsyncService] RawAnalysisRequest Queue = {_rabbitMQOptions.Queues.RawAnalysisRequest}");
+            Console.WriteLine($"[PlantAnalysisAsyncService] PlantAnalysisRequest Queue = {_rabbitMQOptions.Queues.PlantAnalysisRequest}");
+            Console.WriteLine("================================================================================");
         }
 
         public async Task<string> QueuePlantAnalysisAsync(PlantAnalysisRequestDto request)
         {
+            // CRITICAL DEBUG: Method entry
+            Console.WriteLine($"[QueuePlantAnalysisAsync] === METHOD ENTRY ===");
+            Console.WriteLine($"[QueuePlantAnalysisAsync] _useRawAnalysisQueue = {_useRawAnalysisQueue}");
+
             try
             {
                 // Generate unique IDs for tracking
                 var correlationId = Guid.NewGuid().ToString("N");
                 var analysisId = $"async_analysis_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}_{correlationId[..8]}";
 
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Generated AnalysisId = {analysisId}");
+
                 // Process image for AI (aggressive optimization for token reduction)
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Starting image processing...");
                 var processedImageDataUri = await ProcessImageForAIAsync(request.Image);
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Image processing complete");
 
                 // Use same approach as sync endpoint - direct upload without extra processing
                 var imageUrl = await _fileStorageService.UploadImageFromDataUriAsync(
@@ -125,11 +147,25 @@ namespace Business.Services.PlantAnalysis
                 };
 
                 // Save to database first
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Saving to database...");
                 _plantAnalysisRepository.Add(plantAnalysis);
                 await _plantAnalysisRepository.SaveChangesAsync();
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Database save complete");
 
-                // Get queue name from appsettings
-                var queueName = _rabbitMQOptions.Queues.PlantAnalysisRequest;
+                // Get queue name based on feature flag
+                // NEW system: raw-analysis-queue → Dispatcher → Provider queues
+                // OLD system: plant-analysis-requests → Worker Pool (direct)
+                var queueName = _useRawAnalysisQueue
+                    ? _rabbitMQOptions.Queues.RawAnalysisRequest  // NEW system
+                    : _rabbitMQOptions.Queues.PlantAnalysisRequest; // OLD system (legacy)
+
+                // CRITICAL DEBUG LOG: Verify which queue is being used
+                Console.WriteLine("================================================================================ ");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] === QUEUE SELECTION ===");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Feature Flag (_useRawAnalysisQueue) = {_useRawAnalysisQueue}");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Selected Queue Name = {queueName}");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] AnalysisId = {analysisId}");
+                Console.WriteLine("================================================================================");
 
                 // Create async request payload for RabbitMQ
                 var asyncRequest = new PlantAnalysisAsyncRequestDto
@@ -184,6 +220,8 @@ namespace Business.Services.PlantAnalysis
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[QueuePlantAnalysisAsync] EXCEPTION: {ex.Message}");
+                Console.WriteLine($"[QueuePlantAnalysisAsync] Stack Trace: {ex.StackTrace}");
                 throw new InvalidOperationException($"Failed to queue plant analysis: {ex.Message}", ex);
             }
         }

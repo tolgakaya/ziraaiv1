@@ -15,6 +15,8 @@ using Business.Services.Admin;
 using Business.Services.SponsorRequest;
 using Business.Services.MobileIntegration;
 using Business.Services.Analytics;
+using Business.Services.Payment;
+using Business.Services.Cache;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Castle.DynamicProxy;
@@ -130,7 +132,14 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<SponsorshipPurchaseRepository>().As<ISponsorshipPurchaseRepository>()
                 .InstancePerLifetimeScope();
-            
+
+            // Payment System
+            builder.RegisterType<PaymentTransactionRepository>().As<IPaymentTransactionRepository>()
+                .InstancePerLifetimeScope();
+
+            builder.RegisterType<IyzicoPaymentService>().As<IIyzicoPaymentService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SponsorAnalysisAccessRepository>().As<ISponsorAnalysisAccessRepository>()
                 .InstancePerLifetimeScope();
             
@@ -205,7 +214,10 @@ namespace Business.DependencyResolvers
             
             builder.RegisterType<PlantAnalysisAsyncService>().As<IPlantAnalysisAsyncService>()
                 .InstancePerLifetimeScope();
-            
+
+            builder.RegisterType<PlantAnalysisMultiImageAsyncService>().As<IPlantAnalysisMultiImageAsyncService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<SimpleRabbitMQService>().As<IMessageQueueService>()
                 .InstancePerLifetimeScope();
             
@@ -391,8 +403,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<LocalFileStorageService>().InstancePerLifetimeScope();
             builder.RegisterType<ImgBBStorageService>().InstancePerLifetimeScope();
             builder.RegisterType<FreeImageHostStorageService>().InstancePerLifetimeScope();
+            builder.RegisterType<CloudflareR2StorageService>().InstancePerLifetimeScope();
             // builder.RegisterType<S3FileStorageService>().InstancePerLifetimeScope(); // Requires AWS SDK
-            
+
             // File Storage Services - Configuration-driven registration
             // Read FileStorage:Provider from configuration (supports environment variables)
             builder.Register<IFileStorageService>(c =>
@@ -407,6 +420,7 @@ namespace Business.DependencyResolvers
 
                 return provider switch
                 {
+                    "CloudflareR2" => context.Resolve<CloudflareR2StorageService>(),
                     "FreeImageHost" => context.Resolve<FreeImageHostStorageService>(),
                     "ImgBB" => context.Resolve<ImgBBStorageService>(),
                     "Local" => context.Resolve<LocalFileStorageService>(),
@@ -444,6 +458,19 @@ namespace Business.DependencyResolvers
 
             // Subscription System Services
 
+            // Cache Services
+            builder.RegisterType<CacheInvalidationService>()
+                .As<ICacheInvalidationService>()
+                .SingleInstance(); // Singleton for cache invalidation coordination
+
+            builder.RegisterType<Business.Services.Sponsorship.DealerDashboardCacheService>()
+                .As<Business.Services.Sponsorship.IDealerDashboardCacheService>()
+                .InstancePerLifetimeScope(); // Scoped for dealer dashboard caching
+
+            builder.RegisterType<Business.Services.AdminAnalytics.AdminStatisticsCacheService>()
+                .As<Business.Services.AdminAnalytics.IAdminStatisticsCacheService>()
+                .InstancePerLifetimeScope();
+
             // Analytics Services
             builder.RegisterType<Business.Services.Analytics.SponsorDealerAnalyticsCacheService>()
                 .As<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService>()
@@ -451,7 +478,9 @@ namespace Business.DependencyResolvers
 
             builder.RegisterAssemblyTypes(assembly).AsImplementedInterfaces()
                 .Where(t => !t.IsAssignableTo<IFileStorageService>() // Exclude file storage services to prevent override
-                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>()) // Exclude SMS services to use configuration-driven registration
+                         && !t.IsAssignableTo<Business.Services.Messaging.ISmsService>() // Exclude SMS services to use configuration-driven registration
+                         && !t.IsAssignableTo<IPlantAnalysisAsyncService>() // Exclude plant analysis async service to preserve explicit registration with feature flags
+                         && !t.IsAssignableTo<IPlantAnalysisMultiImageAsyncService>()) // Exclude multi-image async service to preserve explicit registration
                 .EnableInterfaceInterceptors(new ProxyGenerationOptions()
                 {
                     Selector = new AspectInterceptorSelector()

@@ -57,6 +57,7 @@ namespace Business.Handlers.Authorizations.Queries
                 accessToken.Claims = claims.Select(x => x.Name).ToList();
 
                 user.RefreshToken = accessToken.RefreshToken;
+                user.RefreshTokenExpires = accessToken.RefreshTokenExpiration;
                 _userRepository.Update(user);
                 await _userRepository.SaveChangesAsync();
 

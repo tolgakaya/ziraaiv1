@@ -228,6 +228,18 @@ namespace Business.Services.Referral
 
         private string BuildSmsMessage(string referralCode, string playStoreLink)
         {
+            // Try to get template from configuration
+            var template = _configuration["Referral:SmsTemplate"];
+
+            if (!string.IsNullOrEmpty(template))
+            {
+                return template
+                    .Replace("{referralCode}", referralCode)
+                    .Replace("{playStoreLink}", playStoreLink)
+                    .Replace("\\n", "\n");
+            }
+
+            // Fallback to default message if template not configured
             // SMS-based deferred deep linking: Mobile app will read SMS and auto-extract ZIRA-XXXXX code
             return $@"🌱 ZiraAI'ya davet edildiniz!
 
@@ -241,6 +253,18 @@ Uygulama açıldığında kod otomatik gelecek!";
 
         private string BuildWhatsAppMessage(string referralCode, string playStoreLink)
         {
+            // Try to get template from configuration
+            var template = _configuration["Referral:WhatsAppTemplate"];
+
+            if (!string.IsNullOrEmpty(template))
+            {
+                return template
+                    .Replace("{referralCode}", referralCode)
+                    .Replace("{playStoreLink}", playStoreLink)
+                    .Replace("\\n", "\n");
+            }
+
+            // Fallback to default message if template not configured
             // WhatsApp-based deferred deep linking: Mobile app will read WhatsApp messages and auto-extract ZIRA-XXXXX code
             return $@"🌱 *ZiraAI'ya davet edildiniz!*
 

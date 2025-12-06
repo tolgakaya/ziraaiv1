@@ -144,7 +144,7 @@ namespace Business.Services.Messaging
 
         public async Task<IResult> UpdateFeatureAsync(int featureId, bool isEnabled, int adminUserId)
         {
-            var feature = await _featureRepository.GetAsync(f => f.Id == featureId);
+            var feature = await _featureRepository.GetTrackedAsync(f => f.Id == featureId);
             if (feature == null)
                 return new ErrorResult("Feature not found");
 

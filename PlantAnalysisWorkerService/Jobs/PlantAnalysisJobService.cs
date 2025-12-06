@@ -91,6 +91,12 @@ namespace PlantAnalysisWorkerService.Jobs
                         
                         // Image URL from image_metadata (critical fix!)
                         ImagePath = result.ImageMetadata?.URL ?? result.ImageUrl ?? result.ImagePath,
+
+                        // Multi-Image URLs (for comprehensive analysis)
+                        LeafTopUrl = result.LeafTopUrl,
+                        LeafBottomUrl = result.LeafBottomUrl,
+                        PlantOverviewUrl = result.PlantOverviewUrl,
+                        RootUrl = result.RootUrl,
                         
                         // GPS and Environment
                         Latitude = result.GpsCoordinates?.Lat,
@@ -223,6 +229,18 @@ namespace PlantAnalysisWorkerService.Jobs
                     
                     // Update ImagePath from image_metadata (critical fix!)
                     existingAnalysis.ImagePath = result.ImageMetadata?.URL ?? ConvertToFullUrlIfNeeded(existingAnalysis.ImagePath);
+
+                    // Update Multi-Image URLs (for comprehensive analysis)
+                    // ⚠️ CRITICAL: Only update if result contains URLs, otherwise preserve existing URLs
+                    // URLs are set during initial analysis creation, N8N webhook doesn't return them
+                    if (!string.IsNullOrEmpty(result.LeafTopUrl))
+                        existingAnalysis.LeafTopUrl = result.LeafTopUrl;
+                    if (!string.IsNullOrEmpty(result.LeafBottomUrl))
+                        existingAnalysis.LeafBottomUrl = result.LeafBottomUrl;
+                    if (!string.IsNullOrEmpty(result.PlantOverviewUrl))
+                        existingAnalysis.PlantOverviewUrl = result.PlantOverviewUrl;
+                    if (!string.IsNullOrEmpty(result.RootUrl))
+                        existingAnalysis.RootUrl = result.RootUrl;
                     
                     // Update AI processing results (complete metadata mapping)
                     existingAnalysis.AiModel = result.ProcessingMetadata?.AiModel ?? "";
@@ -476,7 +494,7 @@ namespace PlantAnalysisWorkerService.Jobs
                     ImageUrl = result.ImageMetadata?.URL ?? analysis.ImagePath,
                     DeepLink = $"app://analysis/{analysis.Id}", // Use database ID
                     SponsorId = result.SponsorId,
-                    Message = $"Your {result.CropType} analysis is ready! Health Score: {result.Summary?.OverallHealthScore}/100"
+                    Message = $"{result.CropType} analiziniz hazır! Sağlık Skoru: {result.Summary?.OverallHealthScore}/100"
                 };
 
                 // 🆕 Send notification via HTTP to WebAPI (cross-process communication)

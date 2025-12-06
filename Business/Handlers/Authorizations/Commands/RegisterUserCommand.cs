@@ -37,14 +37,16 @@ namespace Business.Handlers.Authorizations.Commands
             private readonly ISubscriptionTierRepository _subscriptionTierRepository;
             private readonly IUserSubscriptionRepository _userSubscriptionRepository;
             private readonly Business.Services.Referral.IReferralTrackingService _referralTrackingService;
+            private readonly Business.Services.AdminAnalytics.IAdminStatisticsCacheService _adminCacheService;
 
             public RegisterUserCommandHandler(
-                IUserRepository userRepository, 
-                IGroupRepository groupRepository, 
+                IUserRepository userRepository,
+                IGroupRepository groupRepository,
                 IUserGroupRepository userGroupRepository,
                 ISubscriptionTierRepository subscriptionTierRepository,
                 IUserSubscriptionRepository userSubscriptionRepository,
-                Business.Services.Referral.IReferralTrackingService referralTrackingService)
+                Business.Services.Referral.IReferralTrackingService referralTrackingService,
+                Business.Services.AdminAnalytics.IAdminStatisticsCacheService adminCacheService)
             {
                 _userRepository = userRepository;
                 _groupRepository = groupRepository;
@@ -52,6 +54,7 @@ namespace Business.Handlers.Authorizations.Commands
                 _subscriptionTierRepository = subscriptionTierRepository;
                 _userSubscriptionRepository = userSubscriptionRepository;
                 _referralTrackingService = referralTrackingService;
+                _adminCacheService = adminCacheService;
             }
 
 
@@ -308,6 +311,9 @@ namespace Business.Handlers.Authorizations.Commands
                         Console.WriteLine($"[RegisterUser] ❌ Exception during referral processing: {refEx.Message}");
                     }
                 }
+
+                // Invalidate admin statistics cache (user count changed)
+                await _adminCacheService.InvalidateAllStatisticsAsync();
 
                 Console.WriteLine($"[RegisterUser] 🎉 REGISTRATION COMPLETED SUCCESSFULLY for {request.Email} (ID: {user.UserId})");
                 return new SuccessResult(Messages.Added);

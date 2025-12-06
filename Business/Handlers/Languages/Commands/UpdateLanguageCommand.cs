@@ -37,7 +37,7 @@ namespace Business.Handlers.Languages.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(UpdateLanguageCommand request, CancellationToken cancellationToken)
             {
-                var isThereLanguageRecord = await _languageRepository.GetAsync(u => u.Id == request.Id);
+                var isThereLanguageRecord = await _languageRepository.GetTrackedAsync(u => u.Id == request.Id);
 
                 isThereLanguageRecord.Id = request.Id;
                 isThereLanguageRecord.Name = request.Name;

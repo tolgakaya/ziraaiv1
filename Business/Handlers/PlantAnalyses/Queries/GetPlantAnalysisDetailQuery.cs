@@ -1070,35 +1070,89 @@ namespace Business.Handlers.PlantAnalyses.Queries
 
             private static ImageDetails GetImageInfo(Entities.Concrete.PlantAnalysis analysis)
             {
+                ImageDetails imageDetails;
+
                 // Try to parse ImageMetadata as ImageMetadataDto first
                 var imageMetadata = TryParseJson<ImageMetadataDto>(analysis.ImageMetadata);
-                
+
                 if (imageMetadata != null && !string.IsNullOrEmpty(imageMetadata.ImageUrl))
                 {
                     // ImageMetadata contains the URL, use it
-                    return new ImageDetails 
-                    { 
+                    imageDetails = new ImageDetails
+                    {
                         ImageUrl = imageMetadata.ImageUrl,
                         Format = "url",
                         UploadTimestamp = imageMetadata.UploadTimestamp
                     };
                 }
-                
-                // Fallback to analysis.ImageUrl or try parsing as ImageDetails
-                var imageInfo = TryParseJson<ImageDetails>(analysis.ImageMetadata);
-                
-                if (imageInfo == null)
+                else
                 {
-                    return new ImageDetails { ImageUrl = analysis.ImageUrl };
+                    // Fallback to analysis.ImageUrl or try parsing as ImageDetails
+                    var imageInfo = TryParseJson<ImageDetails>(analysis.ImageMetadata);
+
+                    if (imageInfo == null)
+                    {
+                        imageDetails = new ImageDetails { ImageUrl = analysis.ImageUrl };
+                    }
+                    else
+                    {
+                        imageDetails = imageInfo;
+                        // If parsed ImageDetails doesn't have ImageUrl, use the one from analysis
+                        if (string.IsNullOrEmpty(imageDetails.ImageUrl))
+                        {
+                            imageDetails.ImageUrl = analysis.ImageUrl;
+                        }
+                    }
                 }
-                
-                // If parsed ImageDetails doesn't have ImageUrl, use the one from analysis
-                if (string.IsNullOrEmpty(imageInfo.ImageUrl))
+
+                // 🆕 Add multi-image URLs from PlantAnalysis entity (backward compatible - null for single-image)
+                var hasMultipleImages = !string.IsNullOrEmpty(analysis.LeafTopUrl) ||
+                                       !string.IsNullOrEmpty(analysis.LeafBottomUrl) ||
+                                       !string.IsNullOrEmpty(analysis.PlantOverviewUrl) ||
+                                       !string.IsNullOrEmpty(analysis.RootUrl);
+
+                if (hasMultipleImages)
                 {
-                    imageInfo.ImageUrl = analysis.ImageUrl;
+                    var imagesProvided = new List<string> { "main" };
+                    int totalImages = 1;
+
+                    if (!string.IsNullOrEmpty(analysis.LeafTopUrl))
+                    {
+                        imageDetails.LeafTopImageUrl = analysis.LeafTopUrl;
+                        imageDetails.HasLeafTop = true;
+                        imagesProvided.Add("leaf_top");
+                        totalImages++;
+                    }
+
+                    if (!string.IsNullOrEmpty(analysis.LeafBottomUrl))
+                    {
+                        imageDetails.LeafBottomImageUrl = analysis.LeafBottomUrl;
+                        imageDetails.HasLeafBottom = true;
+                        imagesProvided.Add("leaf_bottom");
+                        totalImages++;
+                    }
+
+                    if (!string.IsNullOrEmpty(analysis.PlantOverviewUrl))
+                    {
+                        imageDetails.PlantOverviewImageUrl = analysis.PlantOverviewUrl;
+                        imageDetails.HasPlantOverview = true;
+                        imagesProvided.Add("plant_overview");
+                        totalImages++;
+                    }
+
+                    if (!string.IsNullOrEmpty(analysis.RootUrl))
+                    {
+                        imageDetails.RootImageUrl = analysis.RootUrl;
+                        imageDetails.HasRoot = true;
+                        imagesProvided.Add("root");
+                        totalImages++;
+                    }
+
+                    imageDetails.TotalImages = totalImages;
+                    imageDetails.ImagesProvided = imagesProvided;
                 }
-                
-                return imageInfo;
+
+                return imageDetails;
             }
             
         }

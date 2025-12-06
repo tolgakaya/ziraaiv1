@@ -1,22 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(Select-Object -First 10 FullName)",
-      "Bash(rm:*)",
-      "Bash(dotnet ef migrations add:*)",
-      "Bash(git restore:*)",
-      "Bash(dotnet build:*)",
-      "Bash(git add:*)",
+      "Bash(git push)",
+      "Bash(python fix_tracking.py:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash($null)",
-      "Bash(Select-Object -First 10)",
-      "Bash(git checkout:*)",
-      "Bash(git pull:*)",
-      "Bash(Select-String -Pattern \"error|Build succeeded\")",
-      "Bash(gh pr create:*)",
-      "Bash(S3)",
-      "Bash(FreeImageHost)"
+      "Bash(dotnet build:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],

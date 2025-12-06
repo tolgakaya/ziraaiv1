@@ -226,7 +226,29 @@ builder.Services.AddScoped<DataAccess.Abstract.ISponsorProfileRepository, DataAc
 builder.Services.AddScoped<Business.Services.Configuration.IConfigurationService, Business.Services.Configuration.ConfigurationService>();
 // Use RedisCacheManager to match API's cache provider for cross-service cache invalidation
 builder.Services.AddSingleton<Core.CrossCuttingConcerns.Caching.ICacheManager, Core.CrossCuttingConcerns.Caching.Redis.RedisCacheManager>();
-builder.Services.AddScoped<Business.Services.FileStorage.IFileStorageService, Business.Services.FileStorage.FreeImageHostStorageService>();
+// File Storage Service - Configuration-driven registration (matches WebAPI pattern)
+builder.Services.AddScoped<Business.Services.FileStorage.LocalFileStorageService>();
+builder.Services.AddScoped<Business.Services.FileStorage.FreeImageHostStorageService>();
+builder.Services.AddScoped<Business.Services.FileStorage.ImgBBStorageService>();
+builder.Services.AddScoped<Business.Services.FileStorage.CloudflareR2StorageService>();
+
+builder.Services.AddScoped<Business.Services.FileStorage.IFileStorageService>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var logger = sp.GetRequiredService<ILogger<Business.Services.FileStorage.CloudflareR2StorageService>>();
+    var provider = config["FileStorage:Provider"] ?? "FreeImageHost";
+
+    Console.WriteLine($"[Worker FileStorage DI] Selected provider: {provider}");
+
+    return provider switch
+    {
+        "CloudflareR2" => sp.GetRequiredService<Business.Services.FileStorage.CloudflareR2StorageService>(),
+        "FreeImageHost" => sp.GetRequiredService<Business.Services.FileStorage.FreeImageHostStorageService>(),
+        "ImgBB" => sp.GetRequiredService<Business.Services.FileStorage.ImgBBStorageService>(),
+        "Local" => sp.GetRequiredService<Business.Services.FileStorage.LocalFileStorageService>(),
+        _ => sp.GetRequiredService<Business.Services.FileStorage.FreeImageHostStorageService>() // Default fallback
+    };
+});
 builder.Services.AddScoped<Business.Services.ImageProcessing.IImageProcessingService, Business.Services.ImageProcessing.ImageProcessingService>();
 builder.Services.AddScoped<Business.Services.PlantAnalysis.IPlantAnalysisService, Business.Services.PlantAnalysis.PlantAnalysisService>();
 builder.Services.AddScoped<Business.Services.Referral.IReferralTrackingService, Business.Services.Referral.ReferralTrackingService>();
@@ -278,11 +300,21 @@ builder.Services.AddScoped<Business.Services.Logging.ISmsLoggingService, Busines
 builder.Services.AddScoped<Business.Services.Messaging.WhatsAppBusinessService>();
 builder.Services.AddScoped<Business.Services.Messaging.Factories.IMessagingServiceFactory, Business.Services.Messaging.Factories.MessagingServiceFactory>();
 
+// 🆕 Add Analytics Cache Service (required by dealer invitation commands)
+builder.Services.AddScoped<Business.Services.Analytics.ISponsorDealerAnalyticsCacheService, Business.Services.Analytics.SponsorDealerAnalyticsCacheService>();
+
+// 🆕 Add DealerInvitation Configuration Service (required by InviteDealerViaSmsCommand)
+builder.Services.AddScoped<Business.Services.DealerInvitation.IDealerInvitationConfigurationService, Business.Services.DealerInvitation.DealerInvitationConfigurationService>();
+
+// 🆕 Add DealerInvitation Notification Service (required by InviteDealerViaSmsCommand for SignalR notifications)
+builder.Services.AddScoped<Business.Services.Notification.IDealerInvitationNotificationService, Business.Services.Notification.DealerInvitationNotificationService>();
+
 // 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
 
 // Add worker services
 builder.Services.AddHostedService<RabbitMQConsumerWorker>();
+builder.Services.AddHostedService<RabbitMQMultiImageConsumerWorker>();
 builder.Services.AddScoped<IPlantAnalysisJobService, PlantAnalysisJobService>();
 
 // 🆕 Add Dealer Invitation Worker and Job Service

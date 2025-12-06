@@ -1,0 +1,34 @@
+# ============================================================
+# RAILWAY STAGING - IYZICO SANDBOX CREDENTIALS
+# ============================================================
+# Railway Dashboard → ziraai-api-staging → Variables → RAW Editor
+# ============================================================
+
+Iyzico__BaseUrl=https://sandbox-api.iyzipay.com
+Iyzico__ApiKey=sandbox-oLzYimS7gk78wdOspOXjSS7AjgtH9SjU
+Iyzico__SecretKey=sandbox-03fNaRjSpqUqTf8hc8dLRK425MCenPGL
+Iyzico__Currency=TRY
+Iyzico__PaymentChannel=MOBILE
+Iyzico__PaymentGroup=SUBSCRIPTION
+Iyzico__TokenExpirationMinutes=30
+Iyzico__Callback__DeepLinkScheme=ziraai://payment-callback
+Iyzico__Callback__FallbackUrl=https://ziraai-api-sit.up.railway.app/payment/callback
+Iyzico__Timeout__InitializeTimeoutSeconds=30
+Iyzico__Timeout__VerifyTimeoutSeconds=30
+Iyzico__Timeout__WebhookTimeoutSeconds=15
+Iyzico__Retry__MaxRetryAttempts=3
+Iyzico__Retry__RetryDelayMilliseconds=1000
+Iyzico__Retry__UseExponentialBackoff=true
+
+# ============================================================
+# ADIMLAR:
+# ============================================================
+# 1. iyzico merchant dashboard'dan SANDBOX credentials alın
+#    https://merchant.iyzipay.com/ → Settings → API Keys → Sandbox
+#
+# 2. YOUR_SANDBOX_API_KEY → Gerçek sandbox API key ile değiştirin
+# 3. YOUR_SANDBOX_SECRET_KEY → Gerçek sandbox secret key ile değiştirin
+#
+# 4. Railway'de bu dosyayı RAW Editor'a yapıştırın
+# 5. Save → Otomatik deploy olacak
+# ============================================================

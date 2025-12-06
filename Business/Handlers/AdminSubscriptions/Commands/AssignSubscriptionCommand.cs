@@ -41,15 +41,18 @@ namespace Business.Handlers.AdminSubscriptions.Commands
             private readonly IUserSubscriptionRepository _subscriptionRepository;
             private readonly ISubscriptionTierRepository _tierRepository;
             private readonly IAdminAuditService _auditService;
+            private readonly Business.Services.AdminAnalytics.IAdminStatisticsCacheService _adminCacheService;
 
             public AssignSubscriptionCommandHandler(
                 IUserSubscriptionRepository subscriptionRepository,
                 ISubscriptionTierRepository tierRepository,
-                IAdminAuditService auditService)
+                IAdminAuditService auditService,
+                Business.Services.AdminAnalytics.IAdminStatisticsCacheService adminCacheService)
             {
                 _subscriptionRepository = subscriptionRepository;
                 _tierRepository = tierRepository;
                 _auditService = auditService;
+                _adminCacheService = adminCacheService;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -153,6 +156,9 @@ namespace Business.Handlers.AdminSubscriptions.Commands
                     }
                 );
 
+                // Invalidate admin statistics cache (subscription changed)
+                await _adminCacheService.InvalidateAllStatisticsAsync();
+
                 return new SuccessResult($"Previous sponsorship cancelled. New {tier.TierName} subscription activated. Valid until {subscription.EndDate:yyyy-MM-dd}");
             }
 
@@ -210,6 +216,9 @@ namespace Business.Handlers.AdminSubscriptions.Commands
                     }
                 );
 
+                // Invalidate admin statistics cache (subscription changed)
+                await _adminCacheService.InvalidateAllStatisticsAsync();
+
                 return new SuccessResult($"Subscription queued successfully. Will activate automatically on {activeSponsorship.EndDate:yyyy-MM-dd} when current sponsorship expires.");
             }
 
@@ -256,6 +265,9 @@ namespace Business.Handlers.AdminSubscriptions.Commands
                     reason: $"Assigned {tier.TierName} subscription for {request.DurationMonths} months",
                     afterState: new { subscription.Id, subscription.SubscriptionTierId, subscription.StartDate, subscription.EndDate }
                 );
+
+                // Invalidate admin statistics cache (subscription assigned)
+                await _adminCacheService.InvalidateAllStatisticsAsync();
 
                 return new SuccessResult($"Subscription assigned successfully. Valid until {subscription.EndDate:yyyy-MM-dd}");
             }

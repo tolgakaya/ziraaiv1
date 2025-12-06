@@ -444,6 +444,7 @@ namespace Entities.Dtos
     
     public class ImageDetails
     {
+        // Existing single-image fields (backward compatible)
         public string ImageUrl { get; set; }
         public string ImagePath { get; set; }
         public string Format { get; set; }
@@ -451,6 +452,20 @@ namespace Entities.Dtos
         public decimal? SizeKb { get; set; }
         public decimal? SizeMb { get; set; }
         public DateTime? UploadTimestamp { get; set; }
+
+        // 🆕 Multi-image support (optional fields - null for single-image analyses)
+        public int? TotalImages { get; set; }
+        public List<string> ImagesProvided { get; set; }
+        public bool? HasLeafTop { get; set; }
+        public bool? HasLeafBottom { get; set; }
+        public bool? HasPlantOverview { get; set; }
+        public bool? HasRoot { get; set; }
+
+        // 🆕 Additional image URLs (null for single-image analyses)
+        public string LeafTopImageUrl { get; set; }
+        public string LeafBottomImageUrl { get; set; }
+        public string PlantOverviewImageUrl { get; set; }
+        public string RootImageUrl { get; set; }
     }
     
     public class ProcessingDetails

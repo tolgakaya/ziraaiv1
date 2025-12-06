@@ -41,16 +41,27 @@ namespace Business.Handlers.AnalysisMessages.Queries
             [LogAspect(typeof(FileLogger))]
             public async Task<PaginatedResult<List<AnalysisMessageDto>>> Handle(GetConversationQuery request, CancellationToken cancellationToken)
             {
+                // Get all messages (already ordered DESC: newest first from repository)
                 var allMessages = await _messagingService.GetConversationAsync(request.FromUserId, request.ToUserId, request.PlantAnalysisId);
                 
-                // Calculate pagination
+                // Calculate pagination metadata
                 var totalRecords = allMessages.Count;
                 var totalPages = (int)System.Math.Ceiling((double)totalRecords / request.PageSize);
                 
-                // Apply pagination (skip and take)
+                // CHAT PAGINATION FIX:
+                // Repository returns DESC (newest → oldest)
+                // We need to return ASC (oldest → newest) for each page
+                // Page 1 = Most recent messages, Page N = Oldest messages
+                // 
+                // Example: 50 total messages, pageSize=20
+                // Page 1: Messages 50-31 (reversed to 31→50) ← Most recent 20
+                // Page 2: Messages 30-11 (reversed to 11→30) ← Previous 20
+                // Page 3: Messages 10-1  (reversed to 1→10)  ← Oldest 10
+                
                 var messages = allMessages
                     .Skip((request.Page - 1) * request.PageSize)
                     .Take(request.PageSize)
+                    .Reverse() // ✅ Reverse to chronological order (oldest → newest)
                     .ToList();
 
                 var messageDtos = new List<AnalysisMessageDto>();

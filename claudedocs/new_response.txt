@@ -1,290 +1,261 @@
-https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/analyses?pageSize=10
-
-
 {
     "data": {
-        "items": [
+        "id": 87,
+        "analysisId": "async_multi_analysis_20251128_081341_4a344130",
+        "analysisDate": "2025-11-28T08:13:44.688",
+        "analysisStatus": "Completed",
+        "userId": 190,
+        "farmerId": "F190",
+        "sponsor_id": "S159",
+        "sponsorUserId": 159,
+        "sponsorshipCodeId": 1827,
+        "location": "Istanbul",
+        "previousTreatments": [],
+        "notes": "Bitki Türü: Salatalık",
+        "plantIdentification": {
+            "species": "Salatalık (Cucumis sativus)",
+            "variety": "bilinmiyor",
+            "growthStage": "vejetatif",
+            "confidence": 90,
+            "identifyingFeatures": [
+                "palmate yaprak formu",
+                "sarmaşık/gövde yapısı",
+                "salatalık yaprağı üzerindeki damar yapısı"
+            ],
+            "visibleParts": [
+                "yapraklar",
+                "gövde"
+            ]
+        },
+        "healthAssessment": {
+            "vigorScore": 4,
+            "leafColor": "yaprak üstünde açılma/soluk sarı lekeler (angüler), alt yüzeye yakın bölgede gri-mor sporlanma / lekeleşme",
+            "leafTexture": "üst yüzeyde parlak olmayan, etkilenen alanlarda ince ve zayıf doku; alt yüzeyde sporlaşma nedeniyle pürüzlü görünüm",
+            "growthPattern": "anormal - yapraklarda sınırlı, açısal nekrotik/sarı lekeler normal gelişimi kısıtlıyor",
+            "structuralIntegrity": "orta - gövde sağlam görünse de yaprak kaybı ve lezyonlar fotosentezi azaltıyor",
+            "severity": "orta",
+            "stressIndicators": [
+                "angüler sarı yaprak lekeleri",
+                "yaprağın alt yüzeyinde gri-mor sporlaşma/örnek görünüm",
+                "bölgesel nekroz ve kloroz"
+            ],
+            "diseaseSymptoms": [
+                "downy mildew (açısal sarı lekeler, alt yüzey sporlaşma)",
+                "ikincil yaprak nekrozu/erkenci dökülme"
+            ]
+        },
+        "nutrientStatus": {
+            "nitrogen": "hafif eksik",
+            "phosphorus": "normal",
+            "potassium": "normal",
+            "calcium": "normal",
+            "magnesium": "normal",
+            "sulfur": "normal",
+            "iron": "normal",
+            "zinc": "normal",
+            "manganese": "normal",
+            "boron": "normal",
+            "copper": "normal",
+            "molybdenum": "normal",
+            "chlorine": "normal",
+            "nickel": "normal",
+            "primaryDeficiency": "hafif azot eksikliği olabilir",
+            "secondaryDeficiencies": [],
+            "severity": "düşük"
+        },
+        "pestDisease": {
+            "pestsDetected": [],
+            "diseasesDetected": [
+                {
+                    "type": "Downy mildew (yaprak küflenmesi / cucurbit downy mildew)",
+                    "category": "fungal",
+                    "severity": "orta-yüksek",
+                    "affectedParts": [
+                        "yapraklar"
+                    ],
+                    "confidence": 80.0
+                }
+            ],
+            "damagePattern": "Üst yüzeyde damarlar arasında açısal sarı-klorotik lekeler; alt yüzeyde gri-mor sporlaşma/örnek çıkışı. Lezyonlar damarla sınırlı, hızla birleşerek yaprak dokusunu bozar.",
+            "affectedAreaPercentage": 15,
+            "spreadRisk": "yüksek",
+            "primaryIssue": "Downy mildew (Pseudoperonospora cubensis benzeri enfeksiyon)"
+        },
+        "environmentalStress": {
+            "waterStatus": "hafif fazla",
+            "temperatureStress": "yok",
+            "lightStress": "yok",
+            "physicalDamage": "yok",
+            "chemicalDamage": "yok",
+            "primaryStressor": "yüksek nem / yaprak ıslaklığı ile desteklenen downy mildew enfeksiyonu"
+        },
+        "summary": {
+            "overallHealthScore": 4,
+            "primaryConcern": "Downy mildew enfeksiyonu",
+            "secondaryConcerns": [
+                "yüksek yaprak ıslaklığı / nem",
+                "hafif azot eksikliği"
+            ],
+            "criticalIssuesCount": 1,
+            "confidenceLevel": 80,
+            "prognosis": "orta",
+            "estimatedYieldImpact": "önemli"
+        },
+        "crossFactorInsights": [
             {
-                "analysisId": 76,
-                "analysisDate": "2025-10-26T17:47:46.4",
-                "analysisStatus": "Completed",
-                "cropType": "Domates",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": false,
-                    "totalMessageCount": 0,
-                    "unreadCount": 0,
-                    "hasFarmerResponse": false,
-                    "conversationStatus": "NoContact"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 0,
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "None"
-            },
-            {
-                "analysisId": 75,
-                "analysisDate": "2025-10-26T17:46:36.411",
-                "analysisStatus": "Completed",
-                "cropType": "Domates",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": false,
-                    "totalMessageCount": 0,
-                    "unreadCount": 0,
-                    "hasFarmerResponse": false,
-                    "conversationStatus": "NoContact"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 0,
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "None"
-            },
-            {
-                "analysisId": 74,
-                "analysisDate": "2025-10-26T17:36:41.132",
-                "analysisStatus": "Completed",
-                "cropType": "Domates",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": false,
-                    "totalMessageCount": 0,
-                    "unreadCount": 0,
-                    "hasFarmerResponse": false,
-                    "conversationStatus": "NoContact"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 0,
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "None"
-            },
-            {
-                "analysisId": 73,
-                "analysisDate": "2025-10-26T17:35:32.215",
-                "analysisStatus": "Completed",
-                "cropType": "Domates",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": false,
-                    "totalMessageCount": 0,
-                    "unreadCount": 0,
-                    "hasFarmerResponse": false,
-                    "conversationStatus": "NoContact"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 0,
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "None"
-            },
-            {
-                "analysisId": 72,
-                "analysisDate": "2025-10-26T17:34:16.466",
-                "analysisStatus": "Completed",
-                "cropType": "Domates",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": false,
-                    "totalMessageCount": 0,
-                    "unreadCount": 0,
-                    "hasFarmerResponse": false,
-                    "conversationStatus": "NoContact"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 0,
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "None"
-            },
-            {
-                "analysisId": 62,
-                "analysisDate": "2025-10-22T19:16:16.21",
-                "analysisStatus": "Completed",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": false,
-                    "totalMessageCount": 0,
-                    "unreadCount": 0,
-                    "hasFarmerResponse": false,
-                    "conversationStatus": "NoContact"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 0,
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "None"
-            },
-            {
-                "analysisId": 61,
-                "analysisDate": "2025-10-22T18:51:20.997",
-                "analysisStatus": "Completed",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": false,
-                    "totalMessageCount": 0,
-                    "unreadCount": 0,
-                    "hasFarmerResponse": false,
-                    "conversationStatus": "NoContact"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 0,
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "None"
-            },
-            {
-                "analysisId": 60,
-                "analysisDate": "2025-10-17T09:02:48.888",
-                "analysisStatus": "Completed",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": true,
-                    "totalMessageCount": 42,
-                    "unreadCount": 0,
-                    "lastMessageDate": "2025-10-26T19:04:27.827885",
-                    "lastMessagePreview": "Auth sonras resimli",
-                    "lastMessageBy": "sponsor",
-                    "hasFarmerResponse": true,
-                    "lastFarmerResponseDate": "2025-10-21T15:46:45.933397",
-                    "conversationStatus": "Active"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 42,
-                "lastMessageDate": "2025-10-26T19:04:27.827885",
-                "lastMessagePreview": "Auth sonras resimli",
-                "lastMessageSenderRole": "sponsor",
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "Active"
-            },
-            {
-                "analysisId": 59,
-                "analysisDate": "2025-10-17T08:51:12.786",
-                "analysisStatus": "Completed",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": true,
-                    "totalMessageCount": 37,
-                    "unreadCount": 0,
-                    "lastMessageDate": "2025-10-24T13:26:29.511729",
-                    "lastMessagePreview": "selaaaaam",
-                    "lastMessageBy": "sponsor",
-                    "hasFarmerResponse": true,
-                    "lastFarmerResponseDate": "2025-10-22T19:13:21.312497",
-                    "conversationStatus": "Active"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 37,
-                "lastMessageDate": "2025-10-24T13:26:29.511729",
-                "lastMessagePreview": "selaaaaam",
-                "lastMessageSenderRole": "sponsor",
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "Active"
-            },
-            {
-                "analysisId": 58,
-                "analysisDate": "2025-10-17T08:42:44.931",
-                "analysisStatus": "Completed",
-                "tierName": "Unknown",
-                "accessPercentage": 0,
-                "canMessage": false,
-                "canViewLogo": true,
-                "sponsorInfo": {
-                    "sponsorId": 159,
-                    "companyName": "dort tarim"
-                },
-                "messagingStatus": {
-                    "hasMessages": false,
-                    "totalMessageCount": 0,
-                    "unreadCount": 0,
-                    "hasFarmerResponse": false,
-                    "conversationStatus": "NoContact"
-                },
-                "unreadMessageCount": 0,
-                "totalMessageCount": 0,
-                "hasUnreadFromFarmer": false,
-                "conversationStatus": "None"
+                "insight": "Yoğun yaprak örtüsü ve yüksek yaprak ıslaklığı (sulama/çevresel nem) fungüs sporlarının çimlenmesini ve yayılmasını kolaylaştırıyor; hafif azot eksikliği bitkinin direncini düşürebilir.",
+                "confidence": 0.9,
+                "affectedAspects": [
+                    "hastalık yayılımı",
+                    "bitki bağışıklığı / vigor"
+                ],
+                "impactLevel": "yüksek"
             }
         ],
-        "totalCount": 18,
-        "page": 1,
-        "pageSize": 10,
-        "totalPages": 2,
-        "hasNextPage": true,
-        "hasPreviousPage": false,
-        "summary": {
-            "totalAnalyses": 18,
-            "averageHealthScore": 4.38888888888889,
-            "topCropTypes": [
-                "Domates"
+        "recommendations": {
+            "immediate": [
+                {
+                    "action": "Etkilenen yaprakları temizle",
+                    "details": "Ağır enfekte olmuş yaprakları bitkiden koparıp tarladan uzaklaştırın ve imha edin (kompostlamayın). Eldiven kullanın, aletleri dezenfekte edin.",
+                    "timeline": "24 saat içinde",
+                    "priority": "kritik"
+                },
+                {
+                    "action": "Hava akışını arttır",
+                    "details": "Sıkışık sarmaşıkları seyreltin, sera ise havalandırmayı açın/sera içi nemi düşürün.",
+                    "timeline": "24-48 saat",
+                    "priority": "yüksek"
+                },
+                {
+                    "action": "Sürgünlerde yaprak ıslaklığını azalt",
+                    "details": "Akşam sulamasından kaçının; damla sulama kullanın, yaprak ıslatmasını en aza indirin.",
+                    "timeline": "hemen",
+                    "priority": "yüksek"
+                },
+                {
+                    "action": "Hedefli fungisit uygulaması (kimyasal)",
+                    "details": "Downy mildew için etkili olan sistemik veya melez etkili aktif maddeler kullanın (ör. metalaxyl/mefenoxam veya propamocarb içeren preparatlar; bölgesel kayıtlı ürünlere göre uygulayın). Rotasyon ve etikete uygun kullanım zorunludur.",
+                    "timeline": "48 saat içinde",
+                    "priority": "yüksek"
+                }
             ],
-            "analysesThisMonth": 18,
-            "contactedAnalyses": 3,
-            "notContactedAnalyses": 15,
-            "activeConversations": 3,
-            "pendingResponses": 0,
-            "totalUnreadMessages": 0,
-            "analysesWithUnread": 0
-        }
+            "shortTerm": [
+                {
+                    "action": "Fosfit/potasyum fosfat uygulaması",
+                    "details": "Bitkiye direnç kazandırmak için foliar potasyum fosfit uygulaması (etiket dozunda) düşünebilirsiniz; fungisitlerle beraber kullanımı için etiket kontrolü yapın.",
+                    "timeline": "3-7 gün",
+                    "priority": "orta"
+                },
+                {
+                    "action": "Organik seçenekler",
+                    "details": "Bakır içeren preparatlar, bakteri/yeşil biyolojik preparatlar (Bacillus spp.) ve kültürel önlemlerle kombine uygulama; yağmurdan sonra veya sık yağışlı dönemlerde tekrar uygulama gerekebilir.",
+                    "timeline": "3-7 gün",
+                    "priority": "orta"
+                },
+                {
+                    "action": "Besleme düzeltmesi",
+                    "details": "Hafif azot eksikliğini gidermek için dengeli, yavaĢ etkili hafif azot takviyesi; fazla azotdan kaçının çünkü fazla yaprak oluşturarak hastalığı artırır.",
+                    "timeline": "7-14 gün",
+                    "priority": "orta"
+                }
+            ],
+            "preventive": [
+                {
+                    "action": "Kültürel önlemler",
+                    "details": "Donör bitki kalıntılarını temizleyin, dönümsel ekim (rotasyon) uygulayın, hastalığa dayanıklı çeşitleri tercih edin.",
+                    "timeline": "sürekli",
+                    "priority": "orta"
+                },
+                {
+                    "action": "Sera yönetimi",
+                    "details": "Sera içi nem kontrolü (ventilasyon), bitki aralığını artırma ve damla sulama kullanımı.",
+                    "timeline": "sürekli",
+                    "priority": "orta"
+                }
+            ],
+            "monitoring": [
+                {
+                    "parameter": "Yeni yaprak üzerinde açısal sarı lekeler ve alt yüzey sporlanma",
+                    "frequency": "2-3 günde bir",
+                    "threshold": "yeni lezyonların %5'ten fazla yaprakta görülmesi"
+                },
+                {
+                    "parameter": "Hava nemi / yaprak ıslaklığı",
+                    "frequency": "günlük (sabah)",
+                    "threshold": "%85 nem veya sabah saatlerinde yaprak yüzeyinde ıslaklık"
+                }
+            ],
+            "resourceEstimation": {
+                "waterRequiredLiters": "5-10 litre/bitki/hafta (damla sulama ile azaltılabilir)",
+                "fertilizerCostEstimateUsd": "20-50 USD (küçük alan için, ürün ve bölgeye göre değişir)",
+                "laborHoursEstimate": "2-6 saat (etkilenmiş bitkilerin ayıklanması ve uygulamalar için)"
+            },
+            "localizedRecommendations": {
+                "region": "Istanbul",
+                "preferredPractices": [
+                    "damla sulama kullanımı",
+                    "hava sirkülasyonunu artırma (serada ventilasyon)",
+                    "hastalığa dayanıklı çeşit seçimi"
+                ],
+                "restrictedMethods": [
+                    "kayıtsız/etiketsiz fungisit kullanımı",
+                    "biyolojik atıkların enfekte alanlarda kompostlanması"
+                ]
+            }
+        },
+        "imageInfo": {
+            "imageUrl": "https://iili.io/fC7tY92.jpg",
+            "format": "url"
+        },
+        "processingInfo": {
+            "processingTimestamp": "0001-01-01T00:00:00",
+            "processingTimeMs": 0,
+            "parseSuccess": false,
+            "retryCount": 0
+        },
+        "riskAssessment": {
+            "yieldLossProbability": "orta-yüksek",
+            "timelineToWorsen": "hafta",
+            "spreadPotential": "tarlanın geneli"
+        },
+        "confidenceNotes": [
+            {
+                "aspect": "nutrient_status",
+                "confidence": 0.5,
+                "reason": "Gözlem sadece yaprak belirtilerine dayanıyor; kesin besin durumu için yaprak/soil analizine ihtiyaç var."
+            }
+        ],
+        "farmerFriendlySummary": "Bitkilerde görülen belirtiler büyük olasılıkla salatalıklarda sık rastlanan 'downy mildew' (yaprak küflenmesi) hastalığına işaret ediyor. Yaprakların üstünde damarlar arasında açısal sarı lekeler ve alt yüzeyde gri-mor sporlaşma görülüyor. Hemen enfekte yaprakları koparıp tarladan uzaklaştırın, sulama şeklini değiştirin (akşam sulamasından kaçının, damla sulama tercih edin), hava dolaşımını artırın. Kısa sürede onaylı bir fungisit veya fosfit uygulaması düşünün; organik olarak bakır veya biyolojik preparatlar yardımcı olabilir. Hastalık nemli koşullarda hızla yayılır — 2-3 günde bir kontrol edin. Daha kesin besin önerileri için yaprak veya toprak analizi gönderin.",
+        "tokenUsage": {},
+        "requestMetadata": {},
+        "sponsorshipMetadata": {
+            "tierName": "Extra Large",
+            "accessPercentage": 100,
+            "canMessage": true,
+            "canReply": false,
+            "canViewLogo": true,
+            "sponsorInfo": {
+                "sponsorId": 159,
+                "companyName": "dort tarim",
+                "logoUrl": "https://iili.io/fdkLaZF.jpg"
+            },
+            "accessibleFields": {
+                "canViewBasicInfo": true,
+                "canViewHealthScore": true,
+                "canViewImages": true,
+                "canViewDetailedHealth": true,
+                "canViewDiseases": true,
+                "canViewNutrients": true,
+                "canViewRecommendations": true,
+                "canViewLocation": true,
+                "canViewFarmerContact": true,
+                "canViewFieldData": true,
+                "canViewProcessingData": true
+            }
+        },
+        "success": true,
+        "message": "Success",
+        "error": false
     },
-    "success": true,
-    "message": "Retrieved 10 analyses (page 1 of 2)"
+    "success": true
 }

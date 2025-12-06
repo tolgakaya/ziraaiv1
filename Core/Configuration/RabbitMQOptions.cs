@@ -19,8 +19,16 @@ namespace Core.Configuration
     
     public class QueueOptions
     {
+        // Legacy queues (OLD system - direct to worker)
         public string PlantAnalysisRequest { get; set; } = "plant-analysis-requests";
         public string PlantAnalysisResult { get; set; } = "plant-analysis-results";
+        public string PlantAnalysisMultiImageRequest { get; set; } = "plant-analysis-multi-image-requests";
+        public string PlantAnalysisMultiImageResult { get; set; } = "plant-analysis-multi-image-results";
+
+        // NEW: Raw analysis queue (routed by Dispatcher)
+        public string RawAnalysisRequest { get; set; } = "raw-analysis-queue";
+
+        // Other queues
         public string DealerInvitationRequest { get; set; } = "dealer-invitation-requests";
         public string FarmerCodeDistributionRequest { get; set; } = "farmer-code-distribution-requests";
         public string FarmerSubscriptionAssignmentRequest { get; set; } = "farmer-subscription-assignment-requests";

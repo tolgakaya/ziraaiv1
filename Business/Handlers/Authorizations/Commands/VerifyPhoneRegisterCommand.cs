@@ -216,6 +216,7 @@ namespace Business.Handlers.Authorizations.Commands
 
                 // IMPORTANT: Save RefreshToken to user for refresh token flow
                 user.RefreshToken = token.RefreshToken;
+                user.RefreshTokenExpires = token.RefreshTokenExpiration;
                 _userRepository.Update(user);
                 await _userRepository.SaveChangesAsync();
 

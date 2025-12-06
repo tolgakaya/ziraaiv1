@@ -1,3 +1,4 @@
+using Business.Handlers.AdminAnalytics.Commands;
 using Business.Handlers.AdminAnalytics.Queries;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -166,6 +167,24 @@ namespace WebAPI.Controllers
 
             var fileName = $"ziraai-statistics-{DateTime.Now:yyyy-MM-dd-HHmmss}.csv";
             return File(result.Data, "text/csv", fileName);
+        }
+
+        /// <summary>
+        /// Rebuild all admin statistics caches
+        /// Used for manual cache warming or after system maintenance
+        /// </summary>
+        [HttpPost("rebuild-cache")]
+        public async Task<IActionResult> RebuildAdminCache()
+        {
+            var command = new RebuildAdminCacheCommand();
+            var result = await Mediator.Send(command);
+
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            return BadRequest(result);
         }
     }
 }

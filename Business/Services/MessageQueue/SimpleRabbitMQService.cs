@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -50,12 +51,37 @@ namespace Business.Services.MessageQueue
 
         public async Task<bool> PublishAsync<T>(string queueName, T message, string correlationId = null, string routingKey = null) where T : class
         {
+            Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue={queueName}, CorrelationId={correlationId}");
+
             try
             {
                 await EnsureConnectionAsync();
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Connection established");
 
-                // Declare queue if not exists
-                await _channel.QueueDeclareAsync(queue: queueName, durable: true, exclusive: false, autoDelete: false);
+                // Declare queue with appropriate arguments based on queue type
+                // NEW queues (via Dispatcher) require TTL, OLD queues (direct to Worker) don't
+                Dictionary<string, object> queueArguments = null;
+                if (queueName == "raw-analysis-queue")
+                {
+                    // New queue system requires TTL parameter (matches Dispatcher configuration)
+                    queueArguments = new Dictionary<string, object>
+                    {
+                        { "x-message-ttl", 86400000 } // 24 hours TTL
+                    };
+                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Using TTL for new queue: {queueName}");
+                }
+                else
+                {
+                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] No TTL for old queue: {queueName}");
+                }
+
+                await _channel.QueueDeclareAsync(
+                    queue: queueName,
+                    durable: true,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: queueArguments);
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue declared: {queueName}");
 
                 var json = JsonConvert.SerializeObject(message, Formatting.None);
                 var body = Encoding.UTF8.GetBytes(json);
@@ -77,10 +103,13 @@ namespace Business.Services.MessageQueue
                     basicProperties: properties,
                     body: body);
 
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Message published successfully to {queueName}");
                 return true;
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] EXCEPTION: {ex.Message}");
+                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Stack Trace: {ex.StackTrace}");
                 throw new InvalidOperationException($"Failed to publish message to queue '{queueName}': {ex.Message}", ex);
             }
         }

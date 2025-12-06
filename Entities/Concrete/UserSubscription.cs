@@ -24,6 +24,12 @@ namespace Entities.Concrete
         public string Currency { get; set; }
         public DateTime? LastPaymentDate { get; set; }
         public DateTime? NextPaymentDate { get; set; }
+
+        /// <summary>
+        /// Foreign key to PaymentTransaction (iyzico payment integration)
+        /// Links this subscription to the actual payment gateway transaction
+        /// </summary>
+        public int? PaymentTransactionId { get; set; }
         
         // Usage Tracking
         public int CurrentDailyUsage { get; set; }
@@ -74,8 +80,14 @@ namespace Entities.Concrete
         
         [JsonIgnore]
         public virtual User Sponsor { get; set; }
-        
+
         [JsonIgnore]
         public virtual UserSubscription PreviousSponsorship { get; set; } // Navigation for queue system
+
+        /// <summary>
+        /// Navigation property to PaymentTransaction
+        /// </summary>
+        [JsonIgnore]
+        public virtual PaymentTransaction PaymentTransaction { get; set; }
     }
 }

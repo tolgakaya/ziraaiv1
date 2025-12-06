@@ -1,3 +1,4 @@
+using Business.Services.Sponsorship;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
@@ -28,6 +29,7 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly IUserRepository _userRepository;
             private readonly IUserGroupRepository _userGroupRepository;
             private readonly IGroupRepository _groupRepository;
+            private readonly IDealerDashboardCacheService _dealerDashboardCache;
             private readonly ILogger<AcceptDealerInvitationCommandHandler> _logger;
 
             public AcceptDealerInvitationCommandHandler(
@@ -36,6 +38,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 IUserRepository userRepository,
                 IUserGroupRepository userGroupRepository,
                 IGroupRepository groupRepository,
+                IDealerDashboardCacheService dealerDashboardCache,
                 ILogger<AcceptDealerInvitationCommandHandler> logger)
             {
                 _invitationRepository = invitationRepository;
@@ -43,6 +46,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 _userRepository = userRepository;
                 _userGroupRepository = userGroupRepository;
                 _groupRepository = groupRepository;
+                _dealerDashboardCache = dealerDashboardCache;
                 _logger = logger;
             }
 
@@ -218,6 +222,9 @@ namespace Business.Handlers.Sponsorship.Commands
 
                     _logger.LogInformation("✅ Dealer invitation {InvitationId} accepted by user {UserId}",
                         invitation.Id, request.CurrentUserId);
+
+                    // 6.5. Invalidate dealer dashboard cache
+                    await _dealerDashboardCache.InvalidateDashboardAsync(request.CurrentUserId);
 
                     // 7. Build response
                     var response = new DealerInvitationAcceptResponseDto

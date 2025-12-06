@@ -32,7 +32,7 @@ namespace Business.Handlers.OperationClaims.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(UpdateOperationClaimCommand request, CancellationToken cancellationToken)
             {
-                var isOperationClaimExists = await _operationClaimRepository.GetAsync(u => u.Id == request.Id);
+                var isOperationClaimExists = await _operationClaimRepository.GetTrackedAsync(u => u.Id == request.Id);
                 isOperationClaimExists.Alias = request.Alias;
                 isOperationClaimExists.Description = request.Description;
 

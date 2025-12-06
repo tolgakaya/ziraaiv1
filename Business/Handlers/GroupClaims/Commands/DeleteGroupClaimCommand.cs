@@ -30,7 +30,7 @@ namespace Business.Handlers.GroupClaims.Commands
             [LogAspect(typeof(FileLogger))]
             public async Task<IResult> Handle(DeleteGroupClaimCommand request, CancellationToken cancellationToken)
             {
-                var groupClaimToDelete = await _groupClaimRepository.GetAsync(x => x.GroupId == request.Id);
+                var groupClaimToDelete = await _groupClaimRepository.GetTrackedAsync(x => x.GroupId == request.Id);
 
                 _groupClaimRepository.Delete(groupClaimToDelete);
                 await _groupClaimRepository.SaveChangesAsync();

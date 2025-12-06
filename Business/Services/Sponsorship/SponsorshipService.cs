@@ -233,29 +233,63 @@ namespace Business.Services.Sponsorship
         {
             try
             {
-                // Validate code
+                Console.WriteLine($"[SponsorshipRedeem] Starting redemption for code: {code}, UserId: {userId}");
+
+                // 1. Validate code
                 var sponsorshipCode = await _sponsorshipCodeRepository.GetUnusedCodeAsync(code);
                 if (sponsorshipCode == null)
-                    return new ErrorDataResult<UserSubscription>("Invalid or expired sponsorship code");
-
-                // Check for active sponsored subscription (NO multiple active sponsorships allowed)
-                var existingSubscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId);
-                
-                bool hasActiveSponsorshipOrPaid = existingSubscription != null && 
-                                                   existingSubscription.IsSponsoredSubscription && 
-                                                   existingSubscription.QueueStatus == SubscriptionQueueStatus.Active;
-
-                if (hasActiveSponsorshipOrPaid)
                 {
-                    // Queue the new sponsorship - it will activate when current expires
+                    Console.WriteLine($"[SponsorshipRedeem] ❌ Invalid or expired code: {code}");
+                    return new ErrorDataResult<UserSubscription>("Invalid or expired sponsorship code");
+                }
+
+                Console.WriteLine($"[SponsorshipRedeem] ✅ Valid code found: {code}, Tier: {sponsorshipCode.SubscriptionTierId}");
+
+                // 2. Check for active PAID (non-trial) subscription
+                var existingSubscription = await _userSubscriptionRepository
+                    .GetActiveNonTrialSubscriptionAsync(userId);
+
+                // 3. Additional validation: Check for multiple active subscriptions
+                var allActiveSubscriptions = await _userSubscriptionRepository
+                    .GetAllActiveSubscriptionsAsync(userId);
+
+                if (allActiveSubscriptions.Count > 1)
+                {
+                    Console.WriteLine($"[SponsorshipRedeem] ⚠️ Multiple active subscriptions detected for UserId: {userId}");
+                    Console.WriteLine($"[SponsorshipRedeem] Active subscriptions: {string.Join(", ", allActiveSubscriptions.Select(s => $"ID:{s.Id}({s.PaymentMethod})"))}");
+                    
+                    // Log warning but continue with the logic
+                    // The queue system will handle this correctly by queuing the new one
+                }
+
+                // ✅ FIXED CONDITION: Queue if ANY paid subscription exists (not just sponsorships)
+                bool hasActivePaidSubscription = existingSubscription != null &&
+                                                  existingSubscription.IsActive &&
+                                                  existingSubscription.QueueStatus == SubscriptionQueueStatus.Active;
+
+                if (hasActivePaidSubscription)
+                {
+                    Console.WriteLine($"[SponsorshipRedeem] 🔄 Active {existingSubscription.PaymentMethod} subscription found (ID: {existingSubscription.Id})");
+                    Console.WriteLine($"[SponsorshipRedeem] Queuing new sponsorship code: {code}");
+                    
                     return await QueueSponsorship(code, userId, sponsorshipCode, existingSubscription.Id);
                 }
 
-                // Allow immediate activation for Trial users or no active subscription
-                return await ActivateSponsorship(code, userId, sponsorshipCode, existingSubscription);
+                Console.WriteLine($"[SponsorshipRedeem] ✅ No active paid subscription found, direct activation");
+                
+                // Check if there's a trial subscription to deactivate
+                var trialSubscription = allActiveSubscriptions.FirstOrDefault(s => s.IsTrialSubscription);
+                if (trialSubscription != null)
+                {
+                    Console.WriteLine($"[SponsorshipRedeem] Trial subscription found (ID: {trialSubscription.Id}), will be deactivated");
+                }
+
+                return await ActivateSponsorship(code, userId, sponsorshipCode, trialSubscription);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[SponsorshipRedeem] ❌ Error: {ex.Message}");
+                Console.WriteLine($"[SponsorshipRedeem] StackTrace: {ex.StackTrace}");
                 return new ErrorDataResult<UserSubscription>($"Error redeeming sponsorship code: {ex.Message}");
             }
         }
@@ -267,10 +301,16 @@ namespace Business.Services.Sponsorship
             string code, 
             int userId, 
             SponsorshipCode sponsorshipCode, 
-            int previousSponsorshipId)
+            int previousSubscriptionId)  // ✅ Renamed parameter
         {
             try
             {
+                // Get the previous subscription details for better messaging
+                var previousSubscription = await _userSubscriptionRepository.GetAsync(s => s.Id == previousSubscriptionId);
+                
+                Console.WriteLine($"[SponsorshipQueue] Queueing sponsorship for UserId: {userId}");
+                Console.WriteLine($"[SponsorshipQueue] Previous subscription: ID {previousSubscriptionId}, Type: {previousSubscription?.PaymentMethod}");
+
                 var tier = await _subscriptionTierRepository.GetAsync(t => t.Id == sponsorshipCode.SubscriptionTierId);
                 if (tier == null)
                     return new ErrorDataResult<UserSubscription>("Subscription tier not found");
@@ -279,10 +319,15 @@ namespace Business.Services.Sponsorship
                 {
                     UserId = userId,
                     SubscriptionTierId = sponsorshipCode.SubscriptionTierId,
+                    
+                    // Queue status
                     QueueStatus = SubscriptionQueueStatus.Pending,
+                    IsActive = false,  // Not usable yet
+                    Status = "Pending",
+                    PreviousSponsorshipId = previousSubscriptionId,  // ✅ Can now reference ANY subscription type
                     QueuedDate = DateTime.Now,
-                    PreviousSponsorshipId = previousSponsorshipId,
-                    IsActive = false,  // Not active yet
+                    
+                    // Payment info
                     AutoRenew = false,
                     PaymentMethod = "Sponsorship",
                     PaymentReference = code,
@@ -290,25 +335,40 @@ namespace Business.Services.Sponsorship
                     Currency = tier.Currency,
                     CurrentDailyUsage = 0,
                     CurrentMonthlyUsage = 0,
-                    Status = "Pending",
+                    
+                    // Sponsorship info
                     IsTrialSubscription = false,
                     IsSponsoredSubscription = true,
                     SponsorshipCodeId = sponsorshipCode.Id,
                     SponsorId = sponsorshipCode.SponsorId,
-                    SponsorshipNotes = $"Queued - Redeemed code: {code}",
+                    
+                    // Enhanced notes with previous subscription info
+                    SponsorshipNotes = $"Queued - Redeemed code: {code}. Waiting for {previousSubscription?.PaymentMethod} subscription (ID: {previousSubscriptionId}) to expire.",
+                    
                     CreatedDate = DateTime.Now
                 };
 
                 _userSubscriptionRepository.Add(queuedSubscription);
                 await _userSubscriptionRepository.SaveChangesAsync();
 
+                Console.WriteLine($"[SponsorshipQueue] ✅ Created queued subscription ID: {queuedSubscription.Id}");
+
                 // Mark code as used
                 await _sponsorshipCodeRepository.MarkAsUsedAsync(code, userId, queuedSubscription.Id);
+                
+                Console.WriteLine($"[SponsorshipQueue] ✅ Code {code} marked as used");
 
-                Console.WriteLine($"[SponsorshipQueue] ✅ Sponsorship queued for user {userId}. Will activate when subscription {previousSponsorshipId} expires.");
+                // ✅ Enhanced user message based on subscription type
+                string subscriptionTypeMessage = previousSubscription?.PaymentMethod switch
+                {
+                    "CreditCard" => "kredi kartı aboneliğiniz",
+                    "BankTransfer" => "banka transferi aboneliğiniz",
+                    "Sponsorship" => "sponsorluk aboneliğiniz",
+                    _ => "mevcut aboneliğiniz"
+                };
 
-                return new SuccessDataResult<UserSubscription>(queuedSubscription, 
-                    "Sponsorluk kodunuz sıraya alındı. Mevcut sponsorluk bittiğinde otomatik aktif olacak.");
+                return new SuccessDataResult<UserSubscription>(queuedSubscription,
+                    $"Sponsorluk kodunuz sıraya alındı. {subscriptionTypeMessage} bittiğinde otomatik olarak aktif olacak.");
             }
             catch (Exception ex)
             {

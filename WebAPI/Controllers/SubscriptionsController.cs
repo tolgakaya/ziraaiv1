@@ -5,6 +5,7 @@ using Entities.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -23,17 +24,20 @@ namespace WebAPI.Controllers
         private readonly ISubscriptionTierRepository _tierRepository;
         private readonly IUserSubscriptionRepository _userSubscriptionRepository;
         private readonly ISubscriptionUsageLogRepository _usageLogRepository;
+        private readonly ILogger<SubscriptionsController> _logger;
 
         public SubscriptionsController(
             ISubscriptionValidationService subscriptionValidationService,
             ISubscriptionTierRepository tierRepository,
             IUserSubscriptionRepository userSubscriptionRepository,
-            ISubscriptionUsageLogRepository usageLogRepository)
+            ISubscriptionUsageLogRepository usageLogRepository,
+            ILogger<SubscriptionsController> logger)
         {
             _subscriptionValidationService = subscriptionValidationService;
             _tierRepository = tierRepository;
             _userSubscriptionRepository = userSubscriptionRepository;
             _usageLogRepository = usageLogRepository;
+            _logger = logger;
         }
 
         /// <summary>
@@ -151,75 +155,84 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Subscribe to a plan
+        /// Subscribe to a plan - Validation only
+        /// This endpoint validates subscription eligibility and returns payment initialization instructions.
+        /// Actual subscription is created after successful payment via payment callback.
+        /// Flow: Subscribe (validate) → Initialize Payment → iyzico Payment → Payment Callback → Subscription Created
         /// </summary>
         [HttpPost("subscribe")]
-        [Authorize(Roles = "Farmer,Admin")]  // Fixed: Added Farmer role
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> Subscribe([FromBody] CreateUserSubscriptionDto request)
+        [Authorize(Roles = "Farmer,Admin")]
+        [ProducesResponseType(typeof(SuccessDataResult<SubscribeResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResult), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> Subscribe([FromBody] SubscribeRequestDto request)
         {
             var userId = GetUserId();
             if (!userId.HasValue)
                 return Unauthorized();
 
-            // Check if user already has an active non-trial subscription
+            _logger.LogInformation("[Subscription] User {UserId} initiated subscription purchase. TierId: {TierId}, Duration: {Duration} months",
+                userId.Value, request.SubscriptionTierId, request.DurationMonths);
+
+            // ⚠️ IMPORTANT: This endpoint now just validates and redirects to payment flow
+            // Actual subscription creation happens in PaymentController after successful payment
+
+            // 1. Validate subscription tier
+            var tier = await _tierRepository.GetAsync(t => t.Id == request.SubscriptionTierId && t.IsActive);
+            if (tier == null)
+            {
+                _logger.LogWarning("[Subscription] Invalid subscription tier. TierId: {TierId}, UserId: {UserId}",
+                    request.SubscriptionTierId, userId.Value);
+                return BadRequest(new ErrorResult("Invalid subscription tier"));
+            }
+
+            // 2. Check if user already has active non-trial subscription
             var existingSubscription = await _userSubscriptionRepository.GetActiveSubscriptionByUserIdAsync(userId.Value);
             if (existingSubscription != null)
             {
-                // Allow upgrade from trial to paid subscription
-                if (existingSubscription.IsTrialSubscription && !request.IsTrialSubscription)
+                // Allow upgrade from trial to paid
+                if (!existingSubscription.IsTrialSubscription)
                 {
-                    // Cancel the trial subscription
-                    existingSubscription.IsActive = false;
-                    existingSubscription.Status = "Upgraded";
-                    existingSubscription.CancellationDate = DateTime.UtcNow;
-                    existingSubscription.CancellationReason = "Upgraded to paid subscription";
-                    existingSubscription.UpdatedDate = DateTime.UtcNow;
-                    existingSubscription.UpdatedUserId = userId.Value;
-                    
-                    _userSubscriptionRepository.Update(existingSubscription);
-                }
-                else
-                {
+                    _logger.LogWarning("[Subscription] User {UserId} already has active subscription {SubId}",
+                        userId.Value, existingSubscription.Id);
                     return BadRequest(new ErrorResult("You already have an active subscription. Please cancel it first."));
                 }
+
+                _logger.LogInformation("[Subscription] User {UserId} upgrading from trial subscription {TrialSubId}",
+                    userId.Value, existingSubscription.Id);
             }
 
-            // Get the tier
-            var tier = await _tierRepository.GetAsync(t => t.Id == request.SubscriptionTierId && t.IsActive);
-            if (tier == null)
-                return BadRequest(new ErrorResult("Invalid subscription tier"));
-
-            // Create subscription
-            var subscription = new Entities.Concrete.UserSubscription
+            // 3. Calculate amount based on duration
+            decimal amount;
+            if (request.DurationMonths == 12)
             {
-                UserId = userId.Value,
+                // Yearly subscription
+                amount = tier.YearlyPrice;
+            }
+            else
+            {
+                // Monthly or custom duration
+                amount = tier.MonthlyPrice * (request.DurationMonths ?? 1);
+            }
+
+            // 4. Return payment initialization instructions
+            var response = new SubscribeResponseDto
+            {
                 SubscriptionTierId = request.SubscriptionTierId,
-                StartDate = request.StartDate ?? DateTime.UtcNow,
-                EndDate = (request.StartDate ?? DateTime.UtcNow).AddMonths(request.DurationMonths ?? 1),
-                IsActive = true,
-                AutoRenew = request.AutoRenew,
-                PaymentMethod = request.PaymentMethod,
-                PaymentReference = request.PaymentReference,
-                PaidAmount = request.PaidAmount ?? tier.MonthlyPrice * (request.DurationMonths ?? 1),
-                Currency = request.Currency,
-                LastPaymentDate = DateTime.UtcNow,
-                NextPaymentDate = (request.StartDate ?? DateTime.UtcNow).AddMonths(request.DurationMonths ?? 1),
-                CurrentDailyUsage = 0,
-                CurrentMonthlyUsage = 0,
-                LastUsageResetDate = DateTime.UtcNow,
-                MonthlyUsageResetDate = DateTime.UtcNow,
-                Status = "Active",
-                IsTrialSubscription = request.IsTrialSubscription,
-                TrialEndDate = request.IsTrialSubscription ? DateTime.UtcNow.AddDays(request.TrialDays ?? 7) : null,
-                CreatedDate = DateTime.UtcNow,
-                CreatedUserId = userId.Value
+                TierName = tier.TierName,
+                TierDisplayName = tier.DisplayName,
+                Amount = amount,
+                Currency = "TRY",
+                DurationMonths = request.DurationMonths ?? 1,
+                NextStep = "Initialize payment via POST /api/v1/payments/initialize",
+                PaymentInitializeUrl = "/api/v1/payments/initialize",
+                PaymentFlowType = "FarmerSubscription"
             };
 
-            _userSubscriptionRepository.Add(subscription);
-            await _userSubscriptionRepository.SaveChangesAsync();
+            _logger.LogInformation("[Subscription] Subscription purchase validated. UserId: {UserId}, Amount: {Amount} {Currency}, Duration: {Duration} months",
+                userId.Value, amount, "TRY", request.DurationMonths ?? 1);
 
-            return Ok(new SuccessResult($"Successfully subscribed to {tier.DisplayName} plan"));
+            return Ok(new SuccessDataResult<SubscribeResponseDto>(response,
+                "Subscription validated. Please proceed to payment initialization."));
         }
 
         /// <summary>

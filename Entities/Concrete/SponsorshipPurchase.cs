@@ -24,6 +24,12 @@ namespace Entities.Concrete
         public string PaymentReference { get; set; } // Transaction ID or invoice number
         public string PaymentStatus { get; set; } // Pending, Completed, Failed, Refunded
         public DateTime? PaymentCompletedDate { get; set; }
+
+        /// <summary>
+        /// Foreign key to PaymentTransaction (iyzico payment integration)
+        /// Links this purchase to the actual payment gateway transaction
+        /// </summary>
+        public int? PaymentTransactionId { get; set; }
         
         // Invoice Information
         public string InvoiceNumber { get; set; }
@@ -66,7 +72,13 @@ namespace Entities.Concrete
         
         [JsonIgnore]
         public virtual ICollection<SponsorshipCode> SponsorshipCodes { get; set; }
-        
+
+        /// <summary>
+        /// Navigation property to PaymentTransaction
+        /// </summary>
+        [JsonIgnore]
+        public virtual PaymentTransaction PaymentTransaction { get; set; }
+
         public SponsorshipPurchase()
         {
             SponsorshipCodes = new HashSet<SponsorshipCode>();

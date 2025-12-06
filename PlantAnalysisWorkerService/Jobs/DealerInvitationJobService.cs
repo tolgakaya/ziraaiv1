@@ -12,6 +12,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using Core.Utilities.Results;
 
 namespace PlantAnalysisWorkerService.Jobs
 {
@@ -46,28 +47,63 @@ namespace PlantAnalysisWorkerService.Jobs
         {
             var stopwatch = Stopwatch.StartNew();
             _logger.LogInformation(
-                "[DEALER_INVITATION_JOB_START] Processing dealer invitation - BulkJobId: {BulkJobId}, Row: {RowNumber}, Email: {Email}",
-                message.BulkJobId, message.RowNumber, message.Email);
+                "[DEALER_INVITATION_JOB_START] Processing dealer invitation - BulkJobId: {BulkJobId}, Row: {RowNumber}, Email: {Email}, SendSms: {SendSms}",
+                message.BulkJobId, message.RowNumber, message.Email, message.SendSms);
 
             try
             {
-                // 1. Create dealer invitation using existing handler
-                var command = new CreateDealerInvitationCommand
+                // 1. Get bulk job to check SendSms flag
+                var bulkJob = await _bulkJobRepository.GetAsync(j => j.Id == message.BulkJobId);
+                if (bulkJob == null)
                 {
-                    SponsorId = message.SponsorId,
-                    Email = message.Email,
-                    Phone = message.Phone,
-                    DealerName = message.DealerName,
-                    InvitationType = message.InvitationType,
-                    PackageTier = message.PackageTier,
-                    CodeCount = message.CodeCount,
-                    PurchaseId = null // We're using tier-based selection
-                };
+                    _logger.LogWarning(
+                        "[DEALER_INVITATION_JOB_BULK_NOT_FOUND] BulkJob not found - BulkJobId: {BulkJobId}",
+                        message.BulkJobId);
+                    return;
+                }
 
-                var result = await _mediator.Send(command);
+                // 2. Send invitation command based on SendSms flag
+                Core.Utilities.Results.IDataResult<Entities.Dtos.DealerInvitationResponseDto> result;
 
-                // 2. Atomically update bulk job progress (prevents race conditions)
-                var bulkJob = await _bulkJobRepository.IncrementProgressAsync(message.BulkJobId, result.Success);
+                if (bulkJob.SendSms)
+                {
+                    // Use InviteDealerViaSmsCommand for SMS delivery
+                    var smsCommand = new InviteDealerViaSmsCommand
+                    {
+                        SponsorId = message.SponsorId,
+                        Email = message.Email,
+                        Phone = message.Phone,
+                        DealerName = message.DealerName,
+                        PackageTier = message.PackageTier,
+                        CodeCount = message.CodeCount
+                    };
+
+                    _logger.LogInformation(
+                        "[DEALER_INVITATION_SMS_SENDING] Sending invitation with SMS - Phone: {Phone}",
+                        message.Phone);
+
+                    result = await _mediator.Send(smsCommand);
+                }
+                else
+                {
+                    // Use CreateDealerInvitationCommand for invitation without SMS
+                    var command = new CreateDealerInvitationCommand
+                    {
+                        SponsorId = message.SponsorId,
+                        Email = message.Email,
+                        Phone = message.Phone,
+                        DealerName = message.DealerName,
+                        InvitationType = message.InvitationType,
+                        PackageTier = message.PackageTier,
+                        CodeCount = message.CodeCount,
+                        PurchaseId = null // We're using tier-based selection
+                    };
+
+                    result = await _mediator.Send(command);
+                }
+
+                // 3. Atomically update bulk job progress (prevents race conditions)
+                bulkJob = await _bulkJobRepository.IncrementProgressAsync(message.BulkJobId, result.Success);
 
                 if (bulkJob == null)
                 {

@@ -40,6 +40,11 @@ namespace Business.Handlers.Authorizations.Queries
                     return new ErrorDataResult<User>(Messages.UserNotFound);
                 }
 
+                // Validate refresh token expiration
+                if (userToCheck.RefreshTokenExpires.HasValue && userToCheck.RefreshTokenExpires.Value < DateTime.Now)
+                {
+                    return new ErrorDataResult<User>("Refresh token has expired. Please login again.");
+                }
 
 				var claims = await _userRepository.GetClaimsAsync(userToCheck.UserId);
 				var userGroups = await _userRepository.GetUserGroupsAsync(userToCheck.UserId);
@@ -47,6 +52,7 @@ namespace Business.Handlers.Authorizations.Queries
 				_cacheManager.Add($"{CacheKeys.UserIdForClaim}={userToCheck.UserId}", claims.Select(x => x.Name));
 				var accessToken = _tokenHelper.CreateToken<AccessToken>(userToCheck, userGroups);
 				userToCheck.RefreshToken = accessToken.RefreshToken;
+				userToCheck.RefreshTokenExpires = accessToken.RefreshTokenExpiration;
 				_userRepository.Update(userToCheck);
 				await _userRepository.SaveChangesAsync();
 				return new SuccessDataResult<AccessToken>(accessToken, Messages.SuccessfulLogin);

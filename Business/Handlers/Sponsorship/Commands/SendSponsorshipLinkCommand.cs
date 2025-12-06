@@ -9,6 +9,7 @@ using Business.Services.Analytics;
 using Business.Services.Messaging;
 using Business.Services.Messaging.Factories;
 using Business.Services.Redemption;
+using Business.Services.Sponsorship;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.Aspects.Autofac.Validation;
@@ -39,7 +40,7 @@ namespace Business.Handlers.Sponsorship.Commands
 
         public class SendSponsorshipLinkCommandHandler : IRequestHandler<SendSponsorshipLinkCommand, IDataResult<BulkSendResult>>
         {
-            
+
             private readonly ISponsorshipCodeRepository _codeRepository;
             private readonly ISponsorProfileRepository _sponsorProfileRepository;
             private readonly IMessagingServiceFactory _messagingFactory;
@@ -47,6 +48,7 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly ILogger<SendSponsorshipLinkCommandHandler> _logger;
             private readonly ICacheManager _cacheManager;
             private readonly ISponsorDealerAnalyticsCacheService _analyticsCache;
+            private readonly IDealerDashboardCacheService _dealerDashboardCache;
 
             public SendSponsorshipLinkCommandHandler(
                 ISponsorshipCodeRepository codeRepository,
@@ -55,7 +57,8 @@ namespace Business.Handlers.Sponsorship.Commands
                 IConfiguration configuration,
                 ILogger<SendSponsorshipLinkCommandHandler> logger,
                 ICacheManager cacheManager,
-                ISponsorDealerAnalyticsCacheService analyticsCache)
+                ISponsorDealerAnalyticsCacheService analyticsCache,
+                IDealerDashboardCacheService dealerDashboardCache)
             {
                 _codeRepository = codeRepository;
                 _sponsorProfileRepository = sponsorProfileRepository;
@@ -64,6 +67,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 _logger = logger;
                 _cacheManager = cacheManager;
                 _analyticsCache = analyticsCache;
+                _dealerDashboardCache = dealerDashboardCache;
             }
 
             [SecuredOperation(Priority = 1)]
@@ -258,6 +262,9 @@ namespace Business.Handlers.Sponsorship.Commands
                         _cacheManager.Remove(cacheKey);
                         _logger.LogInformation("[DashboardCache] 🗑️ Invalidated cache for sponsor {SponsorId} after sending {Count} links",
                             request.SponsorId, bulkResult.SuccessCount);
+
+                        // Invalidate dealer dashboard cache (SponsorId is actually DealerId for dealers)
+                        await _dealerDashboardCache.InvalidateDashboardAsync(request.SponsorId);
                     }
 
                     return new SuccessDataResult<BulkSendResult>(bulkResult,
@@ -274,14 +281,30 @@ namespace Business.Handlers.Sponsorship.Commands
             {
                 // SMS-based deferred deep linking: Mobile app will read SMS and auto-extract AGRI-XXXXX code
                 // Deep link allows users to tap and open app directly with code pre-filled
-                return $@"🎁 {sponsorCompany} size sponsorluk paketi hediye etti!
+
+                // Try to get template from configuration (without emoji, Turkish chars normalized)
+                var template = _configuration["Sponsorship:SmsTemplate"];
+
+                if (!string.IsNullOrEmpty(template))
+                {
+                    return template
+                        .Replace("{sponsorName}", sponsorCompany)
+                        .Replace("{farmerName}", farmerName)
+                        .Replace("{sponsorCode}", sponsorCode)
+                        .Replace("{deepLink}", deepLink)
+                        .Replace("{playStoreLink}", playStoreLink)
+                        .Replace("\\n", "\n");
+                }
+
+                // Fallback to default template (without emoji, Turkish chars normalized for SMS compatibility)
+                return $@"{sponsorCompany} size sponsorluk paketi hediye etti!
 
 Sponsorluk Kodunuz: {sponsorCode}
 
-Hemen kullanmak için tıklayın:
+Hemen kullanmak icin tiklayin:
 {deepLink}
 
-Veya uygulamayı indirin:
+Veya uygulamayi indirin:
 {playStoreLink}";
             }
 
