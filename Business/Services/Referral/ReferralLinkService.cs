@@ -164,7 +164,13 @@ namespace Business.Services.Referral
             {
                 var smsService = _messagingFactory.GetSmsService();
 
-                var message = customMessage ?? BuildSmsMessage(referralCode, playStoreLink);
+                // Build base referral message
+                var baseMessage = BuildSmsMessage(referralCode, playStoreLink);
+                
+                // If customMessage is provided, prepend it to the referral message
+                var message = string.IsNullOrEmpty(customMessage) 
+                    ? baseMessage 
+                    : $"{customMessage}\n\n{baseMessage}";
 
                 var smsResult = await smsService.SendSmsAsync(phoneNumber, message);
                 var result = smsResult.Success;
@@ -200,7 +206,13 @@ namespace Business.Services.Referral
             {
                 var whatsAppService = _messagingFactory.GetWhatsAppService();
 
-                var message = customMessage ?? BuildWhatsAppMessage(referralCode, playStoreLink);
+                // Build base referral message
+                var baseMessage = BuildWhatsAppMessage(referralCode, playStoreLink);
+                
+                // If customMessage is provided, prepend it to the referral message
+                var message = string.IsNullOrEmpty(customMessage) 
+                    ? baseMessage 
+                    : $"{customMessage}\n\n{baseMessage}";
 
                 var waResult = await whatsAppService.SendMessageAsync(phoneNumber, message);
                 var result = waResult.Success;
