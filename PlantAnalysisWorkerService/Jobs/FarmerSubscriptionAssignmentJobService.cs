@@ -176,7 +176,7 @@ namespace PlantAnalysisWorkerService.Jobs
                 }
                 else
                 {
-                    // Create new subscription
+                    // Create new subscription (no existing subscription)
                     subscription = new UserSubscription
                     {
                         UserId = user.UserId,
@@ -186,6 +186,11 @@ namespace PlantAnalysisWorkerService.Jobs
                         Status = message.AutoActivate ? "Active" : "Pending",
                         IsActive = message.AutoActivate,
                         AutoRenew = false,
+                        PaymentMethod = "AdminAssignment",
+                        IsTrialSubscription = false,
+                        IsSponsoredSubscription = false,
+                        QueueStatus = message.AutoActivate ? SubscriptionQueueStatus.Active : SubscriptionQueueStatus.Pending,
+                        ActivatedDate = message.AutoActivate ? DateTime.Now : (DateTime?)null,
                         CreatedDate = DateTime.Now,
                         CurrentDailyUsage = 0,
                         CurrentMonthlyUsage = 0,
