@@ -59,13 +59,13 @@ namespace Business.Services.MessageQueue
                 Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Connection established");
 
                 // Declare queue with appropriate arguments based on queue type
-                // IMPORTANT: TTL configuration must match production queue configuration
+                // STANDARDIZED: ALL analysis queues have 24h TTL, admin queues have no TTL
                 Dictionary<string, object> queueArguments = null;
 
-                // Queues that have TTL in production (must match Worker Service declarations)
-                // NOTE: plant-analysis-results has TTL, but plant-analysis-multi-image-results does NOT
+                // Analysis queues - ALL have 24h TTL (consistent across all environments)
                 if (queueName == "raw-analysis-queue" ||
-                    queueName == "plant-analysis-results")
+                    queueName == "plant-analysis-results" ||
+                    queueName == "plant-analysis-multi-image-results")
                 {
                     // TTL parameter (matches Dispatcher and Worker Service configuration)
                     queueArguments = new Dictionary<string, object>
@@ -76,6 +76,7 @@ namespace Business.Services.MessageQueue
                 }
                 else
                 {
+                    // Admin queues - No TTL (dealer-invitation, farmer-code-distribution, etc.)
                     Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] No TTL for queue: {queueName}");
                 }
 
