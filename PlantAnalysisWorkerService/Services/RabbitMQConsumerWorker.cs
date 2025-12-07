@@ -126,6 +126,12 @@ namespace PlantAnalysisWorkerService.Services
                     queueDeclareStart.Stop();
                     _logger.LogWarning("[RABBITMQ_QUEUE_EXISTS] Queue exists with different configuration - using existing queue - QueueName: {QueueName}, Error: {ErrorMessage}",
                         _rabbitMQOptions.Queues.PlantAnalysisResult, queueEx.Message);
+
+                    // CRITICAL: RabbitMQ closes the channel after PRECONDITION_FAILED
+                    // We need to recreate the channel to continue operations
+                    _logger.LogInformation("[RABBITMQ_CHANNEL_RECREATE] Recreating channel after PRECONDITION_FAILED");
+                    _channel = await _connection.CreateChannelAsync();
+                    _logger.LogInformation("[RABBITMQ_CHANNEL_RECREATE_SUCCESS] Channel recreated successfully");
                 }
 
                 initStopwatch.Stop();
