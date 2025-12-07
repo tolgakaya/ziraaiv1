@@ -59,20 +59,24 @@ namespace Business.Services.MessageQueue
                 Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Connection established");
 
                 // Declare queue with appropriate arguments based on queue type
-                // NEW queues (via Dispatcher) require TTL, OLD queues (direct to Worker) don't
+                // Analysis result queues need TTL to match Worker Service configuration
                 Dictionary<string, object> queueArguments = null;
-                if (queueName == "raw-analysis-queue")
+
+                // Queues that need TTL (must match Worker Service declarations)
+                if (queueName == "raw-analysis-queue" ||
+                    queueName == "plant-analysis-results" ||
+                    queueName == "plant-analysis-multi-image-results")
                 {
-                    // New queue system requires TTL parameter (matches Dispatcher configuration)
+                    // TTL parameter (matches Dispatcher and Worker Service configuration)
                     queueArguments = new Dictionary<string, object>
                     {
                         { "x-message-ttl", 86400000 } // 24 hours TTL
                     };
-                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Using TTL for new queue: {queueName}");
+                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Using TTL for queue: {queueName}");
                 }
                 else
                 {
-                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] No TTL for old queue: {queueName}");
+                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] No TTL for queue: {queueName}");
                 }
 
                 await _channel.QueueDeclareAsync(

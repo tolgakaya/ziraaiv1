@@ -99,12 +99,19 @@ namespace PlantAnalysisWorkerService.Services
 
                 // Declare queue (make sure it exists)
                 var queueDeclareStart = Stopwatch.StartNew();
+
+                // Queue arguments - match plant-analysis-results for consistency
+                var queueArguments = new Dictionary<string, object>
+                {
+                    { "x-message-ttl", 86400000 } // 24 hours TTL (same as plant-analysis-results)
+                };
+
                 await _channel.QueueDeclareAsync(
                     queue: _rabbitMQOptions.Queues.PlantAnalysisMultiImageResult,
                     durable: true,
                     exclusive: false,
                     autoDelete: false,
-                    arguments: null);
+                    arguments: queueArguments);
                 queueDeclareStart.Stop();
 
                 initStopwatch.Stop();
