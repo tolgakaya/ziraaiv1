@@ -59,10 +59,10 @@ namespace Business.Services.MessageQueue
                 Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Connection established");
 
                 // Declare queue with appropriate arguments based on queue type
-                // Analysis result queues need TTL to match Worker Service configuration
+                // Simple and robust approach: try to create with desired params, gracefully handle if exists with different params
                 Dictionary<string, object> queueArguments = null;
 
-                // Queues that need TTL (must match Worker Service declarations)
+                // Analysis queues - ALL have 24h TTL (consistent across all environments)
                 if (queueName == "raw-analysis-queue" ||
                     queueName == "plant-analysis-results" ||
                     queueName == "plant-analysis-multi-image-results")
@@ -76,16 +76,25 @@ namespace Business.Services.MessageQueue
                 }
                 else
                 {
+                    // Admin queues - No TTL (dealer-invitation, farmer-code-distribution, etc.)
                     Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] No TTL for queue: {queueName}");
                 }
 
-                await _channel.QueueDeclareAsync(
-                    queue: queueName,
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: queueArguments);
-                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue declared: {queueName}");
+                try
+                {
+                    await _channel.QueueDeclareAsync(
+                        queue: queueName,
+                        durable: true,
+                        exclusive: false,
+                        autoDelete: false,
+                        arguments: queueArguments);
+                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue ready (created or already exists): {queueName}");
+                }
+                catch (Exception queueEx) when (queueEx.Message.Contains("PRECONDITION_FAILED"))
+                {
+                    // Queue exists with different parameters - use it anyway (graceful degradation)
+                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue exists with different config - using existing: {queueName}");
+                }
 
                 var json = JsonConvert.SerializeObject(message, Formatting.None);
                 var body = Encoding.UTF8.GetBytes(json);
