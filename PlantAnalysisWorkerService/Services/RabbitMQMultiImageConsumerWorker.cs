@@ -98,26 +98,39 @@ namespace PlantAnalysisWorkerService.Services
                     channelStart.ElapsedMilliseconds);
 
                 // Declare queue (make sure it exists)
+                // Simple and robust approach: try to create with desired params, gracefully handle if exists with different params
                 var queueDeclareStart = Stopwatch.StartNew();
 
-                // Analysis queue - 24h TTL (consistent with all analysis queues)
-                // STANDARDIZED: All analysis queues now have identical TTL configuration
-                var queueArguments = new Dictionary<string, object>
+                try
                 {
-                    { "x-message-ttl", 86400000 } // 24 hours TTL
-                };
+                    // Analysis queue - 24h TTL (consistent with all analysis queues)
+                    var queueArguments = new Dictionary<string, object>
+                    {
+                        { "x-message-ttl", 86400000 } // 24 hours TTL
+                    };
 
-                await _channel.QueueDeclareAsync(
-                    queue: _rabbitMQOptions.Queues.PlantAnalysisMultiImageResult,
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: queueArguments);
-                queueDeclareStart.Stop();
+                    await _channel.QueueDeclareAsync(
+                        queue: _rabbitMQOptions.Queues.PlantAnalysisMultiImageResult,
+                        durable: true,
+                        exclusive: false,
+                        autoDelete: false,
+                        arguments: queueArguments);
+
+                    queueDeclareStart.Stop();
+                    _logger.LogInformation("[RABBITMQ_MULTI_IMAGE_QUEUE_READY] Queue ready (created or already exists with matching config) - QueueName: {QueueName}, QueueDeclareTime: {QueueDeclareTime}ms",
+                        _rabbitMQOptions.Queues.PlantAnalysisMultiImageResult, queueDeclareStart.ElapsedMilliseconds);
+                }
+                catch (Exception queueEx) when (queueEx.Message.Contains("PRECONDITION_FAILED"))
+                {
+                    // Queue exists with different parameters - use it anyway (graceful degradation)
+                    queueDeclareStart.Stop();
+                    _logger.LogWarning("[RABBITMQ_MULTI_IMAGE_QUEUE_EXISTS] Queue exists with different configuration - using existing queue - QueueName: {QueueName}, Error: {ErrorMessage}",
+                        _rabbitMQOptions.Queues.PlantAnalysisMultiImageResult, queueEx.Message);
+                }
 
                 initStopwatch.Stop();
-                _logger.LogInformation("[RABBITMQ_MULTI_IMAGE_INIT_SUCCESS] Multi-Image RabbitMQ initialized successfully - QueueName: {QueueName}, QueueDeclareTime: {QueueDeclareTime}ms, TotalInitTime: {TotalInitTime}ms",
-                    _rabbitMQOptions.Queues.PlantAnalysisMultiImageResult, queueDeclareStart.ElapsedMilliseconds, initStopwatch.ElapsedMilliseconds);
+                _logger.LogInformation("[RABBITMQ_MULTI_IMAGE_INIT_SUCCESS] Multi-Image RabbitMQ initialized successfully - QueueName: {QueueName}, TotalInitTime: {TotalInitTime}ms",
+                    _rabbitMQOptions.Queues.PlantAnalysisMultiImageResult, initStopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {

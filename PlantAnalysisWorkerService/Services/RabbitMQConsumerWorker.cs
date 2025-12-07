@@ -98,25 +98,39 @@ namespace PlantAnalysisWorkerService.Services
                     channelStart.ElapsedMilliseconds);
 
                 // Declare queue (make sure it exists)
+                // Simple and robust approach: try to create with desired params, gracefully handle if exists with different params
                 var queueDeclareStart = Stopwatch.StartNew();
 
-                // Queue arguments - must match existing queue configuration
-                var queueArguments = new Dictionary<string, object>
+                try
                 {
-                    { "x-message-ttl", 86400000 } // 24 hours TTL
-                };
+                    // Queue arguments - 24h TTL for all analysis queues
+                    var queueArguments = new Dictionary<string, object>
+                    {
+                        { "x-message-ttl", 86400000 } // 24 hours TTL
+                    };
 
-                await _channel.QueueDeclareAsync(
-                    queue: _rabbitMQOptions.Queues.PlantAnalysisResult,
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: queueArguments);
-                queueDeclareStart.Stop();
+                    await _channel.QueueDeclareAsync(
+                        queue: _rabbitMQOptions.Queues.PlantAnalysisResult,
+                        durable: true,
+                        exclusive: false,
+                        autoDelete: false,
+                        arguments: queueArguments);
+
+                    queueDeclareStart.Stop();
+                    _logger.LogInformation("[RABBITMQ_QUEUE_READY] Queue ready (created or already exists with matching config) - QueueName: {QueueName}, QueueDeclareTime: {QueueDeclareTime}ms",
+                        _rabbitMQOptions.Queues.PlantAnalysisResult, queueDeclareStart.ElapsedMilliseconds);
+                }
+                catch (Exception queueEx) when (queueEx.Message.Contains("PRECONDITION_FAILED"))
+                {
+                    // Queue exists with different parameters - use it anyway (graceful degradation)
+                    queueDeclareStart.Stop();
+                    _logger.LogWarning("[RABBITMQ_QUEUE_EXISTS] Queue exists with different configuration - using existing queue - QueueName: {QueueName}, Error: {ErrorMessage}",
+                        _rabbitMQOptions.Queues.PlantAnalysisResult, queueEx.Message);
+                }
 
                 initStopwatch.Stop();
-                _logger.LogInformation("[RABBITMQ_INIT_SUCCESS] RabbitMQ initialized successfully - QueueName: {QueueName}, QueueDeclareTime: {QueueDeclareTime}ms, TotalInitTime: {TotalInitTime}ms", 
-                    _rabbitMQOptions.Queues.PlantAnalysisResult, queueDeclareStart.ElapsedMilliseconds, initStopwatch.ElapsedMilliseconds);
+                _logger.LogInformation("[RABBITMQ_INIT_SUCCESS] RabbitMQ initialized successfully - QueueName: {QueueName}, TotalInitTime: {TotalInitTime}ms",
+                    _rabbitMQOptions.Queues.PlantAnalysisResult, initStopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {

@@ -59,7 +59,7 @@ namespace Business.Services.MessageQueue
                 Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Connection established");
 
                 // Declare queue with appropriate arguments based on queue type
-                // STANDARDIZED: ALL analysis queues have 24h TTL, admin queues have no TTL
+                // Simple and robust approach: try to create with desired params, gracefully handle if exists with different params
                 Dictionary<string, object> queueArguments = null;
 
                 // Analysis queues - ALL have 24h TTL (consistent across all environments)
@@ -80,13 +80,21 @@ namespace Business.Services.MessageQueue
                     Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] No TTL for queue: {queueName}");
                 }
 
-                await _channel.QueueDeclareAsync(
-                    queue: queueName,
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: queueArguments);
-                Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue declared: {queueName}");
+                try
+                {
+                    await _channel.QueueDeclareAsync(
+                        queue: queueName,
+                        durable: true,
+                        exclusive: false,
+                        autoDelete: false,
+                        arguments: queueArguments);
+                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue ready (created or already exists): {queueName}");
+                }
+                catch (Exception queueEx) when (queueEx.Message.Contains("PRECONDITION_FAILED"))
+                {
+                    // Queue exists with different parameters - use it anyway (graceful degradation)
+                    Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Queue exists with different config - using existing: {queueName}");
+                }
 
                 var json = JsonConvert.SerializeObject(message, Formatting.None);
                 var body = Encoding.UTF8.GetBytes(json);
