@@ -59,13 +59,13 @@ namespace Business.Services.MessageQueue
                 Console.WriteLine($"[SimpleRabbitMQService.PublishAsync] Connection established");
 
                 // Declare queue with appropriate arguments based on queue type
-                // Analysis result queues need TTL to match Worker Service configuration
+                // IMPORTANT: TTL configuration must match production queue configuration
                 Dictionary<string, object> queueArguments = null;
 
-                // Queues that need TTL (must match Worker Service declarations)
+                // Queues that have TTL in production (must match Worker Service declarations)
+                // NOTE: plant-analysis-results has TTL, but plant-analysis-multi-image-results does NOT
                 if (queueName == "raw-analysis-queue" ||
-                    queueName == "plant-analysis-results" ||
-                    queueName == "plant-analysis-multi-image-results")
+                    queueName == "plant-analysis-results")
                 {
                     // TTL parameter (matches Dispatcher and Worker Service configuration)
                     queueArguments = new Dictionary<string, object>
