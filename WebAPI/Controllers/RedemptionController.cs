@@ -59,8 +59,9 @@ namespace WebAPI.Controllers
                 // Track link click (analytics only, does NOT redeem code)
                 await _redemptionService.TrackLinkClickAsync(code, clientIp);
 
-                // Basic validation: Check if code format is valid (AGRI-YYYY-XXXXXXXX)
-                if (string.IsNullOrWhiteSpace(code) || !code.StartsWith("AGRI-"))
+                // Basic validation: Check if code format is valid (PREFIX-YYYY-XXXXXXXX)
+                // Supports both default AGRI- prefix and custom sponsor prefixes
+                if (string.IsNullOrWhiteSpace(code) || !System.Text.RegularExpressions.Regex.IsMatch(code, @"^[A-Z]+-\d{4}-[A-Z0-9]+$"))
                 {
                     _logger.LogWarning("❌ Invalid code format: {Code}", code);
                     return BadRequest("Geçersiz kod formatı");
