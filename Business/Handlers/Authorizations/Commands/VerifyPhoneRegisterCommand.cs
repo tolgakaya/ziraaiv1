@@ -75,6 +75,43 @@ namespace Business.Handlers.Authorizations.Commands
                 var existingUser = await _userRepository.GetAsync(u => u.MobilePhones == normalizedPhone);
                 if (existingUser != null)
                 {
+                    // ENHANCEMENT: Check if this is a duplicate verify call (idempotent behavior)
+                    // Scenario: Mobile app calls verify endpoint twice within seconds (button double-tap, auto-retry, etc.)
+                    // Solution: If OTP was used within last 10 seconds, treat as duplicate and return success
+                    
+                    var recentOtp = await _mobileLoginRepository.GetAsync(
+                        m => m.ExternalUserId == normalizedPhone &&
+                             m.Code == request.Code &&
+                             m.Provider == AuthenticationProviderType.Phone &&
+                             m.IsUsed &&  // OTP was already used
+                             (DateTime.Now - m.SendDate).TotalSeconds <= 10);  // Within last 10 seconds
+
+                    if (recentOtp != null)
+                    {
+                        // This is a duplicate verify call with same OTP - return success (idempotent)
+                        _logger.LogInformation(
+                            "[VerifyPhoneRegister] ♻️ Duplicate verify call detected for phone: {Phone}, OTP: {Code}. Returning success token (idempotent behavior).",
+                            normalizedPhone, request.Code);
+
+                        // Generate new JWT token for existing user (same as normal registration flow)
+                        var existingUserClaims = await _userRepository.GetClaimsAsync(existingUser.UserId);
+                        var existingUserGroups = await _userRepository.GetUserGroupsAsync(existingUser.UserId);
+                        var duplicateToken = _tokenHelper.CreateToken<DArchToken>(existingUser, existingUserGroups);
+                        duplicateToken.Claims = existingUserClaims.Select(x => x.Name).ToList();
+
+                        // Update RefreshToken (user may not have it if registration interrupted)
+                        if (string.IsNullOrEmpty(existingUser.RefreshToken) || existingUser.RefreshTokenExpires < DateTime.Now)
+                        {
+                            existingUser.RefreshToken = duplicateToken.RefreshToken;
+                            existingUser.RefreshTokenExpires = duplicateToken.RefreshTokenExpiration;
+                            _userRepository.Update(existingUser);
+                            await _userRepository.SaveChangesAsync();
+                        }
+
+                        return new SuccessDataResult<DArchToken>(duplicateToken, "Registration successful");
+                    }
+
+                    // Different scenario - phone truly already registered (not a duplicate verify call)
                     _logger.LogWarning("[VerifyPhoneRegister] Phone already registered: {Phone}", normalizedPhone);
                     return new ErrorDataResult<DArchToken>("Phone number is already registered");
                 }
