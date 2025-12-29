@@ -22,6 +22,7 @@ namespace Business.Services.Messaging
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly ILogger<NetgsmSmsService> _logger;
+        private readonly SmsRetrieverHelper _smsRetrieverHelper;
         private readonly string _apiUrl;
         private readonly string _userCode;
         private readonly string _password;
@@ -35,6 +36,7 @@ namespace Business.Services.Messaging
             _httpClient = httpClient;
             _configuration = configuration;
             _logger = logger;
+            _smsRetrieverHelper = new SmsRetrieverHelper(configuration);
 
             // NetGSM API configuration - prioritize environment variables
             _apiUrl = Environment.GetEnvironmentVariable("NETGSM_API_URL")
@@ -134,7 +136,11 @@ namespace Business.Services.Messaging
         /// <summary>
         /// Send OTP SMS using XML endpoint for faster delivery (max 3 minutes)
         /// Endpoint: POST /sms/send/otp
-        /// Note: OTP SMS does not support Turkish characters
+        /// Note: OTP SMS must not contain Turkish characters for Google SMS Retriever API compatibility
+        /// SMS Retriever API Requirements:
+        /// - Message must be under 140 characters
+        /// - Must contain app signature hash for auto-fill
+        /// - OTP code must be 4-6 digits
         /// </summary>
         public async Task<IResult> SendOtpAsync(string phoneNumber, string otpCode)
         {
@@ -145,11 +151,23 @@ namespace Business.Services.Messaging
                     return new ErrorResult("NetGSM kimlik bilgileri yapılandırılmamış.");
                 }
 
-                var normalizedPhone = NormalizePhoneNumber(phoneNumber);
-                _logger.LogInformation("Sending OTP to {Phone} via NetGSM OTP endpoint", normalizedPhone);
+                // Validate OTP code format
+                if (!_smsRetrieverHelper.IsValidOtpCode(otpCode))
+                {
+                    return new ErrorResult("OTP kodu 4-6 basamaklı olmalıdır.");
+                }
 
-                // OTP message - must not contain Turkish characters
-                var otpMessage = $"Dogrulama kodunuz: {otpCode}. Bu kodu kimseyle paylasmayin.";
+                var normalizedPhone = NormalizePhoneNumber(phoneNumber);
+                var environment = _smsRetrieverHelper.GetCurrentEnvironment();
+
+                _logger.LogInformation("Sending OTP to {Phone} via NetGSM OTP endpoint. Environment: {Environment}",
+                    normalizedPhone, environment);
+
+                // Build OTP message with Google SMS Retriever API app signature hash
+                // This enables automatic OTP detection and auto-fill on Android devices
+                var otpMessage = _smsRetrieverHelper.BuildOtpSmsMessage(otpCode);
+
+                _logger.LogInformation("OTP message length: {Length} characters (limit: 140)", otpMessage.Length);
 
                 // Build XML payload for OTP endpoint
                 var xmlPayload = $@"<?xml version=""1.0""?>
@@ -177,8 +195,8 @@ namespace Business.Services.Messaging
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("OTP sent successfully to {Phone}. JobId: {JobId}",
-                        normalizedPhone, result.JobId);
+                    _logger.LogInformation("OTP sent successfully to {Phone}. JobId: {JobId}, Environment: {Environment}",
+                        normalizedPhone, result.JobId, environment);
                     return new SuccessResult($"OTP başarıyla gönderildi. Mesaj ID: {result.JobId}");
                 }
                 else

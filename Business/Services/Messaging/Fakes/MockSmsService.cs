@@ -18,6 +18,7 @@ namespace Business.Services.Messaging.Fakes
     {
         private readonly ILogger<MockSmsService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly SmsRetrieverHelper _smsRetrieverHelper;
         private readonly bool _useFixedCode;
         private readonly string _fixedCode;
         private readonly bool _logToConsole;
@@ -29,6 +30,7 @@ namespace Business.Services.Messaging.Fakes
         {
             _logger = logger;
             _configuration = configuration;
+            _smsRetrieverHelper = new SmsRetrieverHelper(configuration);
 
             // Read mock configuration
             _useFixedCode = bool.Parse(_configuration["SmsService:MockSettings:UseFixedCode"] ?? "true");
@@ -86,27 +88,37 @@ namespace Business.Services.Messaging.Fakes
 
             var messageId = GenerateMessageId();
             var normalizedPhone = NormalizePhoneNumber(phoneNumber);
+            var environment = _smsRetrieverHelper.GetCurrentEnvironment();
 
             // Use fixed code for testing if configured
             var displayCode = _useFixedCode ? _fixedCode : otpCode;
-            var otpMessage = $"Dogrulama kodunuz: {displayCode}. Bu kodu kimseyle paylasmayin.";
+
+            // Build OTP message with Google SMS Retriever API app signature hash
+            // This enables automatic OTP detection and auto-fill on Android devices
+            var otpMessage = _smsRetrieverHelper.BuildOtpSmsMessage(displayCode);
+            var appHash = _smsRetrieverHelper.GetAppSignatureHash();
 
             if (_logToConsole)
             {
-                Console.WriteLine($"📱 MOCK OTP SMS");
+                Console.WriteLine($"📱 MOCK OTP SMS (Google SMS Retriever API)");
                 Console.WriteLine($"   To: {normalizedPhone}");
+                Console.WriteLine($"   Environment: {environment}");
                 Console.WriteLine($"   OTP Code: {displayCode}");
                 if (_useFixedCode && displayCode != otpCode)
                 {
                     Console.WriteLine($"   (Original: {otpCode})");
                 }
+                Console.WriteLine($"   App Hash: {appHash}");
+                Console.WriteLine($"   Message Length: {otpMessage.Length}/140 chars");
+                Console.WriteLine($"   Full Message:");
+                Console.WriteLine($"   {otpMessage}");
                 Console.WriteLine($"   MessageId: {messageId}");
                 Console.WriteLine();
             }
 
             _logger.LogInformation(
-                "📱 MOCK OTP sent. To={Phone}, Code={Code}, MessageId={MessageId}",
-                normalizedPhone, displayCode, messageId);
+                "📱 MOCK OTP sent. To={Phone}, Code={Code}, Environment={Environment}, AppHash={AppHash}, MessageId={MessageId}",
+                normalizedPhone, displayCode, environment, appHash, messageId);
 
             // Store delivery status for later queries
             _deliveryStatusCache[messageId] = new SmsDeliveryStatus
