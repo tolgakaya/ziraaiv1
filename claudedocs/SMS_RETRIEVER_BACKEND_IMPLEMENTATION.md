@@ -34,7 +34,7 @@ string GetCurrentEnvironment()                        // Detect current environm
 
 **Environment Hash Mapping**:
 ```csharp
-Production  → 3LfpNXScM4I (com.ziraai.app)
+Production  → YmnluTO3ErN (com.ziraai.app)
 Staging     → 2YocBG2c6D1 (com.ziraai.app.staging)
 Development → jEcisGBcK6d (com.ziraai.app.dev)
 ```
@@ -57,7 +57,7 @@ Dogrulama kodunuz: 123456. Bu kodu kimseyle paylasmayin.
 **New OTP Format**:
 ```
 ZiraAI dogrulama kodunuz: 123456
-<#> 3LfpNXScM4I
+<#> YmnluTO3ErN
 ```
 
 #### 3. TurkcellSmsService.cs Updates
@@ -108,7 +108,7 @@ ZiraAI dogrulama kodunuz: 123456
 #### Production
 ```
 ZiraAI dogrulama kodunuz: {{OTP_CODE}}
-<#> 3LfpNXScM4I
+<#> YmnluTO3ErN
 ```
 
 #### Staging
@@ -213,11 +213,11 @@ ASPNETCORE_ENVIRONMENT=Staging
 ASPNETCORE_ENVIRONMENT=Production
 ```
 
-**Expected Hash**: `3LfpNXScM4I`
+**Expected Hash**: `YmnluTO3ErN`
 
 **Verification**:
 - Check SMS logs for hash code
-- Verify message contains `<#> 3LfpNXScM4I`
+- Verify message contains `<#> YmnluTO3ErN`
 - Test OTP auto-fill on production mobile app
 
 ---

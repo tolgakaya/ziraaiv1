@@ -46,7 +46,7 @@ Dogrulama kodunuz: 123456. Bu kodu kimseyle paylasmayin.
 ### After (New Format with Hash)
 ```
 ZiraAI dogrulama kodunuz: 123456
-<#> 3LfpNXScM4I
+<#> YmnluTO3ErN
 ```
 
 **Benefits**:
@@ -61,7 +61,7 @@ ZiraAI dogrulama kodunuz: 123456
 
 | Environment | Package Name | Hash Code | Auto-Detection |
 |-------------|--------------|-----------|----------------|
-| **Production** | `com.ziraai.app` | `3LfpNXScM4I` | ✅ ASPNETCORE_ENVIRONMENT=Production |
+| **Production** | `com.ziraai.app` | `YmnluTO3ErN` | ✅ ASPNETCORE_ENVIRONMENT=Production |
 | **Staging** | `com.ziraai.app.staging` | `2YocBG2c6D1` | ✅ ASPNETCORE_ENVIRONMENT=Staging |
 | **Development** | `com.ziraai.app.dev` | `jEcisGBcK6d` | ✅ ASPNETCORE_ENVIRONMENT=Development |
 
@@ -96,7 +96,7 @@ ZiraAI dogrulama kodunuz: 123456
    ↓
 3. Backend generates 6-digit OTP
    ↓
-4. Backend builds message: "ZiraAI dogrulama kodunuz: 123456\n<#> 3LfpNXScM4I"
+4. Backend builds message: "ZiraAI dogrulama kodunuz: 123456\n<#> YmnluTO3ErN"
    ↓
 5. Backend sends SMS via NetGSM/Turkcell
    ↓
@@ -156,7 +156,7 @@ ASPNETCORE_ENVIRONMENT=Staging
 ASPNETCORE_ENVIRONMENT=Production
 
 # Expected hash in SMS
-<#> 3LfpNXScM4I
+<#> YmnluTO3ErN
 ```
 
 ---
@@ -330,7 +330,7 @@ Total: 4 files (1 new, 3 updated)
 
 3. **Deploy to Production**:
    - Set ASPNETCORE_ENVIRONMENT=Production
-   - Verify SMS contains `3LfpNXScM4I`
+   - Verify SMS contains `YmnluTO3ErN`
    - Monitor SMS logs
    - Test mobile app auto-fill
 

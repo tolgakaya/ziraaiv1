@@ -4,7 +4,7 @@
 
 | Environment | Hash Code | Package Name |
 |-------------|-----------|--------------|
-| **Production** | `3LfpNXScM4I` | com.ziraai.app |
+| **Production** | `YmnluTO3ErN` | com.ziraai.app |
 | **Staging** | `2YocBG2c6D1` | com.ziraai.app.staging |
 | **Development** | `jEcisGBcK6d` | com.ziraai.app.dev |
 
