@@ -20,6 +20,7 @@ namespace Business.Services.Messaging
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly ILogger<TurkcellSmsService> _logger;
+        private readonly SmsRetrieverHelper _smsRetrieverHelper;
         private readonly string _apiUrl;
         private readonly string _username;
         private readonly string _password;
@@ -33,7 +34,8 @@ namespace Business.Services.Messaging
             _httpClient = httpClient;
             _configuration = configuration;
             _logger = logger;
-            
+            _smsRetrieverHelper = new SmsRetrieverHelper(configuration);
+
             // Turkcell SMS API configuration
             _apiUrl = _configuration["SmsProvider:Turkcell:ApiUrl"] ?? "https://sms.turkcell.com.tr/api";
             _username = _configuration["SmsProvider:Turkcell:Username"];
@@ -106,10 +108,23 @@ namespace Business.Services.Messaging
         {
             try
             {
-                var normalizedPhone = NormalizeTurkishPhoneNumber(phoneNumber);
-                var otpMessage = $"Dogrulama kodunuz: {otpCode}. Bu kodu kimseyle paylasmayin.";
+                // Validate OTP code format
+                if (!_smsRetrieverHelper.IsValidOtpCode(otpCode))
+                {
+                    return new ErrorResult("OTP kodu 4-6 basamaklı olmalıdır.");
+                }
 
-                _logger.LogInformation("Sending OTP SMS to {Phone} via Turkcell", normalizedPhone);
+                var normalizedPhone = NormalizeTurkishPhoneNumber(phoneNumber);
+                var environment = _smsRetrieverHelper.GetCurrentEnvironment();
+
+                _logger.LogInformation("Sending OTP SMS to {Phone} via Turkcell. Environment: {Environment}",
+                    normalizedPhone, environment);
+
+                // Build OTP message with Google SMS Retriever API app signature hash
+                // This enables automatic OTP detection and auto-fill on Android devices
+                var otpMessage = _smsRetrieverHelper.BuildOtpSmsMessage(otpCode);
+
+                _logger.LogInformation("OTP message length: {Length} characters (limit: 140)", otpMessage.Length);
 
                 var smsRequest = new
                 {
@@ -135,8 +150,8 @@ namespace Business.Services.Messaging
 
                     if (result.Status == "Success")
                     {
-                        _logger.LogInformation("OTP SMS sent successfully to {Phone}. MessageId: {MessageId}",
-                            normalizedPhone, result.MessageId);
+                        _logger.LogInformation("OTP SMS sent successfully to {Phone}. MessageId: {MessageId}, Environment: {Environment}",
+                            normalizedPhone, result.MessageId, environment);
                         return new SuccessResult($"OTP SMS başarıyla gönderildi. Mesaj ID: {result.MessageId}");
                     }
                     else
