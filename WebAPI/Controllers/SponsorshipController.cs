@@ -13,6 +13,7 @@ using Business.Handlers.MessagingFeatures.Commands;
 using Business.Handlers.MessagingFeatures.Queries;
 using Business.Handlers.FarmerSponsorBlock.Queries;
 using Business.Handlers.AdminUsers.Queries;
+using Business.Handlers.AdminSponsorship.Commands;
 using Business.Services.Sponsorship;
 using Business.Services.AdminAudit;
 using Core.Entities.Concrete;
@@ -2958,6 +2959,106 @@ namespace WebAPI.Controllers
             {
                 _logger.LogError(ex, "Error sending farmer invitation for sponsor {UserId}", GetUserId());
                 return StatusCode(500, new ErrorResult($"Farmer invitation failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Bulk create farmer invitations (Excel upload)
+        /// Same pattern as send-link endpoint for sponsorship codes
+        /// Allows sponsors to upload Excel and send multiple invitations at once
+        /// </summary>
+        /// <param name="command">Bulk invitation details with recipients list</param>
+        /// <returns>Bulk send results with success/failure breakdown</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("farmer/invitations/bulk")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkFarmerInvitationResult>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> BulkCreateFarmerInvitations([FromBody] BulkCreateFarmerInvitationsCommand command)
+        {
+            try
+            {
+                _logger.LogInformation("Bulk farmer invitation request received");
+
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                command.SponsorId = userId.Value;
+                _logger.LogInformation("Creating {Count} farmer invitations for sponsor {SponsorId} via {Channel}",
+                    command.Recipients?.Count ?? 0, command.SponsorId, command.Channel);
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Farmer invitations sent successfully. Success: {Success}, Failed: {Failed}",
+                        result.Data?.SuccessCount ?? 0, result.Data?.FailedCount ?? 0);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("Failed to send farmer invitations: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending bulk farmer invitations for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult("Toplu davet gönderimi sırasında hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Admin: Bulk create farmer invitations on behalf of sponsor
+        /// Same as sponsor bulk but with admin context for audit logging
+        /// </summary>
+        /// <param name="command">Admin bulk invitation command with sponsor ID and recipients</param>
+        /// <returns>Bulk send results with success/failure breakdown</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("admin/farmer/invitations/bulk")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkFarmerInvitationResult>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AdminBulkCreateFarmerInvitations([FromBody] AdminBulkCreateFarmerInvitationsCommand command)
+        {
+            try
+            {
+                _logger.LogInformation("ADMIN bulk farmer invitation request received for sponsor {SponsorId}", command.SponsorId);
+
+                var adminUserId = GetUserId();
+                if (!adminUserId.HasValue)
+                {
+                    _logger.LogWarning("Admin user ID not found in claims");
+                    return Unauthorized();
+                }
+
+                // Set admin context
+                command.AdminUserId = adminUserId.Value;
+                command.IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                command.UserAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+                command.RequestPath = HttpContext.Request.Path;
+
+                _logger.LogInformation("ADMIN {AdminId} creating {Count} farmer invitations on behalf of sponsor {SponsorId} via {Channel}",
+                    command.AdminUserId, command.Recipients?.Count ?? 0, command.SponsorId, command.Channel);
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("ADMIN farmer invitations sent successfully. Success: {Success}, Failed: {Failed}",
+                        result.Data?.SuccessCount ?? 0, result.Data?.FailedCount ?? 0);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("ADMIN failed to send farmer invitations: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ADMIN error sending bulk farmer invitations for sponsor {SponsorId}", command.SponsorId);
+                return StatusCode(500, new ErrorResult("Admin toplu davet gönderimi sırasında hata oluştu"));
             }
         }
 
