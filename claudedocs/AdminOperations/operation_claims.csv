@@ -186,3 +186,8 @@
 186,VerifyPayment,payment.verify,Verify payment status after iyzico completion
 187,GetPaymentStatus,payment.status,Query payment transaction status by token
 188,ProcessPaymentWebhook,payment.webhook,Process iyzico payment webhook callbacks (internal use)
+189,CreateFarmerInvitationCommand,sponsor.farmer-invitations.create,Create farmer invitation with code reservation and SMS delivery
+190,AcceptFarmerInvitationCommand,farmer.invitations.accept,Accept farmer invitation with phone verification and code assignment
+191,GetFarmerInvitationsQuery,sponsor.farmer-invitations.list,Get list of farmer invitations for a sponsor with status filtering
+192,GetFarmerInvitationByTokenQuery,public.farmer-invitations.detail,Get farmer invitation details by token (public endpoint for unregistered users)
+193,GetPendingFarmerInvitationsByPhoneQuery,farmer.invitations.my-invitations,Get pending farmer invitations for authenticated farmer by phone
