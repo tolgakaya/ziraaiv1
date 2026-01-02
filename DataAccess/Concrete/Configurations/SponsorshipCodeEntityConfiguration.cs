@@ -41,17 +41,7 @@ namespace DataAccess.Concrete.Configurations
             
             builder.Property(x => x.SponsorshipPurchaseId)
                 .IsRequired();
-
-            // Farmer Invitation System Fields (nullable for backward compatibility)
-            builder.Property(x => x.FarmerInvitationId)
-                .IsRequired(false);
-
-            builder.Property(x => x.ReservedForFarmerInvitationId)
-                .IsRequired(false);
-
-            builder.Property(x => x.ReservedForFarmerAt)
-                .IsRequired(false);
-
+            
             // Indexes for performance
             builder.HasIndex(x => x.SponsorId)
                 .HasDatabaseName("IX_SponsorshipCodes_SponsorId");
@@ -78,13 +68,6 @@ namespace DataAccess.Concrete.Configurations
             builder.HasIndex(x => new { x.SponsorId, x.DistributionDate, x.IsUsed })
                 .HasDatabaseName("IX_SponsorshipCodes_SentUnused")
                 .HasFilter("\"DistributionDate\" IS NOT NULL AND \"IsUsed\" = false");
-
-            // Farmer Invitation System Indexes
-            builder.HasIndex(x => x.FarmerInvitationId)
-                .HasDatabaseName("IX_SponsorshipCode_FarmerInvitationId");
-
-            builder.HasIndex(x => x.ReservedForFarmerInvitationId)
-                .HasDatabaseName("IX_SponsorshipCode_ReservedForFarmerInvitationId");
         }
     }
 }

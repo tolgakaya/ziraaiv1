@@ -27,32 +27,12 @@ namespace Entities.Concrete
         /// Cleared when invitation is accepted/expired/cancelled.
         /// </summary>
         public int? ReservedForInvitationId { get; set; }
-
+        
         /// <summary>
         /// Timestamp when the code was reserved for an invitation.
         /// Reservation expires with the invitation expiry date.
         /// </summary>
         public DateTime? ReservedAt { get; set; }
-
-        // Farmer Invitation System (new fields for farmer invitation acceptance flow)
-        /// <summary>
-        /// FarmerInvitation ID when this code was assigned through invitation acceptance.
-        /// Links the code to the specific farmer invitation that was accepted.
-        /// </summary>
-        public int? FarmerInvitationId { get; set; }
-
-        /// <summary>
-        /// FarmerInvitation ID for which this code is reserved during invitation creation.
-        /// Prevents double-allocation for pending farmer invitations.
-        /// Populated when invitation is created, cleared when accepted/expired/cancelled.
-        /// </summary>
-        public int? ReservedForFarmerInvitationId { get; set; }
-
-        /// <summary>
-        /// Timestamp when the code was reserved for a farmer invitation.
-        /// Used for tracking reservation duration and cleanup of stale reservations.
-        /// </summary>
-        public DateTime? ReservedForFarmerAt { get; set; }
         
         // Usage Information
         public bool IsUsed { get; set; }
