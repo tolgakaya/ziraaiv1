@@ -7,6 +7,7 @@ namespace Business.Services.Messaging
     /// Helper class for Google SMS Retriever API integration
     /// Provides environment-specific app signature hashes for OTP auto-fill
     ///
+    /// Last Updated: 2026-01-02
     /// Documentation: https://developers.google.com/identity/sms-retriever/overview
     /// Package: https://pub.dev/packages/sms_autofill
     /// </summary>
