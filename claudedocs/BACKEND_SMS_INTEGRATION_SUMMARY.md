@@ -6,7 +6,7 @@
 
 | Environment | Package Name | Hash Code | Status |
 |-------------|--------------|-----------|--------|
-| **PRODUCTION** | `com.ziraai.app` | `YmnluTO3ErN` | ✅ Ready |
+| **PRODUCTION** | `com.ziraai.app` | `3LfpNXScM4I` | ✅ Ready |
 | **STAGING** | `com.ziraai.app.staging` | `2YocBG2c6D1` | ✅ Ready |
 | **DEV** | `com.ziraai.app.dev` | `jEcisGBcK6d` | ✅ Ready |
 
@@ -27,13 +27,13 @@
 ### PRODUCTION Environment
 ```
 ZiraAI doğrulama kodunuz: {{OTP_CODE}}
-<#> YmnluTO3ErN
+<#> 3LfpNXScM4I
 ```
 
 **English Version:**
 ```
 Your ZiraAI code is {{OTP_CODE}}
-<#> YmnluTO3ErN
+<#> 3LfpNXScM4I
 ```
 
 ### STAGING Environment
@@ -52,7 +52,7 @@ ZiraAI doğrulama kodunuz: {{OTP_CODE}}
 
 ## Backend Implementation Checklist
 
-- [ ] Update SMS template for PRODUCTION environment with hash `YmnluTO3ErN`
+- [ ] Update SMS template for PRODUCTION environment with hash `3LfpNXScM4I`
 - [ ] Update SMS template for STAGING environment with hash `2YocBG2c6D1`
 - [ ] Update SMS template for DEV environment with hash `jEcisGBcK6d`
 - [ ] Verify message length is under 140 characters
@@ -71,7 +71,7 @@ Backend should detect which environment is requesting OTP and use the correspond
 // Example Backend Logic (Node.js/TypeScript)
 function getAppSignatureHash(environment) {
   const hashes = {
-    production: 'YmnluTO3ErN',
+    production: '3LfpNXScM4I',
     staging: '2YocBG2c6D1',
     dev: 'jEcisGBcK6d'
   };
@@ -105,7 +105,7 @@ function buildOtpSms(otpCode, environment) {
 ### 3. PRODUCTION Environment Test
 1. Install PRODUCTION APK on test device
 2. Request OTP code
-3. Backend should send SMS with hash `YmnluTO3ErN`
+3. Backend should send SMS with hash `3LfpNXScM4I`
 4. Verify OTP auto-fills correctly
 
 ---

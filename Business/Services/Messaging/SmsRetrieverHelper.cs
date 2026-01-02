@@ -37,7 +37,7 @@ namespace Business.Services.Messaging
             // These must match the package name signatures from mobile app
             var hashes = new
             {
-                Production = "YmnluTO3ErN",  // com.ziraai.app
+                Production = "3LfpNXScM4I",  // com.ziraai.app
                 Staging = "2YocBG2c6D1",     // com.ziraai.app.staging
                 Development = "jEcisGBcK6d"  // com.ziraai.app.dev
             };
