@@ -3,11 +3,12 @@
 -- =====================================================
 -- Purpose: Add operation claims for farmer invitation endpoints
 -- Date: 2026-01-02
--- Handlers: 2 Commands + 2 Queries = 4 total
+-- Handlers: 2 Commands + 3 Queries = 5 total
 -- Target Groups:
 --   - Sponsors (GroupId = 3) - Can create invitations and view their own
+--   - Farmers (GroupId = 2) - Can accept invitations and view pending invitations
 --   - Administrators (GroupId = 1) - Full access to all invitations
--- Claim IDs: 189-192 (verified no conflicts with existing claims)
+-- Claim IDs: 189-193 (verified no conflicts with existing claims)
 -- Previous max ID: 188 (from operation_claims.csv: ProcessPaymentWebhook)
 -- =====================================================
 
@@ -21,13 +22,13 @@ SELECT
     'Expected: 188 or lower. If higher than 188, STOP and adjust claim IDs!' as "Warning"
 FROM public."OperationClaims";
 
--- Check if any of our target IDs (189-192) already exist
+-- Check if any of our target IDs (189-193) already exist
 SELECT
     "Id",
     "Name",
     'CONFLICT DETECTED! This ID is already in use!' as "Error"
 FROM public."OperationClaims"
-WHERE "Id" BETWEEN 189 AND 192;
+WHERE "Id" BETWEEN 189 AND 193;
 -- Expected: 0 rows returned. If any rows appear, STOP and adjust claim IDs!
 
 -- =====================================================
@@ -75,6 +76,15 @@ WHERE NOT EXISTS (
     WHERE "Name" = 'GetFarmerInvitationByTokenQuery'
 );
 
+-- GetPendingFarmerInvitationsByPhoneQuery (ClaimId: 193)
+-- Allows farmers to view their own pending invitations
+INSERT INTO public."OperationClaims" ("Id", "Name", "Alias", "Description")
+SELECT 193, 'GetPendingFarmerInvitationsByPhoneQuery', 'farmer.invitations.my-invitations', 'Get pending farmer invitations for authenticated farmer by phone'
+WHERE NOT EXISTS (
+    SELECT 1 FROM public."OperationClaims"
+    WHERE "Name" = 'GetPendingFarmerInvitationsByPhoneQuery'
+);
+
 -- =====================================================
 -- PART 3: Assign Claims to Groups
 -- =====================================================
@@ -104,14 +114,22 @@ WHERE NOT EXISTS (
     WHERE "GroupId" = 3 AND "ClaimId" = 191
 );
 
+-- Assign GetPendingFarmerInvitationsByPhoneQuery (193) to Farmers group (GroupId = 2)
+INSERT INTO public."GroupClaims" ("GroupId", "ClaimId")
+SELECT 2, 193
+WHERE NOT EXISTS (
+    SELECT 1 FROM public."GroupClaims"
+    WHERE "GroupId" = 2 AND "ClaimId" = 193
+);
+
 -- GetFarmerInvitationByTokenQuery (192) is AllowAnonymous - No group assignment needed
 -- This is a public endpoint accessible without authentication
 
--- Assign all claims (189-192) to Administrators group (GroupId = 1) for full access
+-- Assign all claims (189-193) to Administrators group (GroupId = 1) for full access
 INSERT INTO public."GroupClaims" ("GroupId", "ClaimId")
 SELECT 1, oc."Id"
 FROM public."OperationClaims" oc
-WHERE oc."Id" BETWEEN 189 AND 192
+WHERE oc."Id" BETWEEN 189 AND 193
 AND NOT EXISTS (
     SELECT 1 FROM public."GroupClaims" gc
     WHERE gc."GroupId" = 1 AND gc."ClaimId" = oc."Id"
@@ -121,12 +139,12 @@ AND NOT EXISTS (
 -- PART 4: Verification Queries
 -- =====================================================
 
--- Verify all 4 OperationClaims were created
+-- Verify all 5 OperationClaims were created
 SELECT "Id", "Name", "Alias", "Description"
 FROM public."OperationClaims"
-WHERE "Id" BETWEEN 189 AND 192
+WHERE "Id" BETWEEN 189 AND 193
 ORDER BY "Id";
--- Expected: 4 rows
+-- Expected: 5 rows
 
 -- Verify group assignments
 SELECT
@@ -137,13 +155,14 @@ SELECT
 FROM public."GroupClaims" gc
 INNER JOIN public."Group" g ON gc."GroupId" = g."Id"
 INNER JOIN public."OperationClaims" oc ON gc."ClaimId" = oc."Id"
-WHERE oc."Id" BETWEEN 189 AND 192
+WHERE oc."Id" BETWEEN 189 AND 193
 ORDER BY oc."Id", g."GroupName";
 -- Expected:
 -- ClaimId 189: Administrators, Sponsors
 -- ClaimId 190: Administrators, Farmers
 -- ClaimId 191: Administrators, Sponsors
 -- ClaimId 192: Administrators (public endpoint, group assignment is informational)
+-- ClaimId 193: Administrators, Farmers
 
 -- Verify Sponsors group has invitation creation capability
 SELECT
@@ -163,9 +182,9 @@ SELECT
 FROM public."GroupClaims" gc
 INNER JOIN public."OperationClaims" oc ON gc."ClaimId" = oc."Id"
 WHERE gc."GroupId" = 2  -- Farmers group
-  AND oc."Id" = 190  -- Accept claim
+  AND oc."Id" IN (190, 193)  -- Accept and MyInvitations claims
 ORDER BY oc."Id";
--- Expected: 1 row (190)
+-- Expected: 2 rows (190, 193)
 
 -- =====================================================
 -- PART 5: Claim ID Summary
@@ -175,12 +194,13 @@ ORDER BY oc."Id";
 -- 189: CreateFarmerInvitationCommand (Sponsors + Admins)
 -- 190: AcceptFarmerInvitationCommand (Farmers + Admins)
 
--- FarmerInvitation Queries (2 claims): 191-192
+-- FarmerInvitation Queries (3 claims): 191-193
 -- 191: GetFarmerInvitationsQuery (Sponsors + Admins)
 -- 192: GetFarmerInvitationByTokenQuery (Public/AllowAnonymous + Admins for tracking)
+-- 193: GetPendingFarmerInvitationsByPhoneQuery (Farmers + Admins)
 
--- Total: 4 operation claims (189-192)
+-- Total: 5 operation claims (189-193)
 -- Group assignments:
---   - Administrators (GroupId = 1): All 4 claims
+--   - Administrators (GroupId = 1): All 5 claims
 --   - Sponsors (GroupId = 3): 2 claims (189, 191)
---   - Farmers (GroupId = 2): 1 claim (190)
+--   - Farmers (GroupId = 2): 2 claims (190, 193)

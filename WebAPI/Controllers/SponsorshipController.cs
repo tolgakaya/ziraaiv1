@@ -12,6 +12,7 @@ using Business.Handlers.PlantAnalyses.Queries;
 using Business.Handlers.MessagingFeatures.Commands;
 using Business.Handlers.MessagingFeatures.Queries;
 using Business.Handlers.FarmerSponsorBlock.Queries;
+using Business.Handlers.AdminUsers.Queries;
 using Business.Services.Sponsorship;
 using Business.Services.AdminAudit;
 using Core.Entities.Concrete;
@@ -3078,6 +3079,61 @@ namespace WebAPI.Controllers
             {
                 _logger.LogError(ex, "Error getting farmer invitation details for token {Token}", token);
                 return StatusCode(500, new ErrorResult($"Invitation details retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get pending farmer invitations for current authenticated farmer
+        /// Returns all invitations sent to the farmer's phone number that are not yet accepted
+        /// Used by mobile app to show farmers which sponsors have sent them invitations
+        /// </summary>
+        /// <returns>List of pending farmer invitations</returns>
+        [Authorize(Roles = "Farmer,Admin")]
+        [HttpGet("farmer/my-invitations")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<FarmerInvitationListDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetMyFarmerInvitations()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                // Get current user's phone number
+                var userQuery = new GetUserByIdQuery { UserId = userId.Value };
+                var userResult = await Mediator.Send(userQuery);
+
+                if (!userResult.Success || userResult.Data == null)
+                {
+                    return BadRequest(new ErrorDataResult<List<FarmerInvitationListDto>>("User not found"));
+                }
+
+                var phone = userResult.Data.MobilePhones;
+                if (string.IsNullOrWhiteSpace(phone))
+                {
+                    return BadRequest(new ErrorDataResult<List<FarmerInvitationListDto>>("User phone number not found"));
+                }
+
+                // Get pending invitations for this phone
+                var query = new GetPendingFarmerInvitationsByPhoneQuery
+                {
+                    Phone = phone
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting pending farmer invitations for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Pending invitations retrieval failed: {ex.Message}"));
             }
         }
 
