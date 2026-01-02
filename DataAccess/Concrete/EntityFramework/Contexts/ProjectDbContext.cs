@@ -76,6 +76,7 @@ namespace DataAccess.Concrete.EntityFramework.Contexts
 
         // Dealer Distribution System
         public DbSet<DealerInvitation> DealerInvitations { get; set; }
+        public DbSet<FarmerInvitation> FarmerInvitations { get; set; }
         public DbSet<BulkInvitationJob> BulkInvitationJobs { get; set; }
         public DbSet<BulkCodeDistributionJob> BulkCodeDistributionJobs { get; set; }
         public DbSet<BulkSubscriptionAssignmentJob> BulkSubscriptionAssignmentJobs { get; set; }

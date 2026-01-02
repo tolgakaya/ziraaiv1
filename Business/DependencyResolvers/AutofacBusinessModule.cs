@@ -158,6 +158,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<DealerInvitationRepository>().As<IDealerInvitationRepository>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<FarmerInvitationRepository>().As<IFarmerInvitationRepository>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<BulkInvitationJobRepository>().As<IBulkInvitationJobRepository>()
                 .InstancePerLifetimeScope();
 
@@ -369,6 +372,11 @@ namespace Business.DependencyResolvers
             // Dealer Invitation Services
             builder.RegisterType<Business.Services.DealerInvitation.DealerInvitationConfigurationService>()
                 .As<Business.Services.DealerInvitation.IDealerInvitationConfigurationService>()
+                .InstancePerLifetimeScope();
+
+            // Farmer Invitation Services
+            builder.RegisterType<Business.Services.FarmerInvitation.FarmerInvitationConfigurationService>()
+                .As<Business.Services.FarmerInvitation.IFarmerInvitationConfigurationService>()
                 .InstancePerLifetimeScope();
             
             builder.RegisterType<Business.Services.Referral.ReferralCodeService>()
