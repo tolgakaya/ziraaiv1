@@ -12,6 +12,8 @@ using Business.Handlers.PlantAnalyses.Queries;
 using Business.Handlers.MessagingFeatures.Commands;
 using Business.Handlers.MessagingFeatures.Queries;
 using Business.Handlers.FarmerSponsorBlock.Queries;
+using Business.Handlers.AdminUsers.Queries;
+using Business.Handlers.AdminSponsorship.Commands;
 using Business.Services.Sponsorship;
 using Business.Services.AdminAudit;
 using Core.Entities.Concrete;
@@ -2916,6 +2918,323 @@ namespace WebAPI.Controllers
             {
                 _logger.LogError(ex, "❌ Error retrieving bulk job history for sponsor {UserId}", GetUserId());
                 return StatusCode(500, new ErrorResult($"Job history retrieval failed: {ex.Message}"));
+            }
+        }
+
+        // ====== FARMER INVITATION ENDPOINTS ======
+
+        /// <summary>
+        /// Create farmer invitation with SMS delivery
+        /// Sends invitation token (not actual codes) via SMS with deep link for mobile acceptance
+        /// Solves Google Play SDK 35+ SMS listener removal issue
+        /// </summary>
+        /// <param name="command">Invitation details (phone, farmerName, email, codeCount, packageTier, notes)</param>
+        /// <returns>Invitation details with SMS delivery status and deep link</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("farmer/invite")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<FarmerInvitationResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<FarmerInvitationResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CreateFarmerInvitation([FromBody] CreateFarmerInvitationCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                command.SponsorId = userId.Value;
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Farmer invitation sent for sponsor {SponsorId} to {Phone}",
+                        userId.Value, command.Phone);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending farmer invitation for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Farmer invitation failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Bulk create farmer invitations (Excel upload)
+        /// Same pattern as send-link endpoint for sponsorship codes
+        /// Allows sponsors to upload Excel and send multiple invitations at once
+        /// </summary>
+        /// <param name="command">Bulk invitation details with recipients list</param>
+        /// <returns>Bulk send results with success/failure breakdown</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpPost("farmer/invitations/bulk")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkFarmerInvitationResult>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> BulkCreateFarmerInvitations([FromBody] BulkCreateFarmerInvitationsCommand command)
+        {
+            try
+            {
+                _logger.LogInformation("Bulk farmer invitation request received");
+
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                {
+                    _logger.LogWarning("User ID not found in claims");
+                    return Unauthorized();
+                }
+
+                command.SponsorId = userId.Value;
+                _logger.LogInformation("Creating {Count} farmer invitations for sponsor {SponsorId} via {Channel}",
+                    command.Recipients?.Count ?? 0, command.SponsorId, command.Channel);
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Farmer invitations sent successfully. Success: {Success}, Failed: {Failed}",
+                        result.Data?.SuccessCount ?? 0, result.Data?.FailedCount ?? 0);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("Failed to send farmer invitations: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending bulk farmer invitations for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult("Toplu davet gönderimi sırasında hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Admin: Bulk create farmer invitations on behalf of sponsor
+        /// Same as sponsor bulk but with admin context for audit logging
+        /// </summary>
+        /// <param name="command">Admin bulk invitation command with sponsor ID and recipients</param>
+        /// <returns>Bulk send results with success/failure breakdown</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("admin/farmer/invitations/bulk")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkFarmerInvitationResult>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AdminBulkCreateFarmerInvitations([FromBody] AdminBulkCreateFarmerInvitationsCommand command)
+        {
+            try
+            {
+                _logger.LogInformation("ADMIN bulk farmer invitation request received for sponsor {SponsorId}", command.SponsorId);
+
+                var adminUserId = GetUserId();
+                if (!adminUserId.HasValue)
+                {
+                    _logger.LogWarning("Admin user ID not found in claims");
+                    return Unauthorized();
+                }
+
+                // Set admin context
+                command.AdminUserId = adminUserId.Value;
+                command.IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                command.UserAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+                command.RequestPath = HttpContext.Request.Path;
+
+                _logger.LogInformation("ADMIN {AdminId} creating {Count} farmer invitations on behalf of sponsor {SponsorId} via {Channel}",
+                    command.AdminUserId, command.Recipients?.Count ?? 0, command.SponsorId, command.Channel);
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("ADMIN farmer invitations sent successfully. Success: {Success}, Failed: {Failed}",
+                        result.Data?.SuccessCount ?? 0, result.Data?.FailedCount ?? 0);
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("ADMIN failed to send farmer invitations: {Message}", result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ADMIN error sending bulk farmer invitations for sponsor {SponsorId}", command.SponsorId);
+                return StatusCode(500, new ErrorResult("Admin toplu davet gönderimi sırasında hata oluştu"));
+            }
+        }
+
+        /// <summary>
+        /// Accept farmer invitation (mobile endpoint)
+        /// Validates token, verifies phone match, and assigns codes to farmer
+        /// </summary>
+        /// <param name="command">Invitation token</param>
+        /// <returns>Acceptance result with assigned sponsorship codes</returns>
+        [Authorize]
+        [HttpPost("farmer/accept-invitation")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<FarmerInvitationAcceptResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<FarmerInvitationAcceptResponseDto>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AcceptFarmerInvitation([FromBody] AcceptFarmerInvitationCommand command)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var userPhone = GetUserPhone();
+
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                command.CurrentUserId = userId.Value;
+                command.CurrentUserPhone = userPhone;
+
+                var result = await Mediator.Send(command);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("Farmer invitation {InvitationToken} accepted by user {UserId}",
+                        command.InvitationToken, userId.Value);
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error accepting farmer invitation for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Invitation acceptance failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get list of farmer invitations for current sponsor
+        /// Optional status filter (Pending, Accepted, Expired, Cancelled)
+        /// </summary>
+        /// <param name="status">Optional status filter</param>
+        /// <returns>List of farmer invitations</returns>
+        [Authorize(Roles = "Sponsor,Admin")]
+        [HttpGet("farmer/invitations")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<FarmerInvitationListDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetFarmerInvitations([FromQuery] string status = null)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                var query = new GetFarmerInvitationsQuery
+                {
+                    SponsorId = userId.Value,
+                    Status = status
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting farmer invitations for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Farmer invitations retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get farmer invitation details by token (PUBLIC - no auth required)
+        /// Used by mobile app to display invitation details before login/acceptance
+        /// Shows sponsor name, code count, tier, expiry, and CanAccept flag
+        /// </summary>
+        /// <param name="token">Invitation token</param>
+        /// <returns>Invitation details (sponsor name, code count, expiry, canAccept flag)</returns>
+        [AllowAnonymous]
+        [HttpGet("farmer/invitation-details")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<FarmerInvitationDetailDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(IDataResult<FarmerInvitationDetailDto>))]
+        public async Task<IActionResult> GetFarmerInvitationDetails([FromQuery] string token)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(token))
+                    return BadRequest(new ErrorDataResult<FarmerInvitationDetailDto>("Token is required"));
+
+                var query = new GetFarmerInvitationByTokenQuery
+                {
+                    InvitationToken = token
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting farmer invitation details for token {Token}", token);
+                return StatusCode(500, new ErrorResult($"Invitation details retrieval failed: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Get pending farmer invitations for current authenticated farmer
+        /// Returns all invitations sent to the farmer's phone number that are not yet accepted
+        /// Used by mobile app to show farmers which sponsors have sent them invitations
+        /// </summary>
+        /// <returns>List of pending farmer invitations</returns>
+        [Authorize(Roles = "Farmer,Admin")]
+        [HttpGet("farmer/my-invitations")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<List<FarmerInvitationListDto>>))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetMyFarmerInvitations()
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (!userId.HasValue)
+                    return Unauthorized();
+
+                // Get current user's phone number
+                var userQuery = new GetUserByIdQuery { UserId = userId.Value };
+                var userResult = await Mediator.Send(userQuery);
+
+                if (!userResult.Success || userResult.Data == null)
+                {
+                    return BadRequest(new ErrorDataResult<List<FarmerInvitationListDto>>("User not found"));
+                }
+
+                var phone = userResult.Data.MobilePhones;
+                if (string.IsNullOrWhiteSpace(phone))
+                {
+                    return BadRequest(new ErrorDataResult<List<FarmerInvitationListDto>>("User phone number not found"));
+                }
+
+                // Get pending invitations for this phone
+                var query = new GetPendingFarmerInvitationsByPhoneQuery
+                {
+                    Phone = phone
+                };
+
+                var result = await Mediator.Send(query);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting pending farmer invitations for user {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult($"Pending invitations retrieval failed: {ex.Message}"));
             }
         }
 
