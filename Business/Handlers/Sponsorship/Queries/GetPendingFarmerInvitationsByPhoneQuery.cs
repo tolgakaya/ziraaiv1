@@ -38,9 +38,14 @@ namespace Business.Handlers.Sponsorship.Queries
         {
             // Normalize phone number (handle Turkish format)
             var normalizedPhone = NormalizePhoneNumber(request.Phone);
+            
+            // Generate alternative format for matching (both +90 and 0 prefixes)
+            var alternativePhone = GetAlternativePhoneFormat(normalizedPhone);
 
-            // Get all pending invitations for this phone number
-            var invitations = await _farmerInvitationRepository.GetListAsync(i => i.Phone == normalizedPhone && i.Status == "Pending");
+            // Get all pending invitations for this phone number (check both formats)
+            var invitations = await _farmerInvitationRepository.GetListAsync(i => 
+                (i.Phone == normalizedPhone || i.Phone == alternativePhone) && 
+                i.Status == "Pending");
 
             if (invitations == null || !invitations.Any())
             {
@@ -93,6 +98,28 @@ namespace Business.Handlers.Sponsorship.Queries
             else if (phone.StartsWith("90") && phone.Length == 12)
             {
                 phone = "0" + phone.Substring(2);
+            }
+
+            return phone;
+        }
+
+        /// <summary>
+        /// Get alternative phone format for matching (handles both +90 and 0 prefix)
+        /// </summary>
+        private string GetAlternativePhoneFormat(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+                return phone;
+
+            // If phone starts with 0, return +90 version
+            if (phone.StartsWith("0") && phone.Length == 11)
+            {
+                return "+90" + phone.Substring(1);
+            }
+            // If phone starts with +90, return 0 version
+            else if (phone.StartsWith("+90") && phone.Length == 13)
+            {
+                return "0" + phone.Substring(3);
             }
 
             return phone;
