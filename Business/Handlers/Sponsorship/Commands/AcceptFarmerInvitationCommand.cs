@@ -131,49 +131,43 @@ namespace Business.Handlers.Sponsorship.Commands
                             $"Yetersiz kod. İstenen: {invitation.CodeCount}, Mevcut: {codesToAssign.Count}");
                     }
 
-                    _logger.LogInformation("📦 Processing {Count} codes for farmer {FarmerId} with FULL redemption flow (queuing support)",
+                    _logger.LogInformation("📦 Redeeming {Count} codes for farmer {FarmerId} using existing redemption flow",
                         codesToAssign.Count, request.CurrentUserId);
 
-                    // 5. Link codes to invitation and populate statistics fields
-                    // This must be done BEFORE redemption to ensure proper tracking
+                    // 5. CRITICAL: Redeem each code using SponsorshipService
+                    // This handles ALL logic: queuing, subscription creation, marking as used, etc.
                     var now = DateTime.Now;
-                    foreach (var code in codesToAssign)
-                    {
-                        // Link to farmer invitation
-                        code.FarmerInvitationId = invitation.Id;
-
-                        // Clear reservation fields
-                        code.ReservedForFarmerInvitationId = null;
-                        code.ReservedForFarmerAt = null;
-
-                        // CRITICAL: Populate statistics-required fields
-                        // These fields are used by GetLinkStatisticsQuery, GetPackageDistributionStatisticsQuery, etc.
-                        code.LinkSentDate = invitation.LinkSentDate ?? now;  // When SMS was sent
-                        code.DistributionDate = now;  // When code was distributed (assigned) to farmer
-                        code.DistributionChannel = "FarmerInvitation";  // Channel identifier
-                        code.DistributedTo = request.CurrentUserPhone;  // Farmer's phone
-
-                        _codeRepository.Update(code);
-                    }
-
-                    await _codeRepository.SaveChangesAsync();
-
-                    _logger.LogInformation("✅ Codes linked to invitation successfully");
-
-                    // 6. CRITICAL: Redeem each code using SponsorshipService
-                    // This ensures proper queuing logic when farmer already has an active subscription
                     var createdSubscriptions = new List<Entities.Concrete.UserSubscription>();
                     var failedCodes = new List<string>();
+                    var codeStrings = new List<string>();
 
                     foreach (var code in codesToAssign)
                     {
                         _logger.LogInformation("🔄 Redeeming code {Code} for user {UserId}", code.Code, request.CurrentUserId);
 
+                        // Clear reservation fields BEFORE redemption
+                        code.ReservedForFarmerInvitationId = null;
+                        code.ReservedForFarmerAt = null;
+                        _codeRepository.Update(code);
+                        await _codeRepository.SaveChangesAsync();
+
+                        // Use existing redemption flow - handles everything
                         var redemptionResult = await _sponsorshipService.RedeemSponsorshipCodeAsync(code.Code, request.CurrentUserId);
 
                         if (redemptionResult.Success && redemptionResult.Data != null)
                         {
                             createdSubscriptions.Add(redemptionResult.Data);
+                            codeStrings.Add(code.Code);
+
+                            // NOW link code to invitation for tracking/statistics
+                            code.FarmerInvitationId = invitation.Id;
+                            code.LinkSentDate = invitation.LinkSentDate ?? now;
+                            code.DistributionDate = now;
+                            code.DistributionChannel = "FarmerInvitation";
+                            code.DistributedTo = request.CurrentUserPhone;
+                            _codeRepository.Update(code);
+                            await _codeRepository.SaveChangesAsync();
+
                             _logger.LogInformation("✅ Code {Code} redeemed successfully. Subscription ID: {SubId}, Status: {Status}, QueueStatus: {QueueStatus}",
                                 code.Code, redemptionResult.Data.Id, redemptionResult.Data.Status, redemptionResult.Data.QueueStatus);
                         }
@@ -207,7 +201,6 @@ namespace Business.Handlers.Sponsorship.Commands
                         invitation.Id, request.CurrentUserId);
 
                     // 8. Build response with actual sponsorship codes and subscription info
-                    var codeStrings = codesToAssign.Select(c => c.Code).ToList();
                     var codesByTier = codesToAssign
                         .GroupBy(c => c.SubscriptionTierId)
                         .ToDictionary(g => g.Key.ToString(), g => g.Count());
