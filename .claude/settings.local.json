@@ -20,7 +20,12 @@
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
       "Bash(gh pr view:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(SET \"\"FarmerInvitationId\"\" = {invitation.Id},)",
+      "Bash(\"\"LinkSentDate\"\" = {invitation.LinkSentDate ?? now},)",
+      "Bash(\"\"DistributionDate\"\" = {now},)",
+      "Bash(\"\"DistributionChannel\"\" = {\"FarmerInvitation\"},)",
+      "Bash(\"\"DistributedTo\"\" = {request.CurrentUserPhone})"
     ],
     "deny": [],
     "ask": [],
