@@ -145,13 +145,7 @@ namespace Business.Handlers.Sponsorship.Commands
                     {
                         _logger.LogInformation("🔄 Redeeming code {Code} for user {UserId}", code.Code, request.CurrentUserId);
 
-                        // Clear reservation fields BEFORE redemption (in-memory only, will be saved by redemption)
-                        code.ReservedForFarmerInvitationId = null;
-                        code.ReservedForFarmerAt = null;
-                        _codeRepository.Update(code);
-                        await _codeRepository.SaveChangesAsync();
-
-                        // Use existing redemption flow - handles everything (marks as used, creates subscription)
+                        // Use existing redemption flow - handles everything (marks as used, creates subscription, clears reservations)
                         var redemptionResult = await _sponsorshipService.RedeemSponsorshipCodeAsync(code.Code, request.CurrentUserId);
 
                         if (redemptionResult.Success && redemptionResult.Data != null)
