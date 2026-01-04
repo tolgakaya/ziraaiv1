@@ -118,6 +118,7 @@ namespace Entities.Dtos
         public string Phone { get; set; }
         public string FarmerName { get; set; }
         public string Email { get; set; }
+        public string InvitationToken { get; set; }
         public string Status { get; set; }
         public int CodeCount { get; set; }
         public string PackageTier { get; set; }

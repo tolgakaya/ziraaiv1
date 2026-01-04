@@ -81,6 +81,7 @@ namespace Business.Handlers.Sponsorship.Queries
                 Phone = i.Phone,
                 FarmerName = i.FarmerName,
                 Email = i.Email,
+                InvitationToken = i.InvitationToken,
                 Status = i.Status,
                 CodeCount = i.CodeCount,
                 PackageTier = i.PackageTier,
