@@ -3197,29 +3197,18 @@ namespace WebAPI.Controllers
         {
             try
             {
-                var userId = GetUserId();
-                if (!userId.HasValue)
-                    return Unauthorized();
+                var userPhone = GetUserPhone();
 
-                // Get current user's phone number
-                var userQuery = new GetUserByIdQuery { UserId = userId.Value };
-                var userResult = await Mediator.Send(userQuery);
-
-                if (!userResult.Success || userResult.Data == null)
+                if (string.IsNullOrWhiteSpace(userPhone))
                 {
-                    return BadRequest(new ErrorDataResult<List<FarmerInvitationListDto>>("User not found"));
-                }
-
-                var phone = userResult.Data.MobilePhones;
-                if (string.IsNullOrWhiteSpace(phone))
-                {
-                    return BadRequest(new ErrorDataResult<List<FarmerInvitationListDto>>("User phone number not found"));
+                    _logger.LogWarning("⚠️ User has no phone in JWT claims");
+                    return BadRequest(new ErrorDataResult<List<FarmerInvitationListDto>>("Telefon bilgisi bulunamadı"));
                 }
 
                 // Get pending invitations for this phone
                 var query = new GetPendingFarmerInvitationsByPhoneQuery
                 {
-                    Phone = phone
+                    Phone = userPhone
                 };
 
                 var result = await Mediator.Send(query);
