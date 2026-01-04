@@ -14,7 +14,11 @@
       "Bash(dir:*)",
       "Bash(findstr:*)",
       "Bash(gh pr create:*)",
-      "Bash(Select-String -Pattern \"error|warning|Build succeeded|Build FAILED\" -Context 0,2)"
+      "Bash(Select-String -Pattern \"error|warning|Build succeeded|Build FAILED\" -Context 0,2)",
+      "Bash(git revert:*)",
+      "Bash(gh pr list:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": [],
