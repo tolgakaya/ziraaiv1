@@ -153,19 +153,16 @@ namespace Business.Handlers.Sponsorship.Commands
                             createdSubscriptions.Add(redemptionResult.Data);
                             codeStrings.Add(code.Code);
 
-                            // CRITICAL: Fetch fresh instance to avoid EF tracking conflict
-                            var freshCode = await _codeRepository.GetAsync(c => c.Code == code.Code);
-                            if (freshCode != null)
-                            {
-                                // NOW link code to invitation for tracking/statistics
-                                freshCode.FarmerInvitationId = invitation.Id;
-                                freshCode.LinkSentDate = invitation.LinkSentDate ?? now;
-                                freshCode.DistributionDate = now;
-                                freshCode.DistributionChannel = "FarmerInvitation";
-                                freshCode.DistributedTo = request.CurrentUserPhone;
-                                _codeRepository.Update(freshCode);
-                                await _codeRepository.SaveChangesAsync();
-                            }
+                            // CRITICAL: Update FarmerInvitationId fields using direct SQL to avoid EF tracking conflict
+                            // The code entity is already tracked from the redemption process, so we can't use Update()
+                            await _codeRepository.Execute(
+                                $@"UPDATE ""SponsorshipCodes""
+                                   SET ""FarmerInvitationId"" = {invitation.Id},
+                                       ""LinkSentDate"" = {invitation.LinkSentDate ?? now},
+                                       ""DistributionDate"" = {now},
+                                       ""DistributionChannel"" = {"FarmerInvitation"},
+                                       ""DistributedTo"" = {request.CurrentUserPhone}
+                                   WHERE ""Code"" = {code.Code}");
 
                             _logger.LogInformation("✅ Code {Code} redeemed successfully. Subscription ID: {SubId}, Status: {Status}, QueueStatus: {QueueStatus}",
                                 code.Code, redemptionResult.Data.Id, redemptionResult.Data.Status, redemptionResult.Data.QueueStatus);
