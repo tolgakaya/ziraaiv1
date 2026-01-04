@@ -45,8 +45,8 @@ namespace Business.Handlers.Sponsorship.Commands
                     _logger.LogInformation("🎯 User {UserId} (Phone: {Phone}) attempting to accept farmer invitation with token {Token}",
                         request.CurrentUserId, request.CurrentUserPhone ?? "null", request.InvitationToken);
 
-                    // 1. Find invitation by token
-                    var invitation = await _invitationRepository.GetAsync(i =>
+                    // 1. Find invitation by token (WITH TRACKING for update)
+                    var invitation = await _invitationRepository.GetTrackedAsync(i =>
                         i.InvitationToken == request.InvitationToken &&
                         i.Status == "Pending");
 
