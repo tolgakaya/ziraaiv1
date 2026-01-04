@@ -1,3 +1,4 @@
+using Business.Services.Sponsorship;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
@@ -24,15 +25,18 @@ namespace Business.Handlers.Sponsorship.Commands
         {
             private readonly IFarmerInvitationRepository _invitationRepository;
             private readonly ISponsorshipCodeRepository _codeRepository;
+            private readonly ISponsorshipService _sponsorshipService;
             private readonly ILogger<AcceptFarmerInvitationCommandHandler> _logger;
 
             public AcceptFarmerInvitationCommandHandler(
                 IFarmerInvitationRepository invitationRepository,
                 ISponsorshipCodeRepository codeRepository,
+                ISponsorshipService sponsorshipService,
                 ILogger<AcceptFarmerInvitationCommandHandler> logger)
             {
                 _invitationRepository = invitationRepository;
                 _codeRepository = codeRepository;
+                _sponsorshipService = sponsorshipService;
                 _logger = logger;
             }
 
@@ -127,11 +131,11 @@ namespace Business.Handlers.Sponsorship.Commands
                             $"Yetersiz kod. İstenen: {invitation.CodeCount}, Mevcut: {codesToAssign.Count}");
                     }
 
-                    _logger.LogInformation("📦 Assigning {Count} codes to farmer {FarmerId}",
+                    _logger.LogInformation("📦 Processing {Count} codes for farmer {FarmerId} with FULL redemption flow (queuing support)",
                         codesToAssign.Count, request.CurrentUserId);
 
-                    // 5. Assign codes to farmer and populate statistics fields
-                    // CRITICAL: Populate same fields as SendSponsorshipLinkCommand for backward compatibility
+                    // 5. Link codes to invitation and populate statistics fields
+                    // This must be done BEFORE redemption to ensure proper tracking
                     var now = DateTime.Now;
                     foreach (var code in codesToAssign)
                     {
@@ -154,9 +158,45 @@ namespace Business.Handlers.Sponsorship.Commands
 
                     await _codeRepository.SaveChangesAsync();
 
-                    _logger.LogInformation("✅ Assigned {Count} codes successfully", codesToAssign.Count);
+                    _logger.LogInformation("✅ Codes linked to invitation successfully");
 
-                    // 6. Update invitation status
+                    // 6. CRITICAL: Redeem each code using SponsorshipService
+                    // This ensures proper queuing logic when farmer already has an active subscription
+                    var createdSubscriptions = new List<Entities.Concrete.UserSubscription>();
+                    var failedCodes = new List<string>();
+
+                    foreach (var code in codesToAssign)
+                    {
+                        _logger.LogInformation("🔄 Redeeming code {Code} for user {UserId}", code.Code, request.CurrentUserId);
+
+                        var redemptionResult = await _sponsorshipService.RedeemSponsorshipCodeAsync(code.Code, request.CurrentUserId);
+
+                        if (redemptionResult.Success && redemptionResult.Data != null)
+                        {
+                            createdSubscriptions.Add(redemptionResult.Data);
+                            _logger.LogInformation("✅ Code {Code} redeemed successfully. Subscription ID: {SubId}, Status: {Status}, QueueStatus: {QueueStatus}",
+                                code.Code, redemptionResult.Data.Id, redemptionResult.Data.Status, redemptionResult.Data.QueueStatus);
+                        }
+                        else
+                        {
+                            failedCodes.Add(code.Code);
+                            _logger.LogError("❌ Failed to redeem code {Code}: {Message}", code.Code, redemptionResult.Message);
+                        }
+                    }
+
+                    if (failedCodes.Any())
+                    {
+                        _logger.LogWarning("⚠️ Some codes failed to redeem: {FailedCodes}", string.Join(", ", failedCodes));
+                        return new ErrorDataResult<FarmerInvitationAcceptResponseDto>(
+                            $"Bazı kodlar kullanılamadı: {string.Join(", ", failedCodes)}");
+                    }
+
+                    _logger.LogInformation("✅ All {Count} codes redeemed successfully. Active: {Active}, Queued: {Queued}",
+                        createdSubscriptions.Count,
+                        createdSubscriptions.Count(s => s.IsActive),
+                        createdSubscriptions.Count(s => !s.IsActive));
+
+                    // 7. Update invitation status
                     invitation.Status = "Accepted";
                     invitation.AcceptedDate = now;
                     invitation.AcceptedByUserId = request.CurrentUserId;
@@ -166,11 +206,18 @@ namespace Business.Handlers.Sponsorship.Commands
                     _logger.LogInformation("✅ Farmer invitation {InvitationId} accepted by user {UserId}",
                         invitation.Id, request.CurrentUserId);
 
-                    // 7. Build response with actual sponsorship codes
+                    // 8. Build response with actual sponsorship codes and subscription info
                     var codeStrings = codesToAssign.Select(c => c.Code).ToList();
                     var codesByTier = codesToAssign
                         .GroupBy(c => c.SubscriptionTierId)
                         .ToDictionary(g => g.Key.ToString(), g => g.Count());
+
+                    var activeCount = createdSubscriptions.Count(s => s.IsActive);
+                    var queuedCount = createdSubscriptions.Count(s => !s.IsActive);
+
+                    var message = queuedCount > 0
+                        ? $"✅ Tebrikler! {codesToAssign.Count} adet sponsorluk kodu hesabınıza tanımlandı. {activeCount} aktif, {queuedCount} sırada bekliyor."
+                        : $"✅ Tebrikler! {codesToAssign.Count} adet sponsorluk kodu hesabınıza tanımlandı.";
 
                     var response = new FarmerInvitationAcceptResponseDto
                     {
@@ -180,7 +227,7 @@ namespace Business.Handlers.Sponsorship.Commands
                         TotalCodesAssigned = codesToAssign.Count,
                         SponsorshipCodes = codeStrings,
                         CodesByTier = codesByTier,
-                        Message = $"✅ Tebrikler! {codesToAssign.Count} adet sponsorluk kodu hesabınıza tanımlandı."
+                        Message = message
                     };
 
                     return new SuccessDataResult<FarmerInvitationAcceptResponseDto>(response,
