@@ -1,559 +1,317 @@
-I/flutter (16509): 📞 AuthRepository: mobilePhone: 05421396386, code: 550699
-I/flutter (16509): 📞 AuthRepository: Calling API service...
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/auth/verify-phone-otp
-I/flutter (16509): 🌐 DIO: method: POST
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: {mobilePhone: 05421396386, code: 550699}
-I/flutter (16509): 🌐 DIO:
-I/ImeTracker(16509): com.ziraai.app.staging:b43c4e72: onRequestHide at ORIGIN_CLIENT reason HIDE_SOFT_INPUT fromUser false
-D/InsetsController(16509): hide(ime(), fromIme=false)
-W/WindowOnBackDispatcher(16509): sendCancelIfRunning: isInProgress=false callback=android.view.ImeBackAnimationController@ce7a97
-D/InsetsController(16509): Setting requestedVisibleTypes to -9 (was -1)
-I/ImeTracker(16509): system_server:d978a240: onCancelled at PHASE_CLIENT_ON_CONTROLS_CHANGED
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/auth/verify-phone-otp
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:34 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: MJ6nX6fNTY2XH9w9m3z_FQ
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"provider":"Phone","token":"eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTUsImV4cCI6MTc2NzUyNDg1NSwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.SWX_5_o8H7c9-pabFEcETQwZ8XaIyqp4mip6xNe9G-g","expiration":"2026-01-04T11:07:35.1512167+00:00","refreshToken":"FIIjncmDuAABplnhI1AGGEvWeWeJjehpoLWbOZWQsEw=","refreshTokenExpiration":"2026-01-04T13:07:35.1512171+00:00"},
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 📞 AuthRepository: API response received: success=true
-I/flutter (16509): 🔷 AuthBloc: verifyPhoneLoginOtp completed
-I/flutter (16509): ✅ AuthBloc: OTP verification successful, user: 05421396386
-I/flutter (16509): 🔌 Phone Auth: Initializing SignalR after successful authentication...
-I/flutter (16509): 🔌 SignalR: Starting initialization...
-I/flutter (16509): 🔌 SignalR: Connecting to hub: https://api.ziraai.com/hubs/plantanalysis
-I/flutter (16509): 📡 SignalR: Registering event handlers...
-I/flutter (16509): 📝 SignalR: Registering AnalysisCompleted (without Receive prefix)...
-I/flutter (16509): 📝 SignalR: Registering ReceiveAnalysisCompleted...
-I/flutter (16509): 📝 SignalR: Registering NewMessage event...
-I/flutter (16509): 📝 SignalR: Registering UserTyping event...
-I/flutter (16509): 📝 SignalR: Registering MessageRead event...
-I/flutter (16509): 📝 SignalR: Registering NewDealerInvitation event...
-I/flutter (16509): ✅ SignalR: Event handlers registered successfully!
-I/flutter (16509): 🔌 SignalR: Starting connection...
-I/flutter (16509): ✅ SignalR: Connected successfully!
-I/flutter (16509): 🔑 SignalR: Joining user group...
-I/flutter (16509): 🔑 SignalR: Extracted userId from JWT: 5
-I/flutter (16509): ! SignalR: Failed to join user group (non-critical): Failed to invoke 'JoinUserGroup' due to an error on the server. HubException: Method does not exist.
-I/flutter (16509): 🏓 SignalR: Sending test ping...
-I/flutter (16509): 🏓 SignalR: Pong received: 2026-01-04T10:07:36.3086101Z
-I/flutter (16509): ✅ SignalR: Ping sent successfully
-I/flutter (16509): 🔔 Phone Auth: Initializing NotificationHub for dealer invitations...
-I/flutter (16509): 🔔 NotificationHub: Starting initialization...
-I/flutter (16509): 🔔 NotificationHub: Connecting to hub: https://api.ziraai.com/hubs/notification
-I/flutter (16509): 📡 NotificationHub: Registering event handlers...
-I/flutter (16509): 📝 NotificationHub: Registering NewDealerInvitation event...
-I/flutter (16509): ✅ NotificationHub: Event handlers registered successfully!
-I/flutter (16509): 🔔 NotificationHub: Starting connection...
-I/flutter (16509): 🔍 DEBUG: _validateAndSubmit called with OTP: 550699
-I/flutter (16509): 🔍 DEBUG: Current AuthBloc state: AuthAuthenticated(UserEntity(phone_user, , User, , Farmer, 05421396386, false, null))
-I/flutter (16509): ✅ DEBUG: Validation passed, sending event to AuthBloc
-I/flutter (16509): 🔍 DEBUG: isRegistration: false, mobilePhone: 05421396386, code: 550699
-I/flutter (16509): 📤 DEBUG: Sending PhoneLoginOtpVerifyRequested event
-I/flutter (16509): ✅ DEBUG: Event sent to AuthBloc
-I/flutter (16509): 🔷 AuthBloc: PhoneLoginOtpVerifyRequested received
-I/flutter (16509): 🔷 AuthBloc: mobilePhone: 05421396386, code: 550699
-I/flutter (16509): 🔷 AuthBloc: State changed to AuthLoading
-I/flutter (16509): 🔷 AuthBloc: Calling verifyPhoneLoginOtp...
-I/flutter (16509): 📞 AuthRepository: verifyPhoneLoginOtp started
-I/flutter (16509): 📞 AuthRepository: mobilePhone: 05421396386, code: 550699
-I/flutter (16509): 📞 AuthRepository: Calling API service...
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/auth/verify-phone-otp
-I/flutter (16509): 🌐 DIO: method: POST
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: {mobilePhone: 05421396386, code: 550699}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/auth/verify-phone-otp
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:35 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: g2M1rpUPREuP1b7Mm3z_FQ
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"provider":"Phone","token":"eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c","expiration":"2026-01-04T11:07:36.6239538+00:00","refreshToken":"uOvjKmPR2a1sIj6EYo3epGbOxEV2Ixx62vUc8Es9WUM=","refreshTokenExpiration":"2026-01-04T13:07:36.6239542+00:00"},
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 📞 AuthRepository: API response received: success=true
-I/flutter (16509): 🔷 AuthBloc: verifyPhoneLoginOtp completed
-I/flutter (16509): ✅ AuthBloc: OTP verification successful, user: 05421396386
-I/flutter (16509): 🔌 Phone Auth: Initializing SignalR after successful authentication...
-I/flutter (16509): 🔌 SignalR: Starting initialization...
-I/flutter (16509): 🔄 SignalR: Token changed, reconnecting...
-I/flutter (16509): ❌ SignalR: Connection closed: null
-I/flutter (16509): 🔌 SignalR: Disconnected
-I/flutter (16509): 🔌 SignalR: Connecting to hub: https://api.ziraai.com/hubs/plantanalysis
-I/flutter (16509): 📡 SignalR: Registering event handlers...
-I/flutter (16509): 📝 SignalR: Registering AnalysisCompleted (without Receive prefix)...
-I/flutter (16509): 📝 SignalR: Registering ReceiveAnalysisCompleted...
-I/flutter (16509): 📝 SignalR: Registering NewMessage event...
-I/flutter (16509): 📝 SignalR: Registering UserTyping event...
-I/flutter (16509): 📝 SignalR: Registering MessageRead event...
-I/flutter (16509): 📝 SignalR: Registering NewDealerInvitation event...
-I/flutter (16509): ✅ SignalR: Event handlers registered successfully!
-I/flutter (16509): 🔌 SignalR: Starting connection...
-I/flutter (16509): ✅ NotificationHub: Connected successfully!
-I/flutter (16509): 🏓 NotificationHub: Sending test ping...
-I/flutter (16509): ✅ NotificationHub: Ping sent successfully
-I/flutter (16509): ✅ Phone Auth: NotificationHub initialized successfully
-I/flutter (16509): ✅ SignalR: Added analysis completed listener (total: 1)
-I/flutter (16509): 🔗 SignalRIntegration: Setting up event handlers...
-I/flutter (16509): ✅ SignalR: Added analysis completed listener (total: 2)
-I/flutter (16509): ✅ SignalR: Added new message listener (total: 1)
-I/flutter (16509): ✅ SignalR: Added dealer invitation listener (total: 1)
-I/flutter (16509): 🔔 SignalRIntegration: Setting up NotificationHub dealer invitation handler...
-I/flutter (16509): ✅ NotificationHub: Added dealer invitation listener (total: 1)
-I/flutter (16509): ✅ SignalRIntegration: NotificationHub handler setup complete!
-I/flutter (16509): ✅ SignalRIntegration: Event handlers setup complete!
-I/flutter (16509): ✅ Phone Auth: SignalR and NotificationHub integrated successfully
-I/flutter (16509): [OTP] 🔍 Checking for pending sponsorship code...
-I/flutter (16509): [SponsorshipSMS] ℹ️ No pending code found
-I/flutter (16509): [OTP] ℹ️ No pending sponsorship code found
-I/flutter (16509): [OTP] 🔍 Checking backend for pending dealer invitations...
-I/flutter (16509): [DealerApiService] 🔍 Fetching my pending invitations...
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /sponsorship/dealer/invitations/my-pending
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/dealer/invitations/my-pending
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/dealer/invitations/my-pending
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:36 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: doAOmVZgQSq_5iyem3z_FQ
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"invitations":[],"totalCount":0},"success":true,"message":"Found 0 pending invitation(s)"}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): [DealerApiService] Response status: 200
-I/flutter (16509): [DealerApiService] ✅ Found 0 pending invitations
-I/flutter (16509): [OTP] ℹ️ No pending dealer invitations found
-I/flutter (16509): [OTP] 🔍 Checking backend for pending farmer invitations...
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /sponsorship/farmer/my-invitations
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/my-invitations
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/my-invitations
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:36 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: 5nn4ebx6RMSpPRjGm3z_FQ
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":[],"success":true,"message":"No pending invitations found"}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): [OTP] ℹ️ No pending farmer invitations found
-I/flutter (16509): [OTP] 🧭 Navigating to dashboard (hasPendingDealerInvitations: false, hasPendingFarmerInvitations: false)
-I/flutter (16509): 🔍 FarmerDashboard: Starting sponsor role check...
-I/flutter (16509): 📬 FarmerDashboard: Checking for active sponsorship offers...
-I/flutter (16509): ✅ SignalR: Added analysis completed listener (total: 3)
-I/flutter (16509): 🔔 NotificationBellIcon: Builder triggered!
-I/flutter (16509): 🔔 NotificationBellIcon: Current state type: NotificationInitial
-I/flutter (16509): 🔔 NotificationBellIcon: State is NOT NotificationLoaded: NotificationInitial()
-I/flutter (16509): 🔄 Loading subscription data...
-I/flutter (16509): ✅ Making API requests (TokenInterceptor will handle auth automatically)...
-I/flutter (16509): 🔄 Loading subscription data...
-I/flutter (16509): ✅ Making API requests (TokenInterceptor will handle auth automatically)...
-I/flutter (16509): 🔍 Subscription data: null
-I/flutter (16509): 🚀🚀🚀 CLAUDE: Starting to load analyses with NEW CODE! 🚀🚀🚀
-I/flutter (16509): 🚀 CLAUDE: Making API call to plantanalyses/list (TokenInterceptor handles auth)
-I/flutter (16509): ✅ TokenManager: Found role: Farmer
-I/flutter (16509): 📋 FarmerDashboard: All roles in token: [Farmer]
-I/flutter (16509): ✅ SignalR: Connected successfully!
-I/flutter (16509): 🔑 SignalR: Joining user group...
-I/flutter (16509): 🔑 SignalR: Extracted userId from JWT: 5
-I/flutter (16509): ✅ TokenManager: Found role: Farmer
-I/flutter (16509): 🔍 FarmerDashboard: Sponsor role check - hasSponsor: false
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /subscriptions/usage-status
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /subscriptions/usage-status
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /plantanalyses/list
-I/flutter (16509): 🔍 Subscription data: null
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/usage-status
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/usage-status
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to https://api.ziraai.com/api/v1/sponsorship/farmer-inbox
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/plantanalyses/list?page=1&pageSize=10
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer-inbox
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): ! SignalR: Failed to join user group (non-critical): Failed to invoke 'JoinUserGroup' due to an error on the server. HubException: Method does not exist.
-I/flutter (16509): 🏓 SignalR: Sending test ping...
-I/flutter (16509): 🏓 SignalR: Pong received: 2026-01-04T10:07:37.8579771Z
-I/flutter (16509): ✅ SignalR: Ping sent successfully
-I/flutter (16509): 🔔 Phone Auth: Initializing NotificationHub for dealer invitations...
-I/flutter (16509): 🔔 NotificationHub: Starting initialization...
-I/flutter (16509): 🔄 NotificationHub: Token changed, reconnecting...
-I/flutter (16509): ❌ NotificationHub: Connection closed: null
-I/flutter (16509): 🔔 NotificationHub: Disconnected
-I/flutter (16509): 🔔 NotificationHub: Connecting to hub: https://api.ziraai.com/hubs/notification
-I/flutter (16509): 📡 NotificationHub: Registering event handlers...
-I/flutter (16509): 📝 NotificationHub: Registering NewDealerInvitation event...
-I/flutter (16509): ✅ NotificationHub: Event handlers registered successfully!
-I/flutter (16509): 🔔 NotificationHub: Starting connection...
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/usage-status
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:36 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: jvx7AQeWTGGGzhdQm3z_FQ
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"hasActiveSubscription":true,"subscriptionStatus":"Active","tierName":"M","dailyUsed":0,"dailyLimit":20,"dailyRemaining":20,"dailyUsagePercentage":0,"nextDailyReset":"2026-01-05T00:00:00+00:00","monthlyUsed":0,"monthlyLimit":200,"monthlyRemaining":200,"monthlyUsagePercentage":0,"nextMonthlyReset":"2026-02-01T00:00:00","subscriptionEndDate":"2026-02-02T07:16:42.989625+00:00","canMakeRequest":true,"referralCredits":0},"success":true}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 📡 Usage Status Response: 200
-I/flutter (16509): 📊 Usage Status Data: {data: {hasActiveSubscription: true, subscriptionStatus: Active, tierName: M, dailyUsed: 0, dailyLimit: 20, dailyRemaining: 20, dailyUsagePercentage: 0, nextDailyReset: 2026-01-05T00:00:00+00:00, monthlyUsed: 0, monthlyLimit: 200, monthlyRemaining: 200, monthlyUsagePercentage: 0, nextMonthlyReset: 2026-02-01T00:00:00, subscriptionEndDate: 2026-02-02T07:16:42.989625+00:00, canMakeRequest: true, referralCredits: 0}, success: true}
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /subscriptions/my-subscription
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/my-subscription
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/plantanalyses/list?page=1&pageSize=10
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:37 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: Hzej04mQR2isHyB-ss7a6g
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"analyses":[{"id":32,"analysisId":"async_analysis_20251228_190012_57cf9294","imagePath":"https://1lik.net/plant-images/20251228_190012_946_9315b0b0bbc14bc9886d3b49823afbfb_async_analysis_20251228_190012_57cf9294.jpg","thumbnailUrl":"https://1lik.net/plant-images/20251228_190012_946_9315b0b0bbc14bc9886d3b49823afbfb_async_analysis_20251228_190012_57cf9294.jpg","analysisDate":"2025-12-28T19:01:19.892","createdDate":"2025-12-28T19:00:13.375696","status":"Completed","farmerId":"F005","sponsorId":null,"overallHealthScore":7,"primaryConcern":"hafif azot eksikliği şüphesi","prognosis":"iyi","confidenceLevel":60,"plantSpecies":"Patlıcan (muhtemel, Solanum melongena)","plantVariety":"bilinmiyor","growthStage":"vejetatif","totalTokens":0,"totalCostTry":0.0,"aiModel":"gpt-5-mini-2025-08-07","unreadMessageCount":0,"totalMessageCount":0,"hasUnreadFromSponsor":false,"conversationStatus":"None","isSponsored":false,"hasResults":true,"statusIcon":"✅","healthScoreText":"7/10","formattedDate":"28.12.202
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🚀 CLAUDE: Response data type: _Map<String, dynamic>
-I/flutter (16509): 🚀 CLAUDE: Response data content: {analyses: [{id: 32, analysisId: async_analysis_20251228_190012_57cf9294, imagePath: https://1lik.net/plant-images/20251228_190012_946_9315b0b0bbc14bc9886d3b49823afbfb_async_analysis_20251228_190012_57cf9294.jpg, thumbnailUrl: https://1lik.net/plant-images/20251228_190012_946_9315b0b0bbc14bc9886d3b49823afbfb_async_analysis_20251228_190012_57cf9294.jpg, analysisDate: 2025-12-28T19:01:19.892, createdDate: 2025-12-28T19:00:13.375696, status: Completed, farmerId: F005, sponsorId: null, overallHealthScore: 7, primaryConcern: hafif azot eksikliği şüphesi, prognosis: iyi, confidenceLevel: 60, plantSpecies: Patlıcan (muhtemel, Solanum melongena), plantVariety: bilinmiyor, growthStage: vejetatif, totalTokens: 0, totalCostTry: 0.0, aiModel: gpt-5-mini-2025-08-07, unreadMessageCount: 0, totalMessageCount: 0, hasUnreadFromSponsor: false, conversationStatus: None, isSponsored: false, hasResults: true, statusIcon: ✅, healthScoreText: 7/10, formattedDate: 28.12.2025 19:00}, {id: 31
-I/flutter (16509): 🚀 CLAUDE: Found 10 analyses from API
-I/flutter (16509): 🚀 CLAUDE: Analyses sorted by urgency score
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer-inbox
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:37 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: T-5Ik5DnT5mSd2GJjUJq2g
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":[],"success":true,"message":"Henüz sponsorluk kodu gönderilmemiş"}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): ✅ FarmerDashboard: Found 0 active offers
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/usage-status
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:37 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: W21Lb-ORRv67QBxHN8N_Fg
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"hasActiveSubscription":true,"subscriptionStatus":"Active","tierName":"M","dailyUsed":0,"dailyLimit":20,"dailyRemaining":20,"dailyUsagePercentage":0,"nextDailyReset":"2026-01-05T00:00:00+00:00","monthlyUsed":0,"monthlyLimit":200,"monthlyRemaining":200,"monthlyUsagePercentage":0,"nextMonthlyReset":"2026-02-01T00:00:00","subscriptionEndDate":"2026-02-02T07:16:42.989625+00:00","canMakeRequest":true,"referralCredits":0},"success":true}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 📡 Usage Status Response: 200
-I/flutter (16509): 📊 Usage Status Data: {data: {hasActiveSubscription: true, subscriptionStatus: Active, tierName: M, dailyUsed: 0, dailyLimit: 20, dailyRemaining: 20, dailyUsagePercentage: 0, nextDailyReset: 2026-01-05T00:00:00+00:00, monthlyUsed: 0, monthlyLimit: 200, monthlyRemaining: 200, monthlyUsagePercentage: 0, nextMonthlyReset: 2026-02-01T00:00:00, subscriptionEndDate: 2026-02-02T07:16:42.989625+00:00, canMakeRequest: true, referralCredits: 0}, success: true}
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/my-subscription
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:37 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: rV45w7iCSKizpNDFm3z_FQ
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"id":11,"userId":5,"subscriptionTierId":2,"tierName":"M","tierDisplayName":"Medium","startDate":"2026-01-03T07:16:42.989592+00:00","endDate":"2026-02-02T07:16:42.989625+00:00","isActive":true,"autoRenew":false,"status":"Active","currentDailyUsage":0,"dailyRequestLimit":20,"currentMonthlyUsage":0,"monthlyRequestLimit":200,"lastUsageResetDate":"2026-01-04T07:59:06.19914+00:00","monthlyUsageResetDate":"2026-01-03T07:16:42.989761+00:00","isTrialSubscription":false,"queueStatus":"Active","queuedSubscriptions":[{"id":13,"subscriptionTierId":3,"queueStatus":"Pending","queuedDate":"2025-12-08T13:39:51.212878","previousSponsorshipId":11,"status":"Pending","isSponsoredSubscription":true},{"id":14,"subscriptionTierId":3,"queueStatus":"Pending","queuedDate":"2025-12-08T18:13:34.865454","previousSponsorshipId":11,"status":"Pending","isSponsoredSubscription":true}]},"success":true}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 📡 My Subscription Response: 200
-I/flutter (16509): 📊 My Subscription Data: {data: {id: 11, userId: 5, subscriptionTierId: 2, tierName: M, tierDisplayName: Medium, startDate: 2026-01-03T07:16:42.989592+00:00, endDate: 2026-02-02T07:16:42.989625+00:00, isActive: true, autoRenew: false, status: Active, currentDailyUsage: 0, dailyRequestLimit: 20, currentMonthlyUsage: 0, monthlyRequestLimit: 200, lastUsageResetDate: 2026-01-04T07:59:06.19914+00:00, monthlyUsageResetDate: 2026-01-03T07:16:42.989761+00:00, isTrialSubscription: false, queueStatus: Active, queuedSubscriptions: [{id: 13, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T13:39:51.212878, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}, {id: 14, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T18:13:34.865454, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}]}, success: true}
-I/flutter (16509): ✅ Subscription data loaded successfully with 2 queued
-I/flutter (16509): 🔍 Subscription data: null
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /subscriptions/my-subscription
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/my-subscription
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/my-subscription
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:37 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: m9Z9fdkZQO2a3jTzjUJq2g
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"id":11,"userId":5,"subscriptionTierId":2,"tierName":"M","tierDisplayName":"Medium","startDate":"2026-01-03T07:16:42.989592+00:00","endDate":"2026-02-02T07:16:42.989625+00:00","isActive":true,"autoRenew":false,"status":"Active","currentDailyUsage":0,"dailyRequestLimit":20,"currentMonthlyUsage":0,"monthlyRequestLimit":200,"lastUsageResetDate":"2026-01-04T07:59:06.19914+00:00","monthlyUsageResetDate":"2026-01-03T07:16:42.989761+00:00","isTrialSubscription":false,"queueStatus":"Active","queuedSubscriptions":[{"id":13,"subscriptionTierId":3,"queueStatus":"Pending","queuedDate":"2025-12-08T13:39:51.212878","previousSponsorshipId":11,"status":"Pending","isSponsoredSubscription":true},{"id":14,"subscriptionTierId":3,"queueStatus":"Pending","queuedDate":"2025-12-08T18:13:34.865454","previousSponsorshipId":11,"status":"Pending","isSponsoredSubscription":true}]},"success":true}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 📡 My Subscription Response: 200
-I/flutter (16509): 📊 My Subscription Data: {data: {id: 11, userId: 5, subscriptionTierId: 2, tierName: M, tierDisplayName: Medium, startDate: 2026-01-03T07:16:42.989592+00:00, endDate: 2026-02-02T07:16:42.989625+00:00, isActive: true, autoRenew: false, status: Active, currentDailyUsage: 0, dailyRequestLimit: 20, currentMonthlyUsage: 0, monthlyRequestLimit: 200, lastUsageResetDate: 2026-01-04T07:59:06.19914+00:00, monthlyUsageResetDate: 2026-01-03T07:16:42.989761+00:00, isTrialSubscription: false, queueStatus: Active, queuedSubscriptions: [{id: 13, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T13:39:51.212878, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}, {id: 14, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T18:13:34.865454, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}]}, success: true}
-I/flutter (16509): ✅ Subscription data loaded successfully with 2 queued
-I/flutter (16509): 🔍 Subscription data: {hasActiveSubscription: true, subscriptionStatus: Active, tierName: M, dailyUsed: 0, dailyLimit: 20, dailyRemaining: 20, dailyUsagePercentage: 0, nextDailyReset: 2026-01-05T00:00:00+00:00, monthlyUsed: 0, monthlyLimit: 200, monthlyRemaining: 200, monthlyUsagePercentage: 0, nextMonthlyReset: 2026-02-01T00:00:00, subscriptionEndDate: 2026-02-02T07:16:42.989625+00:00, canMakeRequest: true, referralCredits: 0, queuedSubscriptions: [{id: 13, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T13:39:51.212878, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}, {id: 14, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T18:13:34.865454, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}], queuedCount: 2}
-I/flutter (16509): ✅ NotificationHub: Connected successfully!
-I/flutter (16509): 🏓 NotificationHub: Sending test ping...
-I/flutter (16509): ✅ NotificationHub: Ping sent successfully
-I/flutter (16509): ✅ Phone Auth: NotificationHub initialized successfully
-I/flutter (16509): 🔗 SignalRIntegration: Setting up event handlers...
-I/flutter (16509): ✅ SignalR: Added analysis completed listener (total: 4)
-I/flutter (16509): ✅ SignalR: Added new message listener (total: 2)
-I/flutter (16509): ✅ SignalR: Added dealer invitation listener (total: 2)
-I/flutter (16509): 🔔 SignalRIntegration: Setting up NotificationHub dealer invitation handler...
-I/flutter (16509): ✅ NotificationHub: Added dealer invitation listener (total: 2)
-I/flutter (16509): ✅ SignalRIntegration: NotificationHub handler setup complete!
-I/flutter (16509): ✅ SignalRIntegration: Event handlers setup complete!
-I/flutter (16509): ✅ Phone Auth: SignalR and NotificationHub integrated successfully
-I/flutter (16509): [OTP] 🔍 Checking for pending sponsorship code...
-I/flutter (16509): [SponsorshipSMS] ℹ️ No pending code found
-I/flutter (16509): [OTP] ℹ️ No pending sponsorship code found
-I/flutter (16509): [OTP] 🔍 Checking backend for pending dealer invitations...
-I/flutter (16509): [DealerApiService] 🔍 Fetching my pending invitations...
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /sponsorship/dealer/invitations/my-pending
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/dealer/invitations/my-pending
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/dealer/invitations/my-pending
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:38 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: 3YQbE_L2Q_yBfyCtjUJq2g
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":{"invitations":[],"totalCount":0},"success":true,"message":"Found 0 pending invitation(s)"}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): [DealerApiService] Response status: 200
-I/flutter (16509): [DealerApiService] ✅ Found 0 pending invitations
-I/flutter (16509): [OTP] ℹ️ No pending dealer invitations found
-I/flutter (16509): [OTP] 🔍 Checking backend for pending farmer invitations...
-I/flutter (16509): 🔑 TokenInterceptor: Added valid token to /sponsorship/farmer/my-invitations
-I/flutter (16509): 🌐 DIO: *** Request ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/my-invitations
-I/flutter (16509): 🌐 DIO: method: GET
-I/flutter (16509): 🌐 DIO: responseType: ResponseType.json
-I/flutter (16509): 🌐 DIO: followRedirects: true
-I/flutter (16509): 🌐 DIO: persistentConnection: true
-I/flutter (16509): 🌐 DIO: connectTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: sendTimeout: null
-I/flutter (16509): 🌐 DIO: receiveTimeout: 0:00:30.000000
-I/flutter (16509): 🌐 DIO: receiveDataWhenStatusError: true
-I/flutter (16509): 🌐 DIO: extra: {}
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  Content-Type: application/json
-I/flutter (16509): 🌐 DIO:  Accept: application/json
-I/flutter (16509): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjEyNTYsImV4cCI6MTc2NzUyNDg1NiwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.nPRfLf35aAvYRg_VNWc2x2qsmDCqx0jfArUaL96lo3c
-I/flutter (16509): 🌐 DIO: data:
-I/flutter (16509): 🌐 DIO: null
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): 🌐 DIO: *** Response ***
-I/flutter (16509): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/my-invitations
-I/flutter (16509): 🌐 DIO: statusCode: 200
-I/flutter (16509): 🌐 DIO: headers:
-I/flutter (16509): 🌐 DIO:  date: Sun, 04 Jan 2026 10:07:39 GMT
-I/flutter (16509): 🌐 DIO:  transfer-encoding: chunked
-I/flutter (16509): 🌐 DIO:  api-supported-versions: 1.0
-I/flutter (16509): 🌐 DIO:  content-type: application/json; charset=utf-8
-I/flutter (16509): 🌐 DIO:  server: railway-edge
-I/flutter (16509): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
-I/flutter (16509): 🌐 DIO:  x-railway-request-id: tFIYHgwORl212Vg1jUJq2g
-I/flutter (16509): 🌐 DIO: Response Text:
-I/flutter (16509): 🌐 DIO: {"data":[],"success":true,"message":"No pending invitations found"}
-I/flutter (16509): 🌐 DIO:
-I/flutter (16509): [OTP] ℹ️ No pending farmer invitations found
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🔑 TokenInterceptor: Added valid token to https://api.ziraai.com/api/v1/sponsorship/farmer-inbox
+I/flutter (19274): 🌐 DIO: *** Request ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer-inbox
+I/flutter (19274): 🌐 DIO: method: GET
+I/flutter (19274): 🌐 DIO: responseType: ResponseType.json
+I/flutter (19274): 🌐 DIO: followRedirects: true
+I/flutter (19274): 🌐 DIO: persistentConnection: true
+I/flutter (19274): 🌐 DIO: connectTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: sendTimeout: null
+I/flutter (19274): 🌐 DIO: receiveTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: receiveDataWhenStatusError: true
+I/flutter (19274): 🌐 DIO: extra: {}
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  Content-Type: application/json
+I/flutter (19274): 🌐 DIO:  Accept: application/json
+I/flutter (19274): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjUwNzUsImV4cCI6MTc2NzUyODY3NSwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.XOBisBgWn9AxzyHjz2bprqei2TuiymKnnmXCkI9XztE
+I/flutter (19274): 🌐 DIO: data:
+I/flutter (19274): 🌐 DIO: null
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): ✅ NotificationHub: Connected successfully!
+I/flutter (19274): 🏓 NotificationHub: Sending test ping...
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/usage-status
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:17 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: FjltvczJR9a4Taoc5nX1uw
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":{"hasActiveSubscription":true,"subscriptionStatus":"Active","tierName":"M","dailyUsed":0,"dailyLimit":20,"dailyRemaining":20,"dailyUsagePercentage":0,"nextDailyReset":"2026-01-05T00:00:00+00:00","monthlyUsed":0,"monthlyLimit":200,"monthlyRemaining":200,"monthlyUsagePercentage":0,"nextMonthlyReset":"2026-02-01T00:00:00","subscriptionEndDate":"2026-02-02T07:16:42.989625+00:00","canMakeRequest":true,"referralCredits":0},"success":true}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 📡 Usage Status Response: 200
+I/flutter (19274): 📊 Usage Status Data: {data: {hasActiveSubscription: true, subscriptionStatus: Active, tierName: M, dailyUsed: 0, dailyLimit: 20, dailyRemaining: 20, dailyUsagePercentage: 0, nextDailyReset: 2026-01-05T00:00:00+00:00, monthlyUsed: 0, monthlyLimit: 200, monthlyRemaining: 200, monthlyUsagePercentage: 0, nextMonthlyReset: 2026-02-01T00:00:00, subscriptionEndDate: 2026-02-02T07:16:42.989625+00:00, canMakeRequest: true, referralCredits: 0}, success: true}
+I/flutter (19274): ✅ NotificationHub: Ping sent successfully
+I/flutter (19274): ✅ Phone Auth: NotificationHub initialized successfully
+I/flutter (19274): 🔗 SignalRIntegration: Setting up event handlers...
+I/flutter (19274): ✅ SignalR: Added analysis completed listener (total: 4)
+I/flutter (19274): ✅ SignalR: Added new message listener (total: 2)
+I/flutter (19274): ✅ SignalR: Added dealer invitation listener (total: 2)
+I/flutter (19274): 🔔 SignalRIntegration: Setting up NotificationHub dealer invitation handler...
+I/flutter (19274): ✅ NotificationHub: Added dealer invitation listener (total: 2)
+I/flutter (19274): ✅ SignalRIntegration: NotificationHub handler setup complete!
+I/flutter (19274): ✅ SignalRIntegration: Event handlers setup complete!
+I/flutter (19274): ✅ Phone Auth: SignalR and NotificationHub integrated successfully
+I/flutter (19274): [OTP] 🔍 Checking for pending sponsorship code...
+I/flutter (19274): [SponsorshipSMS] ℹ️ No pending code found
+I/flutter (19274): [OTP] ℹ️ No pending sponsorship code found
+I/flutter (19274): [OTP] 🔍 Checking backend for pending dealer invitations...
+I/flutter (19274): [DealerApiService] 🔍 Fetching my pending invitations...
+I/flutter (19274): 🔑 TokenInterceptor: Added valid token to /subscriptions/my-subscription
+I/flutter (19274): 🌐 DIO: *** Request ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/my-subscription
+I/flutter (19274): 🌐 DIO: method: GET
+I/flutter (19274): 🌐 DIO: responseType: ResponseType.json
+I/flutter (19274): 🌐 DIO: followRedirects: true
+I/flutter (19274): 🌐 DIO: persistentConnection: true
+I/flutter (19274): 🌐 DIO: connectTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: sendTimeout: null
+I/flutter (19274): 🌐 DIO: receiveTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: receiveDataWhenStatusError: true
+I/flutter (19274): 🌐 DIO: extra: {}
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  Content-Type: application/json
+I/flutter (19274): 🌐 DIO:  Accept: application/json
+I/flutter (19274): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjUwNzUsImV4cCI6MTc2NzUyODY3NSwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.XOBisBgWn9AxzyHjz2bprqei2TuiymKnnmXCkI9XztE
+I/flutter (19274): 🌐 DIO: data:
+I/flutter (19274): 🌐 DIO: null
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🔑 TokenInterceptor: Added valid token to /sponsorship/dealer/invitations/my-pending
+I/flutter (19274): 🌐 DIO: *** Request ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/dealer/invitations/my-pending
+I/flutter (19274): 🌐 DIO: method: GET
+I/flutter (19274): 🌐 DIO: responseType: ResponseType.json
+I/flutter (19274): 🌐 DIO: followRedirects: true
+I/flutter (19274): 🌐 DIO: persistentConnection: true
+I/flutter (19274): 🌐 DIO: connectTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: sendTimeout: null
+I/flutter (19274): 🌐 DIO: receiveTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: receiveDataWhenStatusError: true
+I/flutter (19274): 🌐 DIO: extra: {}
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  Content-Type: application/json
+I/flutter (19274): 🌐 DIO:  Accept: application/json
+I/flutter (19274): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjUwNzUsImV4cCI6MTc2NzUyODY3NSwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.XOBisBgWn9AxzyHjz2bprqei2TuiymKnnmXCkI9XztE
+I/flutter (19274): 🌐 DIO: data:
+I/flutter (19274): 🌐 DIO: null
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer-inbox
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:17 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: -fwAMqy1Rxi3lFRNYqdHTg
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":[],"success":true,"message":"Henüz sponsorluk kodu gönderilmemiş"}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): ✅ FarmerDashboard: Found 0 active offers
+I/flutter (19274): 🔍 Subscription data: null
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/my-subscription
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:17 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: XA0l9MjOTdyig53B5nX1uw
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":{"id":11,"userId":5,"subscriptionTierId":2,"tierName":"M","tierDisplayName":"Medium","startDate":"2026-01-03T07:16:42.989592+00:00","endDate":"2026-02-02T07:16:42.989625+00:00","isActive":true,"autoRenew":false,"status":"Active","currentDailyUsage":0,"dailyRequestLimit":20,"currentMonthlyUsage":0,"monthlyRequestLimit":200,"lastUsageResetDate":"2026-01-04T07:59:06.19914+00:00","monthlyUsageResetDate":"2026-01-03T07:16:42.989761+00:00","isTrialSubscription":false,"queueStatus":"Active","queuedSubscriptions":[{"id":13,"subscriptionTierId":3,"queueStatus":"Pending","queuedDate":"2025-12-08T13:39:51.212878","previousSponsorshipId":11,"status":"Pending","isSponsoredSubscription":true},{"id":14,"subscriptionTierId":3,"queueStatus":"Pending","queuedDate":"2025-12-08T18:13:34.865454","previousSponsorshipId":11,"status":"Pending","isSponsoredSubscription":true}]},"success":true}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 📡 My Subscription Response: 200
+I/flutter (19274): 📊 My Subscription Data: {data: {id: 11, userId: 5, subscriptionTierId: 2, tierName: M, tierDisplayName: Medium, startDate: 2026-01-03T07:16:42.989592+00:00, endDate: 2026-02-02T07:16:42.989625+00:00, isActive: true, autoRenew: false, status: Active, currentDailyUsage: 0, dailyRequestLimit: 20, currentMonthlyUsage: 0, monthlyRequestLimit: 200, lastUsageResetDate: 2026-01-04T07:59:06.19914+00:00, monthlyUsageResetDate: 2026-01-03T07:16:42.989761+00:00, isTrialSubscription: false, queueStatus: Active, queuedSubscriptions: [{id: 13, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T13:39:51.212878, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}, {id: 14, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T18:13:34.865454, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}]}, success: true}
+I/flutter (19274): ✅ Subscription data loaded successfully with 2 queued
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/usage-status
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:17 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: K9bMajvzTwS_yJ8jjUJq2g
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":{"hasActiveSubscription":true,"subscriptionStatus":"Active","tierName":"M","dailyUsed":0,"dailyLimit":20,"dailyRemaining":20,"dailyUsagePercentage":0,"nextDailyReset":"2026-01-05T00:00:00+00:00","monthlyUsed":0,"monthlyLimit":200,"monthlyRemaining":200,"monthlyUsagePercentage":0,"nextMonthlyReset":"2026-02-01T00:00:00","subscriptionEndDate":"2026-02-02T07:16:42.989625+00:00","canMakeRequest":true,"referralCredits":0},"success":true}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 📡 Usage Status Response: 200
+I/flutter (19274): 📊 Usage Status Data: {data: {hasActiveSubscription: true, subscriptionStatus: Active, tierName: M, dailyUsed: 0, dailyLimit: 20, dailyRemaining: 20, dailyUsagePercentage: 0, nextDailyReset: 2026-01-05T00:00:00+00:00, monthlyUsed: 0, monthlyLimit: 200, monthlyRemaining: 200, monthlyUsagePercentage: 0, nextMonthlyReset: 2026-02-01T00:00:00, subscriptionEndDate: 2026-02-02T07:16:42.989625+00:00, canMakeRequest: true, referralCredits: 0}, success: true}
+I/flutter (19274): [Dashboard] 🧭 Navigating to PendingFarmerInvitationsScreen
+I/flutter (19274): 🔑 TokenInterceptor: Added valid token to /subscriptions/my-subscription
+W/WindowOnBackDispatcher(19274): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher(19274): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+I/flutter (19274): 🌐 DIO: *** Request ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/my-subscription
+I/flutter (19274): 🌐 DIO: method: GET
+I/flutter (19274): 🌐 DIO: responseType: ResponseType.json
+I/flutter (19274): 🌐 DIO: followRedirects: true
+I/flutter (19274): 🌐 DIO: persistentConnection: true
+I/flutter (19274): 🌐 DIO: connectTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: sendTimeout: null
+I/flutter (19274): 🌐 DIO: receiveTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: receiveDataWhenStatusError: true
+I/flutter (19274): 🌐 DIO: extra: {}
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  Content-Type: application/json
+I/flutter (19274): 🌐 DIO:  Accept: application/json
+I/flutter (19274): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjUwNzUsImV4cCI6MTc2NzUyODY3NSwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.XOBisBgWn9AxzyHjz2bprqei2TuiymKnnmXCkI9XztE
+I/flutter (19274): 🌐 DIO: data:
+I/flutter (19274): 🌐 DIO: null
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🔑 TokenInterceptor: Added valid token to /sponsorship/farmer/my-invitations
+I/flutter (19274): 🌐 DIO: *** Request ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/my-invitations
+I/flutter (19274): 🌐 DIO: method: GET
+I/flutter (19274): 🌐 DIO: responseType: ResponseType.json
+I/flutter (19274): 🌐 DIO: followRedirects: true
+I/flutter (19274): 🌐 DIO: persistentConnection: true
+I/flutter (19274): 🌐 DIO: connectTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: sendTimeout: null
+I/flutter (19274): 🌐 DIO: receiveTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: receiveDataWhenStatusError: true
+I/flutter (19274): 🌐 DIO: extra: {}
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  Content-Type: application/json
+I/flutter (19274): 🌐 DIO:  Accept: application/json
+I/flutter (19274): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjUwNzUsImV4cCI6MTc2NzUyODY3NSwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.XOBisBgWn9AxzyHjz2bprqei2TuiymKnnmXCkI9XztE
+I/flutter (19274): 🌐 DIO: data:
+I/flutter (19274): 🌐 DIO: null
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/dealer/invitations/my-pending
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:17 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: vkikXWycRfqV5YH8w9P4nw
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":{"invitations":[],"totalCount":0},"success":true,"message":"Found 0 pending invitation(s)"}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): [DealerApiService] Response status: 200
+I/flutter (19274): [DealerApiService] ✅ Found 0 pending invitations
+I/flutter (19274): [OTP] ℹ️ No pending dealer invitations found
+I/flutter (19274): [OTP] 🔍 Checking backend for pending farmer invitations...
+I/flutter (19274): 🔑 TokenInterceptor: Added valid token to /sponsorship/farmer/my-invitations
+I/flutter (19274): 🌐 DIO: *** Request ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/my-invitations
+I/flutter (19274): 🌐 DIO: method: GET
+I/flutter (19274): 🌐 DIO: responseType: ResponseType.json
+I/flutter (19274): 🌐 DIO: followRedirects: true
+I/flutter (19274): 🌐 DIO: persistentConnection: true
+I/flutter (19274): 🌐 DIO: connectTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: sendTimeout: null
+I/flutter (19274): 🌐 DIO: receiveTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: receiveDataWhenStatusError: true
+I/flutter (19274): 🌐 DIO: extra: {}
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  Content-Type: application/json
+I/flutter (19274): 🌐 DIO:  Accept: application/json
+I/flutter (19274): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjUwNzUsImV4cCI6MTc2NzUyODY3NSwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.XOBisBgWn9AxzyHjz2bprqei2TuiymKnnmXCkI9XztE
+I/flutter (19274): 🌐 DIO: data:
+I/flutter (19274): 🌐 DIO: null
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/subscriptions/my-subscription
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:17 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: opWHX7GzTAaElRRdjUJq2g
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":{"id":11,"userId":5,"subscriptionTierId":2,"tierName":"M","tierDisplayName":"Medium","startDate":"2026-01-03T07:16:42.989592+00:00","endDate":"2026-02-02T07:16:42.989625+00:00","isActive":true,"autoRenew":false,"status":"Active","currentDailyUsage":0,"dailyRequestLimit":20,"currentMonthlyUsage":0,"monthlyRequestLimit":200,"lastUsageResetDate":"2026-01-04T07:59:06.19914+00:00","monthlyUsageResetDate":"2026-01-03T07:16:42.989761+00:00","isTrialSubscription":false,"queueStatus":"Active","queuedSubscriptions":[{"id":13,"subscriptionTierId":3,"queueStatus":"Pending","queuedDate":"2025-12-08T13:39:51.212878","previousSponsorshipId":11,"status":"Pending","isSponsoredSubscription":true},{"id":14,"subscriptionTierId":3,"queueStatus":"Pending","queuedDate":"2025-12-08T18:13:34.865454","previousSponsorshipId":11,"status":"Pending","isSponsoredSubscription":true}]},"success":true}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 📡 My Subscription Response: 200
+I/flutter (19274): 📊 My Subscription Data: {data: {id: 11, userId: 5, subscriptionTierId: 2, tierName: M, tierDisplayName: Medium, startDate: 2026-01-03T07:16:42.989592+00:00, endDate: 2026-02-02T07:16:42.989625+00:00, isActive: true, autoRenew: false, status: Active, currentDailyUsage: 0, dailyRequestLimit: 20, currentMonthlyUsage: 0, monthlyRequestLimit: 200, lastUsageResetDate: 2026-01-04T07:59:06.19914+00:00, monthlyUsageResetDate: 2026-01-03T07:16:42.989761+00:00, isTrialSubscription: false, queueStatus: Active, queuedSubscriptions: [{id: 13, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T13:39:51.212878, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}, {id: 14, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T18:13:34.865454, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}]}, success: true}
+I/flutter (19274): ✅ Subscription data loaded successfully with 2 queued
+I/flutter (19274): 🔍 Subscription data: {hasActiveSubscription: true, subscriptionStatus: Active, tierName: M, dailyUsed: 0, dailyLimit: 20, dailyRemaining: 20, dailyUsagePercentage: 0, nextDailyReset: 2026-01-05T00:00:00+00:00, monthlyUsed: 0, monthlyLimit: 200, monthlyRemaining: 200, monthlyUsagePercentage: 0, nextMonthlyReset: 2026-02-01T00:00:00, subscriptionEndDate: 2026-02-02T07:16:42.989625+00:00, canMakeRequest: true, referralCredits: 0, queuedSubscriptions: [{id: 13, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T13:39:51.212878, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}, {id: 14, subscriptionTierId: 3, queueStatus: Pending, queuedDate: 2025-12-08T18:13:34.865454, previousSponsorshipId: 11, status: Pending, isSponsoredSubscription: true}], queuedCount: 2}
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/my-invitations
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:18 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: Fod__gIbRvyJuO8RYqdHTg
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":[{"id":1,"phone":"+905421396386","invitationToken":"ae3cd617c09541b1a33b1a23d8a7dca9","status":"Pending","codeCount":1,"createdDate":"2026-01-04T07:31:59.645548","expiryDate":"2026-01-11T07:31:59.645581","linkDelivered":true,"linkSentDate":"2026-01-04T07:32:00.294832"}],"success":true,"message":"1 pending invitation(s) found"}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/plantanalyses/list?page=1&pageSize=10
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:18 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: X9tNGjpiQAKtoSbL0-QtfA
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":{"analyses":[{"id":32,"analysisId":"async_analysis_20251228_190012_57cf9294","imagePath":"https://1lik.net/plant-images/20251228_190012_946_9315b0b0bbc14bc9886d3b49823afbfb_async_analysis_20251228_190012_57cf9294.jpg","thumbnailUrl":"https://1lik.net/plant-images/20251228_190012_946_9315b0b0bbc14bc9886d3b49823afbfb_async_analysis_20251228_190012_57cf9294.jpg","analysisDate":"2025-12-28T19:01:19.892","createdDate":"2025-12-28T19:00:13.375696","status":"Completed","farmerId":"F005","sponsorId":null,"overallHealthScore":7,"primaryConcern":"hafif azot eksikliği şüphesi","prognosis":"iyi","confidenceLevel":60,"plantSpecies":"Patlıcan (muhtemel, Solanum melongena)","plantVariety":"bilinmiyor","growthStage":"vejetatif","totalTokens":0,"totalCostTry":0.0,"aiModel":"gpt-5-mini-2025-08-07","unreadMessageCount":0,"totalMessageCount":0,"hasUnreadFromSponsor":false,"conversationStatus":"None","isSponsored":false,"hasResults":true,"statusIcon":"✅","healthScoreText":"7/10","formattedDate":"28.12.202
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🚀 CLAUDE: Response data type: _Map<String, dynamic>
+I/flutter (19274): 🚀 CLAUDE: Response data content: {analyses: [{id: 32, analysisId: async_analysis_20251228_190012_57cf9294, imagePath: https://1lik.net/plant-images/20251228_190012_946_9315b0b0bbc14bc9886d3b49823afbfb_async_analysis_20251228_190012_57cf9294.jpg, thumbnailUrl: https://1lik.net/plant-images/20251228_190012_946_9315b0b0bbc14bc9886d3b49823afbfb_async_analysis_20251228_190012_57cf9294.jpg, analysisDate: 2025-12-28T19:01:19.892, createdDate: 2025-12-28T19:00:13.375696, status: Completed, farmerId: F005, sponsorId: null, overallHealthScore: 7, primaryConcern: hafif azot eksikliği şüphesi, prognosis: iyi, confidenceLevel: 60, plantSpecies: Patlıcan (muhtemel, Solanum melongena), plantVariety: bilinmiyor, growthStage: vejetatif, totalTokens: 0, totalCostTry: 0.0, aiModel: gpt-5-mini-2025-08-07, unreadMessageCount: 0, totalMessageCount: 0, hasUnreadFromSponsor: false, conversationStatus: None, isSponsored: false, hasResults: true, statusIcon: ✅, healthScoreText: 7/10, formattedDate: 28.12.2025 19:00}, {id: 31
+I/flutter (19274): 🚀 CLAUDE: Found 10 analyses from API
+I/flutter (19274): 🚀 CLAUDE: Analyses sorted by urgency score
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/my-invitations
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:18 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: dfmobfdbQfa8P5Sm5nX1uw
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":[{"id":1,"phone":"+905421396386","invitationToken":"ae3cd617c09541b1a33b1a23d8a7dca9","status":"Pending","codeCount":1,"createdDate":"2026-01-04T07:31:59.645548","expiryDate":"2026-01-11T07:31:59.645581","linkDelivered":true,"linkSentDate":"2026-01-04T07:32:00.294832"}],"success":true,"message":"1 pending invitation(s) found"}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): [OTP] ✅ Found 1 pending farmer invitation(s)
+I/flutter (19274): 🔑 TokenInterceptor: Added valid token to /sponsorship/farmer/accept-invitation
+I/flutter (19274): 🌐 DIO: *** Request ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/accept-invitation
+I/flutter (19274): 🌐 DIO: method: POST
+I/flutter (19274): 🌐 DIO: responseType: ResponseType.json
+I/flutter (19274): 🌐 DIO: followRedirects: true
+I/flutter (19274): 🌐 DIO: persistentConnection: true
+I/flutter (19274): 🌐 DIO: connectTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: sendTimeout: null
+I/flutter (19274): 🌐 DIO: receiveTimeout: 0:00:30.000000
+I/flutter (19274): 🌐 DIO: receiveDataWhenStatusError: true
+I/flutter (19274): 🌐 DIO: extra: {}
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  Content-Type: application/json
+I/flutter (19274): 🌐 DIO:  Accept: application/json
+I/flutter (19274): 🌐 DIO:  Authorization: Bearer eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjUiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiU8O8cGVyIMOHaWZ0w6dpIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvZW1haWxhZGRyZXNzIjoic3VwZXJjaWZ0Y2lAemlyYWFpLmNvbSIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL21vYmlsZXBob25lIjoiMDU0MjEzOTYzODYiLCJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3JvbGUiOiJGYXJtZXIiLCJuYmYiOjE3Njc1MjUwNzUsImV4cCI6MTc2NzUyODY3NSwiaXNzIjoiWmlyYUFJX1Byb2R1Y3Rpb24iLCJhdWQiOiJaaXJhQUlfUHJvZHVjdGlvbl9Vc2VycyJ9.XOBisBgWn9AxzyHjz2bprqei2TuiymKnnmXCkI9XztE
+I/flutter (19274): 🌐 DIO: data:
+I/flutter (19274): 🌐 DIO: {invitationToken: ae3cd617c09541b1a33b1a23d8a7dca9}
+I/flutter (19274): 🌐 DIO:
+I/flutter (19274): 🌐 DIO: *** Response ***
+I/flutter (19274): 🌐 DIO: uri: https://api.ziraai.com/api/v1/sponsorship/farmer/accept-invitation
+I/flutter (19274): 🌐 DIO: statusCode: 200
+I/flutter (19274): 🌐 DIO: headers:
+I/flutter (19274): 🌐 DIO:  date: Sun, 04 Jan 2026 11:11:22 GMT
+I/flutter (19274): 🌐 DIO:  transfer-encoding: chunked
+I/flutter (19274): 🌐 DIO:  api-supported-versions: 1.0
+I/flutter (19274): 🌐 DIO:  content-type: application/json; charset=utf-8
+I/flutter (19274): 🌐 DIO:  server: railway-edge
+I/flutter (19274): 🌐 DIO:  x-railway-edge: railway/europe-west4-drams3a
+I/flutter (19274): 🌐 DIO:  x-railway-request-id: Q6ymevW8QoiaJlzfrJsmnA
+I/flutter (19274): 🌐 DIO: Response Text:
+I/flutter (19274): 🌐 DIO: {"data":{"invitationId":1,"status":"Accepted","acceptedDate":"2026-01-04T11:11:23.4214043+00:00","totalCodesAssigned":1,"sponsorshipCodes":["TOLGATARIM-2025-247851B2"],"codesByTier":{"3":1},"message":"✅ Tebrikler! 1 adet sponsorluk kodu hesabınıza tanımlandı."},"success":true,"message":"Sponsorluk daveti başarıyla kabul edildi"}
+I/flutter (19274): 🌐 DIO:
