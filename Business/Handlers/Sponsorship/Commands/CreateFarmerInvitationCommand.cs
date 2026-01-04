@@ -154,12 +154,13 @@ namespace Business.Handlers.Sponsorship.Commands
                     var playStoreLink = $"https://play.google.com/store/apps/details?id={playStorePackageName}";
 
                     // 8. Build SMS message using configuration service
+                    var expiryDays = await _configService.GetTokenExpiryDaysAsync();
                     var smsTemplate = await _configService.GetSmsTemplateAsync();
                     var smsMessage = smsTemplate
                         .Replace("{sponsorName}", sponsorCompanyName)
-                        .Replace("{codeCount}", request.CodeCount.ToString())
-                        .Replace("{deepLink}", deepLink)
-                        .Replace("{playStoreLink}", playStoreLink);
+                        .Replace("{invitationLink}", deepLink)
+                        .Replace("{playStoreLink}", playStoreLink)
+                        .Replace("{expiryDays}", expiryDays.ToString());
 
                     // 9. Send SMS
                     var smsService = _messagingFactory.GetSmsService();

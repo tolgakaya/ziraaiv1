@@ -145,14 +145,19 @@ namespace Business.Handlers.Sponsorship.Commands
                     {
                         _logger.LogInformation("🔄 Redeeming code {Code} for user {UserId}", code.Code, request.CurrentUserId);
 
-                        // STEP 1: Set FarmerInvitationId tracking fields BEFORE redemption (using raw SQL to avoid tracking)
+                        // STEP 1: Set ALL tracking fields BEFORE redemption (using raw SQL to avoid tracking)
+                        // Matching fields set in SendSponsorshipLinkCommand and BulkSendCodesCommand for consistency
                         await _codeRepository.Execute(
                             $@"UPDATE ""SponsorshipCodes""
                                SET ""FarmerInvitationId"" = {invitation.Id},
+                                   ""RecipientPhone"" = {request.CurrentUserPhone},
+                                   ""RecipientName"" = {invitation.FarmerName},
                                    ""LinkSentDate"" = {invitation.LinkSentDate ?? now},
+                                   ""LinkSentVia"" = {"FarmerInvitation"},
+                                   ""LinkDelivered"" = {true},
                                    ""DistributionDate"" = {now},
                                    ""DistributionChannel"" = {"FarmerInvitation"},
-                                   ""DistributedTo"" = {request.CurrentUserPhone}
+                                   ""DistributedTo"" = {invitation.FarmerName} || ' (' || {request.CurrentUserPhone} || ')'
                                WHERE ""Code"" = {code.Code}");
 
                         // STEP 2: Use existing redemption flow - handles subscription creation, marking as used, etc.
