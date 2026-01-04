@@ -629,7 +629,7 @@ curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/my-
 {
   "data": null,
   "success": false,
-  "message": "User phone number not found"
+  "message": "Telefon bilgisi bulunamadı"
 }
 ```
 
