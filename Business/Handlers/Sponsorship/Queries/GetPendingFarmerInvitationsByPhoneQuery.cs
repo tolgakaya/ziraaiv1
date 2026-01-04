@@ -10,6 +10,7 @@ using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Business.Handlers.Sponsorship.Queries
 {
@@ -25,10 +26,14 @@ namespace Business.Handlers.Sponsorship.Queries
     public class GetPendingFarmerInvitationsByPhoneQueryHandler : IRequestHandler<GetPendingFarmerInvitationsByPhoneQuery, IDataResult<List<FarmerInvitationListDto>>>
     {
         private readonly IFarmerInvitationRepository _farmerInvitationRepository;
+        private readonly ILogger<GetPendingFarmerInvitationsByPhoneQueryHandler> _logger;
 
-        public GetPendingFarmerInvitationsByPhoneQueryHandler(IFarmerInvitationRepository farmerInvitationRepository)
+        public GetPendingFarmerInvitationsByPhoneQueryHandler(
+            IFarmerInvitationRepository farmerInvitationRepository,
+            ILogger<GetPendingFarmerInvitationsByPhoneQueryHandler> logger)
         {
             _farmerInvitationRepository = farmerInvitationRepository;
+            _logger = logger;
         }
 
         [SecuredOperation(Priority = 1)]
@@ -38,14 +43,28 @@ namespace Business.Handlers.Sponsorship.Queries
         {
             // Normalize phone number (handle Turkish format)
             var normalizedPhone = NormalizePhoneNumber(request.Phone);
-            
+
             // Generate alternative format for matching (both +90 and 0 prefixes)
             var alternativePhone = GetAlternativePhoneFormat(normalizedPhone);
 
+            _logger.LogInformation("[FARMER_INV] Original: {Original}, Normalized: {Normalized}, Alternative: {Alternative}",
+                request.Phone, normalizedPhone, alternativePhone);
+
             // Get all pending invitations for this phone number (check both formats)
-            var invitations = await _farmerInvitationRepository.GetListAsync(i => 
-                (i.Phone == normalizedPhone || i.Phone == alternativePhone) && 
+            var invitations = await _farmerInvitationRepository.GetListAsync(i =>
+                (i.Phone == normalizedPhone || i.Phone == alternativePhone) &&
                 i.Status == "Pending");
+
+            _logger.LogInformation("[FARMER_INV] Found {Count} pending invitations", invitations?.Count() ?? 0);
+
+            if (invitations != null && invitations.Any())
+            {
+                foreach (var inv in invitations)
+                {
+                    _logger.LogInformation("[FARMER_INV] Invitation - Id: {Id}, Phone: {Phone}, Status: {Status}",
+                        inv.Id, inv.Phone, inv.Status);
+                }
+            }
 
             if (invitations == null || !invitations.Any())
             {
