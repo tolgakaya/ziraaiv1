@@ -19,7 +19,8 @@
       "Bash(gh pr list:*)",
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
-      "Bash(gh pr view:*)"
+      "Bash(gh pr view:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": [],

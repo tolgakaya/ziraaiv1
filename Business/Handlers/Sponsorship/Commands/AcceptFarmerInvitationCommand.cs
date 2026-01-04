@@ -145,13 +145,13 @@ namespace Business.Handlers.Sponsorship.Commands
                     {
                         _logger.LogInformation("🔄 Redeeming code {Code} for user {UserId}", code.Code, request.CurrentUserId);
 
-                        // Clear reservation fields BEFORE redemption
+                        // Clear reservation fields BEFORE redemption (in-memory only, will be saved by redemption)
                         code.ReservedForFarmerInvitationId = null;
                         code.ReservedForFarmerAt = null;
                         _codeRepository.Update(code);
                         await _codeRepository.SaveChangesAsync();
 
-                        // Use existing redemption flow - handles everything
+                        // Use existing redemption flow - handles everything (marks as used, creates subscription)
                         var redemptionResult = await _sponsorshipService.RedeemSponsorshipCodeAsync(code.Code, request.CurrentUserId);
 
                         if (redemptionResult.Success && redemptionResult.Data != null)
@@ -159,14 +159,19 @@ namespace Business.Handlers.Sponsorship.Commands
                             createdSubscriptions.Add(redemptionResult.Data);
                             codeStrings.Add(code.Code);
 
-                            // NOW link code to invitation for tracking/statistics
-                            code.FarmerInvitationId = invitation.Id;
-                            code.LinkSentDate = invitation.LinkSentDate ?? now;
-                            code.DistributionDate = now;
-                            code.DistributionChannel = "FarmerInvitation";
-                            code.DistributedTo = request.CurrentUserPhone;
-                            _codeRepository.Update(code);
-                            await _codeRepository.SaveChangesAsync();
+                            // CRITICAL: Fetch fresh instance to avoid EF tracking conflict
+                            var freshCode = await _codeRepository.GetAsync(c => c.Code == code.Code);
+                            if (freshCode != null)
+                            {
+                                // NOW link code to invitation for tracking/statistics
+                                freshCode.FarmerInvitationId = invitation.Id;
+                                freshCode.LinkSentDate = invitation.LinkSentDate ?? now;
+                                freshCode.DistributionDate = now;
+                                freshCode.DistributionChannel = "FarmerInvitation";
+                                freshCode.DistributedTo = request.CurrentUserPhone;
+                                _codeRepository.Update(freshCode);
+                                await _codeRepository.SaveChangesAsync();
+                            }
 
                             _logger.LogInformation("✅ Code {Code} redeemed successfully. Subscription ID: {SubId}, Status: {Status}, QueueStatus: {QueueStatus}",
                                 code.Code, redemptionResult.Data.Id, redemptionResult.Data.Status, redemptionResult.Data.QueueStatus);
