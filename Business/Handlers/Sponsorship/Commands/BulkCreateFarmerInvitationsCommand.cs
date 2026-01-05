@@ -206,6 +206,12 @@ namespace Business.Handlers.Sponsorship.Commands
                             .Replace("{playStoreLink}", playStoreLink)
                             .Replace("{expiryDays}", expiryDays.ToString());
 
+                        _logger.LogInformation("📱 [BULK DEBUG] Template: {Template}", smsTemplate);
+                        _logger.LogInformation("📱 [BULK DEBUG] SponsorName: {SponsorName}, PlayStoreLink: {PlayStoreLink}, ExpiryDays: {ExpiryDays}",
+                            sponsorCompanyName, playStoreLink, expiryDays);
+                        _logger.LogInformation("📱 [BULK DEBUG] Final message to {Phone}: {Message}",
+                            invitation.Phone, message);
+
                         // 7. Send SMS or WhatsApp
                         IResult messageSendResult;
                         if (request.Channel.ToLower() == "whatsapp")
