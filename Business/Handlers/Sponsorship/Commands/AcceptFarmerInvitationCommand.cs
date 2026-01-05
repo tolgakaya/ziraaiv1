@@ -147,18 +147,21 @@ namespace Business.Handlers.Sponsorship.Commands
 
                         // STEP 1: Set ALL tracking fields BEFORE redemption (using raw SQL to avoid tracking)
                         // Matching fields set in SendSponsorshipLinkCommand and BulkSendCodesCommand for consistency
+                        var linkSentDate = invitation.LinkSentDate ?? now;
+                        var distributedTo = $"{invitation.FarmerName} ({request.CurrentUserPhone})";
+
                         await _codeRepository.Execute(
                             $@"UPDATE ""SponsorshipCodes""
                                SET ""FarmerInvitationId"" = {invitation.Id},
-                                   ""RecipientPhone"" = {request.CurrentUserPhone},
-                                   ""RecipientName"" = {invitation.FarmerName},
-                                   ""LinkSentDate"" = {invitation.LinkSentDate ?? now},
-                                   ""LinkSentVia"" = {"FarmerInvitation"},
-                                   ""LinkDelivered"" = {true},
-                                   ""DistributionDate"" = {now},
-                                   ""DistributionChannel"" = {"FarmerInvitation"},
-                                   ""DistributedTo"" = {invitation.FarmerName} || ' (' || {request.CurrentUserPhone} || ')'
-                               WHERE ""Code"" = {code.Code}");
+                                   ""RecipientPhone"" = '{request.CurrentUserPhone}',
+                                   ""RecipientName"" = '{invitation.FarmerName.Replace("'", "''")}',
+                                   ""LinkSentDate"" = '{linkSentDate:yyyy-MM-dd HH:mm:ss}',
+                                   ""LinkSentVia"" = 'FarmerInvitation',
+                                   ""LinkDelivered"" = true,
+                                   ""DistributionDate"" = '{now:yyyy-MM-dd HH:mm:ss}',
+                                   ""DistributionChannel"" = 'FarmerInvitation',
+                                   ""DistributedTo"" = '{distributedTo.Replace("'", "''")}'
+                               WHERE ""Code"" = '{code.Code}'");
 
                         // STEP 2: Use existing redemption flow - handles subscription creation, marking as used, etc.
                         var redemptionResult = await _sponsorshipService.RedeemSponsorshipCodeAsync(code.Code, request.CurrentUserId);
