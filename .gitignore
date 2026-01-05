@@ -360,7 +360,6 @@ MigrationBackup/
 /Business/Fakes/BeniOku.md_
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio
-WebAPI/appsettings.json
 
 # ---- SonarQube
 .sonar/
