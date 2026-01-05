@@ -97,7 +97,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 var sponsorCompanyName = sponsorProfile?.CompanyName ?? "ZiraAI Sponsor";
 
                 // Get configuration values
-                var tokenExpiryDays = await _configService.GetTokenExpiryDaysAsync();
+                var expiryDays = await _configService.GetTokenExpiryDaysAsync();
                 var baseUrl = await _configService.GetDeepLinkBaseUrlAsync();
                 var smsTemplate = await _configService.GetSmsTemplateAsync();
                 var playStorePackageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
@@ -167,7 +167,7 @@ namespace Business.Handlers.Sponsorship.Commands
                             InvitationToken = Guid.NewGuid().ToString("N"),
                             Status = "Pending",
                             CreatedDate = DateTime.Now,
-                            ExpiryDate = DateTime.Now.AddDays(tokenExpiryDays)
+                            ExpiryDate = DateTime.Now.AddDays(expiryDays)
                         };
 
                         _invitationRepository.Add(invitation);
@@ -204,10 +204,7 @@ namespace Business.Handlers.Sponsorship.Commands
                         var message = request.CustomMessage ?? smsTemplate
                             .Replace("{sponsorName}", sponsorCompanyName)
                             .Replace("{playStoreLink}", playStoreLink)
-                            .Replace("{expiryDays}", tokenExpiryDays.ToString());
-
-                        _logger.LogInformation("📱 Sending {Channel} to {Phone} with message: {Message}",
-                            request.Channel, invitation.Phone, message);
+                            .Replace("{expiryDays}", expiryDays.ToString());
 
                         // 7. Send SMS or WhatsApp
                         IResult messageSendResult;
