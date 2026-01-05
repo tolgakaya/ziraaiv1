@@ -1,8 +1,10 @@
 # Farmer Invitations API - Complete Reference Guide
 
-**Last Updated**: 2026-01-02
+**Last Updated**: 2026-01-05
 **API Version**: 1.0
 **Environment**: Staging (ziraai-api-sit.up.railway.app)
+
+> **🆕 Update**: Real-time SignalR notifications now available for farmer invitations! See [SignalR Integration](#signalr-real-time-notifications) section below.
 
 ---
 
@@ -16,6 +18,7 @@
 6. [Mobile Integration Examples](#mobile-integration-examples)
 7. [Testing Guide](#testing-guide)
 8. [Comparison with Dealer Invitations](#comparison-with-dealer-invitations)
+   - [SignalR Real-time Notifications](#signalr-real-time-notifications)
 
 ---
 
@@ -85,7 +88,7 @@ Sponsor creates an invitation and reserves codes for a farmer.
 #### Endpoint
 
 ```
-POST /api/v1/sponsorship/farmer-invitations
+POST /api/v1/sponsorship/farmer/invite
 ```
 
 #### Request Headers
@@ -126,7 +129,7 @@ Content-Type: application/json
 {
   "data": {
     "invitationId": 15,
-    "invitationToken": "FARMER-a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4",
+    "invitationToken": "a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4",
     "invitationLink": "https://ziraai.com/farmer-invite/a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4",
     "phone": "05551234567",
     "farmerName": "Ahmet Yılmaz",
@@ -151,7 +154,7 @@ Content-Type: application/json
 | Field | Type | Description |
 |-------|------|-------------|
 | `invitationId` | integer | Unique invitation ID |
-| `invitationToken` | string | 32-char hex token (prefixed with "FARMER-") |
+| `invitationToken` | string | 32-char hex token (no prefix) |
 | `invitationLink` | string | Full deep link URL for mobile app |
 | `phone` | string | Farmer's phone (normalized) |
 | `farmerName` | string | Farmer's name |
@@ -176,8 +179,8 @@ Content-Type: application/json
    - Reserved codes marked as "Reserved" status
 
 2. **Token Generation**:
-   - Format: `FARMER-{Guid.NewGuid().ToString("N")}`
-   - Globally unique 32-character hex string
+   - Format: `Guid.NewGuid().ToString("N")` (32-character hex string)
+   - Globally unique, no prefix
    - Used in deep link: `ziraai://farmer-invite/{token}`
 
 3. **SMS Delivery**:
@@ -237,21 +240,23 @@ View invitation details before registration/login. **No authentication required.
 #### Endpoint
 
 ```
-GET /api/v1/sponsorship/farmer-invite/{token}
+GET /api/v1/sponsorship/farmer/invitation-details?token={token}
 ```
 
-#### Path Parameters
+#### Query Parameters
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `token` | string | 32-character invitation token (without "FARMER-" prefix) | `a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4` |
+| `token` | string | 32-character invitation token | `a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4` |
 
 #### Request Example
 
 ```bash
-curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-invite/a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4" \
+curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/invitation-details?token=a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4" \
   -H "x-dev-arch-version: 1.0"
 ```
+
+**Note:** There's also a web redirect endpoint at `/farmer-invite/{token}` (returns HTML page), but the API endpoint above returns JSON.
 
 **Note:** No `Authorization` header required - this is a public endpoint.
 
@@ -353,7 +358,7 @@ Farmer accepts invitation after login. Phone number must match invitation.
 #### Endpoint
 
 ```
-POST /api/v1/sponsorship/farmer-invitations/accept
+POST /api/v1/sponsorship/farmer/accept-invitation
 ```
 
 #### Request Headers
@@ -376,7 +381,7 @@ Content-Type: application/json
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `invitationToken` | string | **Yes** | 32-char hex token (without "FARMER-" prefix) |
+| `invitationToken` | string | **Yes** | 32-char hex token |
 
 #### Success Response (200 OK)
 
@@ -653,12 +658,12 @@ curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/my-
 
 ### 5. List Farmer Invitations (Sponsor)
 
-Sponsor views all their sent invitations with filtering.
+Sponsor views all their sent invitations with optional status filtering.
 
 #### Endpoint
 
 ```
-GET /api/v1/sponsorship/farmer-invitations?status={status}&page={page}&pageSize={pageSize}
+GET /api/v1/sponsorship/farmer/invitations?status={status}
 ```
 
 #### Request Headers
@@ -673,14 +678,19 @@ x-dev-arch-version: 1.0
 | Parameter | Type | Required | Description | Default |
 |-----------|------|----------|-------------|---------|
 | `status` | string | No | Filter by status: "Pending", "Accepted", "Expired", "Cancelled" | All statuses |
-| `page` | integer | No | Page number (1-based) | 1 |
-| `pageSize` | integer | No | Items per page | 20 |
+
+**Note:** Pagination is NOT implemented. All matching invitations are returned.
 
 #### Request Example
 
 ```bash
-# Get all pending invitations (page 1)
-curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-invitations?status=Pending&page=1&pageSize=20" \
+# Get all pending invitations
+curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/invitations?status=Pending" \
+  -H "Authorization: Bearer eyJhbGc..." \
+  -H "x-dev-arch-version: 1.0"
+
+# Get all invitations (no filter)
+curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/invitations" \
   -H "Authorization: Bearer eyJhbGc..." \
   -H "x-dev-arch-version: 1.0"
 ```
@@ -689,37 +699,50 @@ curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-inv
 
 ```json
 {
-  "data": {
-    "invitations": [
-      {
-        "id": 15,
-        "phone": "05551234567",
-        "farmerName": "Ahmet Yılmaz",
-        "email": "ahmet@example.com",
-        "status": "Pending",
-        "codeCount": 10,
-        "packageTier": "M",
-        "acceptedByUserId": null,
-        "acceptedDate": null,
-        "createdDate": "2026-01-02T10:30:00.000Z",
-        "expiryDate": "2026-01-09T10:30:00.000Z",
-        "linkDelivered": true,
-        "linkSentDate": "2026-01-02T10:30:01.000Z"
-      }
-    ],
-    "totalCount": 1,
-    "page": 1,
-    "pageSize": 20,
-    "totalPages": 1
-  },
+  "data": [
+    {
+      "id": 15,
+      "phone": "05551234567",
+      "farmerName": "Ahmet Yılmaz",
+      "email": "ahmet@example.com",
+      "invitationToken": "a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4",
+      "status": "Pending",
+      "codeCount": 10,
+      "packageTier": "M",
+      "acceptedByUserId": null,
+      "acceptedDate": null,
+      "createdDate": "2026-01-02T10:30:00.000Z",
+      "expiryDate": "2026-01-09T10:30:00.000Z",
+      "linkDelivered": true,
+      "linkSentDate": "2026-01-02T10:30:01.000Z"
+    },
+    {
+      "id": 12,
+      "phone": "05559876543",
+      "farmerName": "Mehmet Demir",
+      "email": null,
+      "invitationToken": "b4c6f0d2e3a5c7b9d1e3f5a7c9b1d3e5",
+      "status": "Pending",
+      "codeCount": 5,
+      "packageTier": null,
+      "acceptedByUserId": null,
+      "acceptedDate": null,
+      "createdDate": "2026-01-01T14:20:00.000Z",
+      "expiryDate": "2026-01-08T14:20:00.000Z",
+      "linkDelivered": true,
+      "linkSentDate": "2026-01-01T14:20:05.000Z"
+    }
+  ],
   "success": true,
-  "message": "Found 1 invitation(s)"
+  "message": "Found 2 invitation(s)"
 }
 ```
 
 #### Response Fields
 
-Same as "Get My Pending Invitations" but with pagination wrapper.
+Returns array of `FarmerInvitationListDto` (same structure as "Get My Pending Invitations").
+
+**Note:** Response includes `invitationToken` field for sponsor reference.
 
 #### Business Logic
 
@@ -731,10 +754,9 @@ Same as "Get My Pending Invitations" but with pagination wrapper.
    - If `status` parameter provided → filter by exact match
    - If `status` omitted → return all statuses
 
-3. **Pagination**:
-   - Total count calculated before pagination
-   - Results sliced by `page` and `pageSize`
-   - `totalPages = ceiling(totalCount / pageSize)`
+3. **No Pagination**:
+   - All matching invitations returned in single response
+   - Sorted by `CreatedDate` DESC (newest first)
 
 ---
 
@@ -831,18 +853,7 @@ public class FarmerInvitationListDto
 }
 ```
 
-### FarmerInvitationsPaginatedDto
-
-```csharp
-public class FarmerInvitationsPaginatedDto
-{
-    public List<FarmerInvitationListDto> Invitations { get; set; }
-    public int TotalCount { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages { get; set; }
-}
-```
+**Note:** `FarmerInvitationsPaginatedDto` exists in the codebase but is NOT currently used. The List endpoint returns a simple array of `FarmerInvitationListDto` without pagination wrapper.
 
 ---
 
@@ -853,7 +864,7 @@ public class FarmerInvitationsPaginatedDto
 ```dart
 try {
   final response = await dio.post(
-    '/api/v1/sponsorship/farmer-invitations/accept',
+    '/api/v1/sponsorship/farmer/accept-invitation',
     data: {'invitationToken': token},
     options: Options(headers: {'Authorization': 'Bearer $jwtToken'}),
   );
@@ -908,7 +919,8 @@ class FarmerInvitationService {
   Future<FarmerInvitationDetailDto?> getInvitationDetails(String token) async {
     try {
       final response = await _dio.get(
-        '/api/v1/sponsorship/farmer-invite/$token',
+        '/api/v1/sponsorship/farmer/invitation-details',
+        queryParameters: {'token': token},
         options: Options(headers: {'x-dev-arch-version': '1.0'}),
       );
 
@@ -956,7 +968,7 @@ class FarmerInvitationService {
 
     try {
       final response = await _dio.post(
-        '/api/v1/sponsorship/farmer-invitations/accept',
+        '/api/v1/sponsorship/farmer/accept-invitation',
         data: {'invitationToken': token},
         options: Options(headers: {
           'Authorization': 'Bearer $_jwtToken',
@@ -1194,7 +1206,7 @@ Future<void> navigateToInvitationDetail(String token) async {
 ```bash
 # 1. Get invitation details (NO AUTH)
 TOKEN="a3f5e9c1b2d4f6a8e0c2b4d6f8a0c2e4"
-curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-invite/$TOKEN" \
+curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/invitation-details?token=$TOKEN" \
   -H "x-dev-arch-version: 1.0"
 
 # 2. Verify response
@@ -1207,7 +1219,7 @@ curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-inv
 
 # 4. User accepts invitation (WITH AUTH)
 JWT="user_jwt_token_here"
-curl -X POST "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-invitations/accept" \
+curl -X POST "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/accept-invitation" \
   -H "Authorization: Bearer $JWT" \
   -H "x-dev-arch-version: 1.0" \
   -H "Content-Type: application/json" \
@@ -1286,7 +1298,7 @@ curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/my-
 **Test Steps:**
 ```bash
 # 1. Get expired invitation details
-curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-invite/expired_token" \
+curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/invitation-details?token=expired_token" \
   -H "x-dev-arch-version: 1.0"
 
 # 2. Verify response
@@ -1295,7 +1307,7 @@ curl -X GET "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-inv
 # - message: "This invitation has expired"
 
 # 3. Attempt to accept (should fail)
-curl -X POST "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-invitations/accept" \
+curl -X POST "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer/accept-invitation" \
   -H "Authorization: Bearer $JWT" \
   -H "Content-Type: application/json" \
   -d '{"invitationToken":"expired_token"}'
@@ -1331,27 +1343,47 @@ curl -X POST "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-in
 
 | Aspect | Farmer Invitations | Dealer Invitations |
 |--------|-------------------|-------------------|
-| **Real-time Notifications** | ❌ No SignalR (REST-only) | ✅ Yes - SignalR Hub |
+| **Real-time Notifications** | ✅ Yes - SignalR NotificationHub | ✅ Yes - SignalR NotificationHub |
+| **SignalR Event** | `NewFarmerInvitation` | `NewDealerInvitation` |
+| **SignalR Targeting** | Phone groups only | Email + Phone groups |
 | **Phone Normalization Format** | `05551234567` (0 prefix) | `905556866386` (90 prefix) |
-| **Token Prefix** | `FARMER-` | `DEALER-` |
+| **Token Format** | 32-char hex (no prefix) | 32-char hex (no prefix) |
 | **Target Audience** | Farmers (code recipients) | Dealers (code distributors) |
 | **Code Assignment** | Automatic on acceptance | Manual transfer by dealer |
 | **Acceptance Verification** | Phone number must match exactly | Email or phone match |
 | **Response on Accept** | Returns actual codes + tier breakdown | Returns success status |
 | **Tier Support** | ✅ Yes - S, M, L, XL filtering | ✅ Yes - S, M, L, XL filtering |
 
-### Why No SignalR for Farmer Invitations?
+### SignalR Real-time Notifications
 
-**Dealer Invitations:**
-- Dealers receive invitations frequently
-- Need real-time notifications for immediate response
-- Multiple dealers may share email/phone (business accounts)
+Both farmer and dealer invitations now support real-time SignalR notifications for instant delivery.
 
-**Farmer Invitations:**
-- Farmers receive invitations less frequently
-- Pull-based model sufficient (check on app open)
-- Simpler implementation for mobile team
-- Phone verification ensures 1-to-1 mapping
+**Implementation Details:**
+- **Hub**: NotificationHub (`/hubs/notification`)
+- **Farmer Event**: `NewFarmerInvitation` (phone group targeting)
+- **Dealer Event**: `NewDealerInvitation` (email + phone group targeting)
+- **Authentication**: JWT Bearer token required
+- **Group Joining**: Automatic on connection based on phone claim
+
+**Farmer Invitation SignalR Flow:**
+1. Sponsor creates farmer invitation via API
+2. Backend sends `NewFarmerInvitation` event to `phone_{normalizedPhone}` group
+3. Farmer's mobile app (if connected) receives real-time notification
+4. Farmer can immediately view and accept invitation
+
+**Benefits:**
+- ✅ Instant notification delivery without polling
+- ✅ Better user experience (no app refresh needed)
+- ✅ Consistent with dealer invitation pattern
+- ✅ Mobile app receives invitation even if in background
+
+**Integration Guide:**
+See [SignalR Mobile Integration Guide](../SIGNALR_MOBILE_INTEGRATION_COMPLETE.md) for complete implementation details including:
+- Connection setup
+- Event handling
+- Phone normalization
+- Error handling
+- Testing procedures
 
 ---
 
@@ -1421,12 +1453,8 @@ WHERE Phone = '05551234567'
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2026-01-02
+**Document Version**: 1.1
+**Last Updated**: 2026-01-05
 **Changes**:
-- Initial release
-- Complete API reference for all 5 farmer invitation endpoints
-- Flutter integration examples with DTO models
-- Deep link handling examples
-- Comprehensive testing guide
-- Comparison with dealer invitation system
+- v1.1 (2026-01-05): Fixed all endpoint URLs to match actual implementation, removed pagination (not implemented), corrected token format
+- v1.0 (2026-01-02): Initial release with complete API reference, Flutter examples, testing guide

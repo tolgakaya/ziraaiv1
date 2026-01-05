@@ -3644,6 +3644,228 @@ namespace WebAPI.Controllers
         }
 
         #endregion
+
+        #region Farmer Invitation Deep Link
+
+        /// <summary>
+        /// Handle farmer invitation deep link from SMS - Android Universal Links intercepts this!
+        /// This endpoint should NOT redirect - Android opens the app directly.
+        /// Mobile app extracts token from the HTTPS URL path.
+        /// </summary>
+        /// <param name="token">The farmer invitation token from the deep link</param>
+        /// <returns>Simple HTML page with instructions and fallback</returns>
+        [HttpGet("~/farmer-invite/{token}")] // Direct access without /api/v1/ prefix for easier link sharing
+        [AllowAnonymous]
+        public IActionResult HandleFarmerInvitationDeepLink(string token)
+        {
+            try
+            {
+                _logger.LogInformation("📱 Farmer invitation deep link accessed for token: {Token}", token);
+
+                // Get user agent for platform detection
+                var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+                _logger.LogInformation("User-Agent: {UserAgent}", userAgent);
+
+                // Check if this is an Android device (app should handle it)
+                var isAndroid = userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase);
+                var isMobile = userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase);
+
+                if (isAndroid && isMobile)
+                {
+                    _logger.LogInformation("🤖 Android device detected - app should handle this");
+
+                    // Get Play Store package name from configuration
+                    var playStorePackageName = _configuration["MobileApp:PlayStorePackageName"] ?? "com.ziraai.app";
+                    var playStoreLink = $"https://play.google.com/store/apps/details?id={playStorePackageName}";
+                    var customSchemeLink = $"ziraai://farmer-invitation/{token}";
+
+                    // Return HTML with fallback options
+                    var html = $@"
+<!DOCTYPE html>
+<html lang='tr'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>ZiraAI Sponsorluk Daveti</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }}
+        .container {{
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }}
+        .icon {{ font-size: 64px; margin-bottom: 1rem; }}
+        h1 {{ color: #1f2937; margin-bottom: 0.5rem; font-size: 1.5rem; }}
+        .token {{
+            background: #f3f4f6;
+            color: #667eea;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            word-break: break-all;
+        }}
+        .btn {{
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            margin: 0.75rem 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            transition: transform 0.2s;
+        }}
+        .btn:active {{ transform: scale(0.98); }}
+        .btn-primary {{ background: #667eea; }}
+        .btn-secondary {{ background: #10b981; }}
+        .message {{
+            color: #6b7280;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='icon'>🌱</div>
+        <h1>Sponsorluk Daveti</h1>
+        <div class='token'>Token: {token.Substring(0, Math.Min(token.Length, 16))}...</div>
+
+        <a href='{customSchemeLink}' class='btn btn-primary'>
+            📱 ZiraAI Uygulamasını Aç
+        </a>
+
+        <a href='{playStoreLink}' class='btn btn-secondary'>
+            📥 Uygulamayı İndir
+        </a>
+
+        <p class='message'>
+            ZiraAI uygulaması kurulu değilse önce indirin.
+            Kurulu ise üstteki butona tıklayarak daveti kabul edebilirsiniz.
+        </p>
+    </div>
+
+    <script>
+        // Try to open app immediately (fallback for Android)
+        setTimeout(() => {{
+            window.location.href = '{customSchemeLink}';
+        }}, 500);
+    </script>
+</body>
+</html>";
+
+                    return Content(html, "text/html");
+                }
+
+                // For non-Android devices (iOS, Desktop, etc.)
+                _logger.LogInformation("🌐 Non-Android device - showing web instructions");
+
+                var webHtml = $@"
+<!DOCTYPE html>
+<html lang='tr'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>ZiraAI Sponsorluk Daveti</title>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }}
+        .container {{
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }}
+        .icon {{ font-size: 64px; margin-bottom: 1rem; }}
+        h1 {{ color: #1f2937; margin-bottom: 1rem; }}
+        .token {{
+            background: #f3f4f6;
+            color: #667eea;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            word-break: break-all;
+        }}
+        .steps {{
+            text-align: left;
+            margin: 1.5rem 0;
+            color: #4b5563;
+        }}
+        .step {{
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }}
+        .qr-hint {{
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='icon'>📱</div>
+        <h1>Android Cihazınızdan Erişin</h1>
+        <p>Bu sponsorluk daveti Android ZiraAI uygulamasında kabul edilebilir.</p>
+
+        <div class='token'>Token: {token.Substring(0, Math.Min(token.Length, 16))}...</div>
+
+        <div class='steps'>
+            <div class='step'>1️⃣ SMS'inizi Android cihazınızda açın</div>
+            <div class='step'>2️⃣ Linke tıklayarak ZiraAI uygulamasını açın</div>
+            <div class='step'>3️⃣ Daveti kabul edin</div>
+            <div class='step'>4️⃣ Ücretsiz analizlerinizi kullanmaya başlayın</div>
+        </div>
+
+        <p class='qr-hint'>
+            💡 İpucu: Bu sayfanın linkini Android cihazınıza gönderin veya SMS'inizi kontrol edin.
+        </p>
+    </div>
+</body>
+</html>";
+
+                return Content(webHtml, "text/html");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error handling farmer invitation deep link for token {Token}", token);
+                return BadRequest($"Link işlenirken hata oluştu: {ex.Message}");
+            }
+        }
+
+        #endregion
     }
 }
 

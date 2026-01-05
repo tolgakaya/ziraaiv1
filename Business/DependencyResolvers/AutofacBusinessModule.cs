@@ -312,6 +312,8 @@ namespace Business.DependencyResolvers
 
             builder.RegisterType<DealerInvitationNotificationService>().As<IDealerInvitationNotificationService>()
                 .InstancePerLifetimeScope();
+            builder.RegisterType<FarmerInvitationNotificationService>().As<IFarmerInvitationNotificationService>()
+                .InstancePerLifetimeScope();
 
             builder.RegisterType<BulkInvitationNotificationService>().As<IBulkInvitationNotificationService>()
                 .InstancePerLifetimeScope();

@@ -45,6 +45,7 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly IFarmerInvitationConfigurationService _configService;
             private readonly IConfiguration _configuration;
             private readonly ILogger<CreateFarmerInvitationCommandHandler> _logger;
+            private readonly Business.Services.Notification.IFarmerInvitationNotificationService _notificationService;
 
             public CreateFarmerInvitationCommandHandler(
                 IFarmerInvitationRepository invitationRepository,
@@ -54,7 +55,8 @@ namespace Business.Handlers.Sponsorship.Commands
                 IMessagingServiceFactory messagingFactory,
                 IFarmerInvitationConfigurationService configService,
                 IConfiguration configuration,
-                ILogger<CreateFarmerInvitationCommandHandler> logger)
+                ILogger<CreateFarmerInvitationCommandHandler> logger,
+                Business.Services.Notification.IFarmerInvitationNotificationService notificationService)
             {
                 _invitationRepository = invitationRepository;
                 _codeRepository = codeRepository;
@@ -64,6 +66,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 _configService = configService;
                 _configuration = configuration;
                 _logger = logger;
+                _notificationService = notificationService;
             }
 
             [CacheRemoveAspect("Get")]
@@ -132,6 +135,18 @@ namespace Business.Handlers.Sponsorship.Commands
 
                     _logger.LogInformation("✅ Created farmer invitation {InvitationId} with token {Token}",
                         invitation.Id, invitation.InvitationToken);
+
+                    // Send SignalR notification to farmer
+                    try
+                    {
+                        await _notificationService.NotifyNewInvitationAsync(invitation);
+                        _logger.LogInformation("📣 SignalR notification sent for farmer invitation {InvitationId}", invitation.Id);
+                    }
+                    catch (Exception notificationEx)
+                    {
+                        // Log but don't fail - notification is optional
+                        _logger.LogWarning(notificationEx, "⚠️ Failed to send SignalR notification for farmer invitation {InvitationId}", invitation.Id);
+                    }
 
                     // 5. Reserve codes for this invitation
                     foreach (var code in codesToReserve)
