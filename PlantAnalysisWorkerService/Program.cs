@@ -313,6 +313,9 @@ builder.Services.AddScoped<Business.Services.Notification.IDealerInvitationNotif
 // 🆕 Add FarmerInvitation Notification Service (required by CreateFarmerInvitationCommand)
 builder.Services.AddScoped<Business.Services.Notification.IFarmerInvitationNotificationService, Business.Services.Notification.FarmerInvitationNotificationService>();
 
+// 🆕 Add FarmerInvitation Configuration Service (required by CreateFarmerInvitationCommand)
+builder.Services.AddScoped<Business.Services.FarmerInvitation.IFarmerInvitationConfigurationService, Business.Services.FarmerInvitation.FarmerInvitationConfigurationService>();
+
 // 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
 
