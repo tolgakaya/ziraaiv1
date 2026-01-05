@@ -233,6 +233,9 @@ namespace Business.DependencyResolvers
             builder.RegisterType<BulkDealerInvitationService>().As<IBulkDealerInvitationService>()
                 .InstancePerLifetimeScope();
 
+            builder.RegisterType<BulkFarmerInvitationService>().As<IBulkFarmerInvitationService>()
+                .InstancePerLifetimeScope();
+
             builder.RegisterType<BulkCodeDistributionService>().As<IBulkCodeDistributionService>()
                 .InstancePerLifetimeScope();
 

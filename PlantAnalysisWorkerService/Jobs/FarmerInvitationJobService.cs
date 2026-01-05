@@ -1,40 +1,36 @@
 using Business.Handlers.Sponsorship.Commands;
-using Business.Services.Notification;
 using DataAccess.Abstract;
-using Entities.Concrete;
 using Entities.Dtos;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
-using Core.Utilities.Results;
 
 namespace PlantAnalysisWorkerService.Jobs
 {
-    public interface IDealerInvitationJobService
+    public interface IFarmerInvitationJobService
     {
-        Task ProcessDealerInvitationAsync(DealerInvitationQueueMessage message, string correlationId);
+        Task ProcessFarmerInvitationAsync(FarmerInvitationQueueMessage message, string correlationId);
     }
 
-    public class DealerInvitationJobService : IDealerInvitationJobService
+    public class FarmerInvitationJobService : IFarmerInvitationJobService
     {
         private readonly IMediator _mediator;
         private readonly IBulkInvitationJobRepository _bulkJobRepository;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<DealerInvitationJobService> _logger;
+        private readonly ILogger<FarmerInvitationJobService> _logger;
 
-        public DealerInvitationJobService(
+        public FarmerInvitationJobService(
             IMediator mediator,
             IBulkInvitationJobRepository bulkJobRepository,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            ILogger<DealerInvitationJobService> logger)
+            ILogger<FarmerInvitationJobService> logger)
         {
             _mediator = mediator;
             _bulkJobRepository = bulkJobRepository;
@@ -43,73 +39,53 @@ namespace PlantAnalysisWorkerService.Jobs
             _logger = logger;
         }
 
-        public async Task ProcessDealerInvitationAsync(DealerInvitationQueueMessage message, string correlationId)
+        public async Task ProcessFarmerInvitationAsync(FarmerInvitationQueueMessage message, string correlationId)
         {
             var stopwatch = Stopwatch.StartNew();
             _logger.LogInformation(
-                "[DEALER_INVITATION_JOB_START] Processing dealer invitation - BulkJobId: {BulkJobId}, Row: {RowNumber}, Email: {Email}, SendSms: {SendSms}",
-                message.BulkJobId, message.RowNumber, message.Email, message.SendSms);
+                "[FARMER_INVITATION_JOB_START] Processing farmer invitation - BulkJobId: {BulkJobId}, Row: {RowNumber}, Phone: {Phone}, Channel: {Channel}",
+                message.BulkJobId, message.RowNumber, message.Phone, message.Channel);
 
             try
             {
-                // 1. Get bulk job to check SendSms flag
+                // 1. Get bulk job
                 var bulkJob = await _bulkJobRepository.GetAsync(j => j.Id == message.BulkJobId);
                 if (bulkJob == null)
                 {
                     _logger.LogWarning(
-                        "[DEALER_INVITATION_JOB_BULK_NOT_FOUND] BulkJob not found - BulkJobId: {BulkJobId}",
+                        "[FARMER_INVITATION_JOB_BULK_NOT_FOUND] BulkJob not found - BulkJobId: {BulkJobId}",
                         message.BulkJobId);
                     return;
                 }
 
-                // CRITICAL: Validate InvitationType to prevent processing farmer jobs
-                if (bulkJob.InvitationType == "FarmerInvite")
+                // CRITICAL: Validate InvitationType to prevent processing dealer jobs
+                if (bulkJob.InvitationType != "FarmerInvite")
                 {
                     _logger.LogError(
-                        "[DEALER_INVITATION_JOB_TYPE_MISMATCH] InvitationType mismatch - BulkJobId: {BulkJobId}, Expected: Invite/AutoCreate, Actual: {ActualType}",
+                        "[FARMER_INVITATION_JOB_TYPE_MISMATCH] InvitationType mismatch - BulkJobId: {BulkJobId}, Expected: FarmerInvite, Actual: {ActualType}",
                         message.BulkJobId, bulkJob.InvitationType);
                     return;
                 }
 
-                // 2. Send invitation command based on SendSms flag
-                Core.Utilities.Results.IDataResult<Entities.Dtos.DealerInvitationResponseDto> result;
-
-                if (bulkJob.SendSms)
+                // 2. Send invitation via CreateFarmerInvitationCommand
+                // NOTE: Channel and CustomMessage are bulk-only features not supported by CreateFarmerInvitationCommand
+                // The command always uses SMS with default template
+                var command = new CreateFarmerInvitationCommand
                 {
-                    // Use InviteDealerViaSmsCommand for SMS delivery
-                    var smsCommand = new InviteDealerViaSmsCommand
-                    {
-                        SponsorId = message.SponsorId,
-                        Email = message.Email,
-                        Phone = message.Phone,
-                        DealerName = message.DealerName,
-                        PackageTier = message.PackageTier,
-                        CodeCount = message.CodeCount
-                    };
+                    SponsorId = message.SponsorId,
+                    Phone = message.Phone,
+                    FarmerName = message.FarmerName,
+                    Email = message.Email,
+                    CodeCount = 1,  // Always 1 for farmer invitations
+                    PackageTier = message.PackageTier,
+                    Notes = message.Notes
+                };
 
-                    _logger.LogInformation(
-                        "[DEALER_INVITATION_SMS_SENDING] Sending invitation with SMS - Phone: {Phone}",
-                        message.Phone);
+                _logger.LogInformation(
+                    "[FARMER_INVITATION_SENDING] Sending invitation - Phone: {Phone}, Channel: {Channel}",
+                    message.Phone, message.Channel);
 
-                    result = await _mediator.Send(smsCommand);
-                }
-                else
-                {
-                    // Use CreateDealerInvitationCommand for invitation without SMS
-                    var command = new CreateDealerInvitationCommand
-                    {
-                        SponsorId = message.SponsorId,
-                        Email = message.Email,
-                        Phone = message.Phone,
-                        DealerName = message.DealerName,
-                        InvitationType = message.InvitationType,
-                        PackageTier = message.PackageTier,
-                        CodeCount = message.CodeCount,
-                        PurchaseId = null // We're using tier-based selection
-                    };
-
-                    result = await _mediator.Send(command);
-                }
+                var result = await _mediator.Send(command);
 
                 // 3. Atomically update bulk job progress (prevents race conditions)
                 bulkJob = await _bulkJobRepository.IncrementProgressAsync(message.BulkJobId, result.Success);
@@ -117,7 +93,7 @@ namespace PlantAnalysisWorkerService.Jobs
                 if (bulkJob == null)
                 {
                     _logger.LogWarning(
-                        "[DEALER_INVITATION_JOB_BULK_NOT_FOUND] BulkJob not found - BulkJobId: {BulkJobId}",
+                        "[FARMER_INVITATION_JOB_BULK_NOT_FOUND] BulkJob not found after increment - BulkJobId: {BulkJobId}",
                         message.BulkJobId);
                     return;
                 }
@@ -126,17 +102,17 @@ namespace PlantAnalysisWorkerService.Jobs
                 if (result.Success)
                 {
                     _logger.LogInformation(
-                        "[DEALER_INVITATION_JOB_SUCCESS] Invitation successful - Email: {Email}, InvitationId: {InvitationId}",
-                        message.Email, result.Data?.InvitationId);
+                        "[FARMER_INVITATION_JOB_SUCCESS] Invitation successful - Phone: {Phone}, InvitationToken: {Token}",
+                        message.Phone, result.Data?.InvitationToken);
                 }
                 else
                 {
                     _logger.LogWarning(
-                        "[DEALER_INVITATION_JOB_FAILED] Invitation failed - Email: {Email}, Error: {Error}",
-                        message.Email, result.Message);
+                        "[FARMER_INVITATION_JOB_FAILED] Invitation failed - Phone: {Phone}, Error: {Error}",
+                        message.Phone, result.Message);
                 }
 
-                // 3. Check if all invitations are complete and mark as done
+                // 4. Check if all invitations are complete and mark as done
                 bool isComplete = await _bulkJobRepository.CheckAndMarkCompleteAsync(message.BulkJobId);
 
                 if (isComplete)
@@ -145,22 +121,22 @@ namespace PlantAnalysisWorkerService.Jobs
                     bulkJob = await _bulkJobRepository.GetAsync(j => j.Id == message.BulkJobId);
 
                     _logger.LogInformation(
-                        "[DEALER_INVITATION_JOB_BULK_COMPLETED] BulkJob completed - BulkJobId: {BulkJobId}, Status: {Status}, Success: {Success}, Failed: {Failed}",
+                        "[FARMER_INVITATION_JOB_BULK_COMPLETED] BulkJob completed - BulkJobId: {BulkJobId}, Status: {Status}, Success: {Success}, Failed: {Failed}",
                         message.BulkJobId, bulkJob.Status, bulkJob.SuccessfulInvitations, bulkJob.FailedInvitations);
                 }
 
-                // 4. Send progress notification via HTTP to WebAPI (cross-process communication)
+                // 5. Send progress notification via HTTP to WebAPI (cross-process communication)
                 var progressDto = new BulkInvitationProgressDto
                 {
                     BulkJobId = bulkJob.Id,
                     SponsorId = bulkJob.SponsorId,
                     Status = bulkJob.Status,
-                    TotalDealers = bulkJob.TotalDealers,
-                    ProcessedDealers = bulkJob.ProcessedDealers,
+                    TotalDealers = bulkJob.TotalDealers,  // Note: Using TotalDealers for backward compatibility (represents total farmers for this job type)
+                    ProcessedDealers = bulkJob.ProcessedDealers,  // Note: Represents processed farmers
                     SuccessfulInvitations = bulkJob.SuccessfulInvitations,
                     FailedInvitations = bulkJob.FailedInvitations,
                     ProgressPercentage = Math.Round((decimal)bulkJob.ProcessedDealers / bulkJob.TotalDealers * 100, 2),
-                    LatestDealerEmail = message.Email,
+                    LatestDealerEmail = message.Phone,  // Note: Using Email field for phone (backward compatible DTO)
                     LatestDealerSuccess = result.Success,
                     LatestDealerError = result.Success ? null : result.Message,
                     LastUpdateTime = DateTime.Now
@@ -168,7 +144,7 @@ namespace PlantAnalysisWorkerService.Jobs
 
                 await SendProgressNotificationViaHttp(progressDto);
 
-                // 5. Send completion notification if job is done
+                // 6. Send completion notification if job is done
                 if (isComplete)
                 {
                     await SendCompletionNotificationViaHttp(
@@ -185,15 +161,15 @@ namespace PlantAnalysisWorkerService.Jobs
 
                 stopwatch.Stop();
                 _logger.LogInformation(
-                    "[DEALER_INVITATION_JOB_COMPLETED] Processing completed - Duration: {Duration}ms, Success: {Success}",
+                    "[FARMER_INVITATION_JOB_COMPLETED] Processing completed - Duration: {Duration}ms, Success: {Success}",
                     stopwatch.ElapsedMilliseconds, result.Success);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
                 _logger.LogError(ex,
-                    "[DEALER_INVITATION_JOB_ERROR] Error processing invitation - BulkJobId: {BulkJobId}, Email: {Email}, Duration: {Duration}ms",
-                    message.BulkJobId, message.Email, stopwatch.ElapsedMilliseconds);
+                    "[FARMER_INVITATION_JOB_ERROR] Error processing invitation - BulkJobId: {BulkJobId}, Phone: {Phone}, Duration: {Duration}ms",
+                    message.BulkJobId, message.Phone, stopwatch.ElapsedMilliseconds);
 
                 // Update bulk job with failure using atomic operations
                 try
@@ -203,7 +179,7 @@ namespace PlantAnalysisWorkerService.Jobs
                 }
                 catch (Exception innerEx)
                 {
-                    _logger.LogError(innerEx, "[DEALER_INVITATION_JOB_UPDATE_ERROR] Failed to update bulk job after error");
+                    _logger.LogError(innerEx, "[FARMER_INVITATION_JOB_UPDATE_ERROR] Failed to update bulk job after error");
                 }
 
                 throw; // Re-throw for Hangfire retry
@@ -245,7 +221,7 @@ namespace PlantAnalysisWorkerService.Jobs
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("⚠️ Failed to send progress notification - StatusCode: {StatusCode}, Error: {Error}", 
+                    _logger.LogWarning("⚠️ Failed to send progress notification - StatusCode: {StatusCode}, Error: {Error}",
                         response.StatusCode, errorContent);
                 }
             }
@@ -300,7 +276,7 @@ namespace PlantAnalysisWorkerService.Jobs
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("⚠️ Failed to send completion notification - StatusCode: {StatusCode}, Error: {Error}", 
+                    _logger.LogWarning("⚠️ Failed to send completion notification - StatusCode: {StatusCode}, Error: {Error}",
                         response.StatusCode, errorContent);
                 }
             }

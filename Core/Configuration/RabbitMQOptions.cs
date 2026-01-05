@@ -30,6 +30,7 @@ namespace Core.Configuration
 
         // Other queues
         public string DealerInvitationRequest { get; set; } = "dealer-invitation-requests";
+        public string FarmerInvitationRequest { get; set; } = "farmer-invitation-requests";
         public string FarmerCodeDistributionRequest { get; set; } = "farmer-code-distribution-requests";
         public string FarmerSubscriptionAssignmentRequest { get; set; } = "farmer-subscription-assignment-requests";
         public string Notification { get; set; } = "notifications";

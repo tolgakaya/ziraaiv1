@@ -99,8 +99,12 @@
 98,BulkDeactivateUsersCommand,,
 99,BulkCancelSubscriptionsCommand,,
 100,ExportStatisticsQuery,,
+101,GetSubscriptionDetailsQuery,Get Subscription Details,Query detailed subscription information with user and usage data
 102,BulkSendCodesCommand,,
 103,CreatePurchaseOnBehalfOfCommand,,
+104,ExtendSubscriptionCommand,Extend Subscription,Extend user subscription
+105,CancelSubscriptionCommand,Cancel Subscription,Cancel user subscription
+106,BulkCancelSubscriptionsCommand,Bulk Cancel Subscriptions,Cancel multiple subscriptions
 107,Admin,,
 108,admin.users.manage,,
 109,admin.subscriptions.manage,,
@@ -120,13 +124,20 @@
 123,GetSponsorImpactAnalyticsQueryHandler,Impact Analytics,View impact analytics for sponsors
 124,GetSponsorTemporalAnalyticsQueryHandler,Temporal Analytics,View temporal analytics for sponsors
 125,GetSponsorROIAnalyticsQueryHandler,ROI Analytics,View ROI analytics for sponsors
-101,GetSubscriptionDetailsQuery,Get Subscription Details,Query detailed subscription information with user and usage data
 126,GetPackageDistributionStatisticsQuery,Package Distribution Query,View package distribution analytics
 127,GetCodeAnalysisStatisticsQuery,Code Analysis Query,View code analysis statistics
 128,GetSponsorMessagingAnalyticsQuery,Messaging Analytics Query,View messaging analytics
 129,GetSponsorImpactAnalyticsQuery,Impact Analytics Query,View impact analytics
 130,GetSponsorTemporalAnalyticsQuery,Temporal Analytics Query,View temporal analytics
 131,GetSponsorROIAnalyticsQuery,ROI Analytics Query,View ROI analytics
+132,GetAllSponsorsQuery,Get All Sponsors,Query all users with Sponsor role (GroupId = 3)
+133,GetSponsorAnalysesAsAdminQuery,Admin Sponsor Analyses View,Admin olarak sponsor analizlerini görüntüleme
+134,GetSponsorAnalysisDetailAsAdminQuery,Admin Sponsor Analysis Detail View,Admin olarak sponsor analiz detayı görüntüleme
+135,GetSponsorMessagesAsAdminQuery,Admin Sponsor Messages View,Admin olarak sponsor mesajlarını görüntüleme
+136,GetNonSponsoredAnalysesQuery,Admin Non-Sponsored Analyses View,Admin olarak sponsorsuz analizleri görüntüleme
+137,GetNonSponsoredFarmerDetailQuery,Admin Non-Sponsored Farmer Detail,Admin olarak sponsorsuz çiftçi detayı görüntüleme
+138,GetSponsorshipComparisonAnalyticsQuery,Admin Sponsorship Comparison Analytics,Admin sponsor karşılaştırma analitiği görüntüleme
+139,SendMessageAsSponsorCommand,Admin Send Message As Sponsor,Admin olarak sponsor adına mesaj gönderme
 140,CreateDealerInvitationCommand,dealer.invite,Create dealer invitation (Invite/AutoCreate)
 141,ReclaimDealerCodesCommand,dealer.reclaim,Reclaim unused codes from dealer
 142,GetDealerPerformanceQuery,dealer.analytics,View dealer performance analytics
@@ -135,10 +146,6 @@
 145,SearchDealerByEmailQuery,dealer.search,Search dealer by email
 146,BulkDealerInvitationCommand,dealer.bulk-invite,Create bulk dealer invitations from Excel file
 147,GetSubscriptionDetailsQuery,,
-104,ExtendSubscriptionCommand,Extend Subscription,Extend user subscription
-105,CancelSubscriptionCommand,Cancel Subscription,Cancel user subscription
-106,BulkCancelSubscriptionsCommand,Bulk Cancel Subscriptions,Cancel multiple subscriptions
-132,GetAllSponsorsQuery,Get All Sponsors,Query all users with Sponsor role (GroupId = 3)
 148,GetSponsorDetailedReportQuery,,
 149,GetSponsorAnalysesAsAdminQuery,,
 150,GetSponsorAnalysisDetailAsAdminQuery,,
@@ -148,13 +155,6 @@
 154,GetNonSponsoredFarmerDetailQuery,,
 155,GetSponsorshipComparisonAnalyticsQuery,,
 156,GetBulkCodeDistributionJobHistoryQuery,,
-133,GetSponsorAnalysesAsAdminQuery,Admin Sponsor Analyses View,Admin olarak sponsor analizlerini görüntüleme
-134,GetSponsorAnalysisDetailAsAdminQuery,Admin Sponsor Analysis Detail View,Admin olarak sponsor analiz detayı görüntüleme
-135,GetSponsorMessagesAsAdminQuery,Admin Sponsor Messages View,Admin olarak sponsor mesajlarını görüntüleme
-136,GetNonSponsoredAnalysesQuery,Admin Non-Sponsored Analyses View,Admin olarak sponsorsuz analizleri görüntüleme
-137,GetNonSponsoredFarmerDetailQuery,Admin Non-Sponsored Farmer Detail,Admin olarak sponsorsuz çiftçi detayı görüntüleme
-138,GetSponsorshipComparisonAnalyticsQuery,Admin Sponsorship Comparison Analytics,Admin sponsor karşılaştırma analitiği görüntüleme
-139,SendMessageAsSponsorCommand,Admin Send Message As Sponsor,Admin olarak sponsor adına mesaj gönderme
 157,GetNonSponsoredAnalysisDetailQuery,,
 158,GetNonSponsoredAnalysisDetailQuery,Admin Non-Sponsored Analysis Detail View,Admin olarak sponsorsuz analiz detayı görüntüleme (farmer görünümü ile aynı)
 159,QueueBulkSubscriptionAssignmentCommand,Queue Bulk Subscription Assignment,Allows admin to upload Excel file and queue bulk subscription assignments for farmers
@@ -186,3 +186,10 @@
 186,VerifyPayment,payment.verify,Verify payment status after iyzico completion
 187,GetPaymentStatus,payment.status,Query payment transaction status by token
 188,ProcessPaymentWebhook,payment.webhook,Process iyzico payment webhook callbacks (internal use)
+189,CreateFarmerInvitationCommand,sponsor.farmer-invitations.create,Create farmer invitation with code reservation and SMS delivery
+190,AcceptFarmerInvitationCommand,farmer.invitations.accept,Accept farmer invitation with phone verification and code assignment
+191,GetFarmerInvitationsQuery,sponsor.farmer-invitations.list,Get list of farmer invitations for a sponsor with status filtering
+192,GetFarmerInvitationByTokenQuery,public.farmer-invitations.detail,Get farmer invitation details by token (public endpoint for unregistered users)
+193,GetPendingFarmerInvitationsByPhoneQuery,farmer.invitations.my-invitations,Get pending farmer invitations for authenticated farmer by phone
+194,BulkCreateFarmerInvitationsCommand,sponsor.farmer-invitations.bulk-create,Create bulk farmer invitations with code reservation and SMS/WhatsApp delivery (Excel upload)
+195,AdminBulkCreateFarmerInvitationsCommand,admin.farmer-invitations.bulk-create-on-behalf,Admin: Create bulk farmer invitations on behalf of sponsor with audit logging
