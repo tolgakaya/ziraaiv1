@@ -1,0 +1,6 @@
+Phone,FarmerName,Email,PackageTier,Notes
+05551234567,Ahmet Yılmaz,ahmet@example.com,M,İlk davet
+05559876543,Mehmet Demir,,S,Küçük üretici
++905556668899,Ayşe Kaya,ayse@email.com,L,Premium müşteri
+905553334455,Fatma Şahin,fatma.sahin@mail.com,,Tier belirtilmedi
+0 555 111 2233,Ali Yıldız,,XL,VIP çiftçi

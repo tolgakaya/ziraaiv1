@@ -35,9 +35,10 @@ namespace Business.Handlers.Sponsorship.Commands
             public string Phone { get; set; }
             public string FarmerName { get; set; }
             public string Email { get; set; }
-            public int CodeCount { get; set; }
             public string PackageTier { get; set; } // S, M, L, XL or null
             public string Notes { get; set; }
+
+            // CodeCount removed - always defaults to 1 per farmer invitation
         }
     }
 
@@ -107,11 +108,13 @@ namespace Business.Handlers.Sponsorship.Commands
 
                 foreach (var recipient in request.Recipients)
                 {
+                    const int codeCount = 1; // Always 1 code per farmer invitation
+
                     var sendResult = new FarmerInvitationSendResult
                     {
                         Phone = recipient.Phone,
                         FarmerName = recipient.FarmerName,
-                        CodeCount = recipient.CodeCount,
+                        CodeCount = codeCount,
                         PackageTier = recipient.PackageTier
                     };
 
@@ -131,20 +134,20 @@ namespace Business.Handlers.Sponsorship.Commands
                             }
                         }
 
-                        // 2. Get available codes
+                        // 2. Get available codes (always 1 code)
                         var codesToReserve = await GetCodesToReserveAsync(
                             request.SponsorId,
-                            recipient.CodeCount,
+                            codeCount,
                             recipient.PackageTier);
 
-                        if (codesToReserve.Count < recipient.CodeCount)
+                        if (codesToReserve.Count < codeCount)
                         {
                             var tierMessage = !string.IsNullOrEmpty(recipient.PackageTier)
                                 ? $" ({recipient.PackageTier} tier)"
                                 : "";
 
                             sendResult.Success = false;
-                            sendResult.ErrorMessage = $"Yetersiz kod{tierMessage}. Mevcut: {codesToReserve.Count}, İstenen: {recipient.CodeCount}";
+                            sendResult.ErrorMessage = $"Yetersiz kod{tierMessage}. Mevcut: {codesToReserve.Count}, İstenen: {codeCount}";
                             sendResult.DeliveryStatus = "Failed - Insufficient Codes";
                             results.Add(sendResult);
                             continue;
@@ -158,7 +161,7 @@ namespace Business.Handlers.Sponsorship.Commands
                             FarmerName = recipient.FarmerName,
                             Email = recipient.Email,
                             PackageTier = recipient.PackageTier?.ToUpper(),
-                            CodeCount = recipient.CodeCount,
+                            CodeCount = codeCount, // Always 1
                             Notes = recipient.Notes,
                             InvitationType = "Invite",
                             InvitationToken = Guid.NewGuid().ToString("N"),
@@ -201,7 +204,7 @@ namespace Business.Handlers.Sponsorship.Commands
                         var message = request.CustomMessage ?? smsTemplate
                             .Replace("{sponsorName}", sponsorCompanyName)
                             .Replace("{farmerName}", recipient.FarmerName ?? "Değerli Çiftçimiz")
-                            .Replace("{codeCount}", recipient.CodeCount.ToString())
+                            .Replace("{codeCount}", codeCount.ToString())
                             .Replace("{deepLink}", deepLink)
                             .Replace("{playStoreLink}", playStoreLink);
 
