@@ -173,7 +173,9 @@ namespace Business.Handlers.Sponsorship.Commands
                     var smsTemplate = await _configService.GetSmsTemplateAsync();
                     var smsMessage = smsTemplate
                         .Replace("{sponsorName}", sponsorCompanyName)
-                        .Replace("{invitationLink}", deepLink)
+                        .Replace("{farmerName}", invitation.FarmerName ?? "Değerli Çiftçimiz")
+                        .Replace("{codeCount}", invitation.CodeCount.ToString())
+                        .Replace("{deepLink}", deepLink)
                         .Replace("{playStoreLink}", playStoreLink)
                         .Replace("{expiryDays}", expiryDays.ToString());
 

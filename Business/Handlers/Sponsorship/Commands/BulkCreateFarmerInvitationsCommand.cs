@@ -200,13 +200,14 @@ namespace Business.Handlers.Sponsorship.Commands
                         // 5. Generate deep link
                         var deepLink = $"{baseUrl.TrimEnd('/')}/{invitation.InvitationToken}";
 
-                        // 6. Build message
+                        // 6. Build message using template from appsettings (unless custom message provided)
                         var message = request.CustomMessage ?? smsTemplate
                             .Replace("{sponsorName}", sponsorCompanyName)
                             .Replace("{farmerName}", recipient.FarmerName ?? "Değerli Çiftçimiz")
                             .Replace("{codeCount}", codeCount.ToString())
                             .Replace("{deepLink}", deepLink)
-                            .Replace("{playStoreLink}", playStoreLink);
+                            .Replace("{playStoreLink}", playStoreLink)
+                            .Replace("{expiryDays}", tokenExpiryDays.ToString());
 
                         // 7. Send SMS or WhatsApp
                         IResult messageSendResult;
