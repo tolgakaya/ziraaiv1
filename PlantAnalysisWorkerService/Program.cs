@@ -213,6 +213,7 @@ builder.Services.AddScoped<DataAccess.Abstract.IReferralTrackingRepository, Data
 builder.Services.AddScoped<DataAccess.Abstract.IReferralRewardRepository, DataAccess.Concrete.EntityFramework.ReferralRewardRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IReferralConfigurationRepository, DataAccess.Concrete.EntityFramework.ReferralConfigurationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IDealerInvitationRepository, DataAccess.Concrete.EntityFramework.DealerInvitationRepository>();
+builder.Services.AddScoped<DataAccess.Abstract.IFarmerInvitationRepository, DataAccess.Concrete.EntityFramework.FarmerInvitationRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkInvitationJobRepository, DataAccess.Concrete.EntityFramework.BulkInvitationJobRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkCodeDistributionJobRepository, DataAccess.Concrete.EntityFramework.BulkCodeDistributionJobRepository>();
 builder.Services.AddScoped<DataAccess.Abstract.IBulkSubscriptionAssignmentJobRepository, DataAccess.Concrete.EntityFramework.BulkSubscriptionAssignmentJobRepository>();
@@ -309,6 +310,9 @@ builder.Services.AddScoped<Business.Services.DealerInvitation.IDealerInvitationC
 // 🆕 Add DealerInvitation Notification Service (required by InviteDealerViaSmsCommand for SignalR notifications)
 builder.Services.AddScoped<Business.Services.Notification.IDealerInvitationNotificationService, Business.Services.Notification.DealerInvitationNotificationService>();
 
+// 🆕 Add FarmerInvitation Notification Service (required by CreateFarmerInvitationCommand)
+builder.Services.AddScoped<Business.Services.Notification.IFarmerInvitationNotificationService, Business.Services.Notification.FarmerInvitationNotificationService>();
+
 // 🆕 Add MediatR for CQRS (required by DealerInvitationJobService)
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Business.DependencyResolvers.AutofacBusinessModule).Assembly));
 
@@ -320,6 +324,10 @@ builder.Services.AddScoped<IPlantAnalysisJobService, PlantAnalysisJobService>();
 // 🆕 Add Dealer Invitation Worker and Job Service
 builder.Services.AddHostedService<DealerInvitationConsumerWorker>();
 builder.Services.AddScoped<IDealerInvitationJobService, DealerInvitationJobService>();
+
+// 🆕 Add Farmer Invitation Worker and Job Service
+builder.Services.AddHostedService<FarmerInvitationConsumerWorker>();
+builder.Services.AddScoped<IFarmerInvitationJobService, FarmerInvitationJobService>();
 
 // 🆕 Add Farmer Code Distribution Worker and Job Service
 builder.Services.AddHostedService<FarmerCodeDistributionConsumerWorker>();

@@ -50,6 +50,7 @@ namespace WebAPI.Controllers
         private readonly IBulkCodeDistributionService _bulkCodeDistributionService;
         private readonly IBulkCodeDistributionJobRepository _bulkJobRepository;
         private readonly IAdminAuditService _adminAuditService;
+        private readonly IBulkFarmerInvitationService _bulkFarmerInvitationService;
 
         public SponsorshipController(
             ILogger<SponsorshipController> logger,
@@ -58,7 +59,8 @@ namespace WebAPI.Controllers
             IConfiguration configuration,
             IBulkCodeDistributionService bulkCodeDistributionService,
             IBulkCodeDistributionJobRepository bulkJobRepository,
-            IAdminAuditService adminAuditService)
+            IAdminAuditService adminAuditService,
+            IBulkFarmerInvitationService bulkFarmerInvitationService)
         {
             _logger = logger;
             _tierMappingService = tierMappingService;
@@ -67,6 +69,7 @@ namespace WebAPI.Controllers
             _bulkCodeDistributionService = bulkCodeDistributionService;
             _bulkJobRepository = bulkJobRepository;
             _adminAuditService = adminAuditService;
+            _bulkFarmerInvitationService = bulkFarmerInvitationService;
         }
         /// <summary>
         /// Get subscription tiers for sponsor package purchase selection
@@ -2963,50 +2966,64 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
-        /// Bulk create farmer invitations (Excel upload)
-        /// Same pattern as send-link endpoint for sponsorship codes
-        /// Allows sponsors to upload Excel and send multiple invitations at once
+        /// Bulk create farmer invitations via Excel upload with asynchronous RabbitMQ processing
+        /// Uploads Excel file, parses farmer data, reserves codes, and queues for async delivery
+        /// Uses same pattern as dealer bulk invitation system
         /// </summary>
-        /// <param name="command">Bulk invitation details with recipients list</param>
-        /// <returns>Bulk send results with success/failure breakdown</returns>
+        /// <param name="excelFile">Excel file with farmer data (Phone required; FarmerName, Email, PackageTier, Notes optional)</param>
+        /// <param name="channel">Delivery channel: SMS or WhatsApp</param>
+        /// <param name="customMessage">Optional custom message template to override default</param>
+        /// <returns>Bulk invitation job details with queued count</returns>
         [Authorize(Roles = "Sponsor,Admin")]
         [HttpPost("farmer/invitations/bulk")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkFarmerInvitationResult>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkInvitationJobDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> BulkCreateFarmerInvitations([FromBody] BulkCreateFarmerInvitationsCommand command)
+        public async Task<IActionResult> BulkCreateFarmerInvitations(
+            [FromForm] IFormFile excelFile,
+            [FromForm] string channel = "SMS",
+            [FromForm] string? customMessage = null)
         {
             try
             {
-                _logger.LogInformation("Bulk farmer invitation request received");
+                _logger.LogInformation("📤 Bulk farmer invitation request received via Excel upload");
 
                 var userId = GetUserId();
                 if (!userId.HasValue)
                 {
-                    _logger.LogWarning("User ID not found in claims");
+                    _logger.LogWarning("⚠️ User ID not found in claims");
                     return Unauthorized();
                 }
 
-                command.SponsorId = userId.Value;
-                _logger.LogInformation("Creating {Count} farmer invitations for sponsor {SponsorId} via {Channel}",
-                    command.Recipients?.Count ?? 0, command.SponsorId, command.Channel);
+                if (excelFile == null || excelFile.Length == 0)
+                {
+                    _logger.LogWarning("⚠️ No Excel file uploaded");
+                    return BadRequest(new ErrorResult("Excel dosyası zorunludur"));
+                }
 
-                var result = await Mediator.Send(command);
+                _logger.LogInformation("📊 Processing Excel file: {FileName} ({Size} bytes) for sponsor {SponsorId} via {Channel}",
+                    excelFile.FileName, excelFile.Length, userId.Value, channel);
+
+                var result = await _bulkFarmerInvitationService.QueueBulkInvitationsAsync(
+                    excelFile,
+                    userId.Value,
+                    channel,
+                    customMessage);
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("Farmer invitations sent successfully. Success: {Success}, Failed: {Failed}",
-                        result.Data?.SuccessCount ?? 0, result.Data?.FailedCount ?? 0);
+                    _logger.LogInformation("✅ Farmer invitations queued successfully. JobId: {JobId}, Count: {Count}",
+                        result.Data?.JobId, result.Data?.TotalDealers);
                     return Ok(result);
                 }
 
-                _logger.LogWarning("Failed to send farmer invitations: {Message}", result.Message);
+                _logger.LogWarning("❌ Failed to queue farmer invitations: {Message}", result.Message);
                 return BadRequest(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending bulk farmer invitations for sponsor {UserId}", GetUserId());
-                return StatusCode(500, new ErrorResult("Toplu davet gönderimi sırasında hata oluştu"));
+                _logger.LogError(ex, "💥 Error processing bulk farmer invitations for sponsor {UserId}", GetUserId());
+                return StatusCode(500, new ErrorResult("Toplu davet işlemi sırasında hata oluştu"));
             }
         }
 
