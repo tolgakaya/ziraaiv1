@@ -1,8 +1,10 @@
 # Farmer Invitations API - Complete Reference Guide
 
-**Last Updated**: 2026-01-02
+**Last Updated**: 2026-01-05
 **API Version**: 1.0
 **Environment**: Staging (ziraai-api-sit.up.railway.app)
+
+> **🆕 Update**: Real-time SignalR notifications now available for farmer invitations! See [SignalR Integration](#signalr-real-time-notifications) section below.
 
 ---
 
@@ -16,6 +18,7 @@
 6. [Mobile Integration Examples](#mobile-integration-examples)
 7. [Testing Guide](#testing-guide)
 8. [Comparison with Dealer Invitations](#comparison-with-dealer-invitations)
+   - [SignalR Real-time Notifications](#signalr-real-time-notifications)
 
 ---
 
@@ -1331,7 +1334,9 @@ curl -X POST "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-in
 
 | Aspect | Farmer Invitations | Dealer Invitations |
 |--------|-------------------|-------------------|
-| **Real-time Notifications** | ❌ No SignalR (REST-only) | ✅ Yes - SignalR Hub |
+| **Real-time Notifications** | ✅ Yes - SignalR NotificationHub | ✅ Yes - SignalR NotificationHub |
+| **SignalR Event** | `NewFarmerInvitation` | `NewDealerInvitation` |
+| **SignalR Targeting** | Phone groups only | Email + Phone groups |
 | **Phone Normalization Format** | `05551234567` (0 prefix) | `905556866386` (90 prefix) |
 | **Token Prefix** | `FARMER-` | `DEALER-` |
 | **Target Audience** | Farmers (code recipients) | Dealers (code distributors) |
@@ -1340,18 +1345,36 @@ curl -X POST "https://ziraai-api-sit.up.railway.app/api/v1/sponsorship/farmer-in
 | **Response on Accept** | Returns actual codes + tier breakdown | Returns success status |
 | **Tier Support** | ✅ Yes - S, M, L, XL filtering | ✅ Yes - S, M, L, XL filtering |
 
-### Why No SignalR for Farmer Invitations?
+### SignalR Real-time Notifications
 
-**Dealer Invitations:**
-- Dealers receive invitations frequently
-- Need real-time notifications for immediate response
-- Multiple dealers may share email/phone (business accounts)
+Both farmer and dealer invitations now support real-time SignalR notifications for instant delivery.
 
-**Farmer Invitations:**
-- Farmers receive invitations less frequently
-- Pull-based model sufficient (check on app open)
-- Simpler implementation for mobile team
-- Phone verification ensures 1-to-1 mapping
+**Implementation Details:**
+- **Hub**: NotificationHub (`/hubs/notification`)
+- **Farmer Event**: `NewFarmerInvitation` (phone group targeting)
+- **Dealer Event**: `NewDealerInvitation` (email + phone group targeting)
+- **Authentication**: JWT Bearer token required
+- **Group Joining**: Automatic on connection based on phone claim
+
+**Farmer Invitation SignalR Flow:**
+1. Sponsor creates farmer invitation via API
+2. Backend sends `NewFarmerInvitation` event to `phone_{normalizedPhone}` group
+3. Farmer's mobile app (if connected) receives real-time notification
+4. Farmer can immediately view and accept invitation
+
+**Benefits:**
+- ✅ Instant notification delivery without polling
+- ✅ Better user experience (no app refresh needed)
+- ✅ Consistent with dealer invitation pattern
+- ✅ Mobile app receives invitation even if in background
+
+**Integration Guide:**
+See [SignalR Mobile Integration Guide](../SIGNALR_MOBILE_INTEGRATION_COMPLETE.md) for complete implementation details including:
+- Connection setup
+- Event handling
+- Phone normalization
+- Error handling
+- Testing procedures
 
 ---
 
