@@ -174,7 +174,6 @@ namespace Business.Handlers.Sponsorship.Commands
                     var smsMessage = smsTemplate
                         .Replace("{sponsorName}", sponsorCompanyName)
                         .Replace("{farmerName}", invitation.FarmerName ?? "Değerli Çiftçimiz")
-                        .Replace("{codeCount}", invitation.CodeCount.ToString())
                         .Replace("{deepLink}", deepLink)
                         .Replace("{playStoreLink}", playStoreLink)
                         .Replace("{expiryDays}", expiryDays.ToString());

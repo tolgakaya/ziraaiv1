@@ -68,9 +68,9 @@ namespace Business.Services.FarmerInvitation
                 return await Task.FromResult(configValue);
             }
 
-            // Default template
+            // Default template (Note: codeCount removed - always 1 per farmer invitation)
             const string defaultTemplate = "🎁 {sponsorName} Sponsorluk Daveti!\n\n" +
-                                          "{codeCount} adet analiz kodunuz hazır.\n\n" +
+                                          "Analiz kodunuz hazır.\n\n" +
                                           "Hemen kabul etmek için tıklayın:\n{deepLink}\n\n" +
                                           "Veya uygulamayı indirin:\n{playStoreLink}";
 

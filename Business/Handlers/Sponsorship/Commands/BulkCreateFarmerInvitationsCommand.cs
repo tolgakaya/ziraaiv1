@@ -204,7 +204,6 @@ namespace Business.Handlers.Sponsorship.Commands
                         var message = request.CustomMessage ?? smsTemplate
                             .Replace("{sponsorName}", sponsorCompanyName)
                             .Replace("{farmerName}", recipient.FarmerName ?? "Değerli Çiftçimiz")
-                            .Replace("{codeCount}", codeCount.ToString())
                             .Replace("{deepLink}", deepLink)
                             .Replace("{playStoreLink}", playStoreLink)
                             .Replace("{expiryDays}", tokenExpiryDays.ToString());
