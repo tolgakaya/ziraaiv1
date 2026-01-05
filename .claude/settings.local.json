@@ -25,7 +25,11 @@
       "Bash(\"\"LinkSentDate\"\" = {invitation.LinkSentDate ?? now},)",
       "Bash(\"\"DistributionDate\"\" = {now},)",
       "Bash(\"\"DistributionChannel\"\" = {\"FarmerInvitation\"},)",
-      "Bash(\"\"DistributedTo\"\" = {request.CurrentUserPhone})"
+      "Bash(\"\"DistributedTo\"\" = {request.CurrentUserPhone})",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": [],

@@ -203,7 +203,6 @@ namespace Business.Handlers.Sponsorship.Commands
                         // 6. Build message using template from appsettings (unless custom message provided)
                         var message = request.CustomMessage ?? smsTemplate
                             .Replace("{sponsorName}", sponsorCompanyName)
-                            .Replace("{farmerName}", recipient.FarmerName ?? "Değerli Çiftçimiz")
                             .Replace("{playStoreLink}", playStoreLink)
                             .Replace("{expiryDays}", tokenExpiryDays.ToString());
 
