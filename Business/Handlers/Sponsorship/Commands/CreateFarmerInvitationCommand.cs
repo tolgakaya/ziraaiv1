@@ -176,6 +176,9 @@ namespace Business.Handlers.Sponsorship.Commands
                         .Replace("{playStoreLink}", playStoreLink)
                         .Replace("{expiryDays}", expiryDays.ToString());
 
+                    _logger.LogInformation("📱 Sending SMS to {Phone} with message: {Message}",
+                        invitation.Phone, smsMessage);
+
                     // 9. Send SMS
                     var smsService = _messagingFactory.GetSmsService();
                     var sendResult = await smsService.SendSmsAsync(invitation.Phone, smsMessage);

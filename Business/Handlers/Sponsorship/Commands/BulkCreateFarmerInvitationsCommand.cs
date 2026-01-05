@@ -206,6 +206,9 @@ namespace Business.Handlers.Sponsorship.Commands
                             .Replace("{playStoreLink}", playStoreLink)
                             .Replace("{expiryDays}", tokenExpiryDays.ToString());
 
+                        _logger.LogInformation("📱 Sending {Channel} to {Phone} with message: {Message}",
+                            request.Channel, invitation.Phone, message);
+
                         // 7. Send SMS or WhatsApp
                         IResult messageSendResult;
                         if (request.Channel.ToLower() == "whatsapp")
