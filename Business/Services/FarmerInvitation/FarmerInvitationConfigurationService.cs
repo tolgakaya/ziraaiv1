@@ -68,11 +68,10 @@ namespace Business.Services.FarmerInvitation
                 return await Task.FromResult(configValue);
             }
 
-            // Default template (Note: codeCount removed - always 1 per farmer invitation)
+            // Default template (Note: codeCount and deepLink removed - deepLink not needed in SMS)
             const string defaultTemplate = "🎁 {sponsorName} Sponsorluk Daveti!\n\n" +
                                           "Analiz kodunuz hazır.\n\n" +
-                                          "Hemen kabul etmek için tıklayın:\n{deepLink}\n\n" +
-                                          "Veya uygulamayı indirin:\n{playStoreLink}";
+                                          "Uygulamayı indirin ve davetiyenizi görüntüleyin:\n{playStoreLink}";
 
             _logger.LogDebug("Using default SMS template");
             return await Task.FromResult(defaultTemplate);
