@@ -193,7 +193,10 @@ namespace Business.Handlers.Sponsorship.Queries
                         .ToList();
 
                     // Calculate overall statistics
-                    var smsDistributions = allCodes.Count(c => c.DistributionChannel == "SMS");
+                    // Include FarmerInvitation channel in SMS count (farmer invitations are sent via SMS)
+                    var smsDistributions = allCodes.Count(c =>
+                        c.DistributionChannel == "SMS" ||
+                        c.DistributionChannel == "FarmerInvitation");
                     var whatsAppDistributions = allCodes.Count(c => c.DistributionChannel == "WhatsApp");
                     var totalUsed = allCodes.Count(c => c.IsUsed);
                     var overallRedemptionRate = sentCodes > 0
