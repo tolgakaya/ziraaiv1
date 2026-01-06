@@ -4,6 +4,7 @@ using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
+using Core.Utilities.Helpers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
@@ -121,7 +122,7 @@ namespace Business.Handlers.Sponsorship.Commands
                     var invitation = new FarmerInvitation
                     {
                         SponsorId = request.SponsorId,
-                        Phone = FormatPhoneNumber(request.Phone),
+                        Phone = PhoneNumberHelper.NormalizePhoneNumber(request.Phone),
                         FarmerName = request.FarmerName,
                         Email = request.Email,
                         PackageTier = request.PackageTier?.ToUpper(), // Store tier filter
@@ -294,25 +295,7 @@ namespace Business.Handlers.Sponsorship.Commands
                 }
             }
 
-            private string FormatPhoneNumber(string phone)
-            {
-                // Remove all non-numeric characters
-                var cleaned = new string(phone.Where(char.IsDigit).ToArray());
-
-                // Add Turkey country code if not present
-                if (!cleaned.StartsWith("90") && cleaned.Length == 10)
-                {
-                    cleaned = "90" + cleaned;
-                }
-
-                // Add + prefix
-                if (!cleaned.StartsWith("+"))
-                {
-                    cleaned = "+" + cleaned;
-                }
-
-                return cleaned;
-            }
+            // Removed - now using PhoneNumberHelper.NormalizePhoneNumber() for consistency
 
             /// <summary>
             /// Intelligent code selection algorithm for farmer invitations.
