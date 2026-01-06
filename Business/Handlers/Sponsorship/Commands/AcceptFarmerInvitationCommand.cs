@@ -1,6 +1,7 @@
 using Business.Services.Sponsorship;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -27,17 +28,20 @@ namespace Business.Handlers.Sponsorship.Commands
             private readonly ISponsorshipCodeRepository _codeRepository;
             private readonly ISponsorshipService _sponsorshipService;
             private readonly ILogger<AcceptFarmerInvitationCommandHandler> _logger;
+            private readonly ICacheManager _cacheManager;
 
             public AcceptFarmerInvitationCommandHandler(
                 IFarmerInvitationRepository invitationRepository,
                 ISponsorshipCodeRepository codeRepository,
                 ISponsorshipService sponsorshipService,
-                ILogger<AcceptFarmerInvitationCommandHandler> logger)
+                ILogger<AcceptFarmerInvitationCommandHandler> logger,
+                ICacheManager cacheManager)
             {
                 _invitationRepository = invitationRepository;
                 _codeRepository = codeRepository;
                 _sponsorshipService = sponsorshipService;
                 _logger = logger;
+                _cacheManager = cacheManager;
             }
 
             [CacheRemoveAspect("Get")]
@@ -145,24 +149,12 @@ namespace Business.Handlers.Sponsorship.Commands
                     {
                         _logger.LogInformation("🔄 Redeeming code {Code} for user {UserId}", code.Code, request.CurrentUserId);
 
-                        // STEP 1: Set ALL tracking fields BEFORE redemption (using parameterized SQL via FormattableString)
-                        // Matching fields set in SendSponsorshipLinkCommand and BulkSendCodesCommand for consistency
-                        // NOTE: Execute() requires FormattableString for automatic parameterization
-                        var linkSentDate = invitation.LinkSentDate ?? now;
-                        var farmerName = invitation.FarmerName ?? string.Empty;
-                        var distributedTo = $"{farmerName} ({request.CurrentUserPhone})";
-
+                        // STEP 1: Link code to farmer invitation
+                        // Distribution and link tracking fields were already set during invitation send (CreateFarmerInvitationCommand)
+                        // We only need to set the FarmerInvitationId to link the code to this specific acceptance
                         await _codeRepository.Execute(
                             $@"UPDATE ""SponsorshipCodes""
-                               SET ""FarmerInvitationId"" = {invitation.Id},
-                                   ""RecipientPhone"" = {request.CurrentUserPhone},
-                                   ""RecipientName"" = {farmerName},
-                                   ""LinkSentDate"" = {linkSentDate},
-                                   ""LinkSentVia"" = 'FarmerInvitation',
-                                   ""LinkDelivered"" = true,
-                                   ""DistributionDate"" = {now},
-                                   ""DistributionChannel"" = 'FarmerInvitation',
-                                   ""DistributedTo"" = {distributedTo}
+                               SET ""FarmerInvitationId"" = {invitation.Id}
                                WHERE ""Code"" = {code.Code}");
 
                         // STEP 2: Use existing redemption flow - handles subscription creation, marking as used, etc.
@@ -204,6 +196,12 @@ namespace Business.Handlers.Sponsorship.Commands
 
                     _logger.LogInformation("✅ Farmer invitation {InvitationId} accepted by user {UserId}",
                         invitation.Id, request.CurrentUserId);
+
+                    // Invalidate sponsor dashboard cache after successful acceptance
+                    var cacheKey = $"SponsorDashboard:{invitation.SponsorId}";
+                    _cacheManager.Remove(cacheKey);
+                    _logger.LogInformation("[DashboardCache] 🗑️ Invalidated cache for sponsor {SponsorId} after farmer invitation acceptance",
+                        invitation.SponsorId);
 
                     // 8. Build response with actual sponsorship codes and subscription info
                     var codesByTier = codesToAssign
