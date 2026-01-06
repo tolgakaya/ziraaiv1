@@ -128,12 +128,22 @@ namespace Business.Handlers.Sponsorship.Queries
                             ? (decimal)tierSentCodes / tierTotalCodes * 100
                             : 0;
 
-                        // Count unique farmers for this tier
-                        var uniqueFarmers = tierCodes
+                        // Count unique farmers for this tier (both sent and redeemed)
+                        // Count farmers who have received codes (RecipientPhone) OR redeemed them (UsedByUserId)
+                        var uniqueFarmerPhones = tierCodes
+                            .Where(c => !string.IsNullOrEmpty(c.RecipientPhone))
+                            .Select(c => c.RecipientPhone)
+                            .Distinct()
+                            .Count();
+
+                        var uniqueFarmerIds = tierCodes
                             .Where(c => c.UsedByUserId.HasValue)
                             .Select(c => c.UsedByUserId.Value)
                             .Distinct()
                             .Count();
+
+                        // Use the higher count (some farmers might have multiple codes)
+                        var uniqueFarmers = Math.Max(uniqueFarmerPhones, uniqueFarmerIds);
 
                         // Count analyses for this tier - SIMPLIFIED using SponsorCompanyId + subscription IDs
                         var tierSubscriptionIds = tierCodes
@@ -200,12 +210,22 @@ namespace Business.Handlers.Sponsorship.Queries
                         ? (decimal)redemptionTimes.Average()
                         : 0;
 
-                    // Total unique farmers
-                    var totalUniqueFarmers = allCodes
+                    // Total unique farmers (both sent and redeemed)
+                    // Count farmers who have received codes (RecipientPhone) OR redeemed them (UsedByUserId)
+                    var totalUniqueFarmerPhones = allCodes
+                        .Where(c => !string.IsNullOrEmpty(c.RecipientPhone))
+                        .Select(c => c.RecipientPhone)
+                        .Distinct()
+                        .Count();
+
+                    var totalUniqueFarmerIds = allCodes
                         .Where(c => c.UsedByUserId.HasValue)
                         .Select(c => c.UsedByUserId.Value)
                         .Distinct()
                         .Count();
+
+                    // Use the higher count (some farmers might have multiple codes)
+                    var totalUniqueFarmers = Math.Max(totalUniqueFarmerPhones, totalUniqueFarmerIds);
 
                     // Last purchase and distribution dates
                     var lastPurchaseDate = allPurchases.Any()
