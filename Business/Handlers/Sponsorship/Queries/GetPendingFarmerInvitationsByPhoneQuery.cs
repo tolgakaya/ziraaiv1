@@ -6,6 +6,7 @@ using Business.BusinessAspects;
 using Core.Aspects.Autofac.Logging;
 using Core.Aspects.Autofac.Performance;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
+using Core.Utilities.Helpers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Dtos;
@@ -41,18 +42,16 @@ namespace Business.Handlers.Sponsorship.Queries
         [LogAspect(typeof(FileLogger))]
         public async Task<IDataResult<List<FarmerInvitationListDto>>> Handle(GetPendingFarmerInvitationsByPhoneQuery request, CancellationToken cancellationToken)
         {
-            // Normalize phone number (handle Turkish format)
-            var normalizedPhone = NormalizePhoneNumber(request.Phone);
+            // Normalize phone number using centralized helper (always returns +90XXXXXXXXXX format)
+            var normalizedPhone = PhoneNumberHelper.NormalizePhoneNumber(request.Phone);
 
-            // Generate alternative format for matching (both +90 and 0 prefixes)
-            var alternativePhone = GetAlternativePhoneFormat(normalizedPhone);
+            _logger.LogInformation("[FARMER_INV] Original: {Original}, Normalized: {Normalized}",
+                request.Phone, normalizedPhone);
 
-            _logger.LogInformation("[FARMER_INV] Original: {Original}, Normalized: {Normalized}, Alternative: {Alternative}",
-                request.Phone, normalizedPhone, alternativePhone);
-
-            // Get all pending invitations for this phone number (check both formats)
+            // Get all pending invitations for this phone number
+            // All invitations should now use the same normalized format (+90XXXXXXXXXX)
             var invitations = await _farmerInvitationRepository.GetListAsync(i =>
-                (i.Phone == normalizedPhone || i.Phone == alternativePhone) &&
+                i.Phone == normalizedPhone &&
                 i.Status == "Pending");
 
             _logger.LogInformation("[FARMER_INV] Found {Count} pending invitations", invitations?.Count() ?? 0);
@@ -99,50 +98,7 @@ namespace Business.Handlers.Sponsorship.Queries
             );
         }
 
-        /// <summary>
-        /// Normalize phone number to handle Turkish format (+90 vs 0 prefix)
-        /// </summary>
-        private string NormalizePhoneNumber(string phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-                return phone;
-
-            phone = phone.Trim().Replace(" ", "").Replace("-", "");
-
-            // Convert +90 to 0 prefix (Turkish mobile format)
-            if (phone.StartsWith("+90"))
-            {
-                phone = "0" + phone.Substring(3);
-            }
-            // Remove leading 90 if present (ensure consistent format)
-            else if (phone.StartsWith("90") && phone.Length == 12)
-            {
-                phone = "0" + phone.Substring(2);
-            }
-
-            return phone;
-        }
-
-        /// <summary>
-        /// Get alternative phone format for matching (handles both +90 and 0 prefix)
-        /// </summary>
-        private string GetAlternativePhoneFormat(string phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-                return phone;
-
-            // If phone starts with 0, return +90 version
-            if (phone.StartsWith("0") && phone.Length == 11)
-            {
-                return "+90" + phone.Substring(1);
-            }
-            // If phone starts with +90, return 0 version
-            else if (phone.StartsWith("+90") && phone.Length == 13)
-            {
-                return "0" + phone.Substring(3);
-            }
-
-            return phone;
-        }
+        // Removed - now using PhoneNumberHelper.NormalizePhoneNumber() for consistency
+        // All phone numbers in the system now use the +90XXXXXXXXXX format
     }
 }

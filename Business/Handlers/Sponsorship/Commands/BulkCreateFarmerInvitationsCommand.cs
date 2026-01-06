@@ -10,6 +10,7 @@ using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
 using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
+using Core.Utilities.Helpers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
@@ -161,7 +162,7 @@ namespace Business.Handlers.Sponsorship.Commands
                         var invitation = new FarmerInvitation
                         {
                             SponsorId = request.SponsorId,
-                            Phone = FormatPhoneNumber(recipient.Phone),
+                            Phone = PhoneNumberHelper.NormalizePhoneNumber(recipient.Phone),
                             FarmerName = recipient.FarmerName,
                             Email = recipient.Email,
                             PackageTier = recipient.PackageTier?.ToUpper(),
@@ -344,30 +345,7 @@ namespace Business.Handlers.Sponsorship.Commands
             }
         }
 
-        private string FormatPhoneNumber(string phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone))
-                return phone;
-
-            // Remove all non-numeric characters
-            var cleaned = new string(phone.Where(char.IsDigit).ToArray());
-
-            // Normalize to 0XXXXXXXXX format (Turkish mobile)
-            if (cleaned.StartsWith("+90"))
-            {
-                cleaned = "0" + cleaned.Substring(3);
-            }
-            else if (cleaned.StartsWith("90") && cleaned.Length == 12)
-            {
-                cleaned = "0" + cleaned.Substring(2);
-            }
-            else if (!cleaned.StartsWith("0") && cleaned.Length == 10)
-            {
-                cleaned = "0" + cleaned;
-            }
-
-            return cleaned;
-        }
+        // Removed - now using PhoneNumberHelper.NormalizePhoneNumber() for consistency
 
         private async Task<List<SponsorshipCode>> GetCodesToReserveAsync(
             int sponsorId,
