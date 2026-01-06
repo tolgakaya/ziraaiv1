@@ -8,6 +8,7 @@ using Business.Services.Messaging.Factories;
 using Business.Services.FarmerInvitation;
 using Core.Aspects.Autofac.Caching;
 using Core.Aspects.Autofac.Logging;
+using Core.CrossCuttingConcerns.Caching;
 using Core.CrossCuttingConcerns.Logging.Serilog.Loggers;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
@@ -53,6 +54,7 @@ namespace Business.Handlers.Sponsorship.Commands
         private readonly IConfiguration _configuration;
         private readonly ILogger<BulkCreateFarmerInvitationsCommandHandler> _logger;
         private readonly Business.Services.Notification.IFarmerInvitationNotificationService _notificationService;
+        private readonly ICacheManager _cacheManager;
 
         public BulkCreateFarmerInvitationsCommandHandler(
             IFarmerInvitationRepository invitationRepository,
@@ -63,7 +65,8 @@ namespace Business.Handlers.Sponsorship.Commands
             IFarmerInvitationConfigurationService configService,
             IConfiguration configuration,
             ILogger<BulkCreateFarmerInvitationsCommandHandler> logger,
-            Business.Services.Notification.IFarmerInvitationNotificationService notificationService)
+            Business.Services.Notification.IFarmerInvitationNotificationService notificationService,
+            ICacheManager cacheManager)
         {
             _invitationRepository = invitationRepository;
             _codeRepository = codeRepository;
@@ -74,6 +77,7 @@ namespace Business.Handlers.Sponsorship.Commands
             _configuration = configuration;
             _logger = logger;
             _notificationService = notificationService;
+            _cacheManager = cacheManager;
         }
 
         [SecuredOperation(Priority = 1)]
@@ -188,11 +192,31 @@ namespace Business.Handlers.Sponsorship.Commands
                             _logger.LogWarning(notificationEx, "⚠️ Failed to send SignalR notification for farmer invitation {InvitationId}", invitation.Id);
                         }
 
-                        // 4. Reserve codes
+                        // 4. Reserve codes AND set distribution tracking
+                        // Distribution tracking is set NOW (at send time) to make codes appear as "sent" in dashboard
+                        // Link tracking fields will be updated after SMS is sent
+                        var codeReservationTime = DateTime.Now;
                         foreach (var code in codesToReserve)
                         {
+                            // Reservation tracking
                             code.ReservedForFarmerInvitationId = invitation.Id;
-                            code.ReservedForFarmerAt = DateTime.Now;
+                            code.ReservedForFarmerAt = codeReservationTime;
+
+                            // Distribution tracking (for dashboard statistics)
+                            // Dashboard counts codes as "sent" based on DistributionDate.HasValue
+                            code.RecipientPhone = invitation.Phone;
+                            code.RecipientName = invitation.FarmerName;
+                            code.DistributionChannel = "FarmerInvitation";
+                            code.DistributionDate = codeReservationTime;  // ← CRITICAL: Makes code count as "sent" in dashboard
+                            code.DistributedTo = string.IsNullOrEmpty(invitation.FarmerName)
+                                ? invitation.Phone
+                                : $"{invitation.FarmerName} ({invitation.Phone})";
+
+                            // Link tracking fields (will be updated after SMS sent)
+                            code.LinkSentVia = null;
+                            code.LinkSentDate = null;
+                            code.LinkDelivered = false;
+
                             _codeRepository.Update(code);
                         }
                         await _codeRepository.SaveChangesAsync();
@@ -225,11 +249,22 @@ namespace Business.Handlers.Sponsorship.Commands
                             messageSendResult = await smsService.SendSmsAsync(invitation.Phone, message);
                         }
 
-                        // 8. Update invitation with send status
-                        invitation.LinkSentDate = DateTime.Now;
+                        // 8. Update link tracking for both invitation AND reserved codes
+                        var linkSentTime = DateTime.Now;
+                        invitation.LinkSentDate = linkSentTime;
                         invitation.LinkSentVia = request.Channel;
                         invitation.LinkDelivered = messageSendResult.Success;
                         await _invitationRepository.SaveChangesAsync();
+
+                        // Update codes with link tracking
+                        foreach (var code in codesToReserve)
+                        {
+                            code.LinkSentDate = linkSentTime;
+                            code.LinkSentVia = request.Channel;
+                            code.LinkDelivered = messageSendResult.Success;
+                            _codeRepository.Update(code);
+                        }
+                        await _codeRepository.SaveChangesAsync();
 
                         // 9. Build result
                         if (messageSendResult.Success)
@@ -280,6 +315,15 @@ namespace Business.Handlers.Sponsorship.Commands
 
                 _logger.LogInformation("📧 Bulk farmer invitations completed. Success: {Success}, Failed: {Failed}",
                     bulkResult.SuccessCount, bulkResult.FailedCount);
+
+                // Invalidate sponsor dashboard cache after successful invitations
+                if (bulkResult.SuccessCount > 0)
+                {
+                    var cacheKey = $"SponsorDashboard:{request.SponsorId}";
+                    _cacheManager.Remove(cacheKey);
+                    _logger.LogInformation("[DashboardCache] 🗑️ Invalidated cache for sponsor {SponsorId} after {Count} farmer invitations",
+                        request.SponsorId, bulkResult.SuccessCount);
+                }
 
                 return new SuccessDataResult<BulkFarmerInvitationResult>(bulkResult,
                     $"📱 {bulkResult.SuccessCount} davet başarıyla gönderildi via {request.Channel}");
