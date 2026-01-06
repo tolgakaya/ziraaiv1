@@ -196,8 +196,15 @@ namespace Business.Handlers.Sponsorship.Commands
                         // Distribution tracking is set NOW (at send time) to make codes appear as "sent" in dashboard
                         // Link tracking fields will be updated after SMS is sent
                         var codeReservationTime = DateTime.Now;
+
+                        _logger.LogInformation("📦 [BULK] Reserving {Count} codes for invitation {InvitationId}. Codes: {Codes}",
+                            codesToReserve.Count, invitation.Id, string.Join(", ", codesToReserve.Select(c => c.Code)));
+
                         foreach (var code in codesToReserve)
                         {
+                            _logger.LogInformation("🔧 [BULK] Updating code {Code} for recipient {Phone}. Current values: Reserved={Reserved}, DistDate={DistDate}",
+                                code.Code, invitation.Phone, code.ReservedForFarmerInvitationId, code.DistributionDate);
+
                             // Reservation tracking
                             code.ReservedForFarmerInvitationId = invitation.Id;
                             code.ReservedForFarmerAt = codeReservationTime;
@@ -220,6 +227,8 @@ namespace Business.Handlers.Sponsorship.Commands
                             _codeRepository.Update(code);
                         }
                         await _codeRepository.SaveChangesAsync();
+
+                        _logger.LogInformation("✅ [BULK] Saved code reservations for invitation {InvitationId}", invitation.Id);
 
                         // 5. Generate deep link
                         var deepLink = $"{baseUrl.TrimEnd('/')}/{invitation.InvitationToken}";
