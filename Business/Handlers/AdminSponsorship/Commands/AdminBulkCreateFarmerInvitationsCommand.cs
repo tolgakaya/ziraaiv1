@@ -110,6 +110,7 @@ namespace Business.Handlers.AdminSponsorship.Commands
 
                 // Process each recipient
                 var results = new List<FarmerInvitationSendResult>();
+                var reservedCodeIds = new HashSet<int>(); // Track reserved codes in memory
 
                 foreach (var recipient in request.Recipients)
                 {
@@ -137,11 +138,12 @@ namespace Business.Handlers.AdminSponsorship.Commands
                             }
                         }
 
-                        // 2. Get available codes
+                        // 2. Get available codes (excluding already reserved in this batch)
                         var codesToReserve = await GetCodesToReserveAsync(
                             request.SponsorId,
                             recipient.CodeCount,
-                            recipient.PackageTier);
+                            recipient.PackageTier,
+                            reservedCodeIds);
 
                         if (codesToReserve.Count < recipient.CodeCount)
                         {
@@ -185,6 +187,7 @@ namespace Business.Handlers.AdminSponsorship.Commands
                             code.ReservedForFarmerInvitationId = invitation.Id;
                             code.ReservedForFarmerAt = DateTime.Now;
                             _codeRepository.Update(code);
+                            reservedCodeIds.Add(code.Id); // Track in memory to prevent reuse
                         }
                         await _codeRepository.SaveChangesAsync();
 
@@ -305,7 +308,8 @@ namespace Business.Handlers.AdminSponsorship.Commands
         private async Task<List<SponsorshipCode>> GetCodesToReserveAsync(
             int sponsorId,
             int codeCount,
-            string packageTier)
+            string packageTier,
+            HashSet<int> excludeCodeIds)
         {
             var availableCodes = await _codeRepository.GetListAsync(c =>
                 c.SponsorId == sponsorId &&
@@ -316,7 +320,10 @@ namespace Business.Handlers.AdminSponsorship.Commands
                 c.ReservedForFarmerInvitationId == null &&
                 c.ExpiryDate > DateTime.Now);
 
-            var codesList = availableCodes.ToList();
+            // Filter out codes already reserved in this batch
+            var codesList = availableCodes
+                .Where(c => !excludeCodeIds.Contains(c.Id))
+                .ToList();
 
             if (!string.IsNullOrEmpty(packageTier))
             {

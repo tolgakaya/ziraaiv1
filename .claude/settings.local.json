@@ -1,11 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh pr edit 149 --title \"fix: Fix variable name mismatch in bulk farmer invitation SMS\" --body \"$(cat <<''EOF''\n## Summary\nCritical bugfix for bulk farmer invitation SMS template replacement.\n\n## Problem\nBulk farmer invitations were sending SMS with unreplaced `{expiryDays}` placeholder due to variable name mismatch.\n\n## Root Cause\n- **BulkCreateFarmerInvitationsCommand**: Used variable `tokenExpiryDays`\n- **CreateFarmerInvitationCommand**: Used variable `expiryDays`\n- **Template placeholder**: `{expiryDays}`\n- **Result**: Only single invitations worked, bulk invitations failed\n\n## Fix\n✅ Renamed all `tokenExpiryDays` → `expiryDays` in BulkCreateFarmerInvitationsCommand\n✅ Updated 3 locations: config retrieval, ExpiryDate calculation, template replacement\n\n## Testing\n- ✅ Build successful\n- ✅ Variable naming now consistent across both handlers\n- ⏳ Ready for production testing\n\n## Impact\n**Before**: Bulk SMS had `{expiryDays}` literal text\n**After**: Bulk SMS shows actual expiry days (e.g., \"7 gun gecerlidir\")\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\nEOF\n)\")",
-      "Bash(dotnet build:*)",
-      "Bash(git add:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nfix: Add phone normalization to admin bulk farmer invitations\n\n## Problem\nAdmin bulk farmer invitation endpoint was also using inconsistent phone format.\n\n## Solution\n✅ Updated AdminBulkCreateFarmerInvitationsCommand to use PhoneNumberHelper\n✅ Removed duplicate FormatPhoneNumber() method\n✅ Now consistent with sponsor bulk invitations\n\n## Files Changed\n- Business/Handlers/AdminSponsorship/Commands/AdminBulkCreateFarmerInvitationsCommand.cs\n\n## Testing\n✅ Build successful\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git push:*)"
+      "Bash(gh pr edit:*)",
+      "Bash(gh pr create:*)"
     ],
     "deny": [],
     "ask": [],
