@@ -351,6 +351,8 @@ namespace Business.Services.Sponsorship
             List<FarmerInvitationRow> rows,
             int sponsorId)
         {
+            _logger.LogInformation("🔍 [DEBUG] CheckCodeAvailabilityAsync called with sponsorId={SponsorId}", sponsorId);
+            
             // Each farmer gets exactly 1 code
             var hasAnyTierSpecified = rows.Any(r => !string.IsNullOrWhiteSpace(r.PackageTier));
 
