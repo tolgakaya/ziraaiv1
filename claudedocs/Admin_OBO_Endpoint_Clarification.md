@@ -1,5 +1,14 @@
 # Admin On-Behalf-Of (OBO) Endpoint Kullanım Kılavuzu
 
+## 📋 Genel Bakış
+
+Sistemde admin'lerin sponsor adına işlem yapabilmesi için **2 farklı OBO endpoint** bulunmaktadır:
+
+1. **Farmer Invitations (JSON)** - `/api/Sponsorship/admin/farmer/invitations/bulk`
+2. **Code Distribution (Excel)** - `/api/Sponsorship/bulk-code-distribution?onBehalfOfSponsorId=X`
+
+Her endpoint'in farklı input format ve kullanım senaryoları vardır.
+
 ## 🚨 Kritik Hata Tespiti
 
 Admin rolünde sponsor adına toplu farmer invitation gönderimi yaparken **yanlış endpoint** kullanılıyor.
@@ -389,19 +398,230 @@ A: Hayır, admin OBO için sadece JSON endpoint var. Excel kullanmak isterse fro
 **Q: onBehalfOfSponsorId parametresi neden çalışmıyor?**
 A: Çünkü bu parametre sponsor bulk endpoint'inde tanımlı değil. Admin OBO için `sponsorId` request body'de gönderilmeli.
 
+---
+
+## 2. Admin OBO: Bulk Code Distribution (Excel Upload)
+
+### Doğru Kullanım
+
+Admin sponsor adına kod dağıtımı yaparken **query parameter** kullanmalıdır:
+
+```http
+POST /api/Sponsorship/bulk-code-distribution?onBehalfOfSponsorId=6
+Authorization: Bearer {admin_jwt_token}
+Content-Type: multipart/form-data
+
+FormData:
+- excelFile: farmers.xlsx
+- sendSms: true (optional)
+```
+
+### Endpoint Özellikleri
+
+| Özellik | Detay |
+|---------|-------|
+| **Endpoint** | `/api/Sponsorship/bulk-code-distribution` |
+| **Method** | POST |
+| **Authorization** | `Sponsor` veya `Admin` |
+| **Content-Type** | `multipart/form-data` |
+| **OBO Parameter** | `onBehalfOfSponsorId` (query param, admin için required) |
+| **Input** | Excel file + optional SMS preference |
+| **Processing** | Asynchronous (RabbitMQ queue) |
+| **Response** | Job ID + status tracking URL |
+
+### Excel Format
+
+Excel dosyası şu kolonları içermelidir:
+
+| Column | Required | Description | Example |
+|--------|----------|-------------|---------|
+| Email | ✅ Yes | Farmer email | `ahmet@example.com` |
+| Phone | ✅ Yes | Farmer phone | `05421396386` |
+| Name | ❌ No | Farmer name | `Ahmet Yılmaz` |
+
+**Constraints:**
+- Max file size: **10 MB**
+- Max rows: **2000 farmers**
+- Phone format: Supports all Turkish formats (auto-normalized)
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.ziraai.com/api/Sponsorship/bulk-code-distribution?onBehalfOfSponsorId=6" \
+  -H "Authorization: Bearer YOUR_ADMIN_JWT_TOKEN" \
+  -F "excelFile=@farmers.xlsx" \
+  -F "sendSms=true"
+```
+
+### JavaScript/Fetch Example
+
+```javascript
+async function adminBulkDistributeCodes(sponsorId, excelFile, sendSms = true) {
+  const formData = new FormData();
+  formData.append('excelFile', excelFile);
+  formData.append('sendSms', sendSms.toString());
+
+  const response = await fetch(
+    `/api/Sponsorship/bulk-code-distribution?onBehalfOfSponsorId=${sponsorId}`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAdminToken()}`
+      },
+      body: formData
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const result = await response.json();
+
+  console.log(`Job ID: ${result.data.jobId}`);
+  console.log(`Total Farmers: ${result.data.totalFarmers}`);
+  console.log(`Status URL: ${result.data.statusCheckUrl}`);
+
+  return result;
+}
+
+// Usage
+const fileInput = document.querySelector('#excelFile');
+await adminBulkDistributeCodes(6, fileInput.files[0], true);
+```
+
+### Response Format
+
+```typescript
+interface BulkCodeDistributionJobDto {
+  jobId: number;
+  totalFarmers: number;
+  status: string;  // "Queued", "Processing", "Completed"
+  createdDate: string;
+  statusCheckUrl: string;
+}
+```
+
+### Response Example
+
+```json
+{
+  "success": true,
+  "message": "Bulk code distribution job created successfully",
+  "data": {
+    "jobId": 42,
+    "totalFarmers": 150,
+    "status": "Queued",
+    "createdDate": "2025-01-07T10:30:00Z",
+    "statusCheckUrl": "/api/Sponsorship/bulk-distribution-status/42"
+  }
+}
+```
+
+### Status Tracking
+
+Job status'u kontrol etmek için:
+
+```http
+GET /api/Sponsorship/bulk-distribution-status/42
+Authorization: Bearer {admin_jwt_token}
+```
+
+Admin tüm job'ları görebilir, sponsor sadece kendi job'larını görebilir.
+
+### Validation Rules
+
+**Admin Kullanımı:**
+- ✅ `onBehalfOfSponsorId` query parameter **zorunlu**
+- ✅ Admin role required
+- ✅ Target sponsor'un var olması kontrol edilmeli (TODO: backend validation eksik)
+
+**Sponsor Kullanımı:**
+- ❌ `onBehalfOfSponsorId` **kullanılmaz** (ignore edilir)
+- ✅ Sponsor kendi ID'si ile işlem yapar
+- ✅ Sponsor role yeterli
+
+### Common Errors
+
+| HTTP Status | Error Message | Neden | Çözüm |
+|-------------|---------------|-------|--------|
+| 400 | "Admin users must specify onBehalfOfSponsorId query parameter" | Admin `onBehalfOfSponsorId` göndermedi | Query param ekle |
+| 400 | "Excel dosyası zorunludur" | File upload yok | Excel file ekle |
+| 400 | "Insufficient codes available" | Sponsor'da yeterli kod yok | Sponsor'a kod satın aldır |
+| 403 | Forbidden | Admin target sponsor'a erişemez | Admin permissions kontrol et |
+
+---
+
+## 3. OBO Endpoint Karşılaştırması
+
+### Farmer Invitations vs Code Distribution
+
+| Feature | Farmer Invitations | Code Distribution |
+|---------|-------------------|-------------------|
+| **Endpoint** | `/admin/farmer/invitations/bulk` | `/bulk-code-distribution` |
+| **OBO Parameter** | `sponsorId` (JSON body) | `onBehalfOfSponsorId` (query param) |
+| **Input Format** | JSON | Excel (multipart/form-data) |
+| **Authorization** | Admin only | Sponsor or Admin |
+| **Use Case** | Create invitations + send SMS | Distribute existing codes |
+| **Code Source** | Auto-reserves from sponsor's pool | Uses existing available codes |
+| **Processing** | Sync (immediate response) | Async (job queue) |
+| **Response** | Per-recipient results | Job ID + status URL |
+| **SMS/WhatsApp** | Always sends invitation link | Optional (`sendSms` param) |
+| **Code Count** | Variable (1-100 per recipient) | 1 code per farmer (fixed) |
+
+### Ne Zaman Hangisi Kullanılır?
+
+**Farmer Invitations (JSON):**
+- ✅ Yeni farmer'lara davet gönderilecek
+- ✅ Her farmer'a farklı sayıda kod verilecek (1-100)
+- ✅ Tier-based filtering gerekiyor (S/M/L/XL)
+- ✅ Immediate feedback gerekli
+- ✅ Admin müdahalesi/support senaryosu
+
+**Code Distribution (Excel):**
+- ✅ Var olan farmer'lara kod dağıtılacak
+- ✅ Her farmer'a 1 kod yeterli
+- ✅ Büyük batch operations (1000+ farmer)
+- ✅ Excel ile toplu işlem yapılacak
+- ✅ Async processing kabul edilebilir
+
+---
+
 ## Sonuç
 
-✅ **Admin OBO için doğru endpoint:**
+### ✅ Admin OBO Endpoint'leri (Doğru Kullanım)
+
+**1. Farmer Invitations (JSON Body):**
 ```
 POST /api/Sponsorship/admin/farmer/invitations/bulk
 Content-Type: application/json
 Body: { "sponsorId": X, "recipients": [...] }
 ```
 
-❌ **Yanlış endpoint (kullanmayın):**
+**2. Code Distribution (Query Param + Excel):**
+```
+POST /api/Sponsorship/bulk-code-distribution?onBehalfOfSponsorId=X
+Content-Type: multipart/form-data
+FormData: { excelFile, sendSms }
+```
+
+### ❌ Yanlış Endpoint (KULLANMAYIN)
+
 ```
 POST /api/Sponsorship/farmer/invitations/bulk?onBehalfOfSponsorId=X
 Content-Type: multipart/form-data
 ```
 
-Frontend ekibi bu endpoint değişikliğini uygulamalıdır.
+**Neden Yanlış:**
+- Bu endpoint sponsor'un **kendi daveti** için
+- `onBehalfOfSponsorId` parametresi **tanımlı değil**
+- Admin ID'si kullanılıyor, sponsor ID'si değil
+
+### Frontend Aksiyonları
+
+1. **Farmer Invitations için:** JSON endpoint kullan, Excel parse et
+2. **Code Distribution için:** Mevcut Excel endpoint'e `onBehalfOfSponsorId` query param ekle
+3. Her iki endpoint için de admin authorization gerekli
+4. Error handling ve status tracking implement et
+
+Frontend ekibi bu güncellemeleri uygulamalıdır.
