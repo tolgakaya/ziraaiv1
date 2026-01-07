@@ -3080,6 +3080,102 @@ namespace WebAPI.Controllers
         }
 
         /// <summary>
+        /// Admin: Bulk create farmer invitations via Excel upload on behalf of sponsor
+        /// Same as sponsor Excel bulk but with OBO support for admin operations
+        /// </summary>
+        /// <param name="excelFile">Excel file with farmer data (Phone, FarmerName, Email, PackageTier, Notes columns)</param>
+        /// <param name="onBehalfOfSponsorId">Target sponsor ID (required for Admin role)</param>
+        /// <param name="channel">Delivery channel: SMS or WhatsApp (default: SMS)</param>
+        /// <param name="customMessage">Optional custom message override</param>
+        /// <returns>Bulk invitation job details with queued count</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("admin/farmer/invitations/bulk/excel")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IDataResult<BulkInvitationJobDto>))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> AdminBulkCreateFarmerInvitationsExcel(
+            [FromForm] IFormFile excelFile,
+            [FromQuery] int onBehalfOfSponsorId,
+            [FromForm] string channel = "SMS",
+            [FromForm] string? customMessage = null)
+        {
+            try
+            {
+                _logger.LogInformation("📤 ADMIN Excel bulk farmer invitation request for sponsor {SponsorId}", onBehalfOfSponsorId);
+
+                var adminUserId = GetUserId();
+                if (!adminUserId.HasValue)
+                {
+                    _logger.LogWarning("⚠️ Admin user ID not found in claims");
+                    return Unauthorized();
+                }
+
+                if (onBehalfOfSponsorId <= 0)
+                {
+                    _logger.LogWarning("⚠️ ADMIN must specify valid onBehalfOfSponsorId");
+                    return BadRequest(new ErrorResult("Admin users must specify valid onBehalfOfSponsorId query parameter"));
+                }
+
+                if (excelFile == null || excelFile.Length == 0)
+                {
+                    _logger.LogWarning("⚠️ No Excel file uploaded");
+                    return BadRequest(new ErrorResult("Excel dosyası zorunludur"));
+                }
+
+                _logger.LogInformation("📊 ADMIN {AdminId} processing Excel file: {FileName} ({Size} bytes) for sponsor {SponsorId} via {Channel}",
+                    adminUserId.Value, excelFile.FileName, excelFile.Length, onBehalfOfSponsorId, channel);
+
+                // Use the same service as sponsor, but with target sponsor ID
+                var result = await _bulkFarmerInvitationService.QueueBulkInvitationsAsync(
+                    excelFile,
+                    onBehalfOfSponsorId,  // Target sponsor, not admin ID
+                    channel,
+                    customMessage);
+
+                if (result.Success)
+                {
+                    _logger.LogInformation("✅ ADMIN {AdminId} queued farmer invitations successfully for sponsor {SponsorId}. JobId: {JobId}, Count: {Count}",
+                        adminUserId.Value, onBehalfOfSponsorId, result.Data?.JobId, result.Data?.TotalDealers);
+
+                    // Log admin audit
+                    await _adminAuditService.LogAsync(
+                        action: "AdminBulkCreateFarmerInvitationsExcel",
+                        adminUserId: adminUserId.Value,
+                        targetUserId: onBehalfOfSponsorId,
+                        entityType: "FarmerInvitation",
+                        entityId: result.Data?.JobId ?? 0,
+                        isOnBehalfOf: true,
+                        ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        userAgent: HttpContext.Request.Headers["User-Agent"].ToString(),
+                        requestPath: HttpContext.Request.Path,
+                        reason: $"Admin created bulk farmer invitations via Excel upload (JobId: {result.Data?.JobId}, Count: {result.Data?.TotalDealers}) via {channel}",
+                        afterState: new
+                        {
+                            SponsorId = onBehalfOfSponsorId,
+                            JobId = result.Data?.JobId,
+                            TotalFarmers = result.Data?.TotalDealers,
+                            Channel = channel,
+                            FileName = excelFile.FileName,
+                            FileSize = excelFile.Length
+                        }
+                    );
+
+                    return Ok(result);
+                }
+
+                _logger.LogWarning("❌ ADMIN failed to queue farmer invitations for sponsor {SponsorId}: {Message}", 
+                    onBehalfOfSponsorId, result.Message);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "💥 ADMIN error processing Excel bulk farmer invitations for sponsor {SponsorId}", onBehalfOfSponsorId);
+                return StatusCode(500, new ErrorResult("Admin toplu davet işlemi sırasında hata oluştu"));
+            }
+        }
+
+        /// <summary>
         /// Accept farmer invitation (mobile endpoint)
         /// Validates token, verifies phone match, and assigns codes to farmer
         /// </summary>
